@@ -56,11 +56,11 @@ endif
 install : all
 	$(INSTALL) -d "${DESTDIR}${libdir}/"
 ifeq ($(WITH_SHARED_LIBRARIES),yes)
-	$(INSTALL) ${STRIP_OPTS} libmosquitto.so.${SOVERSION} "${DESTDIR}${libdir}/libmosquitto.so.${SOVERSION}"
+	$(INSTALL) libmosquitto.so.${SOVERSION} "${DESTDIR}${libdir}/libmosquitto.so.${SOVERSION}"
 	ln -sf libmosquitto.so.${SOVERSION} "${DESTDIR}${libdir}/libmosquitto.so"
 endif
 ifeq ($(WITH_STATIC_LIBRARIES),yes)
-	$(INSTALL) ${STRIP_OPTS} libmosquitto.a "${DESTDIR}${libdir}/libmosquitto.a"
+	$(INSTALL) libmosquitto.a "${DESTDIR}${libdir}/libmosquitto.a"
 endif
 	$(INSTALL) -d "${DESTDIR}${incdir}/"
 	$(INSTALL) mosquitto.h "${DESTDIR}${incdir}/mosquitto.h"

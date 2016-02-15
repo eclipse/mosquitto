@@ -16,7 +16,7 @@ all : ${ALL_DEPS}
 
 install : all
 	$(INSTALL) -d "${DESTDIR}${libdir}/"
-	$(INSTALL) ${STRIP_OPTS} libmosquittopp.so.${SOVERSION} "${DESTDIR}${libdir}/libmosquittopp.so.${SOVERSION}"
+	$(INSTALL) libmosquittopp.so.${SOVERSION} "${DESTDIR}${libdir}/libmosquittopp.so.${SOVERSION}"
 	ln -sf libmosquittopp.so.${SOVERSION} "${DESTDIR}${libdir}/libmosquittopp.so"
 ifeq ($(WITH_STATIC_LIBRARIES),yes)
 	$(INSTALL) libmosquittopp.a "${DESTDIR}${libdir}/libmosquittopp.a"

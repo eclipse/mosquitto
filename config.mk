@@ -288,10 +288,6 @@ localedir?=${prefix}/share/locale
 mandir?=${prefix}/share/man
 STRIP?=strip
 
-ifeq ($(WITH_STRIP),yes)
-	STRIP_OPTS?=-s --strip-program=${CROSS_COMPILE}${STRIP}
-endif
-
 ifeq ($(WITH_EPOLL),yes)
 	ifeq ($(UNAME),Linux)
 		BROKER_CFLAGS:=$(BROKER_CFLAGS) -DWITH_EPOLL
