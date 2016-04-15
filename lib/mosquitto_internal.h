@@ -199,6 +199,8 @@ struct mosquitto {
 	struct mosquitto_client_msg *last_msg;
 	int msg_count;
 	int msg_count12;
+	int msg_count_ready_send;
+	int msg_count_queued2_in;
 	struct _mosquitto_acl_user *acl_list;
 	struct _mqtt3_listener *listener;
 	time_t disconnect_t;

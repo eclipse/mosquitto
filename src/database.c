@@ -222,6 +222,16 @@ static void _message_remove(struct mosquitto_db *db, struct mosquitto *context, 
 	if((*msg)->qos > 0){
 		context->msg_count12--;
 	}
+	if((*msg)->state == mosq_ms_queued && (*msg)->direction == mosq_md_in && (*msg)->qos == 2){
+		context->msg_count_queued2_in--;
+	} else if ((*msg)->state == mosq_ms_publish_qos0 ||
+			(*msg)->state == mosq_ms_publish_qos1 ||
+			(*msg)->state == mosq_ms_publish_qos2 ||
+			(*msg)->state == mosq_ms_resend_pubrel ||
+			(*msg)->state == mosq_ms_resend_pubcomp ||
+			(*msg)->state == mosq_ms_send_pubrec){
+		context->msg_count_ready_send--;
+	}
 	_mosquitto_free(*msg);
 	if(last){
 		*msg = last->next;
@@ -243,9 +253,11 @@ static void _message_remove(struct mosquitto_db *db, struct mosquitto *context, 
 					tail->state = mosq_ms_publish_qos2;
 					break;
 			}
+			context->msg_count_ready_send++;
 		}else{
 			if(tail->qos == 2){
 				tail->state = mosq_ms_send_pubrec;
+				context->msg_count_queued2_in--;
 			}
 		}
 
@@ -278,9 +290,11 @@ int mqtt3_db_message_delete(struct mosquitto_db *db, struct mosquitto *context, 
 						tail->state = mosq_ms_publish_qos2;
 						break;
 				}
+				context->msg_count_ready_send++;
 			}else{
 				if(tail->qos == 2){
 					tail->state = mosq_ms_wait_for_pubrel;
+					context->msg_count_queued2_in--;
 				}
 			}
 		}
@@ -426,6 +440,16 @@ int mqtt3_db_message_insert(struct mosquitto_db *db, struct mosquitto *context, 
 	if(qos > 0){
 		context->msg_count12++;
 	}
+	if (state == mosq_ms_queued && dir == mosq_md_in && qos == 2){
+		context->msg_count_queued2_in++;
+	} else if (state == mosq_ms_publish_qos0 ||
+			state == mosq_ms_publish_qos1 ||
+			state == mosq_ms_publish_qos2 ||
+			state == mosq_ms_resend_pubrel ||
+			state == mosq_ms_resend_pubcomp ||
+			state == mosq_ms_send_pubrec){
+		context->msg_count_ready_send++;
+	}
 
 	if(db->config->allow_duplicate_messages == false && dir == mosq_md_out && retain == false){
 		/* Record which client ids this message has been sent to so we can avoid duplicates.
@@ -474,6 +498,40 @@ int mqtt3_db_message_update(struct mosquitto *context, uint16_t mid, enum mosqui
 	tail = context->msgs;
 	while(tail){
 		if(tail->mid == mid && tail->direction == dir){
+
+			if ((state == mosq_ms_publish_qos0 ||
+					state == mosq_ms_publish_qos1 ||
+					state == mosq_ms_publish_qos2 ||
+					state == mosq_ms_resend_pubrel ||
+					state == mosq_ms_resend_pubcomp ||
+					state == mosq_ms_send_pubrec) && !(
+					tail->state == mosq_ms_publish_qos0 ||
+					tail->state == mosq_ms_publish_qos1 ||
+					tail->state == mosq_ms_publish_qos2 ||
+					tail->state == mosq_ms_resend_pubrel ||
+					tail->state == mosq_ms_resend_pubcomp ||
+					tail->state == mosq_ms_send_pubrec)){
+				context->msg_count_ready_send++;
+			} else if (!(tail->state == mosq_ms_publish_qos0 ||
+					state == mosq_ms_publish_qos1 ||
+					state == mosq_ms_publish_qos2 ||
+					state == mosq_ms_resend_pubrel ||
+					state == mosq_ms_resend_pubcomp ||
+					state == mosq_ms_send_pubrec) && (
+					tail->state == mosq_ms_publish_qos0 ||
+					tail->state == mosq_ms_publish_qos1 ||
+					tail->state == mosq_ms_publish_qos2 ||
+					tail->state == mosq_ms_resend_pubrel ||
+					tail->state == mosq_ms_resend_pubcomp ||
+					tail->state == mosq_ms_send_pubrec)){
+				context->msg_count_ready_send--;
+			} else if (dir == mosq_md_in && tail->qos == 2 &&
+					tail->state == mosq_ms_queued && state != mosq_ms_queued){
+				context->msg_count_queued2_in--;
+			} else if (dir == mosq_md_in && tail->qos == 2 &&
+					tail->state != mosq_ms_queued && state == mosq_ms_queued){
+				context->msg_count_queued2_in++;
+			}
 			tail->state = state;
 			tail->timestamp = mosquitto_time();
 			return MOSQ_ERR_SUCCESS;
@@ -500,6 +558,8 @@ int mqtt3_db_messages_delete(struct mosquitto_db *db, struct mosquitto *context)
 	context->last_msg = NULL;
 	context->msg_count = 0;
 	context->msg_count12 = 0;
+	context->msg_count_queued2_in = 0;
+	context->msg_count_ready_send = 0;
 
 	return MOSQ_ERR_SUCCESS;
 }
@@ -627,6 +687,8 @@ int mqtt3_db_message_reconnect_reset(struct mosquitto_db *db, struct mosquitto *
 	msg = context->msgs;
 	context->msg_count = 0;
 	context->msg_count12 = 0;
+	context->msg_count_queued2_in = 0;
+	context->msg_count_ready_send = 0;
 	while(msg){
 		context->last_msg = msg;
 
@@ -663,6 +725,16 @@ int mqtt3_db_message_reconnect_reset(struct mosquitto_db *db, struct mosquitto *
 				 * whatever the client has got. */
 			}
 		}
+		if(msg->state == mosq_ms_queued && msg->direction == mosq_md_in && msg->qos == 2){
+			context->msg_count_queued2_in++;
+		} else if (msg->state == mosq_ms_publish_qos0 ||
+				msg->state == mosq_ms_publish_qos1 ||
+				msg->state == mosq_ms_publish_qos2 ||
+				msg->state == mosq_ms_resend_pubrel ||
+				msg->state == mosq_ms_resend_pubcomp ||
+				msg->state == mosq_ms_send_pubrec){
+			context->msg_count_ready_send++;
+		}
 		prev = msg;
 		if(msg) msg = msg->next;
 	}
@@ -688,6 +760,7 @@ int mqtt3_db_message_reconnect_reset(struct mosquitto_db *db, struct mosquitto *
 						msg->state = mosq_ms_publish_qos2;
 						break;
 				}
+				context->msg_count_ready_send++;
 			}
 			msg = msg->next;
 			count++;
@@ -731,6 +804,7 @@ int mqtt3_db_message_timeout_check(struct mosquitto_db *db, unsigned int timeout
 					msg->timestamp = mosquitto_time();
 					msg->state = new_state;
 					msg->dup = true;
+					context->msg_count_ready_send++;
 				}
 			}
 			msg = msg->next;
@@ -769,10 +843,12 @@ int mqtt3_db_message_release(struct mosquitto_db *db, struct mosquitto *context,
 						tail->state = mosq_ms_publish_qos2;
 						break;
 				}
+				context->msg_count_ready_send++;
 			}else{
 				if(tail->qos == 2){
 					_mosquitto_send_pubrec(context, tail->mid);
 					tail->state = mosq_ms_wait_for_pubrel;
+					context->msg_count_queued2_in--;
 				}
 			}
 		}
@@ -834,6 +910,11 @@ int mqtt3_db_message_write(struct mosquitto_db *db, struct mosquitto *context)
 		if(tail->direction == mosq_md_in){
 			msg_count++;
 		}
+		if (context->msg_count_ready_send == 0 &&
+				(context->msg_count_queued2_in == 0 ||
+				(max_inflight != 0 && msg_count >= max_inflight))){
+			break;
+		}
 		if(tail->state != mosq_ms_queued){
 			mid = tail->mid;
 			retries = tail->dup;
@@ -859,6 +940,7 @@ int mqtt3_db_message_write(struct mosquitto_db *db, struct mosquitto *context)
 						tail->timestamp = mosquitto_time();
 						tail->dup = 1; /* Any retry attempts are a duplicate. */
 						tail->state = mosq_ms_wait_for_puback;
+						context->msg_count_ready_send--;
 					}else{
 						return rc;
 					}
@@ -872,6 +954,7 @@ int mqtt3_db_message_write(struct mosquitto_db *db, struct mosquitto *context)
 						tail->timestamp = mosquitto_time();
 						tail->dup = 1; /* Any retry attempts are a duplicate. */
 						tail->state = mosq_ms_wait_for_pubrec;
+						context->msg_count_ready_send--;
 					}else{
 						return rc;
 					}
@@ -883,6 +966,7 @@ int mqtt3_db_message_write(struct mosquitto_db *db, struct mosquitto *context)
 					rc = _mosquitto_send_pubrec(context, mid);
 					if(!rc){
 						tail->state = mosq_ms_wait_for_pubrel;
+						context->msg_count_ready_send--;
 					}else{
 						return rc;
 					}
@@ -894,6 +978,7 @@ int mqtt3_db_message_write(struct mosquitto_db *db, struct mosquitto *context)
 					rc = _mosquitto_send_pubrel(context, mid);
 					if(!rc){
 						tail->state = mosq_ms_wait_for_pubcomp;
+						context->msg_count_ready_send--;
 					}else{
 						return rc;
 					}
@@ -905,6 +990,7 @@ int mqtt3_db_message_write(struct mosquitto_db *db, struct mosquitto *context)
 					rc = _mosquitto_send_pubcomp(context, mid);
 					if(!rc){
 						tail->state = mosq_ms_wait_for_pubrel;
+						context->msg_count_ready_send--;
 					}else{
 						return rc;
 					}
@@ -922,6 +1008,8 @@ int mqtt3_db_message_write(struct mosquitto_db *db, struct mosquitto *context)
 			if(tail->direction == mosq_md_in && (max_inflight == 0 || msg_count < max_inflight)){
 				if(tail->qos == 2){
 					tail->state = mosq_ms_send_pubrec;
+					context->msg_count_queued2_in--;
+					context->msg_count_ready_send++;
 				}
 			}else{
 				last = tail;
