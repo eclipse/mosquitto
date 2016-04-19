@@ -73,6 +73,7 @@ set_target_properties(libmosquitto PROPERTIES
 install(TARGETS libmosquitto RUNTIME DESTINATION ${BINDIR} LIBRARY DESTINATION ${LIBDIR})
 install(FILES mosquitto.h DESTINATION ${INCLUDEDIR})
 
-if (UNIX)
+if (UNIX AND NOT APPLE)
 	install(CODE "EXEC_PROGRAM(/sbin/ldconfig)")
-endif (UNIX)
+endif (UNIX AND NOT APPLE)
+

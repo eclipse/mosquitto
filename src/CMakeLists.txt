@@ -126,7 +126,8 @@ if (${WITH_TLS} STREQUAL ON)
 	install(TARGETS mosquitto_passwd RUNTIME DESTINATION ${BINDIR} LIBRARY DESTINATION ${LIBDIR})
 endif (${WITH_TLS} STREQUAL ON)
 
-if (UNIX)
+if (UNIX AND NOT APPLE)
 	install(CODE "EXEC_PROGRAM(/sbin/ldconfig)")
-endif (UNIX)
+endif (UNIX AND NOT APPLE)
+
 
