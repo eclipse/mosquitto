@@ -109,11 +109,13 @@ endif(NOT APPLE)
 
 target_link_libraries(mosquitto ${MOSQ_LIBS})
 
-if (UNIX AND APPLE)
+if (UNIX)
+	if (APPLE)
 		set_target_properties(mosquitto PROPERTIES LINK_FLAGS "-Wl,-exported_symbols_list -Wl,${mosquitto_SOURCE_DIR}/src/linker-macosx.syms")
-else (UNIX AND APPLE)
+	else (APPLE)
 		set_target_properties(mosquitto PROPERTIES LINK_FLAGS "-Wl,-dynamic-list=${mosquitto_SOURCE_DIR}/src/linker.syms")
-endif (UNIX AND APPLE)
+	endif (APPLE)
+endif (UNIX)
 
 install(TARGETS mosquitto RUNTIME DESTINATION ${SBINDIR} LIBRARY DESTINATION ${LIBDIR})
 install(FILES mosquitto_plugin.h DESTINATION ${INCLUDEDIR})
