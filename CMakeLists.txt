@@ -79,6 +79,8 @@ endif (${WITH_SOCKS} STREQUAL ON)
 
 option(WITH_SRV "Include SRV lookup support?" ON)
 
+option(DOCUMENTATION "Build documentation?" ON)
+
 # ========================================
 # Include projects
 # ========================================
@@ -86,7 +88,9 @@ option(WITH_SRV "Include SRV lookup support?" ON)
 add_subdirectory(lib)
 add_subdirectory(client)
 add_subdirectory(src)
-add_subdirectory(man)
+if (${DOCUMENTATION} STREQUAL ON)
+	add_subdirectory(man)
+endif (${DOCUMENTATION} STREQUAL ON)
 
 # ========================================
 # Install config file

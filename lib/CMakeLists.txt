@@ -20,8 +20,7 @@ include_directories(${mosquitto_SOURCE_DIR} ${mosquitto_SOURCE_DIR}/lib
 			${OPENSSL_INCLUDE_DIR} ${PTHREAD_INCLUDE_DIR})
 link_directories(${mosquitto_SOURCE_DIR}/lib)
 
-add_library(libmosquitto SHARED
-	logging_mosq.c logging_mosq.h
+set(C_SRC logging_mosq.c logging_mosq.h
 	memory_mosq.c memory_mosq.h
 	messages_mosq.c messages_mosq.h
 	mosquitto.c mosquitto.h
@@ -40,6 +39,11 @@ add_library(libmosquitto SHARED
 	tls_mosq.c
 	util_mosq.c util_mosq.h
 	will_mosq.c will_mosq.h)
+
+add_library(libmosquitto SHARED ${C_SRC} )
+
+#target for building static version of library
+add_library(libmosquitto_static STATIC ${C_SRC})
 
 set (LIBRARIES ${OPENSSL_LIBRARIES} ${PTHREAD_LIBRARIES})
 
@@ -64,15 +68,25 @@ endif (${WITH_SRV} STREQUAL ON)
 
 target_link_libraries(libmosquitto ${LIBRARIES})
 
+target_link_libraries(libmosquitto_static ${LIBRARIES})
+
 set_target_properties(libmosquitto PROPERTIES
 	OUTPUT_NAME mosquitto
 	VERSION ${VERSION}
 	SOVERSION 1
 )
 
-install(TARGETS libmosquitto RUNTIME DESTINATION ${BINDIR} LIBRARY DESTINATION ${LIBDIR})
+set_target_properties(libmosquitto_static PROPERTIES
+	OUTPUT_NAME mosquitto
+	VERSION ${VERSION}
+)
+
+target_compile_definitions(libmosquitto_static PUBLIC "STATIC_LIB")
+
+install(TARGETS libmosquitto libmosquitto_static RUNTIME DESTINATION ${BINDIR} LIBRARY DESTINATION ${LIBDIR} ARCHIVE DESTINATION ${LIBDIR})
 install(FILES mosquitto.h DESTINATION ${INCLUDEDIR})
 
-if (UNIX)
+if (UNIX AND NOT APPLE)
 	install(CODE "EXEC_PROGRAM(/sbin/ldconfig)")
-endif (UNIX)
+endif (UNIX AND NOT APPLE)
+

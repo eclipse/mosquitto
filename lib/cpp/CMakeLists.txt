@@ -13,6 +13,7 @@ set_target_properties(mosquittopp PROPERTIES
 install(TARGETS mosquittopp RUNTIME DESTINATION ${BINDIR} LIBRARY DESTINATION ${LIBDIR})
 install(FILES mosquittopp.h DESTINATION ${INCLUDEDIR})
 
-if (UNIX)
+if (UNIX AND NOT APPLE)
 	install(CODE "EXEC_PROGRAM(/sbin/ldconfig)")
-endif (UNIX)
+endif (UNIX AND NOT APPLE)
+
