@@ -154,19 +154,40 @@ int _mosquitto_packet_queue(struct mosquitto *mosq, struct _mosquitto_packet *pa
 	packet->pos = 0;
 	packet->to_process = packet->packet_length;
 
+	bool skip_queue = false;
+#ifdef WITH_BROKER
+#  ifdef WITH_WEBSOCKETS
+	skip_queue = (mosq->wsi && packet->force_synchronous);
+#endif
+#endif
 	packet->next = NULL;
-	pthread_mutex_lock(&mosq->out_packet_mutex);
-	if(mosq->out_packet){
-		mosq->out_packet_last->next = packet;
-	}else{
-		mosq->out_packet = packet;
+	if (!skip_queue){
+		pthread_mutex_lock(&mosq->out_packet_mutex);
+		if(mosq->out_packet){
+			mosq->out_packet_last->next = packet;
+		}else{
+			mosq->out_packet = packet;
+		}
+		mosq->out_packet_last = packet;
+		pthread_mutex_unlock(&mosq->out_packet_mutex);
 	}
-	mosq->out_packet_last = packet;
-	pthread_mutex_unlock(&mosq->out_packet_mutex);
 #ifdef WITH_BROKER
 #  ifdef WITH_WEBSOCKETS
 	if(mosq->wsi){
-		libwebsocket_callback_on_writable(mosq->ws_context, mosq->wsi);
+		if(packet->force_synchronous){
+			/* First time this packet has been dealt with. libwebsockets requires that the payload has
+			 * LWS_SEND_BUFFER_PRE_PADDING space available before the actual data and LWS_SEND_BUFFER_POST_PADDING afterwards.
+			 * We've already made the payload big enough to allow this, but need to move it into position here. */
+			memmove(&packet->payload[LWS_SEND_BUFFER_PRE_PADDING], packet->payload, packet->packet_length);
+			packet->pos += LWS_SEND_BUFFER_PRE_PADDING;
+			// Send the packet to the client.
+			libwebsocket_write(mosq->wsi, &packet->payload[packet->pos], packet->to_process, LWS_WRITE_BINARY);
+			// Free the packet.
+			_mosquitto_packet_cleanup(packet);
+			_mosquitto_free(packet);
+		}else{
+			libwebsocket_callback_on_writable(mosq->ws_context, mosq->wsi);
+		}
 		return 0;
 	}else{
 		return _mosquitto_packet_write(mosq);

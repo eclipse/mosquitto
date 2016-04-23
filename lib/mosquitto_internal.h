@@ -130,6 +130,7 @@ struct _mosquitto_packet{
 	uint16_t mid;
 	uint8_t command;
 	int8_t remaining_count;
+	bool force_synchronous;
 };
 
 struct mosquitto_message_all{
