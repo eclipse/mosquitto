@@ -14,7 +14,7 @@ import mosq_test
 rc = 1
 keepalive = 10
 connect_packet = mosq_test.gen_connect("connect-uname-pwd-test", keepalive=keepalive, username="user", password="password9")
-connack_packet = mosq_test.gen_connack(rc=5)
+connack_packet = mosq_test.gen_connack(rc=4)
 
 broker = mosq_test.start_broker(filename=os.path.basename(__file__))
 
