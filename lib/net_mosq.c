@@ -377,6 +377,7 @@ int mosquitto__socket_connect_tls(struct mosquitto *mosq)
 {
 	int ret, err;
 	ret = SSL_connect(mosq->ssl);
+
 	if(ret != 1) {
 		err = SSL_get_error(mosq->ssl, ret);
 #ifdef WIN32
