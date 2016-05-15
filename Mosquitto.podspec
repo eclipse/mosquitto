@@ -10,7 +10,7 @@ Pod::Spec.new do |s|
 
   s.ios.deployment_target = '6.0'
   s.xcconfig = { 'HEADER_SEARCH_PATHS' => '${PODS_ROOT}/**', 
-                 'CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'  => 'YES',
+                 'CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES' => 'YES',
                  'GCC_PREPROCESSOR_DEFINITIONS' => 'WITH_THREADING=1'
                 }
   s.source_files = ['lib/*.{c,h}', '*.h']
