@@ -8,7 +8,7 @@ set(CMAKE_LEGACY_CYGWIN_WIN32 0)
 
 project(mosquitto)
 
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8.11)
 # Only for version 3 and up. cmake_policy(SET CMP0042 NEW)
 
 set (VERSION 1.4.90)
