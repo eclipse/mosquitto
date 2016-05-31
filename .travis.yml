@@ -8,6 +8,7 @@ os:
   - osx
 
 sudo: true
+dist: trusty
 
 env:
   global:
