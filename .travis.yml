@@ -19,6 +19,13 @@ env:
 matrix:
   allow_failures:
     - os: osx
+  include:
+    - env: LINUX_CMAKE=1
+      os: linux
+      compiler: gcc
+    - env: LINUX_CMAKE=1
+      os: linux
+      compiler: clang
 
 script:
   - ./travis-configure.sh
