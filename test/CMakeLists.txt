@@ -1,4 +1,5 @@
 add_subdirectory(lib)
+add_subdirectory(broker)
 
 add_compile_options(-Wall -ggdb)
 add_definitions(-DDEBUG -DWITH_CLIENT)
