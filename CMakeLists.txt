@@ -8,7 +8,7 @@ set(CMAKE_LEGACY_CYGWIN_WIN32 0)
 
 project(mosquitto)
 
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8.11)
 # Only for version 3 and up. cmake_policy(SET CMP0042 NEW)
 
 set (VERSION 1.4.90)
@@ -102,3 +102,6 @@ install(FILES mosquitto.conf aclfile.example pskfile.example pwfile.example DEST
 # Testing
 # ========================================
 add_custom_target(Tests COMMAND make -C test test)
+
+enable_testing()
+add_subdirectory(test)

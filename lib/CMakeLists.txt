@@ -24,7 +24,17 @@ include_directories(${mosquitto_SOURCE_DIR} ${mosquitto_SOURCE_DIR}/lib
 			${OPENSSL_INCLUDE_DIR} ${PTHREAD_INCLUDE_DIR})
 link_directories(${mosquitto_SOURCE_DIR}/lib)
 
-set(C_SRC logging_mosq.c logging_mosq.h
+set(C_SRC
+	handle_connack.c
+	handle_ping.c
+	handle_pubackcomp.c
+	handle_publish.c
+	handle_pubrec.c
+	handle_pubrel.c
+	handle_suback.c
+	handle_unsuback.c
+	helpers.c
+	logging_mosq.c logging_mosq.h
 	memory_mosq.c memory_mosq.h
 	messages_mosq.c messages_mosq.h
 	mosquitto.c mosquitto.h
