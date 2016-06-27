@@ -350,9 +350,6 @@ int mqtt3_db_backup(struct mosquitto_db *db, bool shutdown)
 	char err[256];
 	char *outfile = NULL;
 	int len;
-#ifndef WIN32
-	int dir_fd;
-#endif
 
 	if(!db || !db->config || !db->config->persistence_filepath) return MOSQ_ERR_INVAL;
 	_mosquitto_log_printf(NULL, MOSQ_LOG_INFO, "Saving in-memory database to %s.", db->config->persistence_filepath);
@@ -399,17 +396,28 @@ int mqtt3_db_backup(struct mosquitto_db *db, bool shutdown)
 	mqtt3_db_subs_retain_write(db, db_fptr);
 
 #ifndef WIN32
+	/**
+	*
+	* Closing a file does not guarantee that the contents are
+	* written to disk.  Need to flush to send data from app to OS
+	* buffers, then fsync to deliver data from OS buffers to disk
+	* (as well as disk hardware permits).
+	* 
+	* man close (http://linux.die.net/man/2/close, 2016-06-20):
+	* 
+	*   "successful close does not guarantee that the data has
+	*   been successfully saved to disk, as the kernel defers
+	*   writes.  It is not common for a filesystem to flush
+	*   the  buffers  when  the stream is closed.  If you need
+	*   to be sure that the data is physically stored, use
+	*   fsync(2).  (It will depend on the disk hardware at this
+	*   point."
+	*
+	* This guarantees that the new state file will not overwrite
+	* the old state file before its contents are valid.
+	*                                                                                                                                                                               */
+	fflush(db_fptr);
 	fsync(fileno(db_fptr));
-
-	if(db->config->persistence_location){
-		dir_fd = open(db->config->persistence_location, O_RDONLY);
-	}else{
-		dir_fd = open(".", O_RDONLY);
-	}
-	if(dir_fd > 0){
-		fsync(dir_fd);
-		close(dir_fd);
-	}
 #endif
 	fclose(db_fptr);
 
