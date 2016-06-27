@@ -415,7 +415,9 @@ int mqtt3_db_backup(struct mosquitto_db *db, bool shutdown)
 	*
 	* This guarantees that the new state file will not overwrite
 	* the old state file before its contents are valid.
-	*                                                                                                                                                                               */
+	*
+	*/
+
 	fflush(db_fptr);
 	fsync(fileno(db_fptr));
 #endif
