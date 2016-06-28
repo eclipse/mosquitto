@@ -385,7 +385,7 @@ int mqtt3_db_backup(struct mosquitto_db *db, bool shutdown)
 	*/
 	rc = unlink(outfile);
 	if (rc != 0) {
-		if (rc != ENOENT) {
+		if (errno != ENOENT) {
 			_mosquitto_log_printf(NULL, MOSQ_LOG_INFO, "Error saving in-memory database, unable to remove %s.", outfile);
 			goto error;
 		}
