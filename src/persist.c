@@ -362,6 +362,36 @@ int mqtt3_db_backup(struct mosquitto_db *db, bool shutdown)
 	}
 	snprintf(outfile, len, "%s.new", db->config->persistence_filepath);
 	outfile[len] = '\0';
+
+#ifndef WIN32
+	/**
+ 	*
+	* If a system lost power during the rename operation at the
+	* end of this file the filesystem could potentially be left
+	* with a directory that looks like this after powerup:
+	*
+	* 24094 -rw-r--r--    2 root     root          4099 May 30 16:27 mosquitto.db
+	* 24094 -rw-r--r--    2 root     root          4099 May 30 16:27 mosquitto.db.new
+	*
+	* The 24094 shows that mosquitto.db.new is hard-linked to the
+	* same file as mosquitto.db.  If fopen(outfile, "wb") is naively
+	* called then mosquitto.db will be truncated and the database
+	* potentially corrupted.
+	*
+	* Any existing mosquitto.db.new file must be removed prior to
+	* opening to guarantee that it is not hard-linked to
+	* mosquitto.db.
+	*
+	*/
+	rc = unlink(outfile);
+	if (rc != 0) {
+		if (rc != ENOENT) {
+			_mosquitto_log_printf(NULL, MOSQ_LOG_INFO, "Error saving in-memory database, unable to remove %s.", outfile);
+			goto error;
+		}
+	}
+#endif
+
 	db_fptr = _mosquitto_fopen(outfile, "wb");
 	if(db_fptr == NULL){
 		_mosquitto_log_printf(NULL, MOSQ_LOG_INFO, "Error saving in-memory database, unable to open %s for writing.", outfile);
