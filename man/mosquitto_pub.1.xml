@@ -61,6 +61,12 @@
 					<arg><option>--key</option> <replaceable>file</replaceable></arg>
 					<arg><option>--ciphers</option> <replaceable>ciphers</replaceable></arg>
 					<arg><option>--tls-version</option> <replaceable>version</replaceable></arg>
+					<arg><option>--tls-engine</option> <replaceable>engine</replaceable></arg>
+					<arg><option>--keyform</option>
+					<group choice='req'>
+						<arg choice='plain'><replaceable>pem</replaceable></arg>
+						<arg choice='plain'><replaceable>engine</replaceable></arg>
+					</group></arg>
 					<arg><option>--insecure</option></arg>
 				</arg>
 				<arg>
@@ -151,6 +157,24 @@
 						in the client. See
 						<citerefentry><refentrytitle>ciphers</refentrytitle><manvolnum>1</manvolnum></citerefentry>
 						for more information.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>--tls-engine</option></term>
+				<listitem>
+					<para>A valid openssl engine id. These can be listed with
+						openssl engine command.</para>
+					<para>See also <option>--keyform</option>.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>--keyform</option></term>
+				<listitem>
+					<para>Specifies the type of key in use. This could be pem or
+						engine. This parameter is useful for example when a TPM
+						module is being used and the key has been created with
+						it. If not specified, pem keys are assumed</para>
+					<para>See also <option>--tls-engine</option>.</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>

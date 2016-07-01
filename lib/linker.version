@@ -44,6 +44,8 @@ MOSQ_1.0 {
 		mosquitto_tls_set;
 		mosquitto_tls_opts_set;
 		mosquitto_tls_psk_set;
+		mosquitto_tls_engine_set;
+		mosquitto_tls_keyform_set;
 		mosquitto_sub_topic_tokenise;
 		mosquitto_sub_topic_tokens_free;
 		mosquitto_topic_matches_sub;

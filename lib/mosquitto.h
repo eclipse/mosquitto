@@ -1105,6 +1105,44 @@ libmosq_EXPORT int mosquitto_tls_opts_set(struct mosquitto *mosq, int cert_reqs,
  */
 libmosq_EXPORT int mosquitto_tls_psk_set(struct mosquitto *mosq, const char *psk, const char *identity, const char *ciphers);
 
+/*
+ * Function: mosquitto_tls_engine_set
+ *
+ * Configure the client for TLS engine support. Must be called
+ * before <mosquitto_connect>.
+ *
+ * Parameters:
+ *  mosq -       a valid mosquitto instance.
+ *  engine_id - the engine ID that wants to be used.
+ *
+ * Returns:
+ *  MOSQ_ERR_SUCCESS - on success.
+ *  MOSQ_ERR_INVAL -   if the input parameters were invalid.
+ *
+ * See Also:
+ * <mosquitto_tls_set>
+ */
+libmosq_EXPORT int mosquitto_tls_engine_set(struct mosquitto *mosq, const char *engine_id);
+
+/*
+ * Function: mosquitto_tls_keyform_set
+ *
+ * Configure the client to treat the keyfile differently depending on its type.
+ * Must be called before <mosquitto_connect>.
+ *
+ * Parameters:
+ *  mosq -    a valid mosquitto instance.
+ *  keyform - the key type. Currently only "pem" or "engine" are supported.
+ *
+ * Returns:
+ *  MOSQ_ERR_SUCCESS - on success.
+ *  MOSQ_ERR_INVAL -   if the input parameters were invalid.
+ *
+ * See Also:
+ * <mosquitto_tls_set>
+ */
+libmosq_EXPORT int mosquitto_tls_keyform_set(struct mosquitto *mosq, const char *keyform);
+
 /* 
  * Function: mosquitto_connect_callback_set
  *
