@@ -200,7 +200,7 @@ static int callback_mqtt(struct libwebsocket_context *context,
 				return -1;
 			}
 
-			mqtt3_db_message_write(db, mosq);
+			db__message_write(db, mosq);
 
 			if(mosq->out_packet && !mosq->current_out_packet){
 				mosq->current_out_packet = mosq->out_packet;
