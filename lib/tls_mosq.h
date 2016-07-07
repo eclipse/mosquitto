@@ -26,6 +26,7 @@ Contributors:
 #ifdef WITH_TLS
 
 #include <openssl/ssl.h>
+#include <openssl/engine.h>
 #ifdef WITH_TLS_PSK
 #  if OPENSSL_VERSION_NUMBER >= 0x10000000
 #    define REAL_WITH_TLS_PSK

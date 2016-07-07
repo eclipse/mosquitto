@@ -783,6 +783,22 @@
 					</listitem>
 				</varlistentry>
 				<varlistentry>
+					<term><option>tls_engine</option> <replaceable>engine</replaceable></term>
+					<listitem>
+						<para>A valid openssl engine id. These can be listed with
+						openssl engine command.</para>
+					</listitem>
+				</varlistentry>
+				<varlistentry>
+					<term><option>tls_keyform</option> [ pem |	engine ]</term>
+					<listitem>
+						<para>Specifies the type of key in use. This could be pem or
+						engine. This parameter is useful for example when a TPM
+						module is being used and the key has been created with
+						it. If not specified, pem keys are assumed</para>
+					</listitem>
+				</varlistentry>
+				<varlistentry>
 					<term><option>crlfile</option> <replaceable>file path</replaceable></term>
 					<listitem>
 						<para>If you have <option>require_certificate</option>

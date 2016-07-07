@@ -220,7 +220,8 @@ void print_usage(void)
 	printf("                     [--will-topic [--will-payload payload] [--will-qos qos] [--will-retain]]\n");
 #ifdef WITH_TLS
 	printf("                     [{--cafile file | --capath dir} [--cert file] [--key file]\n");
-	printf("                      [--ciphers ciphers] [--insecure]]\n");
+	printf("                      [--ciphers ciphers] [--insecure] [--tls-engine engine]\n");
+	printf("                      [--keyform keyform]]\n");
 #ifdef WITH_TLS_PSK
 	printf("                     [--psk hex-key --psk-identity identity [--ciphers ciphers]]\n");
 #endif
@@ -271,6 +272,7 @@ void print_usage(void)
 	printf("            communication.\n");
 	printf(" --cert : client certificate for authentication, if required by server.\n");
 	printf(" --key : client private key for authentication, if required by server.\n");
+	printf(" --keyform : keyfile type, can be one of pem or engine.\n");
 	printf(" --ciphers : openssl compatible list of TLS ciphers to support.\n");
 	printf(" --tls-version : TLS protocol version, can be one of tlsv1.2 tlsv1.1 or tlsv1.\n");
 	printf("                 Defaults to tlsv1.2 if available.\n");
@@ -278,6 +280,7 @@ void print_usage(void)
 	printf("              hostname. Using this option means that you cannot be sure that the\n");
 	printf("              remote host is the server you wish to connect to and so is insecure.\n");
 	printf("              Do not use this option in a production environment.\n");
+	printf(" --tls-engine : toggles the usage of a SSL engine device.\n");
 #  ifdef WITH_TLS_PSK
 	printf(" --psk : pre-shared-key in hexadecimal (no leading 0x) to enable TLS-PSK mode.\n");
 	printf(" --psk-identity : client identity string for TLS-PSK mode.\n");

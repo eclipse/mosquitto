@@ -66,6 +66,8 @@ void client_config_cleanup(struct mosq_config *cfg)
 	free(cfg->keyfile);
 	free(cfg->ciphers);
 	free(cfg->tls_version);
+	free(cfg->tls_engine);
+	free(cfg->keyform);
 #  ifdef WITH_TLS_PSK
 	free(cfg->psk);
 	free(cfg->psk_identity);
@@ -223,6 +225,10 @@ int client_config_load(struct mosq_config *cfg, int pub_or_sub, int argc, char *
 		fprintf(stderr, "Error: Both certfile and keyfile must be provided if one of them is.\n");
 		return 1;
 	}
+	if((cfg->keyform && !cfg->keyfile)){
+		fprintf(stderr, "Error: keyfile must be specified if keyform is.\n");
+		return 1;
+	}
 #endif
 #ifdef WITH_TLS_PSK
 	if((cfg->cafile || cfg->capath) && cfg->psk){
@@ -339,6 +345,14 @@ int client_config_line_proc(struct mosq_config *cfg, int pub_or_sub, int argc, c
 				cfg->ciphers = strdup(argv[i+1]);
 			}
 			i++;
+		}else if(!strcmp(argv[i], "--tls-engine")){
+			if(i==argc-1){
+				fprintf(stderr, "Error: --tls-engine argument given but no engine_id specified.\n\n");
+				return 1;
+			}else{
+				cfg->tls_engine = strdup(argv[i+1]);
+			}
+			i++;
 #endif
 		}else if(!strcmp(argv[i], "-C")){
 			if(pub_or_sub == CLIENT_PUB){
@@ -430,6 +444,14 @@ int client_config_line_proc(struct mosq_config *cfg, int pub_or_sub, int argc, c
 				return 1;
 			}else{
 				cfg->keyfile = strdup(argv[i+1]);
+			}
+			i++;
+		}else if(!strcmp(argv[i], "--keyform")){
+			if(i==argc-1){
+				fprintf(stderr, "Error: --keyform argument given but no keyform specified.\n\n");
+				return 1;
+			}else{
+				cfg->keyform = strdup(argv[i+1]);
 			}
 			i++;
 #endif
@@ -793,6 +815,16 @@ int client_opts_set(struct mosquitto *mosq, struct mosq_config *cfg)
 	}
 	if(cfg->insecure && mosquitto_tls_insecure_set(mosq, true)){
 		if(!cfg->quiet) fprintf(stderr, "Error: Problem setting TLS insecure option.\n");
+		mosquitto_lib_cleanup();
+		return 1;
+	}
+	if(cfg->tls_engine && mosquitto_tls_engine_set(mosq, cfg->tls_engine)){
+		if(!cfg->quiet) fprintf(stderr, "Error: Problem setting TLS engine.\n");
+		mosquitto_lib_cleanup();
+		return 1;
+	}
+	if(cfg->keyform && mosquitto_tls_keyform_set(mosq, cfg->keyform)){
+		if(!cfg->quiet) fprintf(stderr, "Error: Problem setting keyform.\n");
 		mosquitto_lib_cleanup();
 		return 1;
 	}

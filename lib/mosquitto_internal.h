@@ -147,6 +147,13 @@ struct mosquitto_message_all{
 	struct mosquitto_message msg;
 };
 
+#ifdef WITH_TLS
+enum _mosquitto_keyform {
+	mosq_k_pem = 0,
+	mosq_k_engine = 1,
+};
+#endif
+
 struct mosquitto {
 	mosq_sock_t sock;
 #ifndef WITH_BROKER
@@ -181,6 +188,8 @@ struct mosquitto {
 	char *tls_psk_identity;
 	int tls_cert_reqs;
 	bool tls_insecure;
+	char *tls_engine;
+	enum _mosquitto_keyform tls_keyform;
 #endif
 	bool want_write;
 	bool want_connect;

@@ -777,6 +777,45 @@ int mosquitto_tls_insecure_set(struct mosquitto *mosq, bool value)
 }
 
 
+int mosquitto_tls_engine_set(struct mosquitto *mosq, const char *engine_id)
+{
+#ifdef WITH_TLS
+	if(!mosq) return MOSQ_ERR_INVAL;
+	ENGINE *e = ENGINE_by_id(engine_id);
+	if (!e)
+		return MOSQ_ERR_INVAL;
+	/* Release the structural reference from ENGINE_by_id() */
+	ENGINE_free(e);
+	mosq->tls_engine = mosquitto__strdup(engine_id);
+	return MOSQ_ERR_SUCCESS;
+#else
+	return MOSQ_ERR_NOT_SUPPORTED;
+#endif
+}
+
+
+int mosquitto_tls_keyform_set(struct mosquitto *mosq, const char *keyform)
+{
+#ifdef WITH_TLS
+	if(!mosq) return MOSQ_ERR_INVAL;
+
+	if (keyform){
+		if(!strcasecmp(keyform, "pem"))
+			mosq->tls_keyform = mosq_k_pem;
+		else if (!strcasecmp(keyform, "engine"))
+			mosq->tls_keyform = mosq_k_engine;
+		else
+			return MOSQ_ERR_INVAL;
+	}else{
+		mosq->tls_keyform = mosq_k_pem;
+	}
+	return MOSQ_ERR_SUCCESS;
+#else
+	return MOSQ_ERR_NOT_SUPPORTED;
+#endif
+}
+
+
 int mosquitto_tls_psk_set(struct mosquitto *mosq, const char *psk, const char *identity, const char *ciphers)
 {
 #ifdef REAL_WITH_TLS_PSK

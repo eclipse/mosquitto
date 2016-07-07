@@ -362,4 +362,14 @@ int mosquittopp::tls_psk_set(const char *psk, const char *identity, const char *
 	return mosquitto_tls_psk_set(m_mosq, psk, identity, ciphers);
 }
 
+int mosquittopp::tls_engine_set(const char *engine_id)
+{
+   return mosquitto_tls_engine_set(m_mosq, engine_id);
+}
+
+int mosquittopp::tls_keyform_set(const char *keyform)
+{
+   return mosquitto_tls_keyform_set(m_mosq, keyform);
+}
+
 }

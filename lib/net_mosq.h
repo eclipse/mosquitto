@@ -68,6 +68,8 @@ ssize_t net__write(struct mosquitto *mosq, void *buf, size_t count);
 #ifdef WITH_TLS
 int net__socket_apply_tls(struct mosquitto *mosq);
 int net__socket_connect_tls(struct mosquitto *mosq);
+UI_METHOD *net__get_ui_method(void);
+#define ENGINE_REF_FREE(e) if(e) ENGINE_free(e)
 #endif
 
 #endif
