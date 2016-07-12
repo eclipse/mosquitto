@@ -62,6 +62,7 @@ Please read the [Eclipse Foundation policy on accepting contributions via Git](h
 	```develop``` or ```fixes``` branch as appropriate to request review and
 	merge of the commits in your pushed branch.
 
+
 What happens next depends on the content of the patch. If it is 100% authored
 by the contributor and is less than 1000 lines (and meets the needs of the
 project), then it can be pulled into the main repository. If not, more steps
@@ -88,4 +89,4 @@ Create a new bug:
 Be sure to search for existing bugs before you create another one. Remember
 that contributions are always welcome!
 
-- [Create new Paho bug](https://github.com/eclipse/mosquitto/issues)
+- [Create new Mosquitto bug](https://github.com/eclipse/mosquitto/issues)

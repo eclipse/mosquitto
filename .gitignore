@@ -29,8 +29,10 @@ test/msgsps_sub
 test/msgsps_pub.dat
 test/msgsps_sub.dat
 test/broker/c/auth_plugin.so
+test/broker/c/*.test
 
 lib/cpp/libmosquittopp.so*
+lib/cpp/libmosquittopp.a
 lib/libmosquitto.so*
 lib/libmosquitto.a
 

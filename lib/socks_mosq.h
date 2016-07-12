@@ -17,7 +17,7 @@ Contributors:
 #ifndef SOCKS_MOSQ_H
 #define SOCKS_MOSQ_H
 
-int mosquitto__socks5_send(struct mosquitto *mosq);
-int mosquitto__socks5_read(struct mosquitto *mosq);
+int socks5__send(struct mosquitto *mosq);
+int socks5__read(struct mosquitto *mosq);
 
 #endif

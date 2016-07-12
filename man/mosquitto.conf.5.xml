@@ -52,7 +52,7 @@
 			usernames and passwords. Be sure to use network encryption if you
 			are using this option otherwise the username and password will be
 			vulnerable to interception.</para>
-		<para>When using certificate based encryption there are two options
+		<para>When using certificate based encryption there are three options
 			that affect authentication. The first is require_certificate, which
 			may be set to true or false. If false, the SSL/TLS component of the
 			client will verify the server but there is no requirement for the
@@ -60,14 +60,17 @@
 			limited to the MQTT built in username/password. If
 			require_certificate is true, the client must provide a valid
 			certificate in order to connect successfully. In this case, the
-			second option, use_identity_as_username, becomes relevant. If set
-			to true, the Common Name (CN) from the client certificate is used
-			instead of the MQTT username for access control purposes. The
-			password is not replaced because it is assumed that only
-			authenticated clients have valid certificates. If
+			second and third options, use_identity_as_username and
+			use_subject_as_username, become relevant. If set to true,
+			use_identity_as_user causes the Common Name (CN) from the client
+			certificate to be used instead of the MQTT username for access
+			control purposes. The password is not replaced because it is
+			assumed that only authenticated clients have valid certificates. If
 			use_identity_as_username is false, the client must authenticate as
-			normal (if required by password_file) through the MQTT
-			options.</para>
+			normal (if required by password_file) through the MQTT options. The
+			same principle applies for the use_subject_as_username option, but
+			the entire certificate subject is used as the username instead of
+			just the CN.</para>
 		<para>When using pre-shared-key based encryption through the psk_hint
 			and psk_file options, the client must provide a valid identity and
 			key in order to connect to the broker before any MQTT communication
@@ -77,9 +80,9 @@
 			authenticate using the MQTT username/password if using the
 			password_file option.</para>
 		<para>Both certificate and PSK based encryption are configured on a per-listener basis.</para>
-		<para>Authentication plugins can be created to replace the
-			password_file and psk_file options (as well as the ACL options)
-			with e.g. SQL based lookups.</para>
+		<para>Authentication plugins can be created to augment the
+			password_file, acl_file and psk_file options with e.g. SQL based
+			lookups.</para>
 		<para>It is possible to support multiple authentication schemes at
 			once. A config could be created that had a listener for all of the
 			different encryption options described above and hence a large
@@ -199,6 +202,13 @@
 						and access control. This allows custom
 						username/password and access control functions to be
 						created.</para>
+					<para>Can be specified multiple times to load multiple
+						plugins. The plugins will be processed in the order
+						that they are specified.</para>
+					<para>If <option>password_file</option>, or
+						<option>acl_file</option> are used in the config file
+						alongsize <option>auth_plugin</option>, the plugin
+						checks will run after the build in checks.</para>
 					<para>Not currently reloaded on reload signal.</para>
 				</listitem>
 			</varlistentry>
@@ -511,7 +521,7 @@
 						disconnected. These messages are included in the limit
 						imposed by max_queued_messages.  Defaults to
 						<replaceable>false</replaceable>.</para>
-					<para>Note that the MQTT v3.1 spec states that only QoS 1
+					<para>Note that the MQTT v3.1.1 spec states that only QoS 1
 						and 2 messages should be saved in this situation so
 						this is a non-standard option.</para>
 					<para>Reloaded on reload signal.</para>
@@ -522,16 +532,6 @@
 				<listitem>
 					<para>This is a synonym of the <option>persistence</option>
 						option.</para>
-					<para>Reloaded on reload signal.</para>
-				</listitem>
-			</varlistentry>
-			<varlistentry>
-				<term><option>retry_interval</option> <replaceable>seconds</replaceable></term>
-				<listitem>
-					<para>The integer number of seconds after a QoS=1 or QoS=2
-						message has been sent that mosquitto will wait before
-						retrying when no response is received. If unset,
-						defaults to 20 seconds.</para>
 					<para>Reloaded on reload signal.</para>
 				</listitem>
 			</varlistentry>
@@ -839,6 +839,28 @@
 							is <replaceable>true</replaceable>, the
 							<option>password_file</option> option will not be
 							used for this listener.</para>
+						<para>This takes priority over
+							<option>use_subject_as_username</option> if both
+							are set to <replaceable>true</replaceable>.</para>
+						<para>See also
+							<option>use_subject_as_username</option></para>
+					</listitem>
+				</varlistentry>
+				<varlistentry>
+					<term><option>use_subject_as_username</option> [ true | false ]</term>
+					<listitem>
+						<para>If <option>require_certificate</option> is
+							<replaceable>true</replaceable>, you may set
+							<option>use_subject_as_username</option> to
+							<replaceable>true</replaceable> to use the complete subject value
+							from the client certificate as a username. If this
+							is <replaceable>true</replaceable>, the
+							<option>password_file</option> option will not be
+							used for this listener.</para>
+						<para>The subject will be generated in a form similar
+							to <option>CN=test client,OU=Production,O=Server,L=Nottingham,ST=Nottinghamshire,C=GB</option>.</para>
+						<para>See also
+							<option>use_identity_as_username</option></para>
 					</listitem>
 				</varlistentry>
 			</variablelist>

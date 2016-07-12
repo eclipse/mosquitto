@@ -44,11 +44,8 @@ endif
 03 :
 	./03-publish-qos1.py
 	./03-publish-qos2.py
-	./03-publish-b2c-timeout-qos1.py
 	./03-publish-b2c-disconnect-qos1.py
-	./03-publish-c2b-timeout-qos2.py
 	./03-publish-c2b-disconnect-qos2.py
-	./03-publish-b2c-timeout-qos2.py
 	./03-publish-b2c-disconnect-qos2.py
 	./03-pattern-matching.py
 

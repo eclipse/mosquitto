@@ -57,8 +57,12 @@ WITH_MEMORY_TRACKING:=yes
 # information about the broker state.
 WITH_SYS_TREE:=yes
 
+# Build with systemd support. If enabled, mosquitto will notify systemd after
+# initialization. See README in service/systemd/ for more information.
+WITH_SYSTEMD:=no
+
 # Build with SRV lookup support.
-WITH_SRV:=yes
+WITH_SRV:=no
 
 # Build using libuuid for clientid generation (Linux only - please report if
 # supported on your platform).
@@ -76,15 +80,20 @@ WITH_DOCS:=yes
 # Build with client support for SOCK5 proxy.
 WITH_SOCKS:=yes
 
+# Strip executables and shared libraries on install.
+WITH_STRIP:=no
+
+# Build static libraries
+WITH_STATIC_LIBRARIES:=no
+
 # =============================================================================
 # End of user configuration
 # =============================================================================
 
 
 # Also bump lib/mosquitto.h, CMakeLists.txt,
-# installer/mosquitto.nsi, installer/mosquitto-cygwin.nsi
-VERSION=1.4.9
-TIMESTAMP:=$(shell date "+%F %T%z")
+# installer/mosquitto.nsi, installer/mosquitto64.nsi
+VERSION=1.4.90
 
 # Client library SO version. Bump if incompatible API/ABI changes are made.
 SOVERSION=1
@@ -93,6 +102,7 @@ SOVERSION=1
 XSLTPROC=xsltproc
 # For html generation
 DB_HTML_XSL=man/html.xsl
+TIMESTAMP:=$(shell date "+%F %T%z")
 
 #MANCOUNTRIES=en_GB
 
@@ -215,6 +225,11 @@ ifeq ($(WITH_SYS_TREE),yes)
 	BROKER_CFLAGS:=$(BROKER_CFLAGS) -DWITH_SYS_TREE
 endif
 
+ifeq ($(WITH_SYSTEMD),yes)
+	BROKER_CFLAGS:=$(BROKER_CFLAGS) -DWITH_SYSTEMD
+	BROKER_LIBS:=$(BROKER_LIBS) -lsystemd
+endif
+
 ifeq ($(WITH_SRV),yes)
 	LIB_CFLAGS:=$(LIB_CFLAGS) -DWITH_SRV
 	LIB_LIBS:=$(LIB_LIBS) -lcares
@@ -245,3 +260,7 @@ prefix=/usr/local
 mandir=${prefix}/share/man
 localedir=${prefix}/share/locale
 STRIP?=strip
+
+ifeq ($(WITH_STRIP),yes)
+	STRIP_OPTS:=-s --strip-program=${CROSS_COMPILE}${STRIP}
+endif

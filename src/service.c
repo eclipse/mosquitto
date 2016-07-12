@@ -18,7 +18,7 @@ Contributors:
 
 #include <windows.h>
 
-#include <memory_mosq.h>
+#include "memory_mosq.h"
 
 extern int run;
 SERVICE_STATUS_HANDLE service_handle = 0;
@@ -56,6 +56,7 @@ void __stdcall service_main(DWORD dwArgc, LPTSTR *lpszArgv)
 
 	service_handle = RegisterServiceCtrlHandler("mosquitto", service_handler);
 	if(service_handle){
+		memset(conf_path, 0, MAX_PATH + 20);
 		rc = GetEnvironmentVariable("MOSQUITTO_DIR", conf_path, MAX_PATH);
 		if(!rc || rc == MAX_PATH){
 			service_status.dwCurrentState = SERVICE_STOPPED;
@@ -64,7 +65,7 @@ void __stdcall service_main(DWORD dwArgc, LPTSTR *lpszArgv)
 		}
 		strcat(conf_path, "/mosquitto.conf");
 
-		argv = _mosquitto_malloc(sizeof(char *)*3);
+		argv = mosquitto__malloc(sizeof(char *)*3);
 		argv[0] = "mosquitto";
 		argv[1] = "-c";
 		argv[2] = conf_path;
@@ -78,7 +79,7 @@ void __stdcall service_main(DWORD dwArgc, LPTSTR *lpszArgv)
 		SetServiceStatus(service_handle, &service_status);
 
 		main(argc, argv);
-		_mosquitto_free(argv);
+		mosquitto__free(argv);
 
 		service_status.dwCurrentState = SERVICE_STOPPED;
 		SetServiceStatus(service_handle, &service_status);
@@ -91,7 +92,11 @@ void service_install(void)
 	char exe_path[MAX_PATH + 5];
 	SERVICE_DESCRIPTION svc_desc;
 
-	GetModuleFileName(NULL, exe_path, MAX_PATH);
+	memset(exe_path, 0, MAX_PATH+5);
+	if(GetModuleFileName(NULL, exe_path, MAX_PATH) == MAX_PATH){
+		fprintf(stderr, "Error: Path too long.\n");
+		return;
+	}
 	strcat(exe_path, " run");
 
 	sc_manager = OpenSCManager(NULL, NULL, SC_MANAGER_CREATE_SERVICE);
@@ -102,7 +107,7 @@ void service_install(void)
 				exe_path, NULL, NULL, NULL, NULL, NULL);
 
 		if(svc_handle){
-			svc_desc.lpDescription = "MQTT v3.1 broker";
+			svc_desc.lpDescription = "MQTT v3.1.1 broker";
 			ChangeServiceConfig2(svc_handle, SERVICE_CONFIG_DESCRIPTION, &svc_desc);
 			CloseServiceHandle(svc_handle);
 		}

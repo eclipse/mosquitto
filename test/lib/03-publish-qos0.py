@@ -62,6 +62,9 @@ try:
 finally:
     client.terminate()
     client.wait()
+    if rc:
+        (stdo, stde) = client.communicate()
+        print(stde)
     sock.close()
 
 exit(rc)

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013,2014 Roger Light <roger@atchoo.org>
+Copyright (c) 2013-2015 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -14,8 +14,8 @@ Contributors:
    Roger Light - initial implementation and documentation.
 */
 
-#ifndef _TLS_MOSQ_H_
-#define _TLS_MOSQ_H_
+#ifndef TLS_MOSQ_H
+#define TLS_MOSQ_H
 
 #ifdef WITH_TLS
 #  define SSL_DATA_PENDING(A) ((A)->ssl && SSL_pending((A)->ssl))
@@ -34,8 +34,8 @@ Contributors:
 #  endif
 #endif
 
-int _mosquitto_server_certificate_verify(int preverify_ok, X509_STORE_CTX *ctx);
-int _mosquitto_verify_certificate_hostname(X509 *cert, const char *hostname);
+int mosquitto__server_certificate_verify(int preverify_ok, X509_STORE_CTX *ctx);
+int mosquitto__verify_certificate_hostname(X509 *cert, const char *hostname);
 
 #endif /* WITH_TLS */
 
