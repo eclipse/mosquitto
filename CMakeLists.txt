@@ -32,6 +32,7 @@ if (WIN32)
 	set (DATAROOTDIR share)
 	set (MANDIR man)
 	set (SHAREDEST .)
+	set (PKGCONFIGDIR "${LIBDIR}/pkgconfig")
 	add_definitions("-D_CRT_SECURE_NO_WARNINGS")
 	add_definitions("-D_CRT_NONSTDC_NO_DEPRECATE")
 else (WIN32)
@@ -49,6 +50,7 @@ else (WIN32)
 	set (DATAROOTDIR share)
 	set (MANDIR "${DATAROOTDIR}/man")
 	set (SHAREDIR "${DATAROOTDIR}/mosquitto")
+	set (PKGCONFIGDIR "${LIBDIR}/pkgconfig")
 endif (WIN32)
 
 option(WITH_TLS
@@ -97,6 +99,16 @@ endif (${DOCUMENTATION} STREQUAL ON)
 # ========================================
 
 install(FILES mosquitto.conf aclfile.example pskfile.example pwfile.example DESTINATION "${SYSCONFDIR}")
+
+
+# ========================================
+# Install pkg-config files
+# ========================================
+
+configure_file(libmosquitto.pc.in libmosquitto.pc @ONLY)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libmosquitto.pc" DESTINATION "${PKGCONFIGDIR}")
+configure_file(libmosquittopp.pc.in libmosquittopp.pc @ONLY)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libmosquittopp.pc" DESTINATION "${PKGCONFIGDIR}")
 
 # ========================================
 # Testing
