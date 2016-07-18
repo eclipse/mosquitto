@@ -80,7 +80,7 @@ struct mosq_config {
 	int filter_out_count; /* sub */
 	char **unsub_topics; /* sub */
 	int unsub_topic_count; /* sub */
-	bool verbose; /* sub */
+	int verbose; /* sub */
 	bool eol; /* sub */
 	bool hex_output; /* sub */
 	int msg_count; /* sub */
