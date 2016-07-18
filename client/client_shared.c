@@ -749,6 +749,11 @@ int client_config_line_proc(struct mosq_config *cfg, int pub_or_sub, int argc, c
 				goto unknown_option;
 			}
 			cfg->verbose = 1;
+		}else if(!strcmp(argv[i], "-vv") || !strcmp(argv[i], "--extra-verbose")){
+			if(pub_or_sub == CLIENT_PUB){
+				goto unknown_option;
+			}
+			cfg->verbose = 2;
 		}else if(!strcmp(argv[i], "-x")){
 			if(pub_or_sub == CLIENT_PUB){
 				goto unknown_option;

@@ -19,6 +19,8 @@ Contributors:
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
+#include <time.h>
 #ifndef WIN32
 #include <unistd.h>
 #else
@@ -49,6 +51,9 @@ static void write_payload(const unsigned char *payload, int payloadlen, bool hex
 void my_message_callback(struct mosquitto *mosq, void *obj, const struct mosquitto_message *message)
 {
 	struct mosq_config *cfg;
+	struct tm *tm;
+	char date[32];
+	struct timeval tv;
 	int i;
 	bool res;
 
@@ -72,6 +77,12 @@ void my_message_callback(struct mosquitto *mosq, void *obj, const struct mosquit
 	}
 
 	if(cfg->verbose){
+		if(cfg->verbose > 1){
+			gettimeofday(&tv, NULL);
+			tm = localtime(&tv.tv_sec);
+			strftime(date, sizeof(date), "%F %T", tm);
+			printf("[%s.%06lu] ", date, tv.tv_usec);
+		}
 		if(message->payloadlen){
 			printf("%s ", message->topic);
 			write_payload(message->payload, message->payloadlen, cfg->hex_output);
@@ -198,6 +209,7 @@ void print_usage(void)
 	printf(" -u : provide a username (requires MQTT 3.1 broker)\n");
 	printf(" -U : unsubscribe from a topic. May be repeated.\n");
 	printf(" -v : print published messages verbosely.\n");
+	printf(" -vv : same as -v but also prints a timestamp of when the message was received.\n");
 	printf(" -V : specify the version of the MQTT protocol to use when connecting.\n");
 	printf("      Can be mqttv31 or mqttv311. Defaults to mqttv31.\n");
 	printf(" -x : print published message payloads as hexadecimal data.\n");
