@@ -14,14 +14,14 @@ Contributors:
    Roger Light - initial implementation and documentation.
 */
 
-#ifndef _MOSQUITTO_H_
-#define _MOSQUITTO_H_
+#ifndef MOSQUITTO_H
+#define MOSQUITTO_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#if defined(WIN32) && !defined(WITH_BROKER)
+#if defined(WIN32) && !defined(WITH_BROKER) && !defined(LIBMOSQUITTO_STATIC)
 #	ifdef libmosquitto_EXPORTS
 #		define libmosq_EXPORT  __declspec(dllexport)
 #	else
@@ -45,7 +45,7 @@ extern "C" {
 
 #define LIBMOSQUITTO_MAJOR 1
 #define LIBMOSQUITTO_MINOR 4
-#define LIBMOSQUITTO_REVISION 9
+#define LIBMOSQUITTO_REVISION 90
 /* LIBMOSQUITTO_VERSION_NUMBER looks like 1002001 for e.g. version 1.2.1. */
 #define LIBMOSQUITTO_VERSION_NUMBER (LIBMOSQUITTO_MAJOR*1000000+LIBMOSQUITTO_MINOR*1000+LIBMOSQUITTO_REVISION)
 
@@ -80,7 +80,9 @@ enum mosq_err_t {
 	MOSQ_ERR_UNKNOWN = 13,
 	MOSQ_ERR_ERRNO = 14,
 	MOSQ_ERR_EAI = 15,
-	MOSQ_ERR_PROXY = 16
+	MOSQ_ERR_PROXY = 16,
+	MOSQ_ERR_PLUGIN_DEFER = 17,
+	MOSQ_ERR_MALFORMED_UTF8 = 18
 };
 
 /* Error values */
@@ -279,9 +281,10 @@ libmosq_EXPORT int mosquitto_reinitialise(struct mosquitto *mosq, const char *id
  *
  * Returns:
  * 	MOSQ_ERR_SUCCESS -      on success.
- * 	MOSQ_ERR_INVAL -        if the input parameters were invalid.
- * 	MOSQ_ERR_NOMEM -        if an out of memory condition occurred.
- * 	MOSQ_ERR_PAYLOAD_SIZE - if payloadlen is too large.
+ * 	MOSQ_ERR_INVAL -          if the input parameters were invalid.
+ * 	MOSQ_ERR_NOMEM -          if an out of memory condition occurred.
+ * 	MOSQ_ERR_PAYLOAD_SIZE -   if payloadlen is too large.
+ * 	MOSQ_ERR_MALFORMED_UTF8 - if the topic is not valid UTF-8.
  */
 libmosq_EXPORT int mosquitto_will_set(struct mosquitto *mosq, const char *topic, int payloadlen, const void *payload, int qos, bool retain);
 
@@ -586,13 +589,14 @@ libmosq_EXPORT int mosquitto_disconnect(struct mosquitto *mosq);
  * 	retain -     set to true to make the message retained.
  *
  * Returns:
- * 	MOSQ_ERR_SUCCESS -      on success.
- * 	MOSQ_ERR_INVAL -        if the input parameters were invalid.
- * 	MOSQ_ERR_NOMEM -        if an out of memory condition occurred.
- * 	MOSQ_ERR_NO_CONN -      if the client isn't connected to a broker.
- *	MOSQ_ERR_PROTOCOL -     if there is a protocol error communicating with the
- *                          broker.
- * 	MOSQ_ERR_PAYLOAD_SIZE - if payloadlen is too large.
+ * 	MOSQ_ERR_SUCCESS -        on success.
+ * 	MOSQ_ERR_INVAL -          if the input parameters were invalid.
+ * 	MOSQ_ERR_NOMEM -          if an out of memory condition occurred.
+ * 	MOSQ_ERR_NO_CONN -        if the client isn't connected to a broker.
+ *	MOSQ_ERR_PROTOCOL -       if there is a protocol error communicating with the
+ *                            broker.
+ * 	MOSQ_ERR_PAYLOAD_SIZE -   if payloadlen is too large.
+ * 	MOSQ_ERR_MALFORMED_UTF8 - if the topic is not valid UTF-8
  *
  * See Also: 
  *	<mosquitto_max_inflight_messages_set>
@@ -614,10 +618,11 @@ libmosq_EXPORT int mosquitto_publish(struct mosquitto *mosq, int *mid, const cha
  *	qos -  the requested Quality of Service for this subscription.
  *
  * Returns:
- *	MOSQ_ERR_SUCCESS - on success.
- * 	MOSQ_ERR_INVAL -   if the input parameters were invalid.
- * 	MOSQ_ERR_NOMEM -   if an out of memory condition occurred.
- * 	MOSQ_ERR_NO_CONN - if the client isn't connected to a broker.
+ *	MOSQ_ERR_SUCCESS -        on success.
+ * 	MOSQ_ERR_INVAL -          if the input parameters were invalid.
+ * 	MOSQ_ERR_NOMEM -          if an out of memory condition occurred.
+ * 	MOSQ_ERR_NO_CONN -        if the client isn't connected to a broker.
+ * 	MOSQ_ERR_MALFORMED_UTF8 - if the topic is not valid UTF-8
  */
 libmosq_EXPORT int mosquitto_subscribe(struct mosquitto *mosq, int *mid, const char *sub, int qos);
 
@@ -635,10 +640,11 @@ libmosq_EXPORT int mosquitto_subscribe(struct mosquitto *mosq, int *mid, const c
  *	sub -  the unsubscription pattern.
  *
  * Returns:
- *	MOSQ_ERR_SUCCESS - on success.
- * 	MOSQ_ERR_INVAL -   if the input parameters were invalid.
- * 	MOSQ_ERR_NOMEM -   if an out of memory condition occurred.
- * 	MOSQ_ERR_NO_CONN - if the client isn't connected to a broker.
+ *	MOSQ_ERR_SUCCESS -        on success.
+ * 	MOSQ_ERR_INVAL -          if the input parameters were invalid.
+ * 	MOSQ_ERR_NOMEM -          if an out of memory condition occurred.
+ * 	MOSQ_ERR_NO_CONN -        if the client isn't connected to a broker.
+ * 	MOSQ_ERR_MALFORMED_UTF8 - if the topic is not valid UTF-8
  */
 libmosq_EXPORT int mosquitto_unsubscribe(struct mosquitto *mosq, int *mid, const char *sub);
 
@@ -671,9 +677,22 @@ libmosq_EXPORT int mosquitto_message_copy(struct mosquitto_message *dst, const s
  *	message - pointer to a mosquitto_message pointer to free.
  *
  * See Also:
- * 	<mosquitto_message_copy>
+ * 	<mosquitto_message_copy>, <mosquitto_message_free_contents>
  */
 libmosq_EXPORT void mosquitto_message_free(struct mosquitto_message **message);
+
+/*
+ * Function: mosquitto_message_free_contents
+ *
+ * Free a mosquitto_message struct contents, leaving the struct unaffected.
+ *
+ * Parameters:
+ *	message - pointer to a mosquitto_message struct to free its contents.
+ *
+ * See Also:
+ * 	<mosquitto_message_copy>, <mosquitto_message_free>
+ */
+libmosq_EXPORT void mosquitto_message_free_contents(struct mosquitto_message *message);
 
 /*
  * Function: mosquitto_loop
@@ -1298,13 +1317,7 @@ libmosq_EXPORT int mosquitto_max_inflight_messages_set(struct mosquitto *mosq, u
 /*
  * Function: mosquitto_message_retry_set
  *
- * Set the number of seconds to wait before retrying messages. This applies to
- * publish messages with QoS>0. May be called at any time.
- * 
- * Parameters:
- *  mosq -          a valid mosquitto instance.
- *  message_retry - the number of seconds to wait for a response before
- *                  retrying. Defaults to 20.
+ * This function now has no effect.
  */
 libmosq_EXPORT void mosquitto_message_retry_set(struct mosquitto *mosq, unsigned int message_retry);
 
@@ -1416,8 +1429,9 @@ libmosq_EXPORT const char *mosquitto_connack_string(int connack_code);
  *	count -    an int pointer to store the number of items in the topics array.
  *
  * Returns:
- *	MOSQ_ERR_SUCCESS - on success
- * 	MOSQ_ERR_NOMEM -   if an out of memory condition occurred.
+ *	MOSQ_ERR_SUCCESS -        on success
+ * 	MOSQ_ERR_NOMEM -          if an out of memory condition occurred.
+ * 	MOSQ_ERR_MALFORMED_UTF8 - if the topic is not valid UTF-8
  *
  * Example:
  *
@@ -1493,8 +1507,9 @@ libmosq_EXPORT int mosquitto_topic_matches_sub(const char *sub, const char *topi
  *   topic - the topic to check
  *
  * Returns:
- *   MOSQ_ERR_SUCCESS - for a valid topic
- *   MOSQ_ERR_INVAL - if the topic contains a + or a #, or if it is too long.
+ *   MOSQ_ERR_SUCCESS -        for a valid topic
+ *   MOSQ_ERR_INVAL -          if the topic contains a + or a #, or if it is too long.
+ * 	 MOSQ_ERR_MALFORMED_UTF8 - if sub or topic is not valid UTF-8
  *
  * See Also:
  *   <mosquitto_sub_topic_check>
@@ -1519,14 +1534,163 @@ libmosq_EXPORT int mosquitto_pub_topic_check(const char *topic);
  *   topic - the topic to check
  *
  * Returns:
- *   MOSQ_ERR_SUCCESS - for a valid topic
- *   MOSQ_ERR_INVAL - if the topic contains a + or a # that is in an invalid
- *                    position, or if it is too long.
+ *   MOSQ_ERR_SUCCESS -        for a valid topic
+ *   MOSQ_ERR_INVAL -          if the topic contains a + or a # that is in an
+ *                             invalid position, or if it is too long.
+ * 	 MOSQ_ERR_MALFORMED_UTF8 - if topic is not valid UTF-8
  *
  * See Also:
  *   <mosquitto_sub_topic_check>
  */
 libmosq_EXPORT int mosquitto_sub_topic_check(const char *topic);
+
+
+struct libmosquitto_will {
+	char *topic;
+	void *payload;
+	int payloadlen;
+	int qos;
+	bool retain;
+};
+
+struct libmosquitto_auth {
+	char *username;
+	char *password;
+};
+
+struct libmosquitto_tls {
+	char *cafile;
+	char *capath;
+	char *certfile;
+	char *keyfile;
+	char *ciphers;
+	char *tls_version;
+	int (*pw_callback)(char *buf, int size, int rwflag, void *userdata);
+	int cert_reqs;
+};
+
+/*
+ * Function: mosquitto_subscribe_simple
+ *
+ * Helper function to make subscribing to a topic and retrieving some messages
+ * very straightforward.
+ *
+ * This connects to a broker, subscribes to a topic, waits for msg_count
+ * messages to be received, then returns after disconnecting cleanly.
+ *
+ * Parameters:
+ *   messages - pointer to a "struct mosquitto_message *". The received
+ *              messages will be returned here. On error, this will be set to
+ *              NULL.
+ *   msg_count - the number of messages to retrieve.
+ *   want_retained - if set to true, stale retained messages will be treated as
+ *                   normal messages with regards to msg_count. If set to
+ *                   false, they will be ignored.
+ *   topic - the subscription topic to use (wildcards are allowed).
+ *   qos - the qos to use for the subscription.
+ *   host - the broker to connect to.
+ *   port - the network port the broker is listening on.
+ *   client_id - the client id to use, or NULL if a random client id should be
+ *               generated.
+ *   keepalive - the MQTT keepalive value.
+ *   clean_session - the MQTT clean session flag.
+ *   username - the username string, or NULL for no username authentication.
+ *   password - the password string, or NULL for an empty password.
+ *   will - a libmosquitto_will struct containing will information, or NULL for
+ *          no will.
+ *   tls - a libmosquitto_tls struct containing TLS related parameters, or NULL
+ *         for no use of TLS.
+ *
+ *
+ * Returns:
+ *   MOSQ_ERR_SUCCESS - on success
+ *   >0 - on error.
+ */
+libmosq_EXPORT int mosquitto_subscribe_simple(
+		struct mosquitto_message **messages,
+		int msg_count,
+		bool want_retained,
+		const char *topic,
+		int qos,
+		const char *host,
+		int port,
+		const char *client_id,
+		int keepalive,
+		bool clean_session,
+		const char *username,
+		const char *password,
+		const struct libmosquitto_will *will,
+		const struct libmosquitto_tls *tls);
+
+
+/*
+ * Function: mosquitto_subscribe_callback
+ *
+ * Helper function to make subscribing to a topic and processing some messages
+ * very straightforward.
+ *
+ * This connects to a broker, subscribes to a topic, then passes received
+ * messages to a user provided callback. If the callback returns a 1, it then
+ * disconnects cleanly and returns. 
+ *
+ * Parameters:
+ *   callback - a callback function in the following form:
+ *              int callback(struct mosquitto *mosq, void *obj, const struct mosquitto_message *message)
+ *              Note that this is the same as the normal on_message callback,
+ *              except that it returns an int.
+ *   userdata - user provided pointer that will be passed to the callback.
+ *   topic - the subscription topic to use (wildcards are allowed).
+ *   qos - the qos to use for the subscription.
+ *   host - the broker to connect to.
+ *   port - the network port the broker is listening on.
+ *   client_id - the client id to use, or NULL if a random client id should be
+ *               generated.
+ *   keepalive - the MQTT keepalive value.
+ *   clean_session - the MQTT clean session flag.
+ *   username - the username string, or NULL for no username authentication.
+ *   password - the password string, or NULL for an empty password.
+ *   will - a libmosquitto_will struct containing will information, or NULL for
+ *          no will.
+ *   tls - a libmosquitto_tls struct containing TLS related parameters, or NULL
+ *         for no use of TLS.
+ *
+ *
+ * Returns:
+ *   MOSQ_ERR_SUCCESS - on success
+ *   >0 - on error.
+ */
+libmosq_EXPORT int mosquitto_subscribe_callback(
+		int (*callback)(struct mosquitto *, void *, const struct mosquitto_message *),
+		void *userdata,
+		const char *topic,
+		int qos,
+		const char *host,
+		int port,
+		const char *client_id,
+		int keepalive,
+		bool clean_session,
+		const char *username,
+		const char *password,
+		const struct libmosquitto_will *will,
+		const struct libmosquitto_tls *tls);
+
+
+/*
+ * Function: mosquitto_validate_utf8
+ *
+ * Helper function to validate whether a UTF-8 string is valid, according to
+ * the UTF-8 spec and the MQTT additions.
+ *
+ * Parameters:
+ *   str - a string to check
+ *   len - the length of the string in bytes
+ *
+ * Returns:
+ *   MOSQ_ERR_SUCCESS -        on success
+ *   MOSQ_ERR_INVAL -          if str is NULL or len<0 or len>65536
+ *   MOSQ_ERR_MALFORMED_UTF8 - if str is not valid UTF-8
+ */
+libmosq_EXPORT int mosquitto_validate_utf8(const char *str, int len);
 
 #ifdef __cplusplus
 }

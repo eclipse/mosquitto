@@ -13,7 +13,7 @@ running = True
 try:
     while running:
         line = usb.readline()
-        mosq.publish("cc128/raw", line)
+        mosq.publish("sensors/cc128/raw", line)
 except usb.SerialException, e:
     running = False
 

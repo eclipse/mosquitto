@@ -67,12 +67,10 @@ try:
         conn.send(publish_packet)
 
         if mosq_test.expect_packet(conn, "pubrec", pubrec_packet):
-            # Should be repeated due to timeout
-            if mosq_test.expect_packet(conn, "pubrec", pubrec_packet):
-                conn.send(pubrel_packet)
+            conn.send(pubrel_packet)
 
-                if mosq_test.expect_packet(conn, "pubcomp", pubcomp_packet):
-                    rc = 0
+            if mosq_test.expect_packet(conn, "pubcomp", pubcomp_packet):
+                rc = 0
 
     conn.close()
 finally:

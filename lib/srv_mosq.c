@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013,2014 Roger Light <roger@atchoo.org>
+Copyright (c) 2013-2015 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -39,7 +39,7 @@ static void srv_callback(void *arg, int status, int timeouts, unsigned char *abu
 			mosquitto_connect(mosq, reply->host, reply->port, mosq->keepalive);
 		}
 	}else{
-		_mosquitto_log_printf(mosq, MOSQ_LOG_ERR, "Error: SRV lookup failed (%d).", status);
+		log__printf(mosq, MOSQ_LOG_ERR, "Error: SRV lookup failed (%d).", status);
 		/* FIXME - calling on_disconnect here isn't correct. */
 		pthread_mutex_lock(&mosq->callback_mutex);
 		if(mosq->on_disconnect){
@@ -69,19 +69,19 @@ int mosquitto_connect_srv(struct mosquitto *mosq, const char *host, int keepaliv
 	}else{
 #ifdef WITH_TLS
 		if(mosq->tls_cafile || mosq->tls_capath || mosq->tls_psk){
-			h = _mosquitto_malloc(strlen(host) + strlen("_secure-mqtt._tcp.") + 1);
+			h = mosquitto__malloc(strlen(host) + strlen("_secure-mqtt._tcp.") + 1);
 			if(!h) return MOSQ_ERR_NOMEM;
 			sprintf(h, "_secure-mqtt._tcp.%s", host);
 		}else{
 #endif
-			h = _mosquitto_malloc(strlen(host) + strlen("_mqtt._tcp.") + 1);
+			h = mosquitto__malloc(strlen(host) + strlen("_mqtt._tcp.") + 1);
 			if(!h) return MOSQ_ERR_NOMEM;
 			sprintf(h, "_mqtt._tcp.%s", host);
 #ifdef WITH_TLS
 		}
 #endif
 		ares_search(mosq->achan, h, ns_c_in, ns_t_srv, srv_callback, mosq);
-		_mosquitto_free(h);
+		mosquitto__free(h);
 	}
 
 	pthread_mutex_lock(&mosq->state_mutex);

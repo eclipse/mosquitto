@@ -11,7 +11,7 @@
 
 	<refnamediv>
 		<refname>libmosquitto</refname>
-		<refpurpose>MQTT version 3.1 client library</refpurpose>
+		<refpurpose>MQTT version 3.1.1 client library</refpurpose>
 	</refnamediv>
 
 	<refsect1>
@@ -279,11 +279,6 @@
 					<paramdef>unsigned int <parameter>max_inflight_messages</parameter></paramdef>
 			</funcprototype></funcsynopsis>
 
-			<funcsynopsis><funcprototype><funcdef>int <function>mosquitto_message_retry_set</function></funcdef>
-					<paramdef>struct mosquitto *<parameter>mosq</parameter></paramdef>
-					<paramdef>unsigned int <parameter>message_retry</parameter></paramdef>
-			</funcprototype></funcsynopsis>
-
 			<funcsynopsis><funcprototype><funcdef>int <function>mosquitto_reconnect_delay_set</function></funcdef>
 					<paramdef>struct mosquitto *<parameter>mosq</parameter></paramdef>
 					<paramdef>unsigned int <parameter>reconnect_delay</parameter></paramdef>
@@ -371,6 +366,43 @@
 					<paramdef>const char *<parameter>sub</parameter></paramdef>
 					<paramdef>const char *<parameter>topic</parameter></paramdef>
 					<paramdef>bool *<parameter>result</parameter></paramdef>
+			</funcprototype></funcsynopsis>
+		</refsect2>
+
+		<refsect2>
+			<title>Helper functions</title>
+
+			<funcsynopsis><funcprototype><funcdef>int <function>mosquitto_subscribe_simple</function></funcdef>
+					<paramdef>struct mosquitto_message **<parameter>message</parameter></paramdef>
+					<paramdef>int <parameter>msg_count</parameter></paramdef>
+					<paramdef>bool <parameter>want_retained</parameter></paramdef>
+					<paramdef>const char *<parameter>topic</parameter></paramdef>
+					<paramdef>int<parameter>qos</parameter></paramdef>
+					<paramdef>const char *<parameter>host</parameter></paramdef>
+					<paramdef>int <parameter>port</parameter></paramdef>
+					<paramdef>const char *<parameter>client_id</parameter></paramdef>
+					<paramdef>int <parameter>keepalive</parameter></paramdef>
+					<paramdef>bool <parameter>clean_session</parameter></paramdef>
+					<paramdef>const char *<parameter>username</parameter></paramdef>
+					<paramdef>const char *<parameter>password</parameter></paramdef>
+					<paramdef>const struct libmosquitto_will *<parameter>will</parameter></paramdef>
+					<paramdef>const struct libmosquitto_tls *<parameter>tls</parameter></paramdef>
+			</funcprototype></funcsynopsis>
+
+			<funcsynopsis><funcprototype><funcdef>int <function>mosquitto_subscribe_callback</function></funcdef>
+					<paramdef>int <parameter>(*callback)(struct mosquitto *, void *, const struct mosquitto_message *)</parameter></paramdef>
+					<paramdef>void *<parameter>userdata</parameter></paramdef>
+					<paramdef>const char *<parameter>topic</parameter></paramdef>
+					<paramdef>int <parameter>qos</parameter></paramdef>
+					<paramdef>const char *<parameter>host</parameter></paramdef>
+					<paramdef>int <parameter>port</parameter></paramdef>
+					<paramdef>const char *<parameter>client_id</parameter></paramdef>
+					<paramdef>int <parameter>keepalive</parameter></paramdef>
+					<paramdef>bool <parameter>clean_session</parameter></paramdef>
+					<paramdef>const char *<parameter>username</parameter></paramdef>
+					<paramdef>const char *<parameter>password</parameter></paramdef>
+					<paramdef>const struct libmosquitto_will *<parameter>will</parameter></paramdef>
+					<paramdef>const struct libmosquitto_tls *<parameter>tls</parameter></paramdef>
 			</funcprototype></funcsynopsis>
 		</refsect2>
 	</refsect1>

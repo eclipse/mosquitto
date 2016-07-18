@@ -15,7 +15,8 @@ rc = 1
 mid = 3265
 keepalive = 60
 connect_packet = mosq_test.gen_connect("pub-qos1-disco-test", keepalive=keepalive, clean_session=False)
-connack_packet = mosq_test.gen_connack(rc=0)
+connack1_packet = mosq_test.gen_connack(resv=0, rc=0)
+connack2_packet = mosq_test.gen_connack(resv=1, rc=0)
 
 subscribe_packet = mosq_test.gen_subscribe(mid, "qos1/disconnect/test", 1)
 suback_packet = mosq_test.gen_suback(mid, 1)
@@ -32,7 +33,7 @@ puback2_packet = mosq_test.gen_puback(mid)
 broker = mosq_test.start_broker(filename=os.path.basename(__file__))
 
 try:
-    sock = mosq_test.do_client_connect(connect_packet, connack_packet)
+    sock = mosq_test.do_client_connect(connect_packet, connack1_packet)
     sock.send(subscribe_packet)
 
     if mosq_test.expect_packet(sock, "suback", suback_packet):
@@ -51,7 +52,7 @@ try:
             sock.connect(("localhost", 1888))
             sock.send(connect_packet)
 
-            if mosq_test.expect_packet(sock, "connack", connack_packet):
+            if mosq_test.expect_packet(sock, "connack", connack2_packet):
 
                 if mosq_test.expect_packet(sock, "dup publish", publish_dup_packet):
                     sock.send(puback_packet)

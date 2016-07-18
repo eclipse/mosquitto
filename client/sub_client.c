@@ -19,6 +19,8 @@ Contributors:
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
+#include <time.h>
 #ifndef WIN32
 #include <unistd.h>
 #else
@@ -33,9 +35,25 @@ Contributors:
 bool process_messages = true;
 int msg_count = 0;
 
+static void write_payload(const unsigned char *payload, int payloadlen, bool hex)
+{
+	int i;
+
+	if(!hex){
+		(void)fwrite(payload, 1, payloadlen, stdout);
+	}else{
+		for(i=0; i<payloadlen; i++){
+			fprintf(stdout, "%x", payload[i]);
+		}
+	}
+}
+
 void my_message_callback(struct mosquitto *mosq, void *obj, const struct mosquitto_message *message)
 {
 	struct mosq_config *cfg;
+	struct tm *tm;
+	char date[32];
+	struct timeval tv;
 	int i;
 	bool res;
 
@@ -43,6 +61,12 @@ void my_message_callback(struct mosquitto *mosq, void *obj, const struct mosquit
 
 	assert(obj);
 	cfg = (struct mosq_config *)obj;
+
+	if(cfg->retained_only && !message->retain && process_messages){
+		process_messages = false;
+		mosquitto_disconnect(mosq);
+		return;
+	}
 
 	if(message->retain && cfg->no_retain) return;
 	if(cfg->filter_outs){
@@ -53,9 +77,15 @@ void my_message_callback(struct mosquitto *mosq, void *obj, const struct mosquit
 	}
 
 	if(cfg->verbose){
+		if(cfg->verbose > 1){
+			gettimeofday(&tv, NULL);
+			tm = localtime(&tv.tv_sec);
+			strftime(date, sizeof(date), "%F %T", tm);
+			printf("[%s.%06lu] ", date, tv.tv_usec);
+		}
 		if(message->payloadlen){
 			printf("%s ", message->topic);
-			fwrite(message->payload, 1, message->payloadlen, stdout);
+			write_payload(message->payload, message->payloadlen, cfg->hex_output);
 			if(cfg->eol){
 				printf("\n");
 			}
@@ -67,7 +97,7 @@ void my_message_callback(struct mosquitto *mosq, void *obj, const struct mosquit
 		fflush(stdout);
 	}else{
 		if(message->payloadlen){
-			fwrite(message->payload, 1, message->payloadlen, stdout);
+			write_payload(message->payload, message->payloadlen, cfg->hex_output);
 			if(cfg->eol){
 				printf("\n");
 			}
@@ -94,6 +124,9 @@ void my_connect_callback(struct mosquitto *mosq, void *obj, int result)
 	if(!result){
 		for(i=0; i<cfg->topic_count; i++){
 			mosquitto_subscribe(mosq, NULL, cfg->topics[i], cfg->qos);
+		}
+		for(i=0; i<cfg->unsub_topic_count; i++){
+			mosquitto_unsubscribe(mosq, NULL, cfg->unsub_topics[i]);
 		}
 	}else{
 		if(result && !cfg->quiet){
@@ -129,16 +162,16 @@ void print_usage(void)
 	mosquitto_lib_version(&major, &minor, &revision);
 	printf("mosquitto_sub is a simple mqtt client that will subscribe to a single topic and print all messages it receives.\n");
 	printf("mosquitto_sub version %s running on libmosquitto %d.%d.%d.\n\n", VERSION, major, minor, revision);
-	printf("Usage: mosquitto_sub [-c] [-h host] [-k keepalive] [-p port] [-q qos] [-R] -t topic ...\n");
-	printf("                     [-C msg_count] [-T filter_out]\n");
+	printf("Usage: mosquitto_sub {[-h host] [-p port] [-u username [-P password]] -t topic | -L URL [-t topic]}\n");
+	printf("                     [-c] [-k keepalive] [-q qos]\n");
+	printf("                     [-C msg_count] [-R] [--retained-only] [-T filter_out] [-U topic ...]\n");
 #ifdef WITH_SRV
 	printf("                     [-A bind_address] [-S]\n");
 #else
 	printf("                     [-A bind_address]\n");
 #endif
 	printf("                     [-i id] [-I id_prefix]\n");
-	printf("                     [-d] [-N] [--quiet] [-v]\n");
-	printf("                     [-u username [-P password]]\n");
+	printf("                     [-d] [-N] [--quiet] [-v] [-x]\n");
 	printf("                     [--will-topic [--will-payload payload] [--will-qos qos] [--will-retain]]\n");
 #ifdef WITH_TLS
 	printf("                     [{--cafile file | --capath dir} [--cert file] [--key file]\n");
@@ -161,8 +194,10 @@ void print_usage(void)
 	printf(" -I : define the client id as id_prefix appended with the process id. Useful for when the\n");
 	printf("      broker is using the clientid_prefixes option.\n");
 	printf(" -k : keep alive in seconds for this client. Defaults to 60.\n");
+	printf(" -L : specify user, password, hostname, port and topic as a URL in the form:\n");
+	printf("      mqtt(s)://[username[:password]@]host[:port]/topic\n");
 	printf(" -N : do not add an end of line character when printing the payload.\n");
-	printf(" -p : network port to connect to. Defaults to 1883.\n");
+	printf(" -p : network port to connect to. Defaults to 1883 for plain MQTT and 8883 for MQTT over TLS.\n");
 	printf(" -P : provide a password (requires MQTT 3.1 broker)\n");
 	printf(" -q : quality of service level to use for the subscription. Defaults to 0.\n");
 	printf(" -R : do not print stale messages (those with retain set).\n");
@@ -172,11 +207,16 @@ void print_usage(void)
 	printf(" -t : mqtt topic to subscribe to. May be repeated multiple times.\n");
 	printf(" -T : topic string to filter out of results. May be repeated.\n");
 	printf(" -u : provide a username (requires MQTT 3.1 broker)\n");
+	printf(" -U : unsubscribe from a topic. May be repeated.\n");
 	printf(" -v : print published messages verbosely.\n");
+	printf(" -vv : same as -v but also prints a timestamp of when the message was received.\n");
 	printf(" -V : specify the version of the MQTT protocol to use when connecting.\n");
 	printf("      Can be mqttv31 or mqttv311. Defaults to mqttv31.\n");
+	printf(" -x : print published message payloads as hexadecimal data.\n");
 	printf(" --help : display this message.\n");
 	printf(" --quiet : don't print error messages.\n");
+	printf(" --retained-only : only handle messages with the retained flag set, and exit when the\n");
+	printf("                   first non-retained message is received.\n");
 	printf(" --will-payload : payload for the client Will, which is sent by the broker in case of\n");
 	printf("                  unexpected disconnection. If not given and will-topic is set, a zero\n");
 	printf("                  length message will be sent.\n");
@@ -216,6 +256,7 @@ int main(int argc, char *argv[])
 	struct mosquitto *mosq = NULL;
 	int rc;
 	
+	memset(&cfg, 0, sizeof(struct mosq_config));
 	rc = client_config_load(&cfg, CLIENT_SUB, argc, argv);
 	if(rc){
 		client_config_cleanup(&cfg);
@@ -225,6 +266,11 @@ int main(int argc, char *argv[])
 		}else{
 			fprintf(stderr, "\nUse 'mosquitto_sub --help' to see usage.\n");
 		}
+		return 1;
+	}
+
+	if(cfg.no_retain && cfg.retained_only){
+		fprintf(stderr, "\nError: Combining '-R' and '--retained-only' makes no sense.\n");
 		return 1;
 	}
 

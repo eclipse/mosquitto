@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2010-2014 Roger Light <roger@atchoo.org>
+Copyright (c) 2010-2015 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -17,11 +17,18 @@ Contributors:
 #include <stdio.h>
 #include <string.h>
 
-#include <mosquitto_internal.h>
-#include <memory_mosq.h>
-#include <mqtt3_protocol.h>
+#include "mosquitto.h"
+#include "mosquitto_internal.h"
+#include "logging_mosq.h"
+#include "messages_mosq.h"
+#include "memory_mosq.h"
+#include "mqtt3_protocol.h"
+#include "net_mosq.h"
+#include "read_handle.h"
+#include "send_mosq.h"
+#include "util_mosq.h"
 
-int _mosquitto_will_set(struct mosquitto *mosq, const char *topic, int payloadlen, const void *payload, int qos, bool retain)
+int will__set(struct mosquitto *mosq, const char *topic, int payloadlen, const void *payload, int qos, bool retain)
 {
 	int rc = MOSQ_ERR_SUCCESS;
 
@@ -30,23 +37,17 @@ int _mosquitto_will_set(struct mosquitto *mosq, const char *topic, int payloadle
 	if(payloadlen > 0 && !payload) return MOSQ_ERR_INVAL;
 
 	if(mosquitto_pub_topic_check(topic)) return MOSQ_ERR_INVAL;
+	if(mosquitto_validate_utf8(topic, strlen(topic))) return MOSQ_ERR_MALFORMED_UTF8;
 
 	if(mosq->will){
-		if(mosq->will->topic){
-			_mosquitto_free(mosq->will->topic);
-			mosq->will->topic = NULL;
-		}
-		if(mosq->will->payload){
-			_mosquitto_free(mosq->will->payload);
-			mosq->will->payload = NULL;
-		}
-		_mosquitto_free(mosq->will);
-		mosq->will = NULL;
+		mosquitto__free(mosq->will->topic);
+		mosquitto__free(mosq->will->payload);
+		mosquitto__free(mosq->will);
 	}
 
-	mosq->will = _mosquitto_calloc(1, sizeof(struct mosquitto_message));
+	mosq->will = mosquitto__calloc(1, sizeof(struct mosquitto_message));
 	if(!mosq->will) return MOSQ_ERR_NOMEM;
-	mosq->will->topic = _mosquitto_strdup(topic);
+	mosq->will->topic = mosquitto__strdup(topic);
 	if(!mosq->will->topic){
 		rc = MOSQ_ERR_NOMEM;
 		goto cleanup;
@@ -57,7 +58,7 @@ int _mosquitto_will_set(struct mosquitto *mosq, const char *topic, int payloadle
 			rc = MOSQ_ERR_INVAL;
 			goto cleanup;
 		}
-		mosq->will->payload = _mosquitto_malloc(sizeof(char)*mosq->will->payloadlen);
+		mosq->will->payload = mosquitto__malloc(sizeof(char)*mosq->will->payloadlen);
 		if(!mosq->will->payload){
 			rc = MOSQ_ERR_NOMEM;
 			goto cleanup;
@@ -72,28 +73,27 @@ int _mosquitto_will_set(struct mosquitto *mosq, const char *topic, int payloadle
 
 cleanup:
 	if(mosq->will){
-		if(mosq->will->topic) _mosquitto_free(mosq->will->topic);
-		if(mosq->will->payload) _mosquitto_free(mosq->will->payload);
+		mosquitto__free(mosq->will->topic);
+		mosquitto__free(mosq->will->payload);
+
+		mosquitto__free(mosq->will);
+		mosq->will = NULL;
 	}
-	_mosquitto_free(mosq->will);
-	mosq->will = NULL;
 
 	return rc;
 }
 
-int _mosquitto_will_clear(struct mosquitto *mosq)
+int will__clear(struct mosquitto *mosq)
 {
 	if(!mosq->will) return MOSQ_ERR_SUCCESS;
 
-	if(mosq->will->topic){
-		_mosquitto_free(mosq->will->topic);
-		mosq->will->topic = NULL;
-	}
-	if(mosq->will->payload){
-		_mosquitto_free(mosq->will->payload);
-		mosq->will->payload = NULL;
-	}
-	_mosquitto_free(mosq->will);
+	mosquitto__free(mosq->will->topic);
+	mosq->will->topic = NULL;
+
+	mosquitto__free(mosq->will->payload);
+	mosq->will->payload = NULL;
+
+	mosquitto__free(mosq->will);
 	mosq->will = NULL;
 
 	return MOSQ_ERR_SUCCESS;

@@ -205,7 +205,9 @@ void print_usage(void)
 	mosquitto_lib_version(&major, &minor, &revision);
 	printf("mosquitto_pub is a simple mqtt client that will publish a message on a single topic and exit.\n");
 	printf("mosquitto_pub version %s running on libmosquitto %d.%d.%d.\n\n", VERSION, major, minor, revision);
-	printf("Usage: mosquitto_pub [-h host] [-k keepalive] [-p port] [-q qos] [-r] {-f file | -l | -n | -m message} -t topic\n");
+	printf("Usage: mosquitto_pub {[-h host] [-p port] [-u username [-P password]] -t topic | -L URL}\n");
+	printf("                     {-f file | -l | -n | -m message}\n");
+	printf("                     [-k keepalive] [-q qos] [-r]\n");
 #ifdef WITH_SRV
 	printf("                     [-A bind_address] [-S]\n");
 #else
@@ -236,11 +238,13 @@ void print_usage(void)
 	printf(" -I : define the client id as id_prefix appended with the process id. Useful for when the\n");
 	printf("      broker is using the clientid_prefixes option.\n");
 	printf(" -k : keep alive in seconds for this client. Defaults to 60.\n");
+	printf(" -L : specify user, password, hostname, port and topic as a URL in the form:\n");
+	printf("      mqtt(s)://[username[:password]@]host[:port]/topic\n");
 	printf(" -l : read messages from stdin, sending a separate message for each line.\n");
 	printf(" -m : message payload to send.\n");
 	printf(" -M : the maximum inflight messages for QoS 1/2..\n");
 	printf(" -n : send a null (zero length) message.\n");
-	printf(" -p : network port to connect to. Defaults to 1883.\n");
+	printf(" -p : network port to connect to. Defaults to 1883 for plain MQTT and 8883 for MQTT over TLS.\n");
 	printf(" -P : provide a password (requires MQTT 3.1 broker)\n");
 	printf(" -q : quality of service level to use for all messages. Defaults to 0.\n");
 	printf(" -r : message should be retained.\n");

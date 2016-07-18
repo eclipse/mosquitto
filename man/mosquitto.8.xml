@@ -29,7 +29,7 @@
 
 	<refsect1>
 		<title>Description</title>
-		<para><command>mosquitto</command> is a broker for the MQTT protocol version 3.1.</para>
+		<para><command>mosquitto</command> is a broker for the MQTT protocol version 3.1.1/3.1.</para>
 	</refsect1>
 
 	<refsect1>

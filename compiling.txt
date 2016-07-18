@@ -4,8 +4,10 @@ The following packages are required for mosquitto:
 * openssl (version 1.0.0 or greater if TLS-PSK support is needed, can be disabled)
 * c-ares (for DNS-SRV support, can be disabled)
 * libuuid (from e2fsprogs, can be disabled)
+* libsystemd (optional, disabled by default)
 * On Windows, the Redhat pthreads library is required if threading support is
   to be included.
+* libwebsockets (optional, disabled by default, version 1.3 and above)
 
 To compile, run "make", but also see the file config.mk for more details on the
 various options that can be compiled in.

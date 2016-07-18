@@ -1,5 +1,5 @@
-#ifndef _DUMMYPTHREAD_H_
-#define _DUMMYPTHREAD_H_
+#ifndef DUMMYPTHREAD_H
+#define DUMMYPTHREAD_H
 
 #define pthread_create(A, B, C, D)
 #define pthread_join(A, B)

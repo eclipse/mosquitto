@@ -11,8 +11,8 @@ import mosq_test
 rc = 1
 mid = 3265
 keepalive = 60
-connect_packet = mosq_test.gen_connect("pub-qos2-disco-test", keepalive=keepalive, clean_session=False)
-connack_packet = mosq_test.gen_connack(rc=0)
+connect_packet = mosq_test.gen_connect("pub-qos2-disco-test", keepalive=keepalive, clean_session=False, proto_ver=3)
+connack_packet = mosq_test.gen_connack(resv=0, rc=0)
 
 subscribe_packet = mosq_test.gen_subscribe(mid, "qos2/disconnect/test", 2)
 suback_packet = mosq_test.gen_suback(mid, 2)
@@ -24,10 +24,6 @@ pubrec_packet = mosq_test.gen_pubrec(mid)
 pubrel_packet = mosq_test.gen_pubrel(mid)
 pubrel_dup_packet = mosq_test.gen_pubrel(mid, dup=True)
 pubcomp_packet = mosq_test.gen_pubcomp(mid)
-
-mid = 3266
-publish2_packet = mosq_test.gen_publish("qos1/outgoing", qos=1, mid=mid, payload="outgoing-message")
-puback2_packet = mosq_test.gen_puback(mid)
 
 broker = mosq_test.start_broker(filename=os.path.basename(__file__))
 

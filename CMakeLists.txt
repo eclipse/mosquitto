@@ -11,7 +11,7 @@ project(mosquitto)
 cmake_minimum_required(VERSION 2.8)
 # Only for version 3 and up. cmake_policy(SET CMP0042 NEW)
 
-set (VERSION 1.4.9)
+set (VERSION 1.4.90)
 
 if (WIN32)
 	execute_process(COMMAND cmd /c echo %DATE% %TIME% OUTPUT_VARIABLE TIMESTAMP
@@ -77,7 +77,9 @@ if (${WITH_SOCKS} STREQUAL ON)
 	add_definitions("-DWITH_SOCKS")
 endif (${WITH_SOCKS} STREQUAL ON)
 
-option(WITH_SRV "Include SRV lookup support?" ON)
+option(WITH_SRV "Include SRV lookup support?" OFF)
+
+option(DOCUMENTATION "Build documentation?" ON)
 
 # ========================================
 # Include projects
@@ -86,10 +88,17 @@ option(WITH_SRV "Include SRV lookup support?" ON)
 add_subdirectory(lib)
 add_subdirectory(client)
 add_subdirectory(src)
-add_subdirectory(man)
+if (${DOCUMENTATION} STREQUAL ON)
+	add_subdirectory(man)
+endif (${DOCUMENTATION} STREQUAL ON)
 
 # ========================================
 # Install config file
 # ========================================
 
 install(FILES mosquitto.conf aclfile.example pskfile.example pwfile.example DESTINATION "${SYSCONFDIR}")
+
+# ========================================
+# Testing
+# ========================================
+add_custom_target(Tests COMMAND make -C ${mosquitto_SOURCE_DIR}/test test)

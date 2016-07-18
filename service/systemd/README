@@ -1,0 +1,9 @@
+Select appropriate systemd service based on your compile settings. If you
+enabled WITH_SYSTEMD, use mosquitto.service.notify, otherwise use
+mosquitto.service.simple. The service must be renamed to mosquitto.service
+before usage. Don't forget to change default paths in service file if you
+changed the default build settings.
+
+With WITH_SYSTEMD mosquitto will notify a complete startup after
+initialization. This means that follow-up units can be started after full
+initialization of mosquitto (i.e. sockets are opened).

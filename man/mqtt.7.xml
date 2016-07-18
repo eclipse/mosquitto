@@ -25,7 +25,7 @@
 		<para><command>MQTT</command> is a lightweight publish/subscribe
 		messaging protocol.  It is useful for use with low power sensors, but
 		is applicable to many scenarios.</para> <para>This manual describes
-		some of the features of MQTT version 3.1, to assist end users in
+		some of the features of MQTT version 3.1.1/3.1, to assist end users in
 		getting the most out of the protocol. For more complete information on
 		MQTT, see <uri type="webpage">http://mqtt.org/</uri>.</para>
 	</refsect1>

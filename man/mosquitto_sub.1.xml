@@ -11,31 +11,44 @@
 
 	<refnamediv>
 		<refname>mosquitto_sub</refname>
-		<refpurpose>an MQTT version 3.1 client for subscribing to topics</refpurpose>
+		<refpurpose>an MQTT version 3.1.1/3.1 client for subscribing to topics</refpurpose>
 	</refnamediv>
 
 	<refsynopsisdiv>
 		<cmdsynopsis>
 			<command>mosquitto_sub</command>
+			<group choice='req'>
+				<arg choice='plain'>
+					<arg><option>-h</option> <replaceable>hostname</replaceable></arg>
+					<arg><option>-p</option> <replaceable>port number</replaceable></arg>
+					<arg>
+						<arg><option>-u</option> <replaceable>username</replaceable></arg>
+						<arg><option>-P</option> <replaceable>password</replaceable></arg>
+					</arg>
+					<arg choice='plain' rep='repeat'><option>-t</option> <replaceable>message-topic</replaceable></arg>
+				</arg>
+				<arg choice='plain'>
+					<arg choice='plain'><option>-L</option> <replaceable>URL</replaceable></arg>
+					<arg choice='opt' rep='repeat'><option>-t</option> <replaceable>message-topic</replaceable></arg>
+				</arg>
+			</group>
 			<arg><option>-A</option> <replaceable>bind_address</replaceable></arg>
 			<arg><option>-c</option></arg>
 			<arg><option>-C</option> <replaceable>msg count</replaceable></arg>
 			<arg><option>-d</option></arg>
-			<arg><option>-h</option> <replaceable>hostname</replaceable></arg>
 			<arg><option>-i</option> <replaceable>client_id</replaceable></arg>
 			<arg><option>-I</option> <replaceable>client id prefix</replaceable></arg>
 			<arg><option>-k</option> <replaceable>keepalive time</replaceable></arg>
-			<arg><option>-p</option> <replaceable>port number</replaceable></arg>
 			<arg><option>-q</option> <replaceable>message QoS</replaceable></arg>
-			<arg><option>-R</option></arg>
+			<group choice='opt'>
+				<arg choice='plain'><option>-R</option></arg>
+				<arg choice='plain'><option>--retained-only</option></arg>
+			</group>
 			<arg><option>-S</option></arg>
 			<arg><option>-N</option></arg>
 			<arg><option>--quiet</option></arg>
 			<arg><option>-v</option></arg>
-			<arg>
-				<arg><option>-u</option> <replaceable>username</replaceable></arg>
-				<arg><option>-P</option> <replaceable>password</replaceable></arg>
-			</arg>
+			<arg><option>-x</option></arg>
 			<arg>
 				<option>--will-topic</option> <replaceable>topic</replaceable>
 				<arg><option>--will-payload</option> <replaceable>payload</replaceable></arg>
@@ -62,7 +75,7 @@
 			<arg><option>--proxy</option> <replaceable>socks-url</replaceable></arg>
 			<arg><option>-V</option> <replaceable>protocol-version</replaceable></arg>
 			<arg choice='opt' rep='repeat'><option>-T</option> <replaceable>filter-out</replaceable></arg>
-			<arg choice='plain' rep='repeat'><option>-t</option> <replaceable>message-topic</replaceable></arg>
+			<arg choice='opt' rep='repeat'><option>-U</option> <replaceable>unsub-topic</replaceable></arg>
 		</cmdsynopsis>
 		<cmdsynopsis>
 			<command>mosquitto_sub</command>
@@ -74,9 +87,15 @@
 
 	<refsect1>
 		<title>Description</title>
-		<para><command>mosquitto_sub</command> is a simple MQTT version 3.1
-		client that will subscribe to a topic and print the messages that it
-		receives.</para>
+		<para><command>mosquitto_sub</command> is a simple MQTT version 3.1.1
+			client that will subscribe to topics and print the messages that
+			it receives.</para>
+		<para>In addition to subscribing to topics,
+			<command>mosquitto_sub</command> can filter out received messages
+			so they are not printed (see the <option>-T</option> option) or
+			unsubscribe from topics (see the <option>-U</option> option).
+			Unsubscribing from topics is useful for clients connecting with
+			clean session set to false. </para>
 	</refsect1>
 
 	<refsect1>
@@ -245,6 +264,18 @@
 				</listitem>
 			</varlistentry>
 			<varlistentry>
+				<term><option>-L</option></term>
+				<term><option>--url</option></term>
+				<listitem>
+					<para>Specify specify user, password, hostname, port and
+						topic at once as a URL.  The URL must be in the form:
+						mqtt(s)://[username[:password]@]host[:port]/topic</para>
+					<para>If the scheme is mqtt:// then the port defaults to
+						1883. If the scheme is mqtts:// then the port defaults
+						to 8883.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
 				<term><option>-N</option></term>
 				<listitem>
 					<para>Do not append an end of line character to the payload
@@ -258,7 +289,9 @@
 				<term><option>-p</option></term>
 				<term><option>--port</option></term>
 				<listitem>
-					<para>Connect to the port specified instead of the default 1883.</para>
+					<para>Connect to the port specified. If not given, the
+						default of 1883 for plain MQTT or 8883 for MQTT over
+						TLS will be used.</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
@@ -266,9 +299,9 @@
 				<term><option>--pw</option></term>
 				<listitem>
 					<para>Provide a password to be used for authenticating with
-					the broker. Using this argument without also specifying a
-					username is invalid. This requires a broker that supports
-					MQTT v3.1.  See also the <option>--username</option> option.</para>
+						the broker. Using this argument without also specifying
+						a username is invalid. See also the
+						<option>--username</option> option.</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
@@ -345,6 +378,17 @@
 				</listitem>
 			</varlistentry>
 			<varlistentry>
+				<term><option>--retained-only</option></term>
+				<listitem>
+					<para>If this argument is given, only messages that are
+						received that have the retain bit set will be printed.
+						Messages with retain set are "stale", in that it is not
+						known when they were originally published. With this
+						argument in use, the receipt of the first non-stale
+						message will cause the client to exit.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
 				<term><option>-S</option></term>
 				<listitem>
 					<para>Use SRV lookups to determine which host to connect
@@ -401,8 +445,42 @@
 				<term><option>--username</option></term>
 				<listitem>
 					<para>Provide a username to be used for authenticating with
-					the broker. This requires a broker that supports MQTT v3.1.
-					See also the <option>--pw</option> argument.</para>
+						the broker. See also the <option>--pw</option>
+						argument.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-U</option></term>
+				<term><option>--unsubscribe</option></term>
+				<listitem>
+					<para>A topic that will be unsubscribed from. This may be
+						used on its own or in conjunction with the
+						<option>--topic</option> option and only makes sense
+						when used in conjunction with
+						<option>--clean-session</option>.</para>
+					<para>If used with <option>--topic</option> then
+						subscriptions will be processed before
+						unsubscriptions.</para>
+					<para>Note that it is only possible to unsubscribe from
+						subscriptions that have previously been made. It is not
+						possible to punch holes in wildcard subscriptions. For
+						example, subscribing to <option>sensors/#</option> and
+						then unsubscribing from
+						<option>sensors/+/temperature</option> as shown below
+						will still result in messages matching the
+						<option>sensors/+/temperature</option> being delivered
+						to the client.</para>
+					<itemizedlist mark="circle">
+						<listitem><para>mosquitto_sub <literal>-t</literal> sensors/# <literal>-U</literal> sensors/+/temperature <literal>-v</literal></para></listitem>
+					</itemizedlist>
+
+					<para>Note also that because retained messages are
+						published by the broker on receipt of a SUBSCRIBE
+						command, subscribing and unsubscribing to the same
+						topic may result in messages being received at the
+						client.</para>
+
+					<para>This option may be repeated to unsubscribe from multiple topics.</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
@@ -421,8 +499,8 @@
 				<listitem>
 					<para>Specify which version of the MQTT protocol should be
 						used when connecting to the rmeote broker. Can be
-						<option>mqttv31</option> or <option>mqttv311</option>.
-						Defaults to <option>mqttv31</option>.</para>
+						<option>mqttv311</option> or <option>mqttv31</option>.
+						Defaults to <option>mqttv311</option>.</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
@@ -453,6 +531,13 @@
 				<listitem>
 					<para>The topic on which to send a Will, in the event that
 					the client disconnects unexpectedly.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-x</option></term>
+				<listitem>
+					<para>Print published message payloads as hexadecimal
+						data.</para>
 				</listitem>
 			</varlistentry>
 		</variablelist>

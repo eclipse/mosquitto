@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2012-2014 Roger Light <roger@atchoo.org>
+Copyright (c) 2012-2015 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -30,10 +30,29 @@ struct mosquitto_auth_opt {
 
 /*
  * To create an authentication plugin you must include this file then implement
- * the functions listed below. The resulting code should then be compiled as a
- * shared library. Using gcc this can be achieved as follows:
+ * the functions listed in the "Plugin Functions" section below. The resulting
+ * code should then be compiled as a shared library. Using gcc this can be
+ * achieved as follows:
  *
  * gcc -I<path to mosquitto_plugin.h> -fPIC -shared plugin.c -o plugin.so
+ *
+ * Authentication plugins can implement one or both of authentication and
+ * access control. If your plugin does not wish to handle either of
+ * authentication or access control it should return MOSQ_ERR_PLUGIN_DEFER. In
+ * this case, the next plugin will handle it. If all plugins return
+ * MOSQ_ERR_PLUGIN_DEFER, the request will be denied.
+ *
+ * For each check, the following flow happens:
+ *
+ * * The default password file and/or acl file checks are made. If either one
+ *   of these is not defined, then they are considered to be deferred. If either
+ *   one accepts the check, no further checks are made. If an error occurs, the
+ *   check is denied
+ * * The first plugin does the check, if it returns anything other than
+ *   MOSQ_ERR_PLUGIN_DEFER, then the check returns immediately. If the plugin
+ *   returns MOSQ_ERR_PLUGIN_DEFER then the next plugin runs its check.
+ * * If the final plugin returns MOSQ_ERR_PLUGIN_DEFER, then access will be
+ *   denied.
  */
 
 /* =========================================================================
@@ -180,19 +199,26 @@ int mosquitto_auth_security_cleanup(void *user_data, struct mosquitto_auth_opt *
  * Function: mosquitto_auth_acl_check
  *
  * Called by the broker when topic access must be checked. access will be one
- * of MOSQ_ACL_READ (for subscriptions) or MOSQ_ACL_WRITE (for publish). Return
- * MOSQ_ERR_SUCCESS if access was granted, MOSQ_ERR_ACL_DENIED if access was
- * not granted, or MOSQ_ERR_UNKNOWN for an application specific error.
+ * of MOSQ_ACL_READ (for subscriptions) or MOSQ_ACL_WRITE (for publish).
+ *
+ * Return:
+ *	MOSQ_ERR_SUCCESS if access was granted.
+ *	MOSQ_ERR_ACL_DENIED if access was not granted.
+ *	MOSQ_ERR_UNKNOWN for an application specific error.
+ *	MOSQ_ERR_PLUGIN_DEFER if your plugin does not wish to handle this check.
  */
 int mosquitto_auth_acl_check(void *user_data, const char *clientid, const char *username, const char *topic, int access);
 
 /*
  * Function: mosquitto_auth_unpwd_check
  *
- * Called by the broker when a username/password must be checked. Return
- * MOSQ_ERR_SUCCESS if the user is authenticated, MOSQ_ERR_AUTH if
- * authentication failed, or MOSQ_ERR_UNKNOWN for an application specific
- * error.
+ * Called by the broker when a username/password must be checked.
+ *
+ * Return:
+ *	MOSQ_ERR_SUCCESS if the user is authenticated.
+ *	MOSQ_ERR_AUTH if authentication failed.
+ *	MOSQ_ERR_UNKNOWN for an application specific error.
+ *	MOSQ_ERR_PLUGIN_DEFER if your plugin does not wish to handle this check.
  */
 int mosquitto_auth_unpwd_check(void *user_data, const char *username, const char *password);
 
@@ -216,7 +242,7 @@ int mosquitto_auth_unpwd_check(void *user_data, const char *username, const char
  * Return value:
  *	Return 0 on success.
  *	Return >0 on failure.
- *	Return >0 if this function is not required.
+ *	Return MOSQ_ERR_PLUGIN_DEFER if your plugin does not wish to handle this check.
  */
 int mosquitto_auth_psk_key_get(void *user_data, const char *hint, const char *identity, char *key, int max_key_len);
 
