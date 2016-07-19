@@ -1018,6 +1018,25 @@ libmosq_EXPORT int mosquitto_tls_set(struct mosquitto *mosq,
 		int (*pw_callback)(char *buf, int size, int rwflag, void *userdata));
 
 /*
+ * Function: mosquitto_tls_server_name_set
+ *
+ * Configure the client to use SNI (server name indication). Must be called
+ * before <mosquitto_connect>.
+ *
+ * Parameters:
+ *  mosq -        a valid mosquitto instance.
+ *  server_name - the server name indication (SNI) to use during TLS handshake
+ *
+ * Returns:
+ *	MOSQ_ERR_SUCCESS - on success.
+ * 	MOSQ_ERR_INVAL -   if the input parameters were invalid.
+ *
+ * See Also:
+ *	<mosquitto_tls_set>
+ */
+libmosq_EXPORT int mosquitto_tls_server_name_set(struct mosquitto *mosq, const char *server_name);
+
+/*
  * Function: mosquitto_tls_insecure_set
  *
  * Configure verification of the server hostname in the server certificate. If

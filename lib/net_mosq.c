@@ -498,6 +498,18 @@ int net__socket_connect(struct mosquitto *mosq, const char *host, uint16_t port,
 			net__print_ssl_error(mosq);
 			return MOSQ_ERR_TLS;
 		}
+		if(mosq->tls_server_name){
+			ret = SSL_set_tlsext_host_name(mosq->ssl, mosq->tls_server_name);
+			if(ret != 1){
+#ifdef WITH_BROKER
+				log__printf(mosq, MOSQ_LOG_ERR, "Error: Unable to set server name, check bridge_server_name \"%s\".", mosq->tls_server_name);
+#else
+				log__printf(mosq, MOSQ_LOG_ERR, "Error: Unable to set server name \"%s\".", mosq->tls_server_name);
+#endif
+				COMPAT_CLOSE(sock);
+				return MOSQ_ERR_TLS;
+			}
+		}
 		SSL_set_ex_data(mosq->ssl, tls_ex_index_mosq, mosq);
 		bio = BIO_new_socket(sock, BIO_NOCLOSE);
 		if(!bio){

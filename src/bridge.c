@@ -81,6 +81,7 @@ int bridge__new(struct mosquitto_db *db, struct mosquitto__bridge *bridge)
 	new_context->tls_keyfile = new_context->bridge->tls_keyfile;
 	new_context->tls_cert_reqs = SSL_VERIFY_PEER;
 	new_context->tls_version = new_context->bridge->tls_version;
+	new_context->tls_server_name = new_context->bridge->tls_server_name;
 	new_context->tls_insecure = new_context->bridge->tls_insecure;
 #ifdef REAL_WITH_TLS_PSK
 	new_context->tls_psk_identity = new_context->bridge->tls_psk_identity;

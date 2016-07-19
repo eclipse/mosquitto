@@ -175,6 +175,7 @@ struct mosquitto {
 	char *tls_certfile;
 	char *tls_keyfile;
 	int (*tls_pw_callback)(char *buf, int size, int rwflag, void *userdata);
+	char *tls_server_name;
 	char *tls_version;
 	char *tls_ciphers;
 	char *tls_psk;
