@@ -30,7 +30,7 @@ after_build:
 
 artifacts:
   - name: Installer
-    path: 'installer/mosquitto-*-install-win32.exe'
+    path: 'installer/mosquitto-*-install-windows-x86.exe'
   #- path: build\src\Release\mosquitto.exe
   #- path: build\src\Release\mosquitto_passwd.exe
   #- path: build\lib\Release\mosquitto.dll

@@ -1,3 +1,66 @@
+1.5 - 2015xxxx
+==============
+
+Broker:
+- Reduce calls to malloc through the use of UHPA.
+- Outgoing messages with QoS>1 are no longer retried after a timeout period.
+  Messages will be retried when a client reconnects.  This change in behaviour
+  can be justified by considering when the timeout may have occurred.
+  * If a connection is unreliable and has dropped, but without one end
+    noticing, the messages will be retried on reconnection. Sending
+    additional PUBLISH or PUBREL would not have changed anything.
+  * If a client is overloaded/unable to respond/has a slow connection then
+    sending additional PUBLISH or PUBREL would not help the client catch
+    up. Once the backlog has cleared the client will respond. If it is not
+    able to catch up, sending additional duplicates would not help either.
+- Produce an error if two bridges share the same local_clientid.
+- Add use_subject_as_username option for certificate based client
+  authentication to use the entire certificate subject as a username, rather
+  than just the CN. Closes #469467.
+- Add systemd startup notification and services. Closes #471053.
+- Reduce unnecessary malloc and memcpy when receiving a message and storing
+  it. Closes #470258.
+- Change sys tree printing output. This format shouldn't be relied upon and
+  may change at any time. Closes #470246.
+- Minimum supported libwebsockets version is now 1.3.
+- Support for Windows XP has been dropped.
+- Miscellaneous fixes on Windows.
+- Bridge connections now default to using MQTT v3.1.1.
+- mosquitto_db_dump tool can now output some stats on clients.
+- perform utf-8 validation on incoming will, subscription and unsubscription
+  topics.
+
+Client library:
+- Outgoing messages with QoS>1 are no longer retried after a timeout period.
+  Messages will be retried when a client reconnects. 
+- DNS-SRV support is now disabled by default.
+- Add mosquitto_subscribe_simple() This is a helper function to make
+  retrieving messages from a broker very straightforward. Examples of its use
+  are in examples/subscribe_simple.
+- Add mosquitto_subscribe_callback() This is a helper function to make
+  processing messages from a broker very straightforward. An example of its use
+  is in examples/subscribe_simple.
+- Connections now default to using MQTT v3.1.1.
+- Add mosquitto_validate_utf8() to check whether a string is valid UTF-8
+  according to the UTF-8 spec and to the additional restrictions imposed by
+  the MQTT spec.
+- Topic inputs are checked for UTF-8 validity.
+
+Client:
+- Add -x to mosquitto_sub for printing the payload in hexadecimal format.
+- Add -U to mosquitto_sub for unsubscribing from topics.
+- Add --retained-only to mosquitto_sub to exit after receiving all retained
+  messages.
+- Connections now default to using MQTT v3.1.1.
+- Default to using port 8883 when using TLS.
+
+Build:
+- Add WITH_STRIP option (defaulting to "no") that when set to "yes" will strip
+  executables and shared libraries when installing.
+- Add WITH_STATIC_LIBRARIES (defaulting to "no") that when set to "yes" will
+  build and install static versions of the client libraries.
+
+
 1.4.9 - 20160603
 ================
 

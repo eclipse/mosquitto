@@ -16,7 +16,8 @@ rc = 1
 mid = 109
 keepalive = 60
 connect_packet = mosq_test.gen_connect("clean-qos2-test", keepalive=keepalive, clean_session=False)
-connack_packet = mosq_test.gen_connack(rc=0)
+connack1_packet = mosq_test.gen_connack(resv=0, rc=0)
+connack2_packet = mosq_test.gen_connack(resv=1, rc=0)
 
 disconnect_packet = mosq_test.gen_disconnect()
 
@@ -31,7 +32,7 @@ cmd = ['../../src/mosquitto', '-p', '1888']
 broker = mosq_test.start_broker(filename=os.path.basename(__file__), cmd=cmd)
 
 try:
-    sock = mosq_test.do_client_connect(connect_packet, connack_packet)
+    sock = mosq_test.do_client_connect(connect_packet, connack1_packet)
     sock.send(subscribe_packet)
 
     if mosq_test.expect_packet(sock, "suback", suback_packet):
@@ -42,7 +43,7 @@ try:
         pub.wait()
 
         # Now reconnect and expect a publish message.
-        sock = mosq_test.do_client_connect(connect_packet, connack_packet, timeout=30)
+        sock = mosq_test.do_client_connect(connect_packet, connack2_packet, timeout=30)
         if mosq_test.expect_packet(sock, "publish", publish_packet):
             sock.send(puback_packet)
             rc = 0

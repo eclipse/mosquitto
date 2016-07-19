@@ -41,6 +41,38 @@ mosqpp_EXPORT int lib_version(int *major, int *minor, int *revision);
 mosqpp_EXPORT int lib_init();
 mosqpp_EXPORT int lib_cleanup();
 mosqpp_EXPORT int topic_matches_sub(const char *sub, const char *topic, bool *result);
+mosqpp_EXPORT int validate_utf8(const char *str, int len);
+mosqpp_EXPORT int subscribe_simple(
+		struct mosquitto_message **messages,
+		int msg_count,
+		bool retained,
+		const char *topic,
+		int qos=0,
+		const char *host="localhost",
+		int port=1883,
+		const char *client_id=NULL,
+		int keepalive=60,
+		bool clean_session=true,
+		const char *username=NULL,
+		const char *password=NULL,
+		const struct libmosquitto_will *will=NULL,
+		const struct libmosquitto_tls *tls=NULL);
+
+mosqpp_EXPORT int subscribe_callback(
+		int (*callback)(struct mosquitto *, void *, const struct mosquitto_message *),
+		void *userdata,
+		const char *topic,
+		int qos=0,
+		bool retained=true,
+		const char *host="localhost",
+		int port=1883,
+		const char *client_id=NULL,
+		int keepalive=60,
+		bool clean_session=true,
+		const char *username=NULL,
+		const char *password=NULL,
+		const struct libmosquitto_will *will=NULL,
+		const struct libmosquitto_tls *tls=NULL);
 
 /*
  * Class: mosquittopp

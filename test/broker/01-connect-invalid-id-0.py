@@ -12,7 +12,7 @@ import mosq_test
 
 rc = 1
 keepalive = 10
-connect_packet = mosq_test.gen_connect("", keepalive=keepalive)
+connect_packet = mosq_test.gen_connect("", keepalive=keepalive, proto_ver=3)
 connack_packet = mosq_test.gen_connack(rc=2)
 
 cmd = ['../../src/mosquitto', '-p', '1888']

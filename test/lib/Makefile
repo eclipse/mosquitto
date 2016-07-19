@@ -30,10 +30,8 @@ c cpp : test-compile
 	./02-unsubscribe.py $@/02-unsubscribe.test
 	./03-publish-qos0.py $@/03-publish-qos0.test
 	./03-publish-qos0-no-payload.py $@/03-publish-qos0-no-payload.test
-	./03-publish-c2b-qos1-timeout.py $@/03-publish-c2b-qos1-timeout.test
 	./03-publish-c2b-qos1-disconnect.py $@/03-publish-c2b-qos1-disconnect.test
 	./03-publish-c2b-qos2.py $@/03-publish-c2b-qos2.test
-	./03-publish-c2b-qos2-timeout.py $@/03-publish-c2b-qos2-timeout.test
 	./03-publish-c2b-qos2-disconnect.py $@/03-publish-c2b-qos2-disconnect.test
 	./03-publish-b2c-qos1.py $@/03-publish-b2c-qos1.test
 	./03-publish-b2c-qos2.py $@/03-publish-b2c-qos2.test
@@ -47,6 +45,7 @@ ifeq ($(WITH_TLS),yes)
 endif
 	./09-util-topic-matching.py $@/09-util-topic-matching.test
 	./09-util-topic-tokenise.py $@/09-util-topic-tokenise.test
+	./09-util-utf8-validate.py $@/09-util-utf8-validate.test
 
 clean : 
 	$(MAKE) -C c clean

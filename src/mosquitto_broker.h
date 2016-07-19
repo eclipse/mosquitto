@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2014 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2015 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -17,7 +17,7 @@ Contributors:
 #ifndef MQTT3_H
 #define MQTT3_H
 
-#include <config.h>
+#include "config.h"
 #include <stdio.h>
 
 #ifdef WITH_WEBSOCKETS
@@ -39,11 +39,15 @@ Contributors:
 #  endif
 #endif
 
-#include <mosquitto_internal.h>
-#include <mosquitto_plugin.h>
-#include <mosquitto.h>
+#include "mosquitto_internal.h"
+#include "mosquitto_plugin.h"
+#include "mosquitto.h"
 #include "tls_mosq.h"
 #include "uthash.h"
+
+#define uhpa_malloc(size) mosquitto__malloc(size)
+#define uhpa_free(ptr) mosquitto__free(ptr)
+#include "uhpa.h"
 
 #ifndef __GNUC__
 #define __attribute__(attrib)
@@ -60,6 +64,75 @@ Contributors:
 
 #define WEBSOCKET_CLIENT -2
 
+/* ========================================
+ * UHPA data types
+ * ======================================== */
+
+/* See uhpa.h
+ *
+ * The idea here is that there is potentially a lot of wasted space (and time)
+ * in malloc calls for frequent, small heap allocations. This can happen if
+ * small payloads are used by clients or if individual topic elements are
+ * small.
+ *
+ * In both cases, a struct is used that includes a void* or char* pointer to
+ * point to the dynamically allocated memory used. To allocate and store a
+ * single byte needs the size of the pointer (8 bytes on a 64 bit
+ * architecture), the malloc overhead and the memory allocated itself (which
+ * will often be larger than the memory requested, on 64 bit Linux this can be
+ * a minimum of 24 bytes). To allocate and store 1 byte of heap memory we need
+ * in this example 32 bytes.
+ *
+ * UHPA uses a union to either store data in an array, or to allocate memory on
+ * the heap, depending on the size of the data being stored (this does mean
+ * that the size of the data must always be known). Setting the size of the
+ * array changes the point at which heap allocation starts. Using the example
+ * above, this means that an array size of 32 bytes should not result in any
+ * wasted space, and should be quicker as well. Certainly in the case of topic
+ * elements (e.g. "bar" out of "foo/bar/baz") it is likely that an array size
+ * of 32 bytes will mean that the majority of heap allocations are removed.
+ *
+ * You can change the size of MOSQ_PAYLOAD_UNION_SIZE and
+ * MOSQ_TOPIC_ELEMENT_UNION_SIZE to change the size of the uhpa array used for
+ * the payload (i.e. the published part of a message) and for topic elements
+ * (e.g. "foo", "bar" or "baz" in the topic "foo/bar/baz"), and so control the
+ * heap allocation threshold for these data types. You should look at your
+ * application to decide what values to set, but don't set them too high
+ * otherwise your overall memory usage will increase.
+ *
+ * You could use something like heaptrack
+ * http://milianw.de/blog/heaptrack-a-heap-memory-profiler-for-linux to
+ * profile heap allocations.
+ *
+ * I would suggest that values for MOSQ_PAYLOAD_UNION_SIZE and
+ * MOSQ_TOPIC_UNION_SIZE that are equivalent to
+ * sizeof(void*)+malloc_usable_size(malloc(1)) are a safe value that should
+ * reduce calls to malloc without increasing memory usage at all.
+ */
+#define MOSQ_PAYLOAD_UNION_SIZE 8
+typedef union {
+	void *ptr;
+	char array[MOSQ_PAYLOAD_UNION_SIZE];
+} mosquitto__payload_uhpa;
+#define UHPA_ALLOC_PAYLOAD(A) UHPA_ALLOC((A)->payload, (A)->payloadlen)
+#define UHPA_ACCESS_PAYLOAD(A) UHPA_ACCESS((A)->payload, (A)->payloadlen)
+#define UHPA_FREE_PAYLOAD(A) UHPA_FREE((A)->payload, (A)->payloadlen)
+#define UHPA_MOVE_PAYLOAD(DEST, SRC) UHPA_MOVE((DEST)->payload, (SRC)->payload, (SRC)->payloadlen)
+
+#define MOSQ_TOPIC_ELEMENT_UNION_SIZE 8
+typedef union {
+	char *ptr;
+	char array[MOSQ_TOPIC_ELEMENT_UNION_SIZE];
+} mosquitto__topic_element_uhpa;
+#define UHPA_ALLOC_TOPIC(A) UHPA_ALLOC((A)->topic, (A)->topic_len+1)
+#define UHPA_ACCESS_TOPIC(A) UHPA_ACCESS((A)->topic, (A)->topic_len+1)
+#define UHPA_FREE_TOPIC(A) UHPA_FREE((A)->topic, (A)->topic_len+1)
+#define UHPA_MOVE_TOPIC(DEST, SRC) UHPA_MOVE((DEST)->topic, (SRC)->topic, (SRC)->topic_len+1)
+
+/* ========================================
+ * End UHPA data types
+ * ======================================== */
+
 enum mosquitto_protocol {
 	mp_mqtt,
 	mp_mqttsn,
@@ -68,7 +141,7 @@ enum mosquitto_protocol {
 
 typedef uint64_t dbid_t;
 
-struct _mqtt3_listener {
+struct mosquitto__listener {
 	int fd;
 	char *host;
 	uint16_t port;
@@ -90,6 +163,7 @@ struct _mqtt3_listener {
 	SSL_CTX *ssl_ctx;
 	char *crlfile;
 	bool use_identity_as_username;
+	bool use_subject_as_username;
 	char *tls_version;
 #endif
 #ifdef WITH_WEBSOCKETS
@@ -99,7 +173,14 @@ struct _mqtt3_listener {
 #endif
 };
 
-struct mqtt3_config {
+struct mosquitto__auth_plugin_config
+{
+	char *path;
+	struct mosquitto_auth_opt *options;
+	int option_count;
+};
+
+struct mosquitto__config {
 	char *config_file;
 	char *acl_file;
 	bool allow_anonymous;
@@ -112,8 +193,8 @@ struct mqtt3_config {
 	char *clientid_prefixes;
 	bool connection_messages;
 	bool daemon;
-	struct _mqtt3_listener default_listener;
-	struct _mqtt3_listener *listeners;
+	struct mosquitto__listener default_listener;
+	struct mosquitto__listener *listeners;
 	int listener_count;
 	int log_dest;
 	int log_facility;
@@ -131,7 +212,6 @@ struct mqtt3_config {
 	char *pid_file;
 	char *psk_file;
 	bool queue_qos0_messages;
-	int retry_interval;
 	int sys_interval;
 	bool upgrade_outgoing_qos;
 	char *user;
@@ -141,28 +221,28 @@ struct mqtt3_config {
 	bool have_websockets_listener;
 #endif
 #ifdef WITH_BRIDGE
-	struct _mqtt3_bridge *bridges;
+	struct mosquitto__bridge *bridges;
 	int bridge_count;
 #endif
-	char *auth_plugin;
-	struct mosquitto_auth_opt *auth_options;
-	int auth_option_count;
+	struct mosquitto__auth_plugin_config *auth_plugins;
+	int auth_plugin_count;
 };
 
-struct _mosquitto_subleaf {
-	struct _mosquitto_subleaf *prev;
-	struct _mosquitto_subleaf *next;
+struct mosquitto__subleaf {
+	struct mosquitto__subleaf *prev;
+	struct mosquitto__subleaf *next;
 	struct mosquitto *context;
 	int qos;
 };
 
-struct _mosquitto_subhier {
-	struct _mosquitto_subhier *parent;
-	struct _mosquitto_subhier *children;
-	struct _mosquitto_subhier *next;
-	struct _mosquitto_subleaf *subs;
-	char *topic;
+struct mosquitto__subhier {
+	struct mosquitto__subhier *parent;
+	struct mosquitto__subhier *children;
+	struct mosquitto__subhier *next;
+	struct mosquitto__subleaf *subs;
 	struct mosquitto_msg_store *retained;
+	mosquitto__topic_element_uhpa topic;
+	uint16_t topic_len;
 };
 
 struct mosquitto_msg_store_load{
@@ -179,8 +259,8 @@ struct mosquitto_msg_store{
 	char **dest_ids;
 	int dest_id_count;
 	int ref_count;
-	char *topic;
-	void *payload;
+	char* topic;
+	mosquitto__payload_uhpa payload;
 	uint32_t payloadlen;
 	uint16_t source_mid;
 	uint16_t mid;
@@ -200,7 +280,7 @@ struct mosquitto_client_msg{
 	bool dup;
 };
 
-struct _mosquitto_unpwd{
+struct mosquitto__unpwd{
 	char *username;
 	char *password;
 #ifdef WITH_TLS
@@ -211,21 +291,21 @@ struct _mosquitto_unpwd{
 	UT_hash_handle hh;
 };
 
-struct _mosquitto_acl{
-	struct _mosquitto_acl *next;
+struct mosquitto__acl{
+	struct mosquitto__acl *next;
 	char *topic;
 	int access;
 	int ucount;
 	int ccount;
 };
 
-struct _mosquitto_acl_user{
-	struct _mosquitto_acl_user *next;
+struct mosquitto__acl_user{
+	struct mosquitto__acl_user *next;
 	char *username;
-	struct _mosquitto_acl *acl;
+	struct mosquitto__acl *acl;
 };
 
-struct _mosquitto_auth_plugin{
+struct mosquitto__auth_plugin{
 	void *lib;
 	void *user_data;
 	int (*plugin_version)(void);
@@ -240,27 +320,28 @@ struct _mosquitto_auth_plugin{
 
 struct mosquitto_db{
 	dbid_t last_db_id;
-	struct _mosquitto_subhier subs;
-	struct _mosquitto_unpwd *unpwd;
-	struct _mosquitto_acl_user *acl_list;
-	struct _mosquitto_acl *acl_patterns;
-	struct _mosquitto_unpwd *psk_id;
+	struct mosquitto__subhier subs;
+	struct mosquitto__unpwd *unpwd;
+	struct mosquitto__acl_user *acl_list;
+	struct mosquitto__acl *acl_patterns;
+	struct mosquitto__unpwd *psk_id;
 	struct mosquitto *contexts_by_id;
 	struct mosquitto *contexts_by_sock;
 	struct mosquitto *contexts_for_free;
 #ifdef WITH_BRIDGE
 	struct mosquitto **bridges;
 #endif
-	struct _clientid_index_hash *clientid_index_hash;
+	struct clientid__index_hash *clientid_index_hash;
 	struct mosquitto_msg_store *msg_store;
 	struct mosquitto_msg_store_load *msg_store_load;
 #ifdef WITH_BRIDGE
 	int bridge_count;
 #endif
 	int msg_store_count;
-	struct mqtt3_config *config;
+	struct mosquitto__config *config;
 	int persistence_changes;
-	struct _mosquitto_auth_plugin auth_plugin;
+	struct mosquitto__auth_plugin *auth_plugins;
+	int auth_plugin_count;
 #ifdef WITH_SYS_TREE
 	int subscription_count;
 	int retained_count;
@@ -268,7 +349,7 @@ struct mosquitto_db{
 	struct mosquitto *ll_for_free;
 };
 
-enum mqtt3_bridge_direction{
+enum mosquitto__bridge_direction{
 	bd_out = 0,
 	bd_in = 1,
 	bd_both = 2
@@ -281,10 +362,10 @@ enum mosquitto_bridge_start_type{
 	bst_once = 3
 };
 
-struct _mqtt3_bridge_topic{
+struct mosquitto__bridge_topic{
 	char *topic;
 	int qos;
-	enum mqtt3_bridge_direction direction;
+	enum mosquitto__bridge_direction direction;
 	char *local_prefix;
 	char *remote_prefix;
 	char *local_topic; /* topic prefixed with local_prefix */
@@ -296,7 +377,7 @@ struct bridge_address{
 	int port;
 };
 
-struct _mqtt3_bridge{
+struct mosquitto__bridge{
 	char *name;
 	struct bridge_address *addresses;
 	int cur_address;
@@ -307,10 +388,10 @@ struct _mqtt3_bridge{
 	bool try_private_accepted;
 	bool clean_session;
 	int keepalive;
-	struct _mqtt3_bridge_topic *topics;
+	struct mosquitto__bridge_topic *topics;
 	int topic_count;
 	bool topic_remapping;
-	enum _mosquitto_protocol protocol_version;
+	enum mosquitto__protocol protocol_version;
 	time_t restart_t;
 	char *remote_clientid;
 	char *remote_username;
@@ -357,115 +438,113 @@ struct libws_mqtt_data {
  * Main functions
  * ============================================================ */
 int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int listensock_count, int listener_max);
-struct mosquitto_db *_mosquitto_get_db(void);
+struct mosquitto_db *mosquitto__get_db(void);
 
 /* ============================================================
  * Config functions
  * ============================================================ */
 /* Initialise config struct to default values. */
-void mqtt3_config_init(struct mqtt3_config *config);
+void config__init(struct mosquitto__config *config);
 /* Parse command line options into config. */
-int mqtt3_config_parse_args(struct mqtt3_config *config, int argc, char *argv[]);
+int config__parse_args(struct mosquitto__config *config, int argc, char *argv[]);
 /* Read configuration data from config->config_file into config.
  * If reload is true, don't process config options that shouldn't be reloaded (listeners etc)
  * Returns 0 on success, 1 if there is a configuration error or if a file cannot be opened.
  */
-int mqtt3_config_read(struct mqtt3_config *config, bool reload);
+int config__read(struct mosquitto__config *config, bool reload);
 /* Free all config data. */
-void mqtt3_config_cleanup(struct mqtt3_config *config);
+void config__cleanup(struct mosquitto__config *config);
 
-int drop_privileges(struct mqtt3_config *config, bool temporary);
+int drop_privileges(struct mosquitto__config *config, bool temporary);
 int restore_privileges(void);
 
 /* ============================================================
  * Server send functions
  * ============================================================ */
-int _mosquitto_send_connack(struct mosquitto *context, int ack, int result);
-int _mosquitto_send_suback(struct mosquitto *context, uint16_t mid, uint32_t payloadlen, const void *payload);
+int send__connack(struct mosquitto *context, int ack, int result);
+int send__suback(struct mosquitto *context, uint16_t mid, uint32_t payloadlen, const void *payload);
 
 /* ============================================================
  * Network functions
  * ============================================================ */
-int mqtt3_socket_accept(struct mosquitto_db *db, mosq_sock_t listensock);
-int mqtt3_socket_listen(struct _mqtt3_listener *listener);
-int _mosquitto_socket_get_address(mosq_sock_t sock, char *buf, int len);
+int net__socket_accept(struct mosquitto_db *db, mosq_sock_t listensock);
+int net__socket_listen(struct mosquitto__listener *listener);
+int net__socket_get_address(mosq_sock_t sock, char *buf, int len);
 
 /* ============================================================
  * Read handling functions
  * ============================================================ */
-int mqtt3_packet_handle(struct mosquitto_db *db, struct mosquitto *context);
-int mqtt3_handle_connack(struct mosquitto_db *db, struct mosquitto *context);
-int mqtt3_handle_connect(struct mosquitto_db *db, struct mosquitto *context);
-int mqtt3_handle_disconnect(struct mosquitto_db *db, struct mosquitto *context);
-int mqtt3_handle_publish(struct mosquitto_db *db, struct mosquitto *context);
-int mqtt3_handle_subscribe(struct mosquitto_db *db, struct mosquitto *context);
-int mqtt3_handle_unsubscribe(struct mosquitto_db *db, struct mosquitto *context);
+int handle__packet(struct mosquitto_db *db, struct mosquitto *context);
+int handle__connack(struct mosquitto_db *db, struct mosquitto *context);
+int handle__connect(struct mosquitto_db *db, struct mosquitto *context);
+int handle__disconnect(struct mosquitto_db *db, struct mosquitto *context);
+int handle__publish(struct mosquitto_db *db, struct mosquitto *context);
+int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context);
+int handle__unsubscribe(struct mosquitto_db *db, struct mosquitto *context);
 
 /* ============================================================
  * Database handling
  * ============================================================ */
-int mqtt3_db_open(struct mqtt3_config *config, struct mosquitto_db *db);
-int mqtt3_db_close(struct mosquitto_db *db);
+int db__open(struct mosquitto__config *config, struct mosquitto_db *db);
+int db__close(struct mosquitto_db *db);
 #ifdef WITH_PERSISTENCE
-int mqtt3_db_backup(struct mosquitto_db *db, bool shutdown);
-int mqtt3_db_restore(struct mosquitto_db *db);
+int persist__backup(struct mosquitto_db *db, bool shutdown);
+int persist__restore(struct mosquitto_db *db);
 #endif
-void mqtt3_db_limits_set(int inflight, int queued);
+void db__limits_set(int inflight, int queued);
 /* Return the number of in-flight messages in count. */
-int mqtt3_db_message_count(int *count);
-int mqtt3_db_message_delete(struct mosquitto_db *db, struct mosquitto *context, uint16_t mid, enum mosquitto_msg_direction dir);
-int mqtt3_db_message_insert(struct mosquitto_db *db, struct mosquitto *context, uint16_t mid, enum mosquitto_msg_direction dir, int qos, bool retain, struct mosquitto_msg_store *stored);
-int mqtt3_db_message_release(struct mosquitto_db *db, struct mosquitto *context, uint16_t mid, enum mosquitto_msg_direction dir);
-int mqtt3_db_message_update(struct mosquitto *context, uint16_t mid, enum mosquitto_msg_direction dir, enum mosquitto_msg_state state);
-int mqtt3_db_message_write(struct mosquitto_db *db, struct mosquitto *context);
-int mqtt3_db_messages_delete(struct mosquitto_db *db, struct mosquitto *context);
-int mqtt3_db_messages_easy_queue(struct mosquitto_db *db, struct mosquitto *context, const char *topic, int qos, uint32_t payloadlen, const void *payload, int retain);
-int mqtt3_db_messages_queue(struct mosquitto_db *db, const char *source_id, const char *topic, int qos, int retain, struct mosquitto_msg_store **stored);
-int mqtt3_db_message_store(struct mosquitto_db *db, const char *source, uint16_t source_mid, const char *topic, int qos, uint32_t payloadlen, const void *payload, int retain, struct mosquitto_msg_store **stored, dbid_t store_id);
-int mqtt3_db_message_store_find(struct mosquitto *context, uint16_t mid, struct mosquitto_msg_store **stored);
-void mosquitto__db_msg_store_add(struct mosquitto_db *db, struct mosquitto_msg_store *store);
-void mosquitto__db_msg_store_remove(struct mosquitto_db *db, struct mosquitto_msg_store *store);
-void mosquitto__db_msg_store_deref(struct mosquitto_db *db, struct mosquitto_msg_store **store);
-void mosquitto__db_msg_store_clean(struct mosquitto_db *db);
-/* Check all messages waiting on a client reply and resend if timeout has been exceeded. */
-int mqtt3_db_message_timeout_check(struct mosquitto_db *db, unsigned int timeout);
-int mqtt3_db_message_reconnect_reset(struct mosquitto_db *db, struct mosquitto *context);
-int mqtt3_retain_queue(struct mosquitto_db *db, struct mosquitto *context, const char *sub, int sub_qos);
-void mqtt3_db_sys_update(struct mosquitto_db *db, int interval, time_t start_time);
-void mqtt3_db_vacuum(void);
+int db__message_count(int *count);
+int db__message_delete(struct mosquitto_db *db, struct mosquitto *context, uint16_t mid, enum mosquitto_msg_direction dir);
+int db__message_insert(struct mosquitto_db *db, struct mosquitto *context, uint16_t mid, enum mosquitto_msg_direction dir, int qos, bool retain, struct mosquitto_msg_store *stored);
+int db__message_release(struct mosquitto_db *db, struct mosquitto *context, uint16_t mid, enum mosquitto_msg_direction dir);
+int db__message_update(struct mosquitto *context, uint16_t mid, enum mosquitto_msg_direction dir, enum mosquitto_msg_state state);
+int db__message_write(struct mosquitto_db *db, struct mosquitto *context);
+void db__message_dequeue_first(struct mosquitto *context);
+int db__messages_delete(struct mosquitto_db *db, struct mosquitto *context);
+int db__messages_easy_queue(struct mosquitto_db *db, struct mosquitto *context, const char *topic, int qos, uint32_t payloadlen, const void *payload, int retain);
+int db__message_store(struct mosquitto_db *db, const char *source, uint16_t source_mid, char *topic, int qos, uint32_t payloadlen, mosquitto__payload_uhpa *payload, int retain, struct mosquitto_msg_store **stored, dbid_t store_id);
+int db__message_store_find(struct mosquitto *context, uint16_t mid, struct mosquitto_msg_store **stored);
+void db__msg_store_add(struct mosquitto_db *db, struct mosquitto_msg_store *store);
+void db__msg_store_remove(struct mosquitto_db *db, struct mosquitto_msg_store *store);
+void db__msg_store_deref(struct mosquitto_db *db, struct mosquitto_msg_store **store);
+void db__msg_store_clean(struct mosquitto_db *db);
+int db__message_reconnect_reset(struct mosquitto_db *db, struct mosquitto *context);
+void db__vacuum(void);
+void sys__update(struct mosquitto_db *db, int interval, time_t start_time);
 
 /* ============================================================
  * Subscription functions
  * ============================================================ */
-int mqtt3_sub_add(struct mosquitto_db *db, struct mosquitto *context, const char *sub, int qos, struct _mosquitto_subhier *root);
-int mqtt3_sub_remove(struct mosquitto_db *db, struct mosquitto *context, const char *sub, struct _mosquitto_subhier *root);
-int mqtt3_sub_search(struct mosquitto_db *db, struct _mosquitto_subhier *root, const char *source_id, const char *topic, int qos, int retain, struct mosquitto_msg_store *stored);
-void mqtt3_sub_tree_print(struct _mosquitto_subhier *root, int level);
-int mqtt3_subs_clean_session(struct mosquitto_db *db, struct mosquitto *context);
+int sub__add(struct mosquitto_db *db, struct mosquitto *context, const char *sub, int qos, struct mosquitto__subhier *root);
+int sub__remove(struct mosquitto_db *db, struct mosquitto *context, const char *sub, struct mosquitto__subhier *root);
+void sub__tree_print(struct mosquitto__subhier *root, int level);
+int sub__clean_session(struct mosquitto_db *db, struct mosquitto *context);
+int sub__retain_queue(struct mosquitto_db *db, struct mosquitto *context, const char *sub, int sub_qos);
+int sub__messages_queue(struct mosquitto_db *db, const char *source_id, const char *topic, int qos, int retain, struct mosquitto_msg_store **stored);
 
 /* ============================================================
  * Context functions
  * ============================================================ */
-struct mosquitto *mqtt3_context_init(struct mosquitto_db *db, mosq_sock_t sock);
-void mqtt3_context_cleanup(struct mosquitto_db *db, struct mosquitto *context, bool do_free);
-void mqtt3_context_disconnect(struct mosquitto_db *db, struct mosquitto *context);
-void mosquitto__add_context_to_disused(struct mosquitto_db *db, struct mosquitto *context);
-void mosquitto__free_disused_contexts(struct mosquitto_db *db);
+struct mosquitto *context__init(struct mosquitto_db *db, mosq_sock_t sock);
+void context__cleanup(struct mosquitto_db *db, struct mosquitto *context, bool do_free);
+void context__disconnect(struct mosquitto_db *db, struct mosquitto *context);
+void context__add_to_disused(struct mosquitto_db *db, struct mosquitto *context);
+void context__free_disused(struct mosquitto_db *db);
 
 /* ============================================================
  * Logging functions
  * ============================================================ */
-int mqtt3_log_init(struct mqtt3_config *config);
-int mqtt3_log_close(struct mqtt3_config *config);
-int _mosquitto_log_printf(struct mosquitto *mosq, int level, const char *fmt, ...) __attribute__((format(printf, 3, 4)));
+int log__init(struct mosquitto__config *config);
+int log__close(struct mosquitto__config *config);
+int log__printf(struct mosquitto *mosq, int level, const char *fmt, ...) __attribute__((format(printf, 3, 4)));
 
 /* ============================================================
  * Bridge functions
  * ============================================================ */
 #ifdef WITH_BRIDGE
-int mqtt3_bridge_new(struct mosquitto_db *db, struct _mqtt3_bridge *bridge);
-int mqtt3_bridge_connect(struct mosquitto_db *db, struct mosquitto *context);
-void mqtt3_bridge_packet_cleanup(struct mosquitto *context);
+int bridge__new(struct mosquitto_db *db, struct mosquitto__bridge *bridge);
+int bridge__connect(struct mosquitto_db *db, struct mosquitto *context);
+void bridge__packet_cleanup(struct mosquitto *context);
 #endif
 
 /* ============================================================
@@ -502,9 +581,9 @@ void service_run(void);
  * ============================================================ */
 #ifdef WITH_WEBSOCKETS
 #  if defined(LWS_LIBRARY_VERSION_NUMBER)
-struct lws_context *mosq_websockets_init(struct _mqtt3_listener *listener, int log_level);
+struct lws_context *mosq_websockets_init(struct mosquitto__listener *listener, int log_level);
 #  else
-struct libwebsocket_context *mosq_websockets_init(struct _mqtt3_listener *listener, int log_level);
+struct libwebsocket_context *mosq_websockets_init(struct mosquitto__listener *listener, int log_level);
 #  endif
 #endif
 void do_disconnect(struct mosquitto_db *db, struct mosquitto *context);

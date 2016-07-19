@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2010-2014 Roger Light <roger@atchoo.org>
+Copyright (c) 2010-2015 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -14,8 +14,8 @@ Contributors:
    Roger Light - initial implementation and documentation.
 */
 
-#ifndef _MEMORY_MOSQ_H_
-#define _MEMORY_MOSQ_H_
+#ifndef MEMORY_MOSQ_H
+#define MEMORY_MOSQ_H
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -24,14 +24,14 @@ Contributors:
 #define REAL_WITH_MEMORY_TRACKING
 #endif
 
-void *_mosquitto_calloc(size_t nmemb, size_t size);
-void _mosquitto_free(void *mem);
-void *_mosquitto_malloc(size_t size);
+void *mosquitto__calloc(size_t nmemb, size_t size);
+void mosquitto__free(void *mem);
+void *mosquitto__malloc(size_t size);
 #ifdef REAL_WITH_MEMORY_TRACKING
-unsigned long _mosquitto_memory_used(void);
-unsigned long _mosquitto_max_memory_used(void);
+unsigned long mosquitto__memory_used(void);
+unsigned long mosquitto__max_memory_used(void);
 #endif
-void *_mosquitto_realloc(void *ptr, size_t size);
-char *_mosquitto_strdup(const char *s);
+void *mosquitto__realloc(void *ptr, size_t size);
+char *mosquitto__strdup(const char *s);
 
 #endif

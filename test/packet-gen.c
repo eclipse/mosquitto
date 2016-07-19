@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
 	bool clean_session = true;
 	int keepalive = 60;
 
-	mosq = mosquitto_new("packetgen", NULL);
+	mosq = mosquitto_new("packetgen", clean_session, NULL);
 	if(!mosq){
 		fprintf(stderr, "Error: Out of memory.\n");
 		return 1;
@@ -30,9 +30,9 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Error: Unable to open mqtt.connect for writing.\n");
 		return 1;
 	}
-	mosq->core.sock = fd;
-	printf("_mosquitto_send_connect(): %d\n", _mosquitto_send_connect(mosq, keepalive, clean_session));
-	printf("loop: %d\n", mosquitto_loop_write(mosq));
+	mosq->sock = fd;
+	printf("send__connect(): %d\n", send__connect(mosq, keepalive, clean_session));
+	printf("loop: %d\n", mosquitto_loop_write(mosq, 1));
 	close(fd);
 
 	/* SUBSCRIBE */
@@ -41,9 +41,9 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Error: Unable to open mqtt.subscribe for writing.\n");
 		return 1;
 	}
-	mosq->core.sock = fd;
-	printf("_mosquitto_send_subscribe(): %d\n", _mosquitto_send_subscribe(mosq, NULL, false, "subscribe/topic", 2));
-	printf("loop: %d\n", mosquitto_loop_write(mosq));
+	mosq->sock = fd;
+	printf("send__subscribe(): %d\n", send__subscribe(mosq, NULL, "subscribe/topic", 2));
+	printf("loop: %d\n", mosquitto_loop_write(mosq, 1));
 	close(fd);
 
 	mosquitto_destroy(mosq);

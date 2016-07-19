@@ -4,6 +4,14 @@ include ../config.mk
 
 all : mosquitto_pub mosquitto_sub
 
+static : static_pub static_sub
+
+static_pub : pub_client.o client_shared.o ../lib/libmosquitto.a
+	${CROSS_COMPILE}${CC} $^ -o mosquitto_pub ${CLIENT_LDFLAGS} -lssl -lcrypto -lpthread
+
+static_sub : sub_client.o client_shared.o ../lib/libmosquitto.a
+	${CROSS_COMPILE}${CC} $^ -o mosquitto_sub ${CLIENT_LDFLAGS} -lssl -lcrypto -lpthread
+
 mosquitto_pub : pub_client.o client_shared.o
 	${CROSS_COMPILE}${CC} $^ -o $@ ${CLIENT_LDFLAGS}
 
@@ -24,8 +32,8 @@ client_shared.o : client_shared.c client_shared.h
 
 install : all
 	$(INSTALL) -d ${DESTDIR}$(prefix)/bin
-	$(INSTALL) -s --strip-program=${CROSS_COMPILE}${STRIP} mosquitto_pub ${DESTDIR}${prefix}/bin/mosquitto_pub
-	$(INSTALL) -s --strip-program=${CROSS_COMPILE}${STRIP} mosquitto_sub ${DESTDIR}${prefix}/bin/mosquitto_sub
+	$(INSTALL) ${STRIP_OPTS} mosquitto_pub ${DESTDIR}${prefix}/bin/mosquitto_pub
+	$(INSTALL) ${STRIP_OPTS} mosquitto_sub ${DESTDIR}${prefix}/bin/mosquitto_sub
 
 uninstall :
 	-rm -f ${DESTDIR}${prefix}/bin/mosquitto_pub

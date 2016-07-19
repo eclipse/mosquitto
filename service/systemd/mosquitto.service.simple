@@ -1,0 +1,9 @@
+[Unit]
+Description=Mosquitto MQTT v3.1/v3.1.1 Broker
+
+[Service]
+ExecStart=/usr/sbin/mosquitto -c /etc/mosquitto/mosquitto.conf
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

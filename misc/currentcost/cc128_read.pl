@@ -6,7 +6,7 @@
 use strict;
 use Device::SerialPort qw( :PARAM :STAT 0.07 );
 
-my $pubclient = "mosquitto_pub -t sensors/cc128/raw -q 2 -l";
+my $pubclient = "mosquitto_pub -t sensors/cc128/raw -q 1 -l";
 my $PORT = "/dev/ttyUSB0";
 local $| = 1;
 

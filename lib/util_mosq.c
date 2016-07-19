@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2014 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2015 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -22,65 +22,26 @@ Contributors:
 #endif
 
 
-#include <mosquitto.h>
-#include <memory_mosq.h>
-#include <net_mosq.h>
-#include <send_mosq.h>
-#include <time_mosq.h>
-#include <tls_mosq.h>
-#include <util_mosq.h>
+#include "mosquitto.h"
+#include "memory_mosq.h"
+#include "net_mosq.h"
+#include "send_mosq.h"
+#include "time_mosq.h"
+#include "tls_mosq.h"
+#include "util_mosq.h"
 
 #ifdef WITH_BROKER
-#include <mosquitto_broker.h>
+#include "mosquitto_broker.h"
 #endif
 
 #ifdef WITH_WEBSOCKETS
 #include <libwebsockets.h>
 #endif
 
-int _mosquitto_packet_alloc(struct _mosquitto_packet *packet)
-{
-	uint8_t remaining_bytes[5], byte;
-	uint32_t remaining_length;
-	int i;
-
-	assert(packet);
-
-	remaining_length = packet->remaining_length;
-	packet->payload = NULL;
-	packet->remaining_count = 0;
-	do{
-		byte = remaining_length % 128;
-		remaining_length = remaining_length / 128;
-		/* If there are more digits to encode, set the top bit of this digit */
-		if(remaining_length > 0){
-			byte = byte | 0x80;
-		}
-		remaining_bytes[packet->remaining_count] = byte;
-		packet->remaining_count++;
-	}while(remaining_length > 0 && packet->remaining_count < 5);
-	if(packet->remaining_count == 5) return MOSQ_ERR_PAYLOAD_SIZE;
-	packet->packet_length = packet->remaining_length + 1 + packet->remaining_count;
-#ifdef WITH_WEBSOCKETS
-	packet->payload = _mosquitto_malloc(sizeof(uint8_t)*packet->packet_length + LWS_SEND_BUFFER_PRE_PADDING + LWS_SEND_BUFFER_POST_PADDING);
-#else
-	packet->payload = _mosquitto_malloc(sizeof(uint8_t)*packet->packet_length);
-#endif
-	if(!packet->payload) return MOSQ_ERR_NOMEM;
-
-	packet->payload[0] = packet->command;
-	for(i=0; i<packet->remaining_count; i++){
-		packet->payload[i+1] = remaining_bytes[i];
-	}
-	packet->pos = 1 + packet->remaining_count;
-
-	return MOSQ_ERR_SUCCESS;
-}
-
 #ifdef WITH_BROKER
-void _mosquitto_check_keepalive(struct mosquitto_db *db, struct mosquitto *mosq)
+void mosquitto__check_keepalive(struct mosquitto_db *db, struct mosquitto *mosq)
 #else
-void _mosquitto_check_keepalive(struct mosquitto *mosq)
+void mosquitto__check_keepalive(struct mosquitto *mosq)
 #endif
 {
 	time_t next_msg_out;
@@ -97,8 +58,8 @@ void _mosquitto_check_keepalive(struct mosquitto *mosq)
 				&& mosq->sock != INVALID_SOCKET
 				&& now - mosq->next_msg_out - mosq->keepalive >= mosq->bridge->idle_timeout){
 
-		_mosquitto_log_printf(NULL, MOSQ_LOG_NOTICE, "Bridge connection %s has exceeded idle timeout, disconnecting.", mosq->id);
-		_mosquitto_socket_close(db, mosq);
+		log__printf(NULL, MOSQ_LOG_NOTICE, "Bridge connection %s has exceeded idle timeout, disconnecting.", mosq->id);
+		net__socket_close(db, mosq);
 		return;
 	}
 #endif
@@ -110,7 +71,7 @@ void _mosquitto_check_keepalive(struct mosquitto *mosq)
 			(now >= next_msg_out || now - last_msg_in >= mosq->keepalive)){
 
 		if(mosq->state == mosq_cs_connected && mosq->ping_t == 0){
-			_mosquitto_send_pingreq(mosq);
+			send__pingreq(mosq);
 			/* Reset last msg times to give the server time to send a pingresp */
 			pthread_mutex_lock(&mosq->msgtime_mutex);
 			mosq->last_msg_in = now;
@@ -123,9 +84,9 @@ void _mosquitto_check_keepalive(struct mosquitto *mosq)
 				assert(mosq->listener->client_count >= 0);
 			}
 			mosq->listener = NULL;
-			_mosquitto_socket_close(db, mosq);
+			net__socket_close(db, mosq);
 #else
-			_mosquitto_socket_close(mosq);
+			net__socket_close(mosq);
 			pthread_mutex_lock(&mosq->state_mutex);
 			if(mosq->state == mosq_cs_disconnecting){
 				rc = MOSQ_ERR_SUCCESS;
@@ -145,7 +106,7 @@ void _mosquitto_check_keepalive(struct mosquitto *mosq)
 	}
 }
 
-uint16_t _mosquitto_mid_generate(struct mosquitto *mosq)
+uint16_t mosquitto__mid_generate(struct mosquitto *mosq)
 {
 	/* FIXME - this would be better with atomic increment, but this is safer
 	 * for now for a bug fix release.
@@ -318,7 +279,7 @@ int mosquitto_topic_matches_sub(const char *sub, const char *topic, bool *result
 }
 
 #ifdef REAL_WITH_TLS_PSK
-int _mosquitto_hex2bin(const char *hex, unsigned char *bin, int bin_max_len)
+int mosquitto__hex2bin(const char *hex, unsigned char *bin, int bin_max_len)
 {
 	BIGNUM *bn = NULL;
 	int len;
@@ -338,7 +299,7 @@ int _mosquitto_hex2bin(const char *hex, unsigned char *bin, int bin_max_len)
 }
 #endif
 
-FILE *_mosquitto_fopen(const char *path, const char *mode)
+FILE *mosquitto__fopen(const char *path, const char *mode)
 {
 #ifdef WIN32
 	char buf[4096];

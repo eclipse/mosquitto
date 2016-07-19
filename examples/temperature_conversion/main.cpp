@@ -8,13 +8,7 @@ int main(int argc, char *argv[])
 	mosqpp::lib_init();
 
 	tempconv = new mqtt_tempconv("tempconv", "localhost", 1883);
-	
-	while(1){
-		rc = tempconv->loop();
-		if(rc){
-			tempconv->reconnect();
-		}
-	}
+	tempconv->loop_forever();
 
 	mosqpp::lib_cleanup();
 

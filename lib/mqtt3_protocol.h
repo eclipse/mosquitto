@@ -14,8 +14,8 @@ Contributors:
    Roger Light - initial implementation and documentation.
 */
 
-#ifndef _MQTT3_PROTOCOL_H_
-#define _MQTT3_PROTOCOL_H_
+#ifndef MQTT3_PROTOCOL_H
+#define MQTT3_PROTOCOL_H
 
 /* For version 3 of the MQTT protocol */
 
