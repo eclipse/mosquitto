@@ -177,6 +177,12 @@
 				</listitem>
 			</varlistentry>
 			<varlistentry>
+				<term><option>--server-name</option></term>
+				<listitem>
+					<para>Server name indication (SNI).</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
 				<term><option>-C</option></term>
 				<listitem>
 					<para>Disconnect and exit the program immediately after

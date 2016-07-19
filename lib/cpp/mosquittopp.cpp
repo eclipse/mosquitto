@@ -352,6 +352,11 @@ int mosquittopp::tls_opts_set(int cert_reqs, const char *tls_version, const char
 	return mosquitto_tls_opts_set(m_mosq, cert_reqs, tls_version, ciphers);
 }
 
+int mosquittopp::tls_server_name_set(const char *server_name)
+{
+	return mosquitto_tls_server_name_set(m_mosq, server_name);
+}
+
 int mosquittopp::tls_insecure_set(bool value)
 {
 	return mosquitto_tls_insecure_set(m_mosq, value);

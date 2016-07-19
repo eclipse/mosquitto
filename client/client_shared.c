@@ -65,6 +65,7 @@ void client_config_cleanup(struct mosq_config *cfg)
 	free(cfg->certfile);
 	free(cfg->keyfile);
 	free(cfg->ciphers);
+	free(cfg->server_name);
 	free(cfg->tls_version);
 #  ifdef WITH_TLS_PSK
 	free(cfg->psk);
@@ -337,6 +338,14 @@ int client_config_line_proc(struct mosq_config *cfg, int pub_or_sub, int argc, c
 				return 1;
 			}else{
 				cfg->ciphers = strdup(argv[i+1]);
+			}
+			i++;
+		}else if(!strcmp(argv[i], "--server-name")){
+			if(i==argc-1){
+				fprintf(stderr, "Error: --server-name argument given but no server name specified.\n\n");
+				return 1;
+			}else{
+				cfg->server_name = strdup(argv[i+1]);
 			}
 			i++;
 #endif
@@ -788,6 +797,11 @@ int client_opts_set(struct mosquitto *mosq, struct mosq_config *cfg)
 			&& mosquitto_tls_set(mosq, cfg->cafile, cfg->capath, cfg->certfile, cfg->keyfile, NULL)){
 
 		if(!cfg->quiet) fprintf(stderr, "Error: Problem setting TLS options.\n");
+		mosquitto_lib_cleanup();
+		return 1;
+	}
+	if((cfg->server_name) && mosquitto_tls_server_name_set(mosq, cfg->server_name)){
+		if(!cfg->quiet) fprintf(stderr, "Error: Problem setting TLS server name.\n");
 		mosquitto_lib_cleanup();
 		return 1;
 	}

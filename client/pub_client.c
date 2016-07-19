@@ -220,7 +220,7 @@ void print_usage(void)
 	printf("                     [--will-topic [--will-payload payload] [--will-qos qos] [--will-retain]]\n");
 #ifdef WITH_TLS
 	printf("                     [{--cafile file | --capath dir} [--cert file] [--key file]\n");
-	printf("                      [--ciphers ciphers] [--insecure]]\n");
+	printf("                      [--ciphers ciphers] [--server-name server name] [--insecure]]\n");
 #ifdef WITH_TLS_PSK
 	printf("                     [--psk hex-key --psk-identity identity [--ciphers ciphers]]\n");
 #endif
@@ -272,6 +272,7 @@ void print_usage(void)
 	printf(" --cert : client certificate for authentication, if required by server.\n");
 	printf(" --key : client private key for authentication, if required by server.\n");
 	printf(" --ciphers : openssl compatible list of TLS ciphers to support.\n");
+	printf(" --server-name : server name indication (SNI).\n");
 	printf(" --tls-version : TLS protocol version, can be one of tlsv1.2 tlsv1.1 or tlsv1.\n");
 	printf("                 Defaults to tlsv1.2 if available.\n");
 	printf(" --insecure : do not check that the server certificate hostname matches the remote\n");

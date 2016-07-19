@@ -198,6 +198,7 @@ int mosquitto_reinitialise(struct mosquitto *mosq, const char *id, bool clean_se
 #ifdef WITH_TLS
 	mosq->ssl = NULL;
 	mosq->tls_cert_reqs = SSL_VERIFY_PEER;
+	mosq->tls_server_name = NULL;
 	mosq->tls_insecure = false;
 	mosq->want_write = false;
 #endif
@@ -309,6 +310,7 @@ void mosquitto__destroy(struct mosquitto *mosq)
 	mosquitto__free(mosq->tls_capath);
 	mosquitto__free(mosq->tls_certfile);
 	mosquitto__free(mosq->tls_keyfile);
+	mosquitto__free(mosq->tls_server_name);
 	if(mosq->tls_pw_callback) mosq->tls_pw_callback = NULL;
 	mosquitto__free(mosq->tls_version);
 	mosquitto__free(mosq->tls_ciphers);
@@ -761,6 +763,19 @@ int mosquitto_tls_opts_set(struct mosquitto *mosq, int cert_reqs, const char *tl
 #else
 	return MOSQ_ERR_NOT_SUPPORTED;
 
+#endif
+}
+
+
+int mosquitto_tls_server_name_set(struct mosquitto *mosq, const char *server_name)
+{
+#ifdef WITH_TLS
+	if(!mosq) return MOSQ_ERR_INVAL;
+	if(mosq->tls_server_name) mosquitto__free(mosq->tls_server_name);
+	mosq->tls_server_name = mosquitto__strdup(server_name);
+	return MOSQ_ERR_SUCCESS;
+#else
+	return MOSQ_ERR_NOT_SUPPORTED;
 #endif
 }
 

@@ -413,6 +413,7 @@ struct mosquitto__bridge{
 	char *tls_capath;
 	char *tls_certfile;
 	char *tls_keyfile;
+	char *tls_server_name;
 	bool tls_insecure;
 	char *tls_version;
 #  ifdef REAL_WITH_TLS_PSK
