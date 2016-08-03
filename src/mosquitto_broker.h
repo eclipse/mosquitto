@@ -31,6 +31,7 @@ Contributors:
 #    define libwebsocket_write(A, B, C, D) lws_write((A), (B), (C), (D))
 #    define libwebsocket_get_socket_fd(A) lws_get_socket_fd((A))
 #    define libwebsockets_return_http_status(A, B, C, D) lws_return_http_status((B), (C), (D))
+#    define libwebsocket_get_protocol(A) lws_get_protocol((A))
 
 #    define libwebsocket_context lws_context
 #    define libwebsocket_protocols lws_protocols
@@ -344,6 +345,7 @@ struct _mqtt3_bridge{
 #ifdef WITH_WEBSOCKETS
 struct libws_mqtt_hack {
 	char *http_dir;
+	struct mosquitto_db *db;
 };
 
 struct libws_mqtt_data {
@@ -502,9 +504,9 @@ void service_run(void);
  * ============================================================ */
 #ifdef WITH_WEBSOCKETS
 #  if defined(LWS_LIBRARY_VERSION_NUMBER)
-struct lws_context *mosq_websockets_init(struct _mqtt3_listener *listener, int log_level);
+struct lws_context *mosq_websockets_init(struct mosquitto_db *db, struct _mqtt3_listener *listener, int log_level);
 #  else
-struct libwebsocket_context *mosq_websockets_init(struct _mqtt3_listener *listener, int log_level);
+struct libwebsocket_context *mosq_websockets_init(struct mosquitto_db *db, struct _mqtt3_listener *listener, int log_level);
 #  endif
 #endif
 void do_disconnect(struct mosquitto_db *db, struct mosquitto *context);
