@@ -168,8 +168,10 @@ static int callback_mqtt(struct libwebsocket_context *context,
 	struct mosquitto_db *db;
 	struct mosquitto *mosq = NULL;
 	struct _mosquitto_packet *packet;
-	int count;
+	int count, i, j;
+	const struct libwebsocket_protocols *p;
 	struct libws_mqtt_data *u = (struct libws_mqtt_data *)user;
+	struct libws_mqtt_hack *hack;
 	size_t pos;
 	uint8_t *buf;
 	int rc;
@@ -181,6 +183,23 @@ static int callback_mqtt(struct libwebsocket_context *context,
 		case LWS_CALLBACK_ESTABLISHED:
 			mosq = mqtt3_context_init(db, WEBSOCKET_CLIENT);
 			if(mosq){
+#if defined(LWS_LIBRARY_VERSION_NUMBER)
+				hack = (struct libws_mqtt_hack *)lws_context_user(lws_get_context(wsi));
+#else
+				hack = (struct libws_mqtt_hack *)libwebsocket_context_user(context);
+#endif
+				p = libwebsocket_get_protocol(wsi);
+				for (i=0; i<hack->db->config->listener_count; i++){
+					if (hack->db->config->listeners[i].protocol == mp_websockets) {
+						for (j=0; hack->db->config->listeners[i].ws_protocol[j].name; j++){
+							if (p == &hack->db->config->listeners[i].ws_protocol[j]){
+								mosq->listener = &hack->db->config->listeners[i];
+								mosq->listener->client_count++;
+							}
+						}
+					}
+				}
+
 #if !defined(LWS_LIBRARY_VERSION_NUMBER)
 				mosq->ws_context = context;
 #endif
@@ -560,7 +579,7 @@ static void log_wrap(int level, const char *line)
 	_mosquitto_log_printf(NULL, MOSQ_LOG_WEBSOCKETS, "%s", l);
 }
 
-struct libwebsocket_context *mosq_websockets_init(struct _mqtt3_listener *listener, int log_level)
+struct libwebsocket_context *mosq_websockets_init(struct mosquitto_db *db, struct _mqtt3_listener *listener, int log_level)
 {
 	struct lws_context_creation_info info;
 	struct libwebsocket_protocols *p;
@@ -610,6 +629,8 @@ struct libwebsocket_context *mosq_websockets_init(struct _mqtt3_listener *listen
 		_mosquitto_log_printf(NULL, MOSQ_LOG_ERR, "Out of memory.");
 		return NULL;
 	}
+
+	user->db = db;
 
 	if(listener->http_dir){
 #ifdef WIN32

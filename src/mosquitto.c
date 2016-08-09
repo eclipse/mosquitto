@@ -346,7 +346,7 @@ int main(int argc, char *argv[])
 			}
 		}else if(config.listeners[i].protocol == mp_websockets){
 #ifdef WITH_WEBSOCKETS
-			config.listeners[i].ws_context = mosq_websockets_init(&config.listeners[i], config.websockets_log_level);
+			config.listeners[i].ws_context = mosq_websockets_init(&int_db, &config.listeners[i], config.websockets_log_level);
 			if(!config.listeners[i].ws_context){
 				_mosquitto_log_printf(NULL, MOSQ_LOG_ERR, "Error: Unable to create websockets listener on port %d.", config.listeners[i].port);
 				return 1;
