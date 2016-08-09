@@ -31,6 +31,7 @@ Contributors:
 #    define libwebsocket_write(A, B, C, D) lws_write((A), (B), (C), (D))
 #    define libwebsocket_get_socket_fd(A) lws_get_socket_fd((A))
 #    define libwebsockets_return_http_status(A, B, C, D) lws_return_http_status((B), (C), (D))
+#    define libwebsocket_get_protocol(A) lws_get_protocol((A))
 
 #    define libwebsocket_context lws_context
 #    define libwebsocket_protocols lws_protocols

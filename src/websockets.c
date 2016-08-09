@@ -168,7 +168,8 @@ static int callback_mqtt(struct libwebsocket_context *context,
 	struct mosquitto_db *db;
 	struct mosquitto *mosq = NULL;
 	struct _mosquitto_packet *packet;
-	int count;
+	int count, i, j;
+	const struct libwebsocket_protocols *p;
 	struct libws_mqtt_data *u = (struct libws_mqtt_data *)user;
 	size_t pos;
 	uint8_t *buf;
@@ -181,6 +182,18 @@ static int callback_mqtt(struct libwebsocket_context *context,
 		case LWS_CALLBACK_ESTABLISHED:
 			mosq = mqtt3_context_init(db, WEBSOCKET_CLIENT);
 			if(mosq){
+				p = libwebsocket_get_protocol(wsi);
+				for (i=0; i<db->config->listener_count; i++){
+					if (db->config->listeners[i].protocol == mp_websockets) {
+						for (j=0; db->config->listeners[i].ws_protocol[j].name; j++){
+							if (p == &db->config->listeners[i].ws_protocol[j]){
+								mosq->listener = &db->config->listeners[i];
+								mosq->listener->client_count++;
+							}
+						}
+					}
+				}
+
 #if !defined(LWS_LIBRARY_VERSION_NUMBER)
 				mosq->ws_context = context;
 #endif
