@@ -34,7 +34,7 @@ Contributors:
 #include <sys/endian.h>
 #endif
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined(__NetBSD__)
 #  include <netinet/in.h>
 #endif
 
