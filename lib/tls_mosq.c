@@ -129,6 +129,7 @@ int _mosquitto_verify_certificate_hostname(X509 *cert, const char *hostname)
 			if(nval->type == GEN_DNS){
 				data = ASN1_STRING_data(nval->d.dNSName);
 				if(data && !mosquitto__cmp_hostname_wildcard((char *)data, hostname)){
+					sk_GENERAL_NAME_pop_free(san, GENERAL_NAME_free);
 					return 1;
 				}
 				have_san_dns = true;
@@ -136,20 +137,24 @@ int _mosquitto_verify_certificate_hostname(X509 *cert, const char *hostname)
 				data = ASN1_STRING_data(nval->d.iPAddress);
 				if(nval->d.iPAddress->length == 4 && ipv4_ok){
 					if(!memcmp(ipv4_addr, data, 4)){
+						sk_GENERAL_NAME_pop_free(san, GENERAL_NAME_free);
 						return 1;
 					}
 				}else if(nval->d.iPAddress->length == 16 && ipv6_ok){
 					if(!memcmp(ipv6_addr, data, 16)){
+						sk_GENERAL_NAME_pop_free(san, GENERAL_NAME_free);
 						return 1;
 					}
 				}
 			}
 		}
+		sk_GENERAL_NAME_pop_free(san, GENERAL_NAME_free);
 		if(have_san_dns){
 			/* Only check CN if subjectAltName DNS entry does not exist. */
 			return 0;
 		}
 	}
+
 	subj = X509_get_subject_name(cert);
 	if(X509_NAME_get_text_by_NID(subj, NID_commonName, name, sizeof(name)) > 0){
 		name[sizeof(name) - 1] = '\0';

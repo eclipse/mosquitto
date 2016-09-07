@@ -140,7 +140,7 @@ static int mqtt3_db_message_store_write(struct mosquitto_db *db, FILE *db_fptr)
 	stored = db->msg_store;
 	while(stored){
 		if(stored->topic && !strncmp(stored->topic, "$SYS", 4)){
-			if(stored->ref_count == 1 && stored->dest_id_count == 0){
+			if(stored->ref_count <= 1 && stored->dest_id_count == 0){
 				/* $SYS messages that are only retained shouldn't be persisted. */
 				stored = stored->next;
 				continue;
@@ -261,6 +261,7 @@ static int _db_subs_retain_write(struct mosquitto_db *db, FILE *db_fptr, struct 
 	char *thistopic;
 	uint32_t length;
 	uint16_t i16temp;
+	uint8_t i8temp;
 	dbid_t i64temp;
 	size_t slen;
 
@@ -292,7 +293,8 @@ static int _db_subs_retain_write(struct mosquitto_db *db, FILE *db_fptr, struct 
 			write_e(db_fptr, &i16temp, sizeof(uint16_t));
 			write_e(db_fptr, thistopic, slen);
 
-			write_e(db_fptr, &sub->qos, sizeof(uint8_t));
+			i8temp = (uint8_t )sub->qos;
+			write_e(db_fptr, &i8temp, sizeof(uint8_t));
 		}
 		sub = sub->next;
 	}
@@ -362,6 +364,36 @@ int mqtt3_db_backup(struct mosquitto_db *db, bool shutdown)
 	}
 	snprintf(outfile, len, "%s.new", db->config->persistence_filepath);
 	outfile[len] = '\0';
+
+#ifndef WIN32
+	/**
+ 	*
+	* If a system lost power during the rename operation at the
+	* end of this file the filesystem could potentially be left
+	* with a directory that looks like this after powerup:
+	*
+	* 24094 -rw-r--r--    2 root     root          4099 May 30 16:27 mosquitto.db
+	* 24094 -rw-r--r--    2 root     root          4099 May 30 16:27 mosquitto.db.new
+	*
+	* The 24094 shows that mosquitto.db.new is hard-linked to the
+	* same file as mosquitto.db.  If fopen(outfile, "wb") is naively
+	* called then mosquitto.db will be truncated and the database
+	* potentially corrupted.
+	*
+	* Any existing mosquitto.db.new file must be removed prior to
+	* opening to guarantee that it is not hard-linked to
+	* mosquitto.db.
+	*
+	*/
+	rc = unlink(outfile);
+	if (rc != 0) {
+		if (errno != ENOENT) {
+			_mosquitto_log_printf(NULL, MOSQ_LOG_INFO, "Error saving in-memory database, unable to remove %s.", outfile);
+			goto error;
+		}
+	}
+#endif
+
 	db_fptr = _mosquitto_fopen(outfile, "wb");
 	if(db_fptr == NULL){
 		_mosquitto_log_printf(NULL, MOSQ_LOG_INFO, "Error saving in-memory database, unable to open %s for writing.", outfile);
@@ -395,6 +427,32 @@ int mqtt3_db_backup(struct mosquitto_db *db, bool shutdown)
 	mqtt3_db_client_write(db, db_fptr);
 	mqtt3_db_subs_retain_write(db, db_fptr);
 
+#ifndef WIN32
+	/**
+	*
+	* Closing a file does not guarantee that the contents are
+	* written to disk.  Need to flush to send data from app to OS
+	* buffers, then fsync to deliver data from OS buffers to disk
+	* (as well as disk hardware permits).
+	* 
+	* man close (http://linux.die.net/man/2/close, 2016-06-20):
+	* 
+	*   "successful close does not guarantee that the data has
+	*   been successfully saved to disk, as the kernel defers
+	*   writes.  It is not common for a filesystem to flush
+	*   the  buffers  when  the stream is closed.  If you need
+	*   to be sure that the data is physically stored, use
+	*   fsync(2).  (It will depend on the disk hardware at this
+	*   point."
+	*
+	* This guarantees that the new state file will not overwrite
+	* the old state file before its contents are valid.
+	*
+	*/
+
+	fflush(db_fptr);
+	fsync(fileno(db_fptr));
+#endif
 	fclose(db_fptr);
 
 #ifdef WIN32

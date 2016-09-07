@@ -36,7 +36,9 @@ test : mosquitto
 
 install : mosquitto
 	set -e; for d in ${DIRS}; do $(MAKE) -C $${d} install; done
+ifeq ($(WITH_DOCS),yes)
 	set -e; for d in ${DOCDIRS}; do $(MAKE) -C $${d} install; done
+endif
 	$(INSTALL) -d ${DESTDIR}/etc/mosquitto
 	$(INSTALL) -m 644 mosquitto.conf ${DESTDIR}/etc/mosquitto/mosquitto.conf.example
 	$(INSTALL) -m 644 aclfile.example ${DESTDIR}/etc/mosquitto/aclfile.example

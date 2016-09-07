@@ -34,6 +34,11 @@ struct mosquitto_auth_opt {
  * shared library. Using gcc this can be achieved as follows:
  *
  * gcc -I<path to mosquitto_plugin.h> -fPIC -shared plugin.c -o plugin.so
+ *
+ * On Mac OS X:
+ *
+ * gcc -I<path to mosquitto_plugin.h> -fPIC -shared plugin.c -undefined dynamic_lookup -o plugin.so
+ *
  */
 
 /* =========================================================================

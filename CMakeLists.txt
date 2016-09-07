@@ -11,7 +11,7 @@ project(mosquitto)
 cmake_minimum_required(VERSION 2.8)
 # Only for version 3 and up. cmake_policy(SET CMP0042 NEW)
 
-set (VERSION 1.4.9)
+set (VERSION 1.4.10)
 
 if (WIN32)
 	execute_process(COMMAND cmd /c echo %DATE% %TIME% OUTPUT_VARIABLE TIMESTAMP

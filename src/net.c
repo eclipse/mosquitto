@@ -302,7 +302,7 @@ static int _mosquitto_tls_server_ctx(struct _mqtt3_listener *listener)
 #endif
 
 #ifdef WITH_EC
-#if OPENSSL_VERSION_NUMBER >= 0x10002000L
+#if OPENSSL_VERSION_NUMBER >= 0x10002000L && OPENSSL_VERSION_NUMBER < 0x10100000L
 	SSL_CTX_set_ecdh_auto(listener->ssl_ctx, 1);
 #elif OPENSSL_VERSION_NUMBER >= 0x10000000L && OPENSSL_VERSION_NUMBER < 0x10002000L
 	ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);

@@ -770,6 +770,7 @@ int mosquitto_psk_key_get_default(struct mosquitto_db *db, const char *hint, con
 int _pw_digest(const char *password, const unsigned char *salt, unsigned int salt_len, unsigned char *hash, unsigned int *hash_len)
 {
 	const EVP_MD *digest;
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 	EVP_MD_CTX context;
 
 	digest = EVP_get_digestbyname("sha512");
@@ -785,6 +786,23 @@ int _pw_digest(const char *password, const unsigned char *salt, unsigned int sal
 	/* hash is assumed to be EVP_MAX_MD_SIZE bytes long. */
 	EVP_DigestFinal_ex(&context, hash, hash_len);
 	EVP_MD_CTX_cleanup(&context);
+#else
+	EVP_MD_CTX *context;
+
+	digest = EVP_get_digestbyname("sha512");
+	if(!digest){
+		// FIXME fprintf(stderr, "Error: Unable to create openssl digest.\n");
+		return 1;
+	}
+
+	context = EVP_MD_CTX_new();
+	EVP_DigestInit_ex(context, digest, NULL);
+	EVP_DigestUpdate(context, password, strlen(password));
+	EVP_DigestUpdate(context, salt, salt_len);
+	/* hash is assumed to be EVP_MAX_MD_SIZE bytes long. */
+	EVP_DigestFinal_ex(context, hash, hash_len);
+	EVP_MD_CTX_free(context);
+#endif
 
 	return MOSQ_ERR_SUCCESS;
 }

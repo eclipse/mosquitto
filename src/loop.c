@@ -449,10 +449,6 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 		}
 
 		assert(pollfds[context->pollfd_index].fd == context->sock);
-		if(pollfds[context->pollfd_index].revents & (POLLERR | POLLNVAL | POLLHUP)){
-			do_disconnect(db, context);
-			continue;
-		}
 #ifdef WITH_TLS
 		if(pollfds[context->pollfd_index].revents & POLLOUT ||
 				context->want_write ||
@@ -495,6 +491,10 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 					continue;
 				}
 			}while(SSL_DATA_PENDING(context));
+		}
+		if(pollfds[context->pollfd_index].revents & (POLLERR | POLLNVAL | POLLHUP)){
+			do_disconnect(db, context);
+			continue;
 		}
 	}
 }

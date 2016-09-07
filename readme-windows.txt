@@ -11,8 +11,9 @@ separately in the case that they are not already available.
 Capabilities
 ------------
 
-The network support in Windows is severely limited. The broker is limited to approximately
-1024 MQTT connections.
+Some versions of Windows have limitations on the number of concurrent
+connections. Non-server versions have been reported to be limited to
+approximately 1024 connections.
 
 
 Websockets
@@ -20,7 +21,7 @@ Websockets
 
 The broker executables provided in the installers do not have Websockets support enabled.
 If you wish to have a version of the broker with Websockets support, you will need to compile
-libwebsockets version v1.3-chrome37-firefox30 yourself and mosquitto version 1.4 yourself.
+libwebsockets version v1.7 onwards because no Windows binaries are provided.
 
 Please note that on Windows, libwebsockets limits connections to a maximum of 64 clients.
 
