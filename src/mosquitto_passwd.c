@@ -90,7 +90,7 @@ int output_new_password(FILE *fptr, const char *username, const char *password)
 	unsigned char hash[EVP_MAX_MD_SIZE];
 	unsigned int hash_len;
 	const EVP_MD *digest;
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#ifndef HAVE_OPENSSL_OPAQUE_STRUCTS
 	EVP_MD_CTX context;
 #else
 	EVP_MD_CTX *context;
@@ -117,7 +117,7 @@ int output_new_password(FILE *fptr, const char *username, const char *password)
 		return 1;
 	}
 
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#ifndef HAVE_OPENSSL_OPAQUE_STRUCTS
 	EVP_MD_CTX_init(&context);
 	EVP_DigestInit_ex(&context, digest, NULL);
 	EVP_DigestUpdate(&context, password, strlen(password));

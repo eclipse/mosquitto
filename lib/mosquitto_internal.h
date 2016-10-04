@@ -25,6 +25,9 @@ Contributors:
 
 #ifdef WITH_TLS
 #  include <openssl/ssl.h>
+#  if OPENSSL_VERSION_NUMBER >= 0x10100000L && !defined(LIBRESSL_VERSION_NUMBER)
+#    define HAVE_OPENSSL_OPAQUE_STRUCTS
+#  endif
 #else
 #  include <time.h>
 #endif

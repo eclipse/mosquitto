@@ -770,7 +770,7 @@ int mosquitto_psk_key_get_default(struct mosquitto_db *db, const char *hint, con
 int _pw_digest(const char *password, const unsigned char *salt, unsigned int salt_len, unsigned char *hash, unsigned int *hash_len)
 {
 	const EVP_MD *digest;
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#ifndef HAVE_OPENSSL_OPAQUE_STRUCTS
 	EVP_MD_CTX context;
 
 	digest = EVP_get_digestbyname("sha512");
