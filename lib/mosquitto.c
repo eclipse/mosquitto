@@ -526,6 +526,9 @@ static int _mosquitto_reconnect(struct mosquitto *mosq, bool blocking)
 	}else
 #endif
 	{
+		if(mosq->sock != INVALID_SOCKET){
+            _mosquitto_socket_close(mosq); // Close existing socket
+        }
 		rc = _mosquitto_socket_connect(mosq, mosq->host, mosq->port, mosq->bind_address, blocking);
 	}
 	if(rc>0){
