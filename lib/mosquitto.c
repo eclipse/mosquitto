@@ -520,6 +520,10 @@ static int _mosquitto_reconnect(struct mosquitto *mosq, bool blocking)
 
 	_mosquitto_messages_reconnect_reset(mosq);
 
+	if(mosq->sock != INVALID_SOCKET){
+        _mosquitto_socket_close(mosq); //close socket
+    }
+
 #ifdef WITH_SOCKS
 	if(mosq->socks5_host){
 		rc = _mosquitto_socket_connect(mosq, mosq->socks5_host, mosq->socks5_port, mosq->bind_address, blocking);
