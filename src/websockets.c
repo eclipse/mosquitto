@@ -182,7 +182,7 @@ static int callback_mqtt(struct libwebsocket_context *context,
 		case LWS_CALLBACK_ESTABLISHED:
 			mosq = mqtt3_context_init(db, WEBSOCKET_CLIENT);
 			if(mosq){
-				p = libwebsocket_get_protocol(wsi);
+				p = libwebsockets_get_protocol(wsi);
 				for (i=0; i<db->config->listener_count; i++){
 					if (db->config->listeners[i].protocol == mp_websockets) {
 						for (j=0; db->config->listeners[i].ws_protocol[j].name; j++){
