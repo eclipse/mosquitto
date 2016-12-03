@@ -422,6 +422,7 @@ struct mosquitto__bridge{
 	char *local_username;
 	char *local_password;
 	bool notifications;
+	bool notifications_local_only;
 	char *notification_topic;
 	enum mosquitto_bridge_start_type start_type;
 	int idle_timeout;

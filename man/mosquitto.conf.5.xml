@@ -1089,6 +1089,15 @@
 						<replaceable>true</replaceable>.</para>
 				</listitem>
 			</varlistentry>
+			 <varlistentry>
+				<term><option>notifications_local_only</option> [ true | false ]</term>
+				<listitem>
+					<para>If set to <replaceable>true</replaceable>, only publish
+						notification messages to the local broker giving 
+						information about the state of the bridge connection.
+						Defaults to <replaceable>false</replaceable>.</para>
+				</listitem>
+			</varlistentry>
 			<varlistentry>
 				<term><option>notification_topic</option> <replaceable>topic</replaceable></term>
 				<listitem>

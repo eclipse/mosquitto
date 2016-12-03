@@ -149,10 +149,13 @@ int bridge__connect(struct mosquitto_db *db, struct mosquitto *context)
 				db__messages_easy_queue(db, context, context->bridge->notification_topic, 1, 1, &notification_payload, 1);
 				context->bridge->initial_notification_done = true;
 			}
-			notification_payload = '0';
-			rc = will__set(context, context->bridge->notification_topic, 1, &notification_payload, 1, true);
-			if(rc != MOSQ_ERR_SUCCESS){
-				return rc;
+
+			if (!context->bridge->notifications_local_only) {
+				notification_payload = '0';
+				rc = will__set(context, context->bridge->notification_topic, 1, &notification_payload, 1, true);
+				if(rc != MOSQ_ERR_SUCCESS){
+					return rc;
+				}
 			}
 		}else{
 			notification_topic_len = strlen(context->bridge->remote_clientid)+strlen("$SYS/broker/connection//state");
@@ -167,11 +170,13 @@ int bridge__connect(struct mosquitto_db *db, struct mosquitto *context)
 				context->bridge->initial_notification_done = true;
 			}
 
-			notification_payload = '0';
-			rc = will__set(context, notification_topic, 1, &notification_payload, 1, true);
-			mosquitto__free(notification_topic);
-			if(rc != MOSQ_ERR_SUCCESS){
-				return rc;
+			if (!context->bridge->notifications_local_only) {
+				notification_payload = '0';
+				rc = will__set(context, notification_topic, 1, &notification_payload, 1, true);
+				mosquitto__free(notification_topic);
+				if(rc != MOSQ_ERR_SUCCESS){
+					return rc;
+				}
 			}
 		}
 	}

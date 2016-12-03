@@ -46,10 +46,12 @@ int handle__connack(struct mosquitto_db *db, struct mosquitto *context)
 				if(context->bridge->notifications){
 					notification_payload = '1';
 					if(context->bridge->notification_topic){
-						if(send__real_publish(context, mosquitto__mid_generate(context),
-								context->bridge->notification_topic, 1, &notification_payload, 1, true, 0)){
+						if(!context->bridge->notifications_local_only){
+							if(send__real_publish(context, mosquitto__mid_generate(context),
+									context->bridge->notification_topic, 1, &notification_payload, 1, true, 0)){
 
-							return 1;
+								return 1;
+							}
 						}
 						db__messages_easy_queue(db, context, context->bridge->notification_topic, 1, 1, &notification_payload, 1);
 					}else{
@@ -59,11 +61,13 @@ int handle__connack(struct mosquitto_db *db, struct mosquitto *context)
 
 						snprintf(notification_topic, notification_topic_len+1, "$SYS/broker/connection/%s/state", context->bridge->remote_clientid);
 						notification_payload = '1';
-						if(send__real_publish(context, mosquitto__mid_generate(context),
-								notification_topic, 1, &notification_payload, 1, true, 0)){
+						if(!context->bridge->notifications_local_only){
+							if(send__real_publish(context, mosquitto__mid_generate(context),
+									notification_topic, 1, &notification_payload, 1, true, 0)){
 
-							mosquitto__free(notification_topic);
-							return 1;
+								mosquitto__free(notification_topic);
+								return 1;
+							}
 						}
 						db__messages_easy_queue(db, context, notification_topic, 1, 1, &notification_payload, 1);
 						mosquitto__free(notification_topic);
