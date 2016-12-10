@@ -4,12 +4,12 @@ Copyright (c) 2010-2013 Roger Light <roger@atchoo.org>
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
 and Eclipse Distribution License v1.0 which accompany this distribution.
- 
+
 The Eclipse Public License is available at
    http://www.eclipse.org/legal/epl-v10.html
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
- 
+
 Contributors:
    Roger Light - initial implementation and documentation.
 */
@@ -28,8 +28,8 @@ Contributors:
 #endif
 
 #include <cstdlib>
-#include <time.h>
 #include <mosquitto.h>
+#include <time.h>
 
 namespace mosqpp {
 
@@ -90,15 +90,16 @@ class mosqpp_EXPORT mosquittopp {
 		bool want_write();
 		int threaded_set(bool threaded=true);
 		int socks5_set(const char *host, int port=1080, const char *username=NULL, const char *password=NULL);
-		
-		virtual void on_connect(int rc) {return;};
-		virtual void on_disconnect(int rc) {return;};
-		virtual void on_publish(int mid) {return;};
-		virtual void on_message(const struct mosquitto_message *message) {return;};
-		virtual void on_subscribe(int mid, int qos_count, const int *granted_qos) {return;};
-		virtual void on_unsubscribe(int mid) {return;};
-		virtual void on_log(int level, const char *str) {return;};
-		virtual void on_error() {return;};
+
+		// names in the functions commented to prevent unused parameter warning
+		virtual void on_connect(int /*rc*/) {return;}
+		virtual void on_disconnect(int /*rc*/) {return;}
+		virtual void on_publish(int /*mid*/) {return;}
+		virtual void on_message(const struct mosquitto_message * /*message*/) {return;}
+		virtual void on_subscribe(int /*mid*/, int /*qos_count*/, const int * /*granted_qos*/) {return;}
+		virtual void on_unsubscribe(int /*mid*/) {return;}
+		virtual void on_log(int /*level*/, const char * /*str*/) {return;}
+		virtual void on_error() {return;}
 };
 
 }
