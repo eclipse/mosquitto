@@ -520,6 +520,10 @@ static int _mosquitto_reconnect(struct mosquitto *mosq, bool blocking)
 
 	_mosquitto_messages_reconnect_reset(mosq);
 
+	if(mosq->sock != INVALID_SOCKET){
+        _mosquitto_socket_close(mosq); //close socket
+    }
+
 #ifdef WITH_SOCKS
 	if(mosq->socks5_host){
 		rc = _mosquitto_socket_connect(mosq, mosq->socks5_host, mosq->socks5_port, mosq->bind_address, blocking);
@@ -910,6 +914,12 @@ int mosquitto_loop(struct mosquitto *mosq, int timeout, int max_packets)
 	now = mosquitto_time();
 	if(mosq->next_msg_out && now + timeout/1000 > mosq->next_msg_out){
 		timeout = (mosq->next_msg_out - now)*1000;
+	}
+
+	if(timeout < 0){
+		/* There has been a delay somewhere which means we should have already
+		 * sent a message. */
+		timeout = 0;
 	}
 
 	local_timeout.tv_sec = timeout/1000;

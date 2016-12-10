@@ -246,7 +246,16 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 				}else{
 					if(context->bridge->start_type == bst_lazy && context->bridge->lazy_reconnect){
 						rc = mqtt3_bridge_connect(db, context);
-						if(rc){
+						if(rc == MOSQ_ERR_SUCCESS){
+							pollfds[pollfd_index].fd = context->sock;
+							pollfds[pollfd_index].events = POLLIN;
+							pollfds[pollfd_index].revents = 0;
+							if(context->current_out_packet){
+								pollfds[pollfd_index].events |= POLLOUT;
+							}
+							context->pollfd_index = pollfd_index;
+							pollfd_index++;
+						}else{
 							context->bridge->cur_address++;
 							if(context->bridge->cur_address == context->bridge->address_count){
 								context->bridge->cur_address = 0;

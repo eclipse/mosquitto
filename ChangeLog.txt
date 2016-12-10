@@ -1,3 +1,14 @@
+Broker:
+- Fix crash when "lazy" type bridge attempts to reconnect. Closes #259.
+- maximum_connections now applies to websockets listeners. Closes #271.
+- Allow bridges to use TLS with IPv6.
+
+Client library:
+- Clients can now use TLS with IPv6.
+- Fix potential socket leakage when reconnecting. Closes #304.
+- Fix potential negative timeout being passed to pselect. Closes #329.
+
+
 1.4.10 - 20160816
 =================
 
