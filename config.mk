@@ -80,6 +80,9 @@ WITH_DOCS:=yes
 # Build with client support for SOCK5 proxy.
 WITH_SOCKS:=yes
 
+# Build with asynchronous DNS queries (use getaddrinfo_a() instead of getaddrinfo()).
+WITH_ASYNC_DNS:=no
+
 # Strip executables and shared libraries on install.
 WITH_STRIP:=no
 
@@ -194,6 +197,13 @@ endif
 ifeq ($(WITH_SOCKS),yes)
 	LIB_CFLAGS:=$(LIB_CFLAGS) -DWITH_SOCKS
 	CLIENT_CFLAGS:=$(CLIENT_CFLAGS) -DWITH_SOCKS
+endif
+
+ifeq ($(WITH_ASYNC_DNS),yes)
+	ifeq ($(UNAME),Linux)
+		BROKER_CFLAGS:=$(BROKER_CFLAGS) -DWITH_ASYNC_DNS -D_GNU_SOURCE
+		BROKER_LIBS:=$(BROKER_LIBS) -lanl
+	endif
 endif
 
 ifeq ($(WITH_UUID),yes)

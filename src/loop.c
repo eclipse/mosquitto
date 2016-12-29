@@ -14,7 +14,9 @@ Contributors:
    Roger Light - initial implementation and documentation.
 */
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 
 #include <config.h>
 
@@ -121,6 +123,9 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 	sigaddset(&sigblock, SIGTERM);
 	sigaddset(&sigblock, SIGUSR1);
 	sigaddset(&sigblock, SIGUSR2);
+#ifdef WITH_ASYNC_DNS
+	sigaddset(&sigblock, SIGALRM);
+#endif
 #endif
 
 	if(db->config->persistent_client_expiration > 0){

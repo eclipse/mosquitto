@@ -19,6 +19,10 @@ Contributors:
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
+#ifdef WITH_ASYNC_DNS
+#include <signal.h>
+#include <stdlib.h>
+#endif
 #ifndef WIN32
 #include <netdb.h>
 #include <sys/socket.h>
@@ -79,6 +83,83 @@ Contributors:
 int tls_ex_index_mosq = -1;
 #endif
 
+#ifdef WITH_ASYNC_DNS
+struct async_addr_info {
+        struct addrinfo hints;
+        struct sigevent event;
+        struct sigaction action;
+        struct sigaction old_action;
+        struct gaicb *gai;
+        char *host;
+};
+
+static struct async_addr_info aai;
+
+static void net__addrinfo_async_clear()
+{
+        memset(&aai.hints, 0, sizeof(aai.hints));
+        if(aai.gai) {
+	        if(aai.gai->ar_result) {
+		        freeaddrinfo(aai.gai->ar_result);
+		}
+		memset(aai.gai, 0, sizeof(struct gaicb));
+        }
+        if(aai.host) {
+	        free(aai.host);
+		aai.host = NULL;
+	}
+}
+
+static void net__addrinfo_async_done(int sig, siginfo_t *info, void *NOT_USED)
+{
+        if(aai.gai) {
+	        int ret = gai_error(aai.gai);
+		if(ret == 0) {
+		        log__printf(NULL, MOSQ_LOG_DEBUG, "Async DNS-query completed");
+		}
+		else {
+		        log__printf(NULL, MOSQ_LOG_WARNING, "Async DNS-query failed, %s", gai_strerror(ret));
+		}
+	}
+}
+
+static int net__getaddrinfo_async(const char *node, const struct addrinfo *hints, struct addrinfo **res)
+{
+	int ret = 0;
+
+	if(!node || !res) {
+	        return EAI_AGAIN;
+	}
+
+	if(!aai.host) {
+	        if(hints) {
+		        memcpy(&aai.hints, hints, sizeof(aai.hints));
+			aai.gai->ar_request = &aai.hints;
+		}
+		aai.host = strdup(node);
+		aai.gai->ar_name = aai.host;
+		if((ret = getaddrinfo_a(GAI_NOWAIT, &aai.gai, 1, &aai.event)) == 0) {
+		        log__printf(NULL, MOSQ_LOG_DEBUG, "Async DNS-query %s", node);
+			return EAI_AGAIN;
+		}
+		log__printf(NULL, MOSQ_LOG_WARNING, "Async DNS-query %s failed, %s", node, gai_strerror(ret));
+		net__addrinfo_async_clear();
+		return ret;
+	}
+
+	if(strcmp(node, aai.host) == 0) {
+	        if((ret = gai_error(aai.gai)) != EAI_INPROGRESS) {
+		        *res = aai.gai->ar_result;
+			aai.gai->ar_result = NULL;
+			net__addrinfo_async_clear();
+			return ret;
+		}
+	}
+
+	return EAI_AGAIN;
+}
+#endif
+
 int net__init(void)
 {
 #ifdef WIN32
@@ -100,11 +181,38 @@ int net__init(void)
 		tls_ex_index_mosq = SSL_get_ex_new_index(0, "client context", NULL, NULL, NULL);
 	}
 #endif
+
+#ifdef WITH_ASYNC_DNS
+	{
+	        memset(&aai, 0, sizeof(aai));
+		aai.gai = (struct gaicb *)calloc(1, sizeof(struct gaicb));
+		aai.event.sigev_notify = SIGEV_SIGNAL;
+		aai.event.sigev_signo = SIGALRM;
+		aai.event.sigev_value.sival_ptr = &aai;
+		aai.action.sa_flags = SA_SIGINFO;
+		aai.action.sa_sigaction = net__addrinfo_async_done;
+		sigemptyset(&aai.action.sa_mask);
+		sigaction(SIGALRM, &aai.action, &aai.old_action);
+	}
+#endif
+
 	return MOSQ_ERR_SUCCESS;
 }
 
 void net__cleanup(void)
 {
+#ifdef WITH_ASYNC_DNS
+        if(aai.gai) {
+	        if(gai_error(aai.gai) == EAI_INPROGRESS) {
+		        gai_cancel(aai.gai);
+		}
+		net__addrinfo_async_clear();
+		free(aai.gai);
+		sigaction(SIGALRM, &aai.old_action, NULL);
+		memset(&aai, 0, sizeof(aai));
+        }
+#endif
+
 #ifdef WITH_TLS
 	ERR_remove_state(0);
 	ENGINE_cleanup();
@@ -223,7 +331,11 @@ int net__try_connect(struct mosquitto *mosq, const char *host, uint16_t port, mo
 	hints.ai_flags = AI_ADDRCONFIG;
 	hints.ai_socktype = SOCK_STREAM;
 
+#ifdef WITH_ASYNC_DNS
+	s = net__getaddrinfo_async(host, &hints, &ainfo);
+#else
 	s = getaddrinfo(host, NULL, &hints, &ainfo);
+#endif
 	if(s){
 		errno = s;
 		return MOSQ_ERR_EAI;
