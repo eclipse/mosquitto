@@ -14,8 +14,8 @@ Contributors:
    Roger Light - initial implementation and documentation.
 */
 
-#ifndef _MOSQUITTO_H_
-#define _MOSQUITTO_H_
+#ifndef MOSQUITTO_H_
+#define MOSQUITTO_H_
 
 #ifdef __cplusplus
 extern "C" {
