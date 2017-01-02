@@ -14,8 +14,8 @@ Contributors:
    Roger Light - initial implementation and documentation.
 */
 
-#ifndef _MOSQUITTOPP_H_
-#define _MOSQUITTOPP_H_
+#ifndef MOSQUITTOPP_H_
+#define MOSQUITTOPP_H_
 
 #ifdef _WIN32
 #	ifdef mosquittopp_EXPORTS
