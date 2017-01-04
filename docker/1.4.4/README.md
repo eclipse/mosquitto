@@ -13,9 +13,9 @@ Three mount points have been created in the image to be used for configuration, 
 ##Configuration
 
 When running the image, the default configuration values are used. 
-To use a custom configuration file, mount a **local** configuration file to `/mosquitto/conf/mosquitto.conf`
+To use a custom configuration file, mount a **local** configuration file to `/mosquitto/config/mosquitto.conf`
 ```
-docker run -it -p 1883:1883 -p 9001:9001 -v mosquitto.conf:/mosquitto/data/mosquitto.conf mosquitto:1.4.4
+docker run -it -p 1883:1883 -p 9001:9001 -v <path-to-configuration-file>:/mosquitto/config/mosquitto.conf mosquitto:1.4.4
 ```
 
 Configuration can be changed to:
@@ -42,7 +42,7 @@ docker build -t mosquitto:1.4.4 .
 ##Run
 Run a container using the new image:
 ```
-docker run -it -p 1883:1883 -p 9001:9001 -v mosquitto.conf:/mosquitto/data/mosquitto.conf -v /mosquitto/data -v /mosquitto/log mosquitto:1.4.4
+docker run -it -p 1883:1883 -p 9001:9001 -v <path-to-configuration-file>:/mosquitto/config/mosquitto.conf -v /mosquitto/data -v /mosquitto/log mosquitto:1.4.4
 ```
 :boom: if the mosquitto configuration (mosquitto.conf) was modified
 to use non-default ports, the docker run command will need to be updated
