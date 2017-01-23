@@ -543,6 +543,7 @@ int _mosquitto_socket_connect(struct mosquitto *mosq, const char *host, uint16_t
 			return MOSQ_ERR_TLS;
 		}
 		SSL_set_ex_data(mosq->ssl, tls_ex_index_mosq, mosq);
+		SSL_set_tlsext_host_name(mosq->ssl, host);
 		bio = BIO_new_socket(sock, BIO_NOCLOSE);
 		if(!bio){
 			COMPAT_CLOSE(sock);
