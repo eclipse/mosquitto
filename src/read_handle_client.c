@@ -45,10 +45,12 @@ int mqtt3_handle_connack(struct mosquitto_db *db, struct mosquitto *context)
 				if(context->bridge->notifications){
 					notification_payload = '1';
 					if(context->bridge->notification_topic){
-						if(_mosquitto_send_real_publish(context, _mosquitto_mid_generate(context),
-								context->bridge->notification_topic, 1, &notification_payload, 1, true, 0)){
+						if (!context->bridge->notifications_local_only){
+							if(_mosquitto_send_real_publish(context, _mosquitto_mid_generate(context),
+									context->bridge->notification_topic, 1, &notification_payload, 1, true, 0)){
 
-							return 1;
+								return 1;
+							}
 						}
 						mqtt3_db_messages_easy_queue(db, context, context->bridge->notification_topic, 1, 1, &notification_payload, 1);
 					}else{
@@ -58,11 +60,13 @@ int mqtt3_handle_connack(struct mosquitto_db *db, struct mosquitto *context)
 
 						snprintf(notification_topic, notification_topic_len+1, "$SYS/broker/connection/%s/state", context->bridge->remote_clientid);
 						notification_payload = '1';
-						if(_mosquitto_send_real_publish(context, _mosquitto_mid_generate(context),
-								notification_topic, 1, &notification_payload, 1, true, 0)){
+						if (!context->bridge->notifications_local_only){
+							if(_mosquitto_send_real_publish(context, _mosquitto_mid_generate(context),
+									notification_topic, 1, &notification_payload, 1, true, 0)){
 
-							_mosquitto_free(notification_topic);
-							return 1;
+								_mosquitto_free(notification_topic);
+								return 1;
+							}
 						}
 						mqtt3_db_messages_easy_queue(db, context, notification_topic, 1, 1, &notification_payload, 1);
 						_mosquitto_free(notification_topic);
