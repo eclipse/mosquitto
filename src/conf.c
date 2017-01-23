@@ -931,6 +931,7 @@ int _config_read_file_core(struct mqtt3_config *config, bool reload, const char 
 						}
 						cur_bridge->keepalive = 60;
 						cur_bridge->notifications = true;
+						cur_bridge->notifications_local_only = false;
 						cur_bridge->start_type = bst_automatic;
 						cur_bridge->idle_timeout = 60;
 						cur_bridge->restart_timeout = 30;
@@ -1303,6 +1304,17 @@ int _config_read_file_core(struct mqtt3_config *config, bool reload, const char 
 					if(_conf_parse_bool(&token, "notifications", &cur_bridge->notifications, saveptr)) return MOSQ_ERR_INVAL;
 #else
 					_mosquitto_log_printf(NULL, MOSQ_LOG_WARNING, "Warning: Bridge support not available.");
+#endif
+				}else if(!strcmp(token, "notifications_local_only")){
+#ifdef WITH_BRIDGE
+					if(reload) continue; // FIXME
+					if(!cur_bridge){
+						_mosquitto_log_printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
+						return MOSQ_ERR_INVAL;
+					}
+					if(_conf_parse_bool(&token, "notifications_local_only", &cur_bridge->notifications_local_only, saveptr)) return MOSQ_ERR_INVAL;
+#else
+					_mosquitto_log_printf(NULL, MOSQ_LOG_WARNING, "Warning: Bridge support not available.");	
 #endif
 				}else if(!strcmp(token, "notification_topic")){
 #ifdef WITH_BRIDGE
