@@ -321,6 +321,9 @@ void net__print_ssl_error(struct mosquitto *mosq)
 int net__socket_connect_tls(struct mosquitto *mosq)
 {
 	int ret, err;
+	unsigned long e;
+	char ebuf[256];
+
 	ret = SSL_connect(mosq->ssl);
 	if(ret != 1) {
 		err = SSL_get_error(mosq->ssl, ret);
@@ -337,6 +340,11 @@ int net__socket_connect_tls(struct mosquitto *mosq)
 			mosq->want_write = true;
 			mosq->want_connect = true;
 		}else{
+			e = ERR_get_error();
+			while(e){
+				_mosquitto_log_printf(mosq, MOSQ_LOG_ERR, "OpenSSL Error: %s", ERR_error_string(e, ebuf));
+				e = ERR_get_error();
+			}
 			COMPAT_CLOSE(mosq->sock);
 			mosq->sock = INVALID_SOCKET;
 			net__print_ssl_error(mosq);

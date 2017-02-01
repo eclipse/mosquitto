@@ -33,6 +33,7 @@ Contributors:
 #  include "mosquitto_broker_internal.h"
 #endif
 #include "mosquitto_internal.h"
+#include "logging_mosq.h"
 #include "tls_mosq.h"
 
 extern int tls_ex_index_mosq;
@@ -58,10 +59,14 @@ int mosquitto__server_certificate_verify(int preverify_ok, X509_STORE_CTX *ctx)
 			cert = X509_STORE_CTX_get_current_cert(ctx);
 			/* This is the peer certificate, all others are upwards in the chain. */
 #if defined(WITH_BROKER)
-			return mosquitto__verify_certificate_hostname(cert, mosq->bridge->addresses[mosq->bridge->cur_address].address);
+			preverify_ok = mosquitto__verify_certificate_hostname(cert, mosq->bridge->addresses[mosq->bridge->cur_address].address);
 #else
-			return mosquitto__verify_certificate_hostname(cert, mosq->host);
+			preverify_ok = mosquitto__verify_certificate_hostname(cert, mosq->host);
 #endif
+			if (preverify_ok != 1) {
+				_mosquitto_log_printf(mosq, MOSQ_LOG_ERR, "Error: host name verification failed.");
+			}
+			return preverify_ok;
 		}else{
 			return preverify_ok;
 		}
