@@ -28,7 +28,7 @@ WITH_TLS:=yes
 # This must be disabled if using openssl < 1.0.
 WITH_TLS_PSK:=yes
 
-# Comment out to disable client client threading support.
+# Comment out to disable client threading support.
 WITH_THREADING:=yes
 
 # Comment out to remove bridge support from the broker. This allow the broker
