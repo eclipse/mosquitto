@@ -96,6 +96,8 @@ int _mosquitto_send_publish(struct mosquitto *mosq, uint16_t mid, const char *to
 #endif
 	assert(mosq);
 	assert(topic);
+	
+	retain = (retain != 0);
 
 #if defined(WITH_BROKER) && defined(WITH_WEBSOCKETS)
 	if(mosq->sock == INVALID_SOCKET && !mosq->wsi) return MOSQ_ERR_NO_CONN;
