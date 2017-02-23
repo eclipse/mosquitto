@@ -25,26 +25,31 @@ include_directories(${mosquitto_SOURCE_DIR} ${mosquitto_SOURCE_DIR}/lib
 			${OPENSSL_INCLUDE_DIR} ${PTHREAD_INCLUDE_DIR})
 link_directories(${mosquitto_SOURCE_DIR}/lib)
 
-add_library(libmosquitto SHARED
-	logging_mosq.c logging_mosq.h
-	memory_mosq.c memory_mosq.h
-	messages_mosq.c messages_mosq.h
-	mosquitto.c mosquitto.h
-	mosquitto_internal.h
-	mqtt3_protocol.h
-	net_mosq.c net_mosq.h
-	read_handle.c read_handle.h
-	read_handle_client.c
-	read_handle_shared.c
-	send_client_mosq.c
-	send_mosq.c send_mosq.h
-	socks_mosq.c
-	srv_mosq.c
-	thread_mosq.c
-	time_mosq.c
-	tls_mosq.c
-	util_mosq.c util_mosq.h
-	will_mosq.c will_mosq.h)
+set (SOURCE_LIB_C logging_mosq.c logging_mosq.h
+		memory_mosq.c memory_mosq.h
+		messages_mosq.c messages_mosq.h
+		mosquitto.c mosquitto.h
+		mosquitto_internal.h
+		mqtt3_protocol.h
+		net_mosq.c net_mosq.h
+		read_handle.c read_handle.h
+		read_handle_client.c
+		read_handle_shared.c
+		send_client_mosq.c
+		send_mosq.c send_mosq.h
+		socks_mosq.c
+		srv_mosq.c
+		thread_mosq.c
+		time_mosq.c
+		tls_mosq.c
+		util_mosq.c util_mosq.h
+		will_mosq.c will_mosq.h)
+
+if (${STATIC_LIB} STREQUAL ON)
+	add_library(libmosquitto STATIC ${SOURCE_LIB_C})
+else (${STATIC_LIB} STREQUAL ON)
+	add_library(libmosquitto SHARED ${SOURCE_LIB_C})
+endif (${STATIC_LIB} STREQUAL ON)
 
 set (LIBRARIES ${OPENSSL_LIBRARIES} ${PTHREAD_LIBRARIES})
 
@@ -78,7 +83,7 @@ set_target_properties(libmosquitto PROPERTIES
 	SOVERSION 1
 )
 
-install(TARGETS libmosquitto RUNTIME DESTINATION "${BINDIR}" LIBRARY DESTINATION "${LIBDIR}")
+install(TARGETS libmosquitto RUNTIME DESTINATION "${BINDIR}" LIBRARY DESTINATION "${LIBDIR}" ARCHIVE DESTINATION "${LIBDIR}")
 install(FILES mosquitto.h DESTINATION "${INCLUDEDIR}")
 
 if (UNIX)
