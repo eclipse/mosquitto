@@ -274,3 +274,7 @@ void mosquitto_log_printf(int level, const char *fmt, ...)
 	va_end(va);
 }
 
+void mosquitto_log_vprintf( int level, const char *fmt, va_list ap ) {
+    _mosquitto_log_vprintf(NULL, level, fmt, ap);
+}
+

@@ -74,6 +74,30 @@ struct mosquitto_auth_opt {
 void mosquitto_log_printf(int level, const char *fmt, ...);
 
 
+/*
+ * Function: mosquitto_log_vprintf
+ *
+ * Write a log message using the broker configured logging.
+ *
+ * Parameters:
+ * 	level -    Log message priority. Can currently be one of:
+ *
+ *             MOSQ_LOG_INFO
+ *             MOSQ_LOG_NOTICE
+ *             MOSQ_LOG_WARNING
+ *             MOSQ_LOG_ERR
+ *             MOSQ_LOG_DEBUG
+ *             MOSQ_LOG_SUBSCRIBE (not recommended for use by plugins)
+ *             MOSQ_LOG_UNSUBSCRIBE (not recommended for use by plugins)
+ *
+ *             These values are defined in mosquitto.h.
+ *
+ *	fmt -      printf style format
+ *
+ *	ap -       stdarg va_list
+ */
+void mosquitto_log_vprintf(int level, const char *fmt, va_list ap );
+
 
 /* =========================================================================
  *
