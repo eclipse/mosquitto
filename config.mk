@@ -159,10 +159,6 @@ ifeq ($(UNAME),QNX)
 	LIB_LIBS:=$(LIB_LIBS) -lsocket
 endif
 
-ifeq ($(UNAME),Linux)
-	BROKER_LIBS:=$(BROKER_LIBS) -lanl
-endif
-
 ifeq ($(WITH_WRAP),yes)
 	BROKER_LIBS:=$(BROKER_LIBS) -lwrap
 	BROKER_CFLAGS:=$(BROKER_CFLAGS) -DWITH_WRAP
