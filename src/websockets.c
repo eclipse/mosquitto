@@ -232,14 +232,10 @@ static int callback_mqtt(struct libwebsocket_context *context,
 			break;
 
 		case LWS_CALLBACK_SERVER_WRITEABLE:
-			if(!u){
+			if(!u || !u->mosq){
 				return -1;
 			}
 			mosq = u->mosq;
-			if(!mosq || mosq->state == mosq_cs_disconnect_ws || mosq->state == mosq_cs_disconnecting){
-				return -1;
-			}
-
 			mqtt3_db_message_write(db, mosq);
 
 			if(mosq->out_packet && !mosq->current_out_packet){
@@ -250,6 +246,7 @@ static int callback_mqtt(struct libwebsocket_context *context,
 				}
 			}
 
+			count = -1;
 			while(mosq->current_out_packet && !lws_send_pipe_choked(mosq->wsi)){
 				packet = mosq->current_out_packet;
 
@@ -269,7 +266,7 @@ static int callback_mqtt(struct libwebsocket_context *context,
 				count = packet->to_process;
 #endif
 				if(count < 0){
-					return 0;
+					break;
 				}
 				packet->to_process -= count;
 				packet->pos += count;
@@ -295,7 +292,10 @@ static int callback_mqtt(struct libwebsocket_context *context,
 					libwebsocket_callback_on_writable(mosq->ws_context, mosq->wsi);
 				}
 			}
-			if(mosq->current_out_packet){
+			if(mosq->state == mosq_cs_disconnect_ws || mosq->state == mosq_cs_disconnecting){
+				return -1;
+			}
+			if(mosq->current_out_packet && count >= 0){
 				libwebsocket_callback_on_writable(mosq->ws_context, mosq->wsi);
 			}
 			break;
