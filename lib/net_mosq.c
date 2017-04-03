@@ -114,7 +114,9 @@ void _mosquitto_net_init(void)
 void _mosquitto_net_cleanup(void)
 {
 #ifdef WITH_TLS
-	ERR_remove_state(0);
+	#if OPENSSL_VERSION_NUMBER < 0x10100000L
+		ERR_remove_state(0);
+	#endif
 	ENGINE_cleanup();
 	CONF_modules_unload(1);
 	ERR_free_strings();
