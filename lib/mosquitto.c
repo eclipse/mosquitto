@@ -191,6 +191,7 @@ int mosquitto_reinitialise(struct mosquitto *mosq, const char *id, bool clean_se
 	mosq->in_callback = false;
 	mosq->in_queue_len = 0;
 	mosq->out_queue_len = 0;
+	mosq->max_out_queue_len = 0;
 	mosq->reconnect_delay = 1;
 	mosq->reconnect_delay_max = 1;
 	mosq->reconnect_exponential_backoff = false;
@@ -604,8 +605,14 @@ int mosquitto_publish(struct mosquitto *mosq, int *mid, const char *topic, int p
 				message->state = mosq_ms_wait_for_pubrec;
 			}
 			pthread_mutex_unlock(&mosq->out_message_mutex);
+
 			return send__publish(mosq, message->msg.mid, message->msg.topic, message->msg.payloadlen, message->msg.payload, message->msg.qos, message->msg.retain, message->dup);
-		}else{
+		} else if(queue_status == 2)
+		{
+            message__cleanup(&message);
+			pthread_mutex_unlock(&mosq->out_message_mutex);
+			return MOSQ_ERR_UNKNOWN;
+        } else{
 			message->state = mosq_ms_invalid;
 			pthread_mutex_unlock(&mosq->out_message_mutex);
 			return MOSQ_ERR_SUCCESS;
