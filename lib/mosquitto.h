@@ -1296,6 +1296,23 @@ libmosq_EXPORT int mosquitto_reconnect_delay_set(struct mosquitto *mosq, unsigne
 libmosq_EXPORT int mosquitto_max_inflight_messages_set(struct mosquitto *mosq, unsigned int max_inflight_messages);
 
 /*
+ * Function: mosquitto_max_out_queue_size_set
+ *
+ * Set 0 for unlimited size.
+ *
+ *  * Parameters:
+ *  mosq -                  a valid mosquitto instance.
+ *  max_queue_size -		the maximum number of messages in the outgoing queue. Defaults
+ *                          to 0.
+ *
+ * Returns:
+ *	MOSQ_ERR_SUCCESS - on success.
+ * 	MOSQ_ERR_INVAL -   if the input parameters were invalid.
+ */
+libmosq_EXPORT int mosquitto_max_out_queue_size_set(struct mosquitto *mosq, unsigned int max_queue_size);
+
+
+/*
  * Function: mosquitto_message_retry_set
  *
  * Set the number of seconds to wait before retrying messages. This applies to
