@@ -67,7 +67,7 @@ already be built. Use `make binary` to skip building the man pages, or install
 
 * c-ares (libc-ares-dev on Debian based systems) - disable with `make WITH_DNS_SRV=no`
 * libuuid (uuid-dev) - disable with `make WITH_UUID=no`
-* libwebsockets (libwebsockets-dev) - enable with `make WITH_LIBWEBSOCKETS=yes`
+* libwebsockets (libwebsockets-dev) - enable with `make WITH_WEBSOCKETS=yes`
 * openssl (libssl-dev on Debian based systems) - disable with `make WITH_TLS=no`
 
 ## Credits
