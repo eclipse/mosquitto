@@ -246,7 +246,7 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 				}else{
 					if((context->bridge->start_type == bst_lazy && context->bridge->lazy_reconnect)
 							|| (context->bridge->start_type == bst_automatic && now > context->bridge->restart_t)){
-
+						context->bridge->restart_t = 0;
 #if defined(__GLIBC__) && defined(WITH_ADNS)
 						if(context->adns){
 							/* Waiting on DNS lookup */
