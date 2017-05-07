@@ -82,7 +82,8 @@ enum mosq_err_t {
 	MOSQ_ERR_EAI = 15,
 	MOSQ_ERR_PROXY = 16,
 	MOSQ_ERR_PLUGIN_DEFER = 17,
-	MOSQ_ERR_MALFORMED_UTF8 = 18
+    MOSQ_ERR_MALFORMED_UTF8 = 18,
+    MOSQ_ERR_QUEUE_IS_FULL = 19
 };
 
 /* Error values */
@@ -597,6 +598,7 @@ libmosq_EXPORT int mosquitto_disconnect(struct mosquitto *mosq);
  *                            broker.
  * 	MOSQ_ERR_PAYLOAD_SIZE -   if payloadlen is too large.
  * 	MOSQ_ERR_MALFORMED_UTF8 - if the topic is not valid UTF-8
+ *  MOSQ_ERR_QUEUE_IS_FULL -  if the outgoing queue is full
  *
  * See Also: 
  *	<mosquitto_max_inflight_messages_set>
@@ -1319,6 +1321,8 @@ libmosq_EXPORT int mosquitto_max_inflight_messages_set(struct mosquitto *mosq, u
 /*
  * Function: mosquitto_max_out_queue_size_set
  *
+ * Sets the maximum size of the outgoing queue in case of messages with qos > 0. If the
+ * queue limit is reached, mosquitto_publish() will return error.
  * Set 0 for unlimited size.
  *
  *  * Parameters:

@@ -611,7 +611,7 @@ int mosquitto_publish(struct mosquitto *mosq, int *mid, const char *topic, int p
 		{
             message__cleanup(&message);
 			pthread_mutex_unlock(&mosq->out_message_mutex);
-			return MOSQ_ERR_UNKNOWN;
+            return MOSQ_ERR_QUEUE_IS_FULL;
         } else{
 			message->state = mosq_ms_invalid;
 			pthread_mutex_unlock(&mosq->out_message_mutex);
@@ -1315,6 +1315,8 @@ const char *mosquitto_strerror(int mosq_errno)
 			return "Proxy error.";
 		case MOSQ_ERR_MALFORMED_UTF8:
 			return "Malformed UTF-8";
+        case MOSQ_ERR_QUEUE_IS_FULL:
+            return "Outgoing queue is full.";
 		default:
 			return "Unknown error.";
 	}
