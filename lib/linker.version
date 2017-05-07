@@ -86,4 +86,5 @@ MOSQ_1.5 {
 		mosquitto_message_free_contents;
 		mosquitto_validate_utf8;
 		mosquitto_userdata;
+		mosquitto_max_out_queue_size_set;
 } MOSQ_1.4;
