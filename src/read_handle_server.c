@@ -382,7 +382,7 @@ int mqtt3_handle_connect(struct mosquitto_db *db, struct mosquitto *context)
 				case MOSQ_ERR_SUCCESS:
 					break;
 				case MOSQ_ERR_AUTH:
-					_mosquitto_send_connack(context, 0, CONNACK_REFUSED_NOT_AUTHORIZED);
+					_mosquitto_send_connack(context, 0, CONNACK_REFUSED_BAD_USERNAME_PASSWORD);
 					mqtt3_context_disconnect(db, context);
 					rc = 1;
 					goto handle_connect_error;
