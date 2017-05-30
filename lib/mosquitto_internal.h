@@ -253,6 +253,7 @@ struct mosquitto {
 	int port;
 	int in_queue_len;
 	int out_queue_len;
+	int max_out_queue_len;
 	char *bind_address;
 	unsigned int reconnect_delay;
 	unsigned int reconnect_delay_max;
