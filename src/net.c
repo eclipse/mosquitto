@@ -165,6 +165,7 @@ int mqtt3_socket_accept(struct mosquitto_db *db, mosq_sock_t listensock)
 					new_context->want_write = true;
 					bio = BIO_new_socket(new_sock, BIO_NOCLOSE);
 					SSL_set_bio(new_context->ssl, bio, bio);
+					ERR_clear_error();
 					rc = SSL_accept(new_context->ssl);
 					if(rc != 1){
 						rc = SSL_get_error(new_context->ssl, rc);

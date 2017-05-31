@@ -464,6 +464,7 @@ int _mosquitto_try_connect(struct mosquitto *mosq, const char *host, uint16_t po
 int mosquitto__socket_connect_tls(struct mosquitto *mosq)
 {
 	int ret, err;
+	ERR_clear_error();
 	ret = SSL_connect(mosq->ssl);
 	if(ret != 1) {
 		err = SSL_get_error(mosq->ssl, ret);
@@ -762,6 +763,7 @@ ssize_t _mosquitto_net_read(struct mosquitto *mosq, void *buf, size_t count)
 	errno = 0;
 #ifdef WITH_TLS
 	if(mosq->ssl){
+		ERR_clear_error();
 		ret = SSL_read(mosq->ssl, buf, count);
 		if(ret <= 0){
 			err = SSL_get_error(mosq->ssl, ret);
@@ -812,6 +814,7 @@ ssize_t _mosquitto_net_write(struct mosquitto *mosq, void *buf, size_t count)
 #ifdef WITH_TLS
 	if(mosq->ssl){
 		mosq->want_write = false;
+		ERR_clear_error();
 		ret = SSL_write(mosq->ssl, buf, count);
 		if(ret < 0){
 			err = SSL_get_error(mosq->ssl, ret);
