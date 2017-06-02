@@ -60,6 +60,7 @@ struct _sub_token {
 	char *topic;
 };
 
+
 static int _subs_process(struct mosquitto_db *db, struct _mosquitto_subhier *hier, const char *source_id, const char *topic, int qos, int retain, struct mosquitto_msg_store *stored, bool set_retain)
 {
 	int rc = 0;
@@ -108,7 +109,7 @@ static int _subs_process(struct mosquitto_db *db, struct _mosquitto_subhier *hie
 		}else if(rc2 == MOSQ_ERR_SUCCESS){
 			client_qos = leaf->qos;
 
-			if(db->config->upgrade_outgoing_qos){
+			if((db->config->upgrade_bridge_qos && leaf->context->is_bridge) || db->config->upgrade_outgoing_qos){
 				msg_qos = client_qos;
 			}else{
 				if(qos > client_qos){
@@ -117,6 +118,7 @@ static int _subs_process(struct mosquitto_db *db, struct _mosquitto_subhier *hie
 					msg_qos = qos;
 				}
 			}
+
 			if(msg_qos){
 				mid = _mosquitto_mid_generate(leaf->context);
 			}else{

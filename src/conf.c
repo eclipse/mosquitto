@@ -157,6 +157,7 @@ static void _config_init_reload(struct mqtt3_config *config)
 	config->retry_interval = 20;
 	config->sys_interval = 10;
 	config->upgrade_outgoing_qos = false;
+	config->upgrade_bridge_qos = false;
 	if(config->auth_options){
 		for(i=0; i<config->auth_option_count; i++){
 			_mosquitto_free(config->auth_options[i].key);
@@ -1698,6 +1699,8 @@ int _config_read_file_core(struct mqtt3_config *config, bool reload, const char 
 #endif
 				}else if(!strcmp(token, "upgrade_outgoing_qos")){
 					if(_conf_parse_bool(&token, token, &config->upgrade_outgoing_qos, saveptr)) return MOSQ_ERR_INVAL;
+				}else if (!strcmp(token, "upgrade_bridge_qos")){
+					if(_conf_parse_bool(&token, token, &config->upgrade_bridge_qos, saveptr)) return MOSQ_ERR_INVAL;
 				}else if(!strcmp(token, "use_identity_as_username")){
 #ifdef WITH_TLS
 					if(reload) continue; // Listeners not valid for reloading.
