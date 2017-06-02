@@ -355,6 +355,16 @@ int main(int argc, char *argv[])
 	}
 #endif
 
+#ifdef WITH_KAFKA_BRIDGE
+	for(i=0; i<config.kafka_bridge_count; i++){
+		if(kafka_bridge__new(&int_db, &(config.kafka_bridges[i]), i)){
+			log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Unable to connect to Kafka bridge %s.",
+						config.kafka_bridges[i].name);
+		}
+	}
+
+#endif
+
 #ifdef WITH_SYSTEMD
 	sd_notify(0, "READY=1");
 #endif

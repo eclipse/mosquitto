@@ -20,6 +20,10 @@ Contributors:
 #include "config.h"
 #include <stdio.h>
 
+#ifdef WITH_KAFKA_BRIDGE
+#include <librdkafka/rdkafka.h>
+#endif
+
 #ifdef WITH_WEBSOCKETS
 #  include <libwebsockets.h>
 
@@ -220,6 +224,10 @@ struct mosquitto__config {
 	struct mosquitto__bridge *bridges;
 	int bridge_count;
 #endif
+#ifdef WITH_KAFKA_BRIDGE
+	struct kafka__bridge *kafka_bridges;
+	int kafka_bridge_count;
+#endif
 	struct mosquitto__auth_plugin_config *auth_plugins;
 	int auth_plugin_count;
 };
@@ -352,13 +360,14 @@ struct mosquitto_db{
 	struct mosquitto *contexts_for_free;
 #ifdef WITH_BRIDGE
 	struct mosquitto **bridges;
+	int bridge_count;
+#endif
+#ifdef WITH_KAFKA_BRIDGE
+	int kafka_bridge_count;
 #endif
 	struct clientid__index_hash *clientid_index_hash;
 	struct mosquitto_msg_store *msg_store;
 	struct mosquitto_msg_store_load *msg_store_load;
-#ifdef WITH_BRIDGE
-	int bridge_count;
-#endif
 	unsigned long msg_store_bytes;
 	int msg_store_count;
 	struct mosquitto__config *config;
@@ -444,6 +453,15 @@ struct mosquitto__bridge{
 	char *tls_psk;
 #  endif
 #endif
+};
+
+struct kafka__bridge {
+	char *name;
+	char **topics;
+	int topic_count;
+
+	rd_kafka_conf_t *conf;
+	rd_kafka_t *producer;
 };
 
 #ifdef WITH_WEBSOCKETS
@@ -574,6 +592,12 @@ int bridge__connect(struct mosquitto_db *db, struct mosquitto *context);
 int bridge__connect_step1(struct mosquitto_db *db, struct mosquitto *context);
 int bridge__connect_step2(struct mosquitto_db *db, struct mosquitto *context);
 void bridge__packet_cleanup(struct mosquitto *context);
+#endif
+
+#ifdef WITH_KAFKA_BRIDGE
+int kafka_bridge__new(struct mosquitto_db *db, struct kafka__bridge *bridge, int num);
+int kafka_bridge__connect(struct mosquitto_db *db, struct mosquitto *context, int num);
+void kafka_bridge__convert_topic_name(char* mqtt_topic);
 #endif
 
 /* ============================================================

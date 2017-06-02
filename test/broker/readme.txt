@@ -12,3 +12,5 @@ Numbering is as follows:
 05: Clean session tests
 06: Bridge tests
 07: Will tests
+
+11: Kafka bridge tests

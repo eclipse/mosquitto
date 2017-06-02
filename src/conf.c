@@ -218,6 +218,10 @@ void config__init(struct mosquitto__config *config)
 	config->bridges = NULL;
 	config->bridge_count = 0;
 #endif
+#ifdef WITH_KAFKA_BRIDGE
+	config->kafka_bridges = NULL;
+	config->kafka_bridge_count = 0;
+#endif
 	config->auth_plugins = NULL;
 	config->verbose = false;
 	config->message_size_limit = 0;
@@ -298,6 +302,21 @@ void config__cleanup(struct mosquitto__config *config)
 #endif
 		}
 		mosquitto__free(config->bridges);
+	}
+#endif
+#ifdef WITH_KAFKA_BRIDGE
+	if(config->kafka_bridges){
+		for(i=0; i<config->kafka_bridge_count; i++){
+			mosquitto__free(config->kafka_bridges[i].name);
+			if(config->kafka_bridges[i].topics){
+				for(j=0; j<config->kafka_bridges[i].topic_count; j++){
+					mosquitto__free(config->kafka_bridges[i].topics[j]);
+				}
+				mosquitto__free(config->kafka_bridges[i].topics);
+			}
+			rd_kafka_conf_destroy(config->kafka_bridges[i].conf);
+		}
+		mosquitto__free(config->kafka_bridges);
 	}
 #endif
 	if(config->auth_plugins){
@@ -479,7 +498,7 @@ int config__read(struct mosquitto__config *config, bool reload)
 	struct config_recurse cr;
 	int lineno = 0;
 	int len;
-#ifdef WITH_BRIDGE
+#if defined(WITH_BRIDGE) || defined(WITH_KAFKA_BRIDGE)
 	int i;
 #endif
 
@@ -550,6 +569,15 @@ int config__read(struct mosquitto__config *config, bool reload)
 	}
 #endif
 
+#ifdef WITH_KAFKA_BRIDGE
+	for(i=0; i<config->kafka_bridge_count; i++) {
+		if (!config->kafka_bridges[i].name || !config->kafka_bridges[i].conf) {
+			log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid Kafka bridge configuration.");
+			return MOSQ_ERR_INVAL;
+		}
+	}
+#endif
+
 	if(cr.log_dest_set){
 		config->log_dest = cr.log_dest;
 	}
@@ -571,6 +599,11 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, const 
 #ifdef WITH_BRIDGE
 	struct mosquitto__bridge *cur_bridge = NULL;
 	struct mosquitto__bridge_topic *cur_topic;
+#endif
+#ifdef WITH_KAFKA_BRIDGE
+	struct kafka__bridge *cur_kafka_bridge = NULL;
+	char errstr[512];
+	char *token2;
 #endif
 	struct mosquitto__auth_plugin_config *cur_auth_plugin = NULL;
 
@@ -949,6 +982,9 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, const 
 					}
 					if(conf__parse_string(&token, "clientid_prefixes", &config->clientid_prefixes, saveptr)) return MOSQ_ERR_INVAL;
 				}else if(!strcmp(token, "connection")){
+#ifdef WITH_KAFKA_BRIDGE
+					cur_kafka_bridge = NULL;
+#endif
 #ifdef WITH_BRIDGE
 					if(reload) continue; // FIXME
 					token = strtok_r(NULL, " ", &saveptr);
@@ -1091,6 +1127,64 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, const 
 						closedir(dh);
 #endif
 					}
+				}else if(!strcmp(token, "kafka_config")) {
+#ifdef WITH_KAFKA_BRIDGE
+					if(reload) continue; // FIXME
+					if(!cur_kafka_bridge){
+						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid Kafka bridge configuration.");
+						return MOSQ_ERR_INVAL;
+					}
+					if(!cur_kafka_bridge->conf){
+						cur_kafka_bridge->conf = rd_kafka_conf_new();
+						if(!cur_kafka_bridge->conf){
+							return MOSQ_ERR_NOMEM;
+						}
+					}
+
+					token = strtok_r(NULL, " ", &saveptr);
+					token2 = strtok_r(NULL, " ", &saveptr);
+					if (token && token2){
+						if (rd_kafka_conf_set(cur_kafka_bridge->conf, token, token2,
+											  errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK){
+							log__printf(NULL, MOSQ_LOG_ERR, "Error: Wrong Kafka configuration: %s", errstr);
+							return MOSQ_ERR_INVAL;
+						}
+					}else{
+						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid kafka_config value in configuration.");
+						return MOSQ_ERR_INVAL;
+					}
+#else
+					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Kafka bridge support not available.");
+#endif
+				}else if(!strcmp(token, "kafka_connection")) {
+#ifdef WITH_BRIDGE
+					cur_bridge = NULL;
+#endif
+#ifdef WITH_KAFKA_BRIDGE
+					if (reload) continue; // FIXME
+					token = strtok_r(NULL, " ", &saveptr);
+					if (token) {
+						config->kafka_bridge_count++;
+						config->kafka_bridges = mosquitto__realloc(config->kafka_bridges,
+																   config->kafka_bridge_count * sizeof(struct kafka__bridge));
+						if (!config->kafka_bridges) {
+							log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
+							return MOSQ_ERR_NOMEM;
+						}
+						cur_kafka_bridge = &(config->kafka_bridges[config->kafka_bridge_count - 1]);
+						memset(cur_kafka_bridge, 0, sizeof(struct kafka__bridge));
+						cur_kafka_bridge->name = mosquitto__strdup(token);
+						if (!cur_kafka_bridge->name) {
+							log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
+							return MOSQ_ERR_NOMEM;
+						}
+					} else {
+						log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty kafka_connection value in configuration.");
+						return MOSQ_ERR_INVAL;
+					}
+#else
+					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Kafka bridge support not available.");
+#endif
 				}else if(!strcmp(token, "keepalive_interval")){
 #ifdef WITH_BRIDGE
 					if(reload) continue; // FIXME
@@ -1594,8 +1688,29 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, const 
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: TLS support not available.");
 #endif
 				}else if(!strcmp(token, "topic")){
-#ifdef WITH_BRIDGE
+#if defined(WITH_BRIDGE) || defined(WITH_KAFKA_BRIDGE)
 					if(reload) continue; // FIXME
+					bool configuration_parsed = false;
+#ifdef WITH_KAFKA_BRIDGE
+					if(cur_kafka_bridge){
+						token = strtok_r(NULL, " ", &saveptr);
+						cur_kafka_bridge->topic_count++;
+						cur_kafka_bridge->topics = mosquitto__realloc(cur_kafka_bridge->topics,
+																	  sizeof(char*)*cur_kafka_bridge->topic_count);
+						if(!cur_kafka_bridge->topics){
+							log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
+							return MOSQ_ERR_NOMEM;
+						}
+						char** current_topic = &cur_kafka_bridge->topics[cur_kafka_bridge->topic_count-1];
+						*current_topic = mosquitto__strdup(token);
+						if(!*current_topic){
+							log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
+							return MOSQ_ERR_NOMEM;
+						}
+						configuration_parsed = true;
+					}
+#endif
+#ifdef WITH_BRIDGE
 					if(!cur_bridge){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
@@ -1737,9 +1852,15 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, const 
 							log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 							return MOSQ_ERR_NOMEM;
 						}
+						configuration_parsed = true;
+					}
+#endif
+					if(!configuration_parsed){
+						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid Kafka or MQTT bridge configuration.");
+						return MOSQ_ERR_INVAL;
 					}
 #else
-					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Bridge support not available.");
+					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Kafka or MQTT bridge support not available.");
 #endif
 				}else if(!strcmp(token, "try_private")){
 #ifdef WITH_BRIDGE

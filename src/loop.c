@@ -139,6 +139,9 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 #ifdef WITH_BRIDGE
 		context_count += db->bridge_count;
 #endif
+#ifdef WITH_KAFKA_BRIDGE
+		context_count += db->kafka_bridge_count;
+#endif
 
 		if(listensock_count + context_count > pollfd_count || !pollfds){
 			pollfd_count = listensock_count + context_count;

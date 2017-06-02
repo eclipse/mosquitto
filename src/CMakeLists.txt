@@ -58,6 +58,14 @@ if (${INC_BRIDGE_SUPPORT} STREQUAL ON)
 	add_definitions("-DWITH_BRIDGE")
 endif (${INC_BRIDGE_SUPPORT} STREQUAL ON)
 
+option(INC_KAFKA_BRIDGE_SUPPORT
+		"Include Kafka bridge support for connecting to Apache Kafka?" ON)
+if (${INC_KAFKA_BRIDGE_SUPPORT} STREQUAL ON)
+	set (MOSQ_SRCS ${MOSQ_SRCS} kafka_bridge.c)
+	set (MOSQ_LIBS ${MOSQ_LIBS} rdkafka)
+	add_definitions("-DWITH_KAFKA_BRIDGE")
+endif (${INC_KAFKA_BRIDGE_SUPPORT} STREQUAL ON)
+
 
 option(USE_LIBWRAP
 	"Include tcp-wrappers support?" OFF)

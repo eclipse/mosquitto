@@ -207,6 +207,7 @@ struct mosquitto {
 	bool is_dropping;
 	bool is_bridge;
 	struct mosquitto__bridge *bridge;
+	struct kafka__bridge *kafka_bridge;
 	struct mosquitto_client_msg *inflight_msgs;
 	struct mosquitto_client_msg *last_inflight_msg;
 	struct mosquitto_client_msg *queued_msgs;

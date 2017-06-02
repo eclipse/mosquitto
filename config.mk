@@ -35,7 +35,11 @@ WITH_THREADING:=yes
 # to connect to other brokers and subscribe/publish to topics. You probably
 # want to leave this included unless you want to save a very small amount of
 # memory size and CPU time.
-WITH_BRIDGE:=yes
+#WITH_BRIDGE:=yes
+
+# Comment out to remove Kafa support from the broker. This allows the broker
+# to connect to a Kafka cluster and publish messages to it.
+WITH_KAFKA_BRIDGE:=yes
 
 # Comment out to remove persistent database support from the broker. This
 # allows the broker to store retained messages and durable subscriptions to a
@@ -208,6 +212,11 @@ endif
 
 ifeq ($(WITH_BRIDGE),yes)
 	BROKER_CFLAGS:=$(BROKER_CFLAGS) -DWITH_BRIDGE
+endif
+
+ifeq ($(WITH_KAFKA_BRIDGE),yes)
+	BROKER_CFLAGS:=$(BROKER_CFLAGS) -DWITH_KAFKA_BRIDGE
+	BROKER_LIBS:=$(BROKER_LIBS) -lrdkafka
 endif
 
 ifeq ($(WITH_PERSISTENCE),yes)

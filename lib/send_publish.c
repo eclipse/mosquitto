@@ -47,6 +47,8 @@ int send__publish(struct mosquitto *mosq, uint16_t mid, const char *topic, uint3
 	bool match;
 	int rc;
 	char *mapped_topic = NULL;
+#endif
+#if defined(WITH_BRIDGE) || defined(WITH_KAFKA_BRIDGE)
 	char *topic_temp = NULL;
 #endif
 #endif
@@ -117,6 +119,31 @@ int send__publish(struct mosquitto *mosq, uint16_t mid, const char *topic, uint3
 				}
 			}
 		}
+	}
+#endif
+#ifdef WITH_KAFKA_BRIDGE
+	if(mosq->kafka_bridge){
+		topic_temp = mosquitto__strdup(topic);
+		if(!topic_temp) return MOSQ_ERR_NOMEM;
+		kafka_bridge__convert_topic_name(topic_temp);
+
+		log__printf(NULL, MOSQ_LOG_DEBUG, "Sending Kafka PUBLISH to %s (d%d, q%d, r%d, m%d, '%s', ... (%ld bytes))",
+					mosq->id, dup, qos, retain, mid, topic_temp, (long) payloadlen);
+		if(rd_kafka_producev(mosq->kafka_bridge->producer,
+							  RD_KAFKA_V_TOPIC(topic_temp),
+							  RD_KAFKA_V_KEY(NULL, 0),
+							  RD_KAFKA_V_VALUE((void *) payload, payloadlen),
+							  RD_KAFKA_V_MSGFLAGS(RD_KAFKA_MSG_F_COPY),
+							  RD_KAFKA_V_END) != RD_KAFKA_RESP_ERR_NO_ERROR){
+			log__printf(NULL, MOSQ_LOG_ERR, "Error publishing message to Kafka topic %s for Kafka bridge %s.",
+						topic_temp, mosq->kafka_bridge->name);
+
+			mosquitto__free(topic_temp);
+			return MOSQ_ERR_UNKNOWN;
+		}
+		mosquitto__free(topic_temp);
+
+		return MOSQ_ERR_SUCCESS;
 	}
 #endif
 	log__printf(NULL, MOSQ_LOG_DEBUG, "Sending PUBLISH to %s (d%d, q%d, r%d, m%d, '%s', ... (%ld bytes))", mosq->id, dup, qos, retain, mid, topic, (long)payloadlen);
