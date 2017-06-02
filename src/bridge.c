@@ -55,12 +55,12 @@ int mqtt3_bridge_new(struct mosquitto_db *db, struct _mqtt3_bridge *bridge)
 
 	if(!bridge->remote_clientid){
 		if(!gethostname(hostname, 256)){
-			len = strlen(hostname) + strlen(bridge->name) + 2;
+			len = strlen(hostname) + strlen(bridge->name) + 3 + snprintf(NULL, 0, "%d", db->bridge_count+1);
 			id = _mosquitto_malloc(len);
 			if(!id){
 				return MOSQ_ERR_NOMEM;
 			}
-			snprintf(id, len, "%s.%s", hostname, bridge->name);
+			snprintf(id, len, "%s.%s.%d", hostname, bridge->name, db->bridge_count+1);
 		}else{
 			return 1;
 		}
