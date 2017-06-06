@@ -73,6 +73,8 @@ struct mosquitto *mqtt3_context_init(struct mosquitto_db *db, mosq_sock_t sock)
 	context->last_msg = NULL;
 	context->msg_count = 0;
 	context->msg_count12 = 0;
+	context->msg_count_ready_send = 0;
+	context->msg_count_queued2_in = 0;
 #ifdef WITH_TLS
 	context->ssl = NULL;
 #endif
