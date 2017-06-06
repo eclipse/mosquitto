@@ -46,6 +46,7 @@ int _mosquitto_send_connack(struct mosquitto *context, int ack, int result)
 	}
 	packet->payload[packet->pos+0] = ack;
 	packet->payload[packet->pos+1] = result;
+	packet->force_synchronous = true;
 
 	return _mosquitto_packet_queue(context, packet);
 }
