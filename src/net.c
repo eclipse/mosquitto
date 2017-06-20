@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
  
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add unix domain socket listener.
 */
 
 #include "config.h"
@@ -21,6 +22,7 @@ Contributors:
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <sys/un.h>  // Add unix domain socket listener
 #else
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -186,6 +188,11 @@ int net__socket_accept(struct mosquitto_db *db, mosq_sock_t listensock)
 	}
 #endif
 
+#ifndef WIN32	// Add unix domain socket listener
+	if(new_context->listener->port == 0) {
+		log__printf(NULL, MOSQ_LOG_NOTICE, "New connection from %s.", new_context->address);
+	}else
+#endif
 	log__printf(NULL, MOSQ_LOG_NOTICE, "New connection from %s on port %d.", new_context->address, new_context->listener->port);
 
 	return new_sock;
@@ -341,6 +348,7 @@ int net__socket_listen(struct mosquitto__listener *listener)
 	struct addrinfo hints;
 	struct addrinfo *ainfo, *rp;
 	char service[10];
+	struct sockaddr_un srvaddr;	// Add unix domain socket listener
 #ifndef WIN32
 	int ss_opt = 1;
 #else
@@ -354,6 +362,44 @@ int net__socket_listen(struct mosquitto__listener *listener)
 
 	if(!listener) return MOSQ_ERR_INVAL;
 
+#ifndef WIN32 // Add unix domain socket listener (create new socket)
+	if(!listener->port){
+		log__printf(NULL, MOSQ_LOG_INFO, "Opening unix domain socket on %s.", listener->host);
+		sock = socket(AF_UNIX, SOCK_STREAM, 0);
+		if(sock == INVALID_SOCKET){
+			log__printf(NULL, MOSQ_LOG_ERR, "Error: Cannot create unix domain socket.");
+			return INVALID_SOCKET;
+		}
+		listener->sock_count++;
+		listener->socks = mosquitto__realloc(listener->socks, sizeof(mosq_sock_t)*listener->sock_count);
+		if(!listener->socks){
+			log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
+			return MOSQ_ERR_NOMEM;
+		}
+		listener->socks[listener->sock_count-1] = sock;
+
+		if(net__socket_nonblock(sock)){
+			return 1;
+		}
+
+		unlink(listener->host);
+  	memset(&srvaddr, 0, sizeof(struct sockaddr_un));
+    srvaddr.sun_family = AF_UNIX;
+    strncpy(srvaddr.sun_path, listener->host, sizeof(srvaddr.sun_path)-1);
+		if(bind(sock, (struct sockaddr *)&srvaddr, sizeof(struct sockaddr_un)) == -1){
+			net__print_error(MOSQ_LOG_ERR, "Error: %s");
+			COMPAT_CLOSE(sock);
+			return 1;
+		}
+
+		if(listen(sock, 100) == -1){
+			net__print_error(MOSQ_LOG_ERR, "Error: %s");
+			COMPAT_CLOSE(sock);
+			return 1;
+		}
+	}else
+#endif
+{
 	snprintf(service, 10, "%d", listener->port);
 	memset(&hints, 0, sizeof(struct addrinfo));
 	hints.ai_family = PF_UNSPEC;
@@ -411,6 +457,7 @@ int net__socket_listen(struct mosquitto__listener *listener)
 		}
 	}
 	freeaddrinfo(ainfo);
+}
 
 	/* We need to have at least one working socket. */
 	if(listener->sock_count > 0){
@@ -523,5 +570,12 @@ int net__socket_get_address(mosq_sock_t sock, char *buf, int len)
 			}
 		}
 	}
+#ifndef WIN32	// Add unix domain socket listener
+	if(addr.ss_family==AF_UNIX) {
+		strncpy(buf, "unix domain socket", len-1);
+		return 0;
+	}
+#endif
 	return 1;
 }
+

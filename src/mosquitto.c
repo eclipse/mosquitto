@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
  
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add unix domain socket listener.
 */
 
 #include "config.h"
@@ -288,13 +289,16 @@ int main(int argc, char *argv[])
 	listensock_index = 0;
 	for(i=0; i<config.listener_count; i++){
 		if(config.listeners[i].protocol == mp_mqtt){
+			drop_privileges(&config, true);	// for unix domain socket listener (create socket file)
 			if(net__socket_listen(&config.listeners[i])){
 				db__close(&int_db);
 				if(config.pid_file){
 					remove(config.pid_file);
 				}
+				restore_privileges();  	// for unix domain socket listener (create socket file)
 				return 1;
 			}
+			restore_privileges();  	// for unix domain socket listener (create socket file)
 			listensock_count += config.listeners[i].sock_count;
 			listensock = mosquitto__realloc(listensock, sizeof(mosq_sock_t)*listensock_count);
 			if(!listensock){
@@ -417,6 +421,15 @@ int main(int argc, char *argv[])
 		mosquitto__free(listensock);
 	}
 
+	// for unix domain socket listener (unlink socket file)
+#ifndef WIN32
+	for(i=0; i<config.listener_count; i++){
+		if(config.listeners[i].port == 0) {
+			unlink(config.listeners[i].host);
+		}
+	}
+#endif
+
 	mosquitto_security_module_cleanup(&int_db);
 
 	if(config.pid_file){
@@ -456,3 +469,4 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	return rc;
 }
 #endif
+
