@@ -525,6 +525,12 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 		if(context->pollfd_index < 0){
 			continue;
 		}
+#ifdef WITH_WEBSOCKETS
+		if(context->wsi){
+			// Websocket are already handled above
+			continue;
+		}
+#endif
 
 #ifdef WITH_TLS
 		if(pollfds[context->pollfd_index].revents & POLLIN ||

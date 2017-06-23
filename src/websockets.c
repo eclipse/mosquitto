@@ -593,7 +593,7 @@ static int callback_http(struct libwebsocket_context *context,
 		case LWS_CALLBACK_DEL_POLL_FD:
 		case LWS_CALLBACK_CHANGE_MODE_POLL_FD:
 			HASH_FIND(hh_sock, db->contexts_by_sock, &pollargs->fd, sizeof(pollargs->fd), mosq);
-			if(mosq){
+			if(mosq && (pollargs->events & POLLOUT)){
 				mosq->ws_want_write = true;
 			}
 			break;
