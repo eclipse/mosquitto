@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
  
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add epoll.
 */
 
 #ifndef MOSQUITTO_INTERNAL_H
@@ -273,8 +274,12 @@ struct mosquitto {
 	UT_hash_handle hh_sock;
 	struct mosquitto *for_free_next;
 #endif
+#ifdef WITH_EPOLL
+	uint32_t events;
+#endif
 };
 
 #define STREMPTY(str) (str[0] == '\0')
 
 #endif
+

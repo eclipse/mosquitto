@@ -89,6 +89,9 @@ WITH_STATIC_LIBRARIES:=no
 # Build with async dns lookup support for bridges (temporary). Requires glibc.
 #WITH_ADNS:=yes
 
+# Build with epoll support.
+WITH_EPOLL:=no
+
 # =============================================================================
 # End of user configuration
 # =============================================================================
@@ -272,3 +275,11 @@ STRIP?=strip
 ifeq ($(WITH_STRIP),yes)
 	STRIP_OPTS:=-s --strip-program=${CROSS_COMPILE}${STRIP}
 endif
+
+ifeq ($(WITH_EPOLL),yes)
+	ifeq ($(UNAME),Linux)
+		BROKER_CFLAGS:=$(BROKER_CFLAGS) -DWITH_EPOLL
+	endif
+endif
+
+

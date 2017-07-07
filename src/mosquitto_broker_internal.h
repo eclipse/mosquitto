@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
  
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add epoll.
 */
 
 #ifndef MOSQUITTO_BROKER_INTERNAL_H
@@ -370,6 +371,9 @@ struct mosquitto_db{
 	int retained_count;
 #endif
 	struct mosquitto *ll_for_free;
+#ifdef WITH_EPOLL
+	int epollfd;
+#endif
 };
 
 enum mosquitto__bridge_direction{
@@ -618,3 +622,4 @@ struct libwebsocket_context *mosq_websockets_init(struct mosquitto__listener *li
 void do_disconnect(struct mosquitto_db *db, struct mosquitto *context);
 
 #endif
+
