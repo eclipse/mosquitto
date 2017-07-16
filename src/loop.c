@@ -21,6 +21,7 @@ Contributors:
 #include <assert.h>
 #ifndef WIN32
 #include <poll.h>
+#include <unistd.h>
 #else
 #include <process.h>
 #include <winsock2.h>
@@ -126,7 +127,7 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 #ifdef WIN32
 	pollfd_max = _getmaxstdio();
 #else
-	pollfd_max = getdtablesize();
+	pollfd_max = sysconf(_SC_OPEN_MAX);
 #endif
 
 	pollfds = _mosquitto_malloc(sizeof(struct pollfd)*pollfd_max);
