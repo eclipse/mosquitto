@@ -1,0 +1,1 @@
+/usr/bin/cc      CMakeFiles/mosquitto_passwd.dir/mosquitto_passwd.c.o  -o mosquitto_passwd -rdynamic -lssl -lcrypto -Wl,-rpath,:::::::::::::: 

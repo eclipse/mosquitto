@@ -1,0 +1,11 @@
+/home/centos/mosquitto/CMakeFiles/Tests.dir
+/home/centos/mosquitto/lib/CMakeFiles/libmosquitto.dir
+/home/centos/mosquitto/lib/CMakeFiles/libmosquitto_obj.dir
+/home/centos/mosquitto/lib/CMakeFiles/libmosquitto_static.dir
+/home/centos/mosquitto/src/CMakeFiles/mosquitto.dir
+/home/centos/mosquitto/src/CMakeFiles/mosquitto_passwd.dir
+/home/centos/mosquitto/client/CMakeFiles/mosquitto_pub.dir
+/home/centos/mosquitto/client/CMakeFiles/mosquitto_sub.dir
+/home/centos/mosquitto/lib/cpp/CMakeFiles/mosquittopp.dir
+/home/centos/mosquitto/lib/cpp/CMakeFiles/mosquittopp_obj.dir
+/home/centos/mosquitto/lib/cpp/CMakeFiles/mosquittopp_static.dir

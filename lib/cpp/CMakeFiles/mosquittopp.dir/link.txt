@@ -1,0 +1,1 @@
+/usr/bin/c++  -fPIC    -shared -Wl,-soname,libmosquittopp.so.1 -o libmosquittopp.so.1.4.90 CMakeFiles/mosquittopp_obj.dir/mosquittopp.cpp.o  -L/home/centos/mosquitto/lib ../libmosquitto.so.1.4.90 -lssl -lcrypto -lpthread -lrt -Wl,-rpath,/home/centos/mosquitto/lib: 

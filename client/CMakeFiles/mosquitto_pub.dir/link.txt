@@ -1,0 +1,1 @@
+/usr/bin/cc      CMakeFiles/mosquitto_pub.dir/pub_client.c.o CMakeFiles/mosquitto_pub.dir/client_shared.c.o  -o mosquitto_pub  -L/home/centos/mosquitto/lib -rdynamic ../lib/libmosquitto.so.1.4.90 -lssl -lcrypto -lpthread -lrt -Wl,-rpath,/home/centos/mosquitto/lib: 

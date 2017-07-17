@@ -1,0 +1,10 @@
+prefix=/usr/local
+exec_prefix=${prefix}
+includedir=${prefix}/include
+libdir=${exec_prefix}/lib
+
+Name: mosquittopp
+Description: mosquitto MQTT library (C++ bindings)
+Version: 1.4.90
+Cflags: -I${includedir}
+Libs: -L${libdir} -lmosquittopp
