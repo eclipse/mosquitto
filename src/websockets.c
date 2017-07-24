@@ -176,6 +176,12 @@ static int callback_mqtt(struct libwebsocket_context *context,
 	int rc;
 	uint8_t byte;
 
+#ifdef WITH_TLS
+	X509 *client_cert = NULL;
+	X509_NAME *name;
+	X509_NAME_ENTRY *name_entry;
+#endif
+
 	db = &int_db;
 
 	switch (reason) {
@@ -201,6 +207,19 @@ static int callback_mqtt(struct libwebsocket_context *context,
 				mosq->ws_context = context;
 #endif
 				mosq->wsi = wsi;
+#ifdef WITH_TLS
+				if (in) {  // in should contains SSL Context
+					client_cert = SSL_get_peer_certificate((SSL *)in);
+					if ( client_cert ) {
+						name = X509_get_subject_name(client_cert);
+						name_entry = X509_NAME_get_entry(name, i);
+						mosq->username = _mosquitto_strdup((char *)ASN1_STRING_data(X509_NAME_ENTRY_get_data(name_entry)));
+
+					}
+					X509_free(client_cert);
+					client_cert = NULL;
+				}
+#endif /* WITH_TLS */
 				u->mosq = mosq;
 			}else{
 				return -1;
