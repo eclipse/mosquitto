@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
  
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add unix domain socket listener.
 */
 
 #include "config.h"
@@ -21,6 +22,7 @@ Contributors:
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <sys/un.h>
 #else
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -187,7 +189,14 @@ int net__socket_accept(struct mosquitto_db *db, mosq_sock_t listensock)
 	}
 #endif
 
-	log__printf(NULL, MOSQ_LOG_NOTICE, "New connection from %s on port %d.", new_context->address, new_context->listener->port);
+#ifndef WIN32	// Add unix domain socket listener
+	if(new_context->listener->use_unixsocket) {
+		log__printf(NULL, MOSQ_LOG_NOTICE, "New connection from %s.", new_context->address);
+	}else
+#endif
+	{
+		log__printf(NULL, MOSQ_LOG_NOTICE, "New connection from %s on port %d.", new_context->address, new_context->listener->port);
+	}
 
 	return new_sock;
 }
@@ -344,6 +353,7 @@ int net__socket_listen(struct mosquitto__listener *listener)
 	char service[10];
 #ifndef WIN32
 	int ss_opt = 1;
+	struct sockaddr_un srvaddr;	// Add unix domain socket listener
 #else
 	char ss_opt = 1;
 #endif
@@ -355,30 +365,13 @@ int net__socket_listen(struct mosquitto__listener *listener)
 
 	if(!listener) return MOSQ_ERR_INVAL;
 
-	snprintf(service, 10, "%d", listener->port);
-	memset(&hints, 0, sizeof(struct addrinfo));
-	hints.ai_family = PF_UNSPEC;
-	hints.ai_flags = AI_PASSIVE;
-	hints.ai_socktype = SOCK_STREAM;
-
-	if(getaddrinfo(listener->host, service, &hints, &ainfo)) return INVALID_SOCKET;
-
-	listener->sock_count = 0;
-	listener->socks = NULL;
-
-	for(rp = ainfo; rp; rp = rp->ai_next){
-		if(rp->ai_family == AF_INET){
-			log__printf(NULL, MOSQ_LOG_INFO, "Opening ipv4 listen socket on port %d.", ntohs(((struct sockaddr_in *)rp->ai_addr)->sin_port));
-		}else if(rp->ai_family == AF_INET6){
-			log__printf(NULL, MOSQ_LOG_INFO, "Opening ipv6 listen socket on port %d.", ntohs(((struct sockaddr_in6 *)rp->ai_addr)->sin6_port));
-		}else{
-			continue;
-		}
-
-		sock = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+#ifndef WIN32 // Add unix domain socket listener (create new socket)
+	if(listener->use_unixsocket){
+		log__printf(NULL, MOSQ_LOG_INFO, "Opening unix domain socket %s.", listener->host);
+		sock = socket(AF_UNIX, SOCK_STREAM, 0);
 		if(sock == INVALID_SOCKET){
-			net__print_error(MOSQ_LOG_WARNING, "Warning: %s");
-			continue;
+			log__printf(NULL, MOSQ_LOG_ERR, "Error: Cannot create unix domain socket.");
+			return INVALID_SOCKET;
 		}
 		listener->sock_count++;
 		listener->socks = mosquitto__realloc(listener->socks, sizeof(mosq_sock_t)*listener->sock_count);
@@ -388,18 +381,14 @@ int net__socket_listen(struct mosquitto__listener *listener)
 		}
 		listener->socks[listener->sock_count-1] = sock;
 
-#ifndef WIN32
-		ss_opt = 1;
-		setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &ss_opt, sizeof(ss_opt));
-#endif
-		ss_opt = 1;
-		setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, &ss_opt, sizeof(ss_opt));
-
 		if(net__socket_nonblock(sock)){
 			return 1;
 		}
 
-		if(bind(sock, rp->ai_addr, rp->ai_addrlen) == -1){
+	  	memset(&srvaddr, 0, sizeof(struct sockaddr_un));
+	    srvaddr.sun_family = AF_UNIX;
+	    strncpy(srvaddr.sun_path, listener->host, sizeof(srvaddr.sun_path)-1);
+		if(bind(sock, (struct sockaddr *)&srvaddr, sizeof(struct sockaddr_un)) == -1){
 			net__print_error(MOSQ_LOG_ERR, "Error: %s");
 			COMPAT_CLOSE(sock);
 			return 1;
@@ -410,8 +399,67 @@ int net__socket_listen(struct mosquitto__listener *listener)
 			COMPAT_CLOSE(sock);
 			return 1;
 		}
-	}
+	}else
+#endif
+	{
+		snprintf(service, 10, "%d", listener->port);
+		memset(&hints, 0, sizeof(struct addrinfo));
+		hints.ai_family = PF_UNSPEC;
+		hints.ai_flags = AI_PASSIVE;
+		hints.ai_socktype = SOCK_STREAM;
+
+		if(getaddrinfo(listener->host, service, &hints, &ainfo)) return INVALID_SOCKET;
+
+		listener->sock_count = 0;
+		listener->socks = NULL;
+
+		for(rp = ainfo; rp; rp = rp->ai_next){
+			if(rp->ai_family == AF_INET){
+				log__printf(NULL, MOSQ_LOG_INFO, "Opening ipv4 listen socket on port %d.", ntohs(((struct sockaddr_in *)rp->ai_addr)->sin_port));
+			}else if(rp->ai_family == AF_INET6){
+				log__printf(NULL, MOSQ_LOG_INFO, "Opening ipv6 listen socket on port %d.", ntohs(((struct sockaddr_in6 *)rp->ai_addr)->sin6_port));
+			}else{
+				continue;
+			}
+
+			sock = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+			if(sock == INVALID_SOCKET){
+				net__print_error(MOSQ_LOG_WARNING, "Warning: %s");
+				continue;
+			}
+			listener->sock_count++;
+			listener->socks = mosquitto__realloc(listener->socks, sizeof(mosq_sock_t)*listener->sock_count);
+			if(!listener->socks){
+				log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
+				return MOSQ_ERR_NOMEM;
+			}
+			listener->socks[listener->sock_count-1] = sock;
+
+#ifndef WIN32
+			ss_opt = 1;
+			setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &ss_opt, sizeof(ss_opt));
+#endif
+			ss_opt = 1;
+			setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, &ss_opt, sizeof(ss_opt));
+
+			if(net__socket_nonblock(sock)){
+				return 1;
+			}
+
+			if(bind(sock, rp->ai_addr, rp->ai_addrlen) == -1){
+				net__print_error(MOSQ_LOG_ERR, "Error: %s");
+				COMPAT_CLOSE(sock);
+				return 1;
+			}
+
+			if(listen(sock, 100) == -1){
+				net__print_error(MOSQ_LOG_ERR, "Error: %s");
+				COMPAT_CLOSE(sock);
+				return 1;
+			}
+		}
 	freeaddrinfo(ainfo);
+	}
 
 	/* We need to have at least one working socket. */
 	if(listener->sock_count > 0){
@@ -524,5 +572,12 @@ int net__socket_get_address(mosq_sock_t sock, char *buf, int len)
 			}
 		}
 	}
+#ifndef WIN32	// Add unix domain socket listener
+	if(addr.ss_family==AF_UNIX) {
+		strncpy(buf, "unix domain socket", len-1);
+		return 0;
+	}
+#endif
 	return 1;
 }
+

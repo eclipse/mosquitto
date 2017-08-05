@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
  
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add unix domain socket listener.
 */
 
 #include "config.h"
@@ -34,6 +35,7 @@ Contributors:
 
 #ifndef WIN32
 #  include <sys/time.h>
+#include <unistd.h>
 #endif
 
 #include <errno.h>
@@ -135,6 +137,27 @@ int drop_privileges(struct mosquitto__config *config, bool temporary)
 #endif
 	return MOSQ_ERR_SUCCESS;
 }
+
+#ifndef WIN32
+int drop_privileges_pathname(char *user, char *pathname)
+{
+	struct passwd *pwd;
+
+	if(geteuid() == 0){
+		if(user && strcmp(user, "root")){
+			pwd = getpwnam(user);
+			if(!pwd){
+				log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid user '%s'.", user);
+				return 1;
+			}
+			if(chown(pathname, pwd->pw_uid, pwd->pw_gid) == -1){
+				log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Can't set proper privileges of unix domain socket path.");
+			}
+		}
+	}
+	return MOSQ_ERR_SUCCESS;
+}
+#endif
 
 int restore_privileges(void)
 {
@@ -322,11 +345,25 @@ int main(int argc, char *argv[])
 #ifdef WITH_WEBSOCKETS
 			config.listeners[i].ws_context = mosq_websockets_init(&config.listeners[i], config.websockets_log_level);
 			if(!config.listeners[i].ws_context){
-				log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to create websockets listener on port %d.", config.listeners[i].port);
+#ifndef WIN32
+				if(config.listeners[i].use_unixsocket){
+					log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to create websockets listener on unix domain socket %s.", config.listeners[i].host);
+				}
+#else
+				{
+					log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to create websockets listener on port %d.", config.listeners[i].port);
+				}
+#endif
 				return 1;
 			}
 #endif
 		}
+#ifndef WIN32	// chown unix domain socket path
+		if(config.listeners[i].use_unixsocket){
+			rc = drop_privileges_pathname(config.user, config.listeners[i].host);
+			if(rc != MOSQ_ERR_SUCCESS) return rc;
+		}
+#endif
 	}
 
 	rc = drop_privileges(&config, false);
@@ -421,6 +458,13 @@ int main(int argc, char *argv[])
 		mosquitto__free(listensock);
 	}
 
+#ifndef WIN32 // for unix domain socket listener (unlink socket file)
+	for(i=0; i<config.listener_count; i++){
+		if(config.listeners[i].use_unixsocket) {
+			unlink(config.listeners[i].host);
+		}
+	}
+#endif
 	mosquitto_security_module_cleanup(&int_db);
 
 	if(config.pid_file){
@@ -460,3 +504,4 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	return rc;
 }
 #endif
+

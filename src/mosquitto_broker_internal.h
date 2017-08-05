@@ -13,6 +13,7 @@ and the Eclipse Distribution License is available at
 Contributors:
    Roger Light - initial implementation and documentation.
    Tatsuzo Osawa - Add epoll.
+   Tatsuzo Osawa - Add unix domain socket listener.
 */
 
 #ifndef MOSQUITTO_BROKER_INTERNAL_H
@@ -167,6 +168,9 @@ struct mosquitto__listener {
 	struct libwebsocket_context *ws_context;
 	char *http_dir;
 	struct libwebsocket_protocols *ws_protocol;
+#endif
+#ifndef WIN32
+	bool use_unixsocket;
 #endif
 };
 
@@ -624,4 +628,5 @@ struct libwebsocket_context *mosq_websockets_init(struct mosquitto__listener *li
 void do_disconnect(struct mosquitto_db *db, struct mosquitto *context);
 
 #endif
+
 
