@@ -618,6 +618,19 @@ void do_disconnect(struct mosquitto_db *db, struct mosquitto *context)
 		}
 #endif		
 		context__disconnect(db, context);
+
+		if(context->id) {
+			int notification_topic_len = strlen(context->id)+strlen("$SYS/broker/clients/connection//state");
+			char* notification_topic = mosquitto__malloc(sizeof(char)*(notification_topic_len+1));
+			if(notification_topic) {
+				log__printf(NULL, MOSQ_LOG_DEBUG, "Publish %s disconnection.", context->id);
+				snprintf(notification_topic, notification_topic_len+1, "$SYS/broker/clients/connection/%s/state", context->id);
+				uint8_t notification_payload = '0';
+				db__messages_easy_queue(db, context, notification_topic, 1, 1, &notification_payload, 1);
+				mosquitto__free(notification_topic);
+			}
+		}
+
 #ifdef WITH_BRIDGE
 		if(context->clean_session && !context->bridge){
 #else

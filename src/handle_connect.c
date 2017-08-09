@@ -576,6 +576,15 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 			}else{
 				log__printf(NULL, MOSQ_LOG_NOTICE, "New client connected from %s as %s (c%d, k%d).", context->address, client_id, clean_session, context->keepalive);
 			}
+			int notification_topic_len = strlen(client_id)+strlen("$SYS/broker/clients/connection//state");
+			char* notification_topic = mosquitto__malloc(sizeof(char)*(notification_topic_len+1));
+			if(notification_topic) {
+				log__printf(NULL, MOSQ_LOG_DEBUG, "Publish %s connection.", client_id);
+				snprintf(notification_topic, notification_topic_len+1, "$SYS/broker/clients/connection/%s/state", client_id);
+				uint8_t notification_payload = '1';
+				db__messages_easy_queue(db, context, notification_topic, 1, 1, &notification_payload, 1);
+				mosquitto__free(notification_topic);
+			}
 		}
 	}
 
