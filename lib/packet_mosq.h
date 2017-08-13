@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
  
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add mqtt version 5.   
 */
 #ifndef PACKET_MOSQ_H
 #define PACKET_MOSQ_H
@@ -31,11 +32,20 @@ int packet__read_byte(struct mosquitto__packet *packet, uint8_t *byte);
 int packet__read_bytes(struct mosquitto__packet *packet, void *bytes, uint32_t count);
 int packet__read_string(struct mosquitto__packet *packet, char **str);
 int packet__read_uint16(struct mosquitto__packet *packet, uint16_t *word);
+int packet__read_variable(struct mosquitto__packet *packet, int *variable);
+int packet__read_property(struct mosquitto *mosq, struct mosquitto__packet *packet, struct mosquitto_v5_property *property, int command);
 
 void packet__write_byte(struct mosquitto__packet *packet, uint8_t byte);
 void packet__write_bytes(struct mosquitto__packet *packet, const void *bytes, uint32_t count);
 void packet__write_string(struct mosquitto__packet *packet, const char *str, uint16_t length);
 void packet__write_uint16(struct mosquitto__packet *packet, uint16_t word);
+void packet__write_variable(struct mosquitto__packet *packet, int variable);
+void packet__write_property(struct mosquitto *mosq, struct mosquitto__packet *packet, struct mosquitto_v5_property *property, int command);
+
+size_t variable_len(varint_t variable);
+varint_t packet__property_len(struct mosquitto_v5_property *property);
+void packet__property_content_free(struct mosquitto_v5_property *property);
+int packet__payload_convert(struct mosquitto *mosq, uint8_t src_version, uint8_t dst_version, uint32_t src_payloadlen, const void *src_payload, uint32_t *dst_payloadlen, void **dst_payload);
 
 int packet__write(struct mosquitto *mosq);
 #ifdef WITH_BROKER
@@ -45,3 +55,4 @@ int packet__read(struct mosquitto *mosq);
 #endif
 
 #endif
+

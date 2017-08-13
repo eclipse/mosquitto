@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
  
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add mqtt version 5.
 */
 
 #include <assert.h>
@@ -117,7 +118,11 @@ int send__command_with_mid(struct mosquitto *mosq, uint8_t command, uint16_t mid
 	if(dup){
 		packet->command |= 8;
 	}
-	packet->remaining_length = 2;
+	if(mosq->protocol == mosq_p_mqtt5){
+		packet->remaining_length = 4;
+	}else{
+		packet->remaining_length = 2;
+	}
 	rc = packet__alloc(packet);
 	if(rc){
 		mosquitto__free(packet);
@@ -126,6 +131,10 @@ int send__command_with_mid(struct mosquitto *mosq, uint8_t command, uint16_t mid
 
 	packet->payload[packet->pos+0] = MOSQ_MSB(mid);
 	packet->payload[packet->pos+1] = MOSQ_LSB(mid);
+	if(mosq->protocol == mosq_p_mqtt5){
+		packet->payload[packet->pos+2] = (uint8_t)MQTT5_RC_SUCCESS;
+		packet->payload[packet->pos+3] = (uint8_t)0;  // no property so far.
+	}
 
 	return packet__queue(mosq, packet);
 }
@@ -151,4 +160,5 @@ int send__simple_command(struct mosquitto *mosq, uint8_t command)
 
 	return packet__queue(mosq, packet);
 }
+
 

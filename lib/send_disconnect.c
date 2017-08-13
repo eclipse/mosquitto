@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
 
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add mqtt version 5.
 */
 
 #include <assert.h>
@@ -21,6 +22,8 @@ Contributors:
 #include "logging_mosq.h"
 #include "mqtt3_protocol.h"
 #include "send_mosq.h"
+#include "packet_mosq.h"
+#include "memory_mosq.h"
 
 #ifdef WITH_BROKER
 #  include "mosquitto_broker_internal.h"
@@ -31,6 +34,36 @@ int send__disconnect(struct mosquitto *mosq)
 {
 	assert(mosq);
 #ifdef WITH_BROKER
+	// for version 5, broker can send reacon code and property.
+	if(mosq->protocol == mosq_p_mqtt5){
+		int rc;
+		struct mosquitto__packet *packet = NULL;
+		int len;
+
+		if(mosq->listener){
+			if(mosq->id){
+				log__printf(NULL, MOSQ_LOG_DEBUG, "Sending DISCONNECT to %s (%d)", mosq->id, mosq->rc_current);
+			}else{
+				log__printf(NULL, MOSQ_LOG_DEBUG, "Sending DISCONNECT to %s (%d)", mosq->address, mosq->rc_current);
+			}
+		}
+		packet = mosquitto__calloc(1, sizeof(struct mosquitto__packet));
+		if(!packet) return MOSQ_ERR_NOMEM;
+
+		packet->command = DISCONNECT;
+		len = packet__property_len(mosq->current_property);
+		packet->remaining_length = 1 + variable_len(len) + len;
+		rc = packet__alloc(packet);
+		if(rc){
+			mosquitto__free(packet);
+			return rc;
+		}
+		packet__write_byte(packet, mosq->rc_current);
+		packet__write_property(mosq, packet, mosq->current_property, DISCONNECT);
+
+		return packet__queue(mosq, packet);
+	} // even for version 5, bridge use version 3.x.
+
 # ifdef WITH_BRIDGE
 	log__printf(mosq, MOSQ_LOG_DEBUG, "Bridge %s sending DISCONNECT", mosq->id);
 # endif
@@ -39,4 +72,5 @@ int send__disconnect(struct mosquitto *mosq)
 #endif
 	return send__simple_command(mosq, DISCONNECT);
 }
+
 

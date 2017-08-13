@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
  
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add mqtt version 5.
 */
 
 #include <assert.h>
@@ -141,6 +142,15 @@ void context__cleanup(struct mosquitto_db *db, struct mosquitto *context, bool d
 	mosquitto__free(context->password);
 	context->password = NULL;
 
+	// for mqtt version 5.
+	if(context->protocol == mosq_p_mqtt5){
+		context__current_property_free(context);
+		mosquitto__free(context->authentication_method);
+		context->authentication_method = NULL;
+		mosquitto__free(context->authentication_data);
+		context->authentication_data = NULL;
+	}
+
 	net__socket_close(db, context);
 	if((do_free || context->clean_session) && db){
 		sub__clean_session(db, context);
@@ -197,6 +207,28 @@ void context__cleanup(struct mosquitto_db *db, struct mosquitto *context, bool d
 	}
 }
 
+int context__current_property_init(struct mosquitto *context)
+{
+	if(!context) return MOSQ_ERR_INVAL;
+	if(context->current_property){
+		context__current_property_free(context);
+	}
+	context->current_property = mosquitto__calloc(1, sizeof(struct mosquitto_v5_property));
+	if(!context->current_property){
+		return MOSQ_ERR_NOMEM;
+	}
+	return MOSQ_ERR_SUCCESS;
+}
+
+void context__current_property_free(struct mosquitto *context)
+{
+	if(!context) return;
+	if(!context->current_property) return;
+	packet__property_content_free(context->current_property);
+	mosquitto__free(context->current_property);
+	context->current_property = NULL;
+}
+
 
 void context__send_will(struct mosquitto_db *db, struct mosquitto *ctxt)
 {
@@ -246,4 +278,5 @@ void context__free_disused(struct mosquitto_db *db)
 	}
 	db->ll_for_free = NULL;
 }
+
 

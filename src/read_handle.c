@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
  
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add mqtt version 5.
 */
 
 #include <assert.h>
@@ -67,7 +68,19 @@ int handle__packet(struct mosquitto_db *db, struct mosquitto *context)
 #endif
 		default:
 			/* If we don't recognise the command, return an error straight away. */
+			// for v5, send disconnect
+			if(context->protocol == mosq_p_mqtt5){
+				context->rc_current = MQTT5_RC_PROTOCOL_ERROR;
+				if(context__current_property_init(context)){
+					return MOSQ_ERR_NOMEM;
+				}
+				send__disconnect(context);
+				context->rc_current = 0;
+				context__current_property_free(context);
+			}
+
 			return MOSQ_ERR_PROTOCOL;
 	}
 }
+
 

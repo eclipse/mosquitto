@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
  
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add mqtt version 5.
 */
 
 #include <assert.h>
@@ -19,8 +20,10 @@ Contributors:
 
 #include "config.h"
 
+#include "mqtt3_protocol.h"
 #include "mosquitto_broker_internal.h"
 #include "memory_mosq.h"
+#include "packet_mosq.h"
 #include "send_mosq.h"
 #include "sys_tree.h"
 #include "time_mosq.h"
@@ -564,6 +567,25 @@ int db__messages_easy_queue(struct mosquitto_db *db, struct mosquitto *context, 
 	char *source_id;
 	char *topic_heap;
 	mosquitto__payload_uhpa payload_uhpa;
+	uint8_t version = 0;
+
+	if(context){
+		switch(context->protocol) {
+			case mosq_p_mqtt5:
+				version = PROTOCOL_VERSION_v5;
+				break;
+			case mosq_p_mqtt31:
+				version = PROTOCOL_VERSION_v31;
+				break;
+			case mosq_p_mqtt311:
+				version = PROTOCOL_VERSION_v311;
+				break;
+			default:
+				assert(false);
+		}
+	}else{
+		version = PROTOCOL_VERSION_v311;
+	}
 
 	assert(db);
 
@@ -584,13 +606,13 @@ int db__messages_easy_queue(struct mosquitto_db *db, struct mosquitto *context, 
 	}else{
 		source_id = "";
 	}
-	if(db__message_store(db, source_id, 0, topic_heap, qos, payloadlen, &payload_uhpa, retain, &stored, 0)) return 1;
+	if(db__message_store(db, version, source_id, 0, topic_heap, qos, payloadlen, &payload_uhpa, retain, &stored, 0)) return 1;
 
 	return sub__messages_queue(db, source_id, topic_heap, qos, retain, &stored);
 }
 
 /* This function requires topic to be allocated on the heap. Once called, it owns topic and will free it on error. Likewise payload. */
-int db__message_store(struct mosquitto_db *db, const char *source, uint16_t source_mid, char *topic, int qos, uint32_t payloadlen, mosquitto__payload_uhpa *payload, int retain, struct mosquitto_msg_store **stored, dbid_t store_id)
+int db__message_store(struct mosquitto_db *db, uint8_t version, const char *source, uint16_t source_mid, char *topic, int qos, uint32_t payloadlen, mosquitto__payload_uhpa *payload, int retain, struct mosquitto_msg_store **stored, dbid_t store_id)
 {
 	struct mosquitto_msg_store *temp = NULL;
 	int rc = MOSQ_ERR_SUCCESS;
@@ -605,6 +627,7 @@ int db__message_store(struct mosquitto_db *db, const char *source, uint16_t sour
 		goto error;
 	}
 
+	temp->version = version;
 	temp->topic = NULL;
 	temp->payload.ptr = NULL;
 
@@ -847,8 +870,11 @@ int db__message_write(struct mosquitto_db *db, struct mosquitto *context)
 	const char *topic;
 	int qos;
 	uint32_t payloadlen;
-	const void *payload;
+	void *payload;
 	int msg_count = 0;
+	uint32_t dst_payloadlen = 0;
+	void *dst_payload = NULL;
+	uint8_t dst_version = 0;
 
 	if(!context || context->sock == INVALID_SOCKET
 			|| (context->state == mosq_cs_connected && !context->id)){
@@ -857,6 +883,20 @@ int db__message_write(struct mosquitto_db *db, struct mosquitto *context)
 
 	if(context->state != mosq_cs_connected){
 		return MOSQ_ERR_SUCCESS;
+	}
+
+	switch(context->protocol) {
+		case mosq_p_mqtt5:
+			dst_version = PROTOCOL_VERSION_v5;
+			break;
+		case mosq_p_mqtt31:
+			dst_version = PROTOCOL_VERSION_v31;
+			break;
+		case mosq_p_mqtt311:
+			dst_version = PROTOCOL_VERSION_v311;
+			break;
+		default:
+			assert(false);
 	}
 
 	tail = context->inflight_msgs;
@@ -869,10 +909,14 @@ int db__message_write(struct mosquitto_db *db, struct mosquitto *context)
 		qos = tail->qos;
 		payloadlen = tail->store->payloadlen;
 		payload = UHPA_ACCESS_PAYLOAD(tail->store);
+		dst_payloadlen = 0;
+		dst_payload = NULL;
 
 		switch(tail->state){
 			case mosq_ms_publish_qos0:
-				rc = send__publish(context, mid, topic, payloadlen, payload, qos, retain, retries);
+				if(packet__payload_convert(context, tail->store->version, dst_version, payloadlen, payload, &dst_payloadlen, &dst_payload)) return 1;
+				rc = send__publish(context, mid, topic, dst_payloadlen, dst_payload, qos, retain, retries);
+				mosquitto__free(dst_payload);
 				if(!rc){
 					db__message_remove(db, context, &tail, last);
 				}else{
@@ -881,7 +925,9 @@ int db__message_write(struct mosquitto_db *db, struct mosquitto *context)
 				break;
 
 			case mosq_ms_publish_qos1:
-				rc = send__publish(context, mid, topic, payloadlen, payload, qos, retain, retries);
+				if(packet__payload_convert(context, tail->store->version, dst_version, payloadlen, payload, &dst_payloadlen, &dst_payload)) return 1;
+				rc = send__publish(context, mid, topic, dst_payloadlen, dst_payload, qos, retain, retries);
+				mosquitto__free(dst_payload);
 				if(!rc){
 					tail->timestamp = mosquitto_time();
 					tail->dup = 1; /* Any retry attempts are a duplicate. */
@@ -894,7 +940,9 @@ int db__message_write(struct mosquitto_db *db, struct mosquitto *context)
 				break;
 
 			case mosq_ms_publish_qos2:
-				rc = send__publish(context, mid, topic, payloadlen, payload, qos, retain, retries);
+				if(packet__payload_convert(context, tail->store->version, dst_version, payloadlen, payload, &dst_payloadlen, &dst_payload)) return 1;
+				rc = send__publish(context, mid, topic, dst_payloadlen, dst_payload, qos, retain, retries);
+				mosquitto__free(dst_payload);
 				if(!rc){
 					tail->timestamp = mosquitto_time();
 					tail->dup = 1; /* Any retry attempts are a duplicate. */
@@ -991,4 +1039,5 @@ void db__vacuum(void)
 {
 	/* FIXME - reimplement? */
 }
+
 

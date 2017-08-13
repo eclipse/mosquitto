@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
  
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add epoll, Add mqtt version 5.
 */
 
 #include "config.h"
@@ -171,7 +172,7 @@ static int persist__message_store_write(struct mosquitto_db *db, FILE *db_fptr)
 		length = htonl(sizeof(dbid_t) + 2+strlen(stored->source_id) +
 				sizeof(uint16_t) + sizeof(uint16_t) +
 				2+tlen + sizeof(uint32_t) +
-				stored->payloadlen + sizeof(uint8_t) + sizeof(uint8_t));
+				stored->payloadlen + sizeof(uint8_t) + sizeof(uint8_t) + sizeof(uint8_t));
 
 		i16temp = htons(DB_CHUNK_MSG_STORE);
 		write_e(db_fptr, &i16temp, sizeof(uint16_t));
@@ -207,6 +208,9 @@ static int persist__message_store_write(struct mosquitto_db *db, FILE *db_fptr)
 		}else{
 			i8temp = 0;
 		}
+		write_e(db_fptr, &i8temp, sizeof(uint8_t));
+
+		i8temp = (uint8_t )stored->version;
 		write_e(db_fptr, &i8temp, sizeof(uint8_t));
 
 		i32temp = htonl(stored->payloadlen);
@@ -643,7 +647,7 @@ static int persist__msg_store_chunk_restore(struct mosquitto_db *db, FILE *db_fp
 	dbid_t i64temp, store_id;
 	uint32_t i32temp, payloadlen = 0;
 	uint16_t i16temp, slen, source_mid;
-	uint8_t qos, retain;
+	uint8_t qos, retain, version;
 	mosquitto__payload_uhpa payload;
 	char *source_id = NULL;
 	char *topic = NULL;
@@ -701,6 +705,7 @@ static int persist__msg_store_chunk_restore(struct mosquitto_db *db, FILE *db_fp
 	}
 	read_e(db_fptr, &qos, sizeof(uint8_t));
 	read_e(db_fptr, &retain, sizeof(uint8_t));
+	read_e(db_fptr, &version, sizeof(uint8_t));
 	
 	read_e(db_fptr, &i32temp, sizeof(uint32_t));
 	payloadlen = ntohl(i32temp);
@@ -717,7 +722,7 @@ static int persist__msg_store_chunk_restore(struct mosquitto_db *db, FILE *db_fp
 		read_e(db_fptr, UHPA_ACCESS(payload, payloadlen), payloadlen);
 	}
 
-	rc = db__message_store(db, source_id, source_mid, topic, qos, payloadlen, &payload, retain, &stored, store_id);
+	rc = db__message_store(db, version, source_id, source_mid, topic, qos, payloadlen, &payload, retain, &stored, store_id);
 	mosquitto__free(source_id);
 
 	if(rc == MOSQ_ERR_SUCCESS){
@@ -939,3 +944,4 @@ static int persist__restore_sub(struct mosquitto_db *db, const char *client_id, 
 }
 
 #endif
+

@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
  
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add mqtt version 5.
 */
 
 #include <assert.h>
@@ -549,7 +550,10 @@ int mosquitto_publish(struct mosquitto *mosq, int *mid, const char *topic, int p
 {
 	struct mosquitto_message_all *message;
 	uint16_t local_mid;
-	int queue_status;
+	int queue_status, rc;
+	uint32_t dst_payloadlen = 0;
+	void *dst_payload = NULL;
+
 
 	if(!mosq || !topic || qos<0 || qos>2) return MOSQ_ERR_INVAL;
 	if(STREMPTY(topic)) return MOSQ_ERR_INVAL;
@@ -566,7 +570,15 @@ int mosquitto_publish(struct mosquitto *mosq, int *mid, const char *topic, int p
 	}
 
 	if(qos == 0){
-		return send__publish(mosq, local_mid, topic, payloadlen, payload, qos, retain, false);
+		// For v5, interpert payload
+		if(mosq->protocol == mosq_p_mqtt5){
+			if(packet__payload_convert(mosq, PROTOCOL_VERSION_v311, PROTOCOL_VERSION_v5, (uint32_t)payloadlen, payload, &dst_payloadlen, &dst_payload)) return MOSQ_ERR_NOMEM;
+			rc = send__publish(mosq, local_mid, topic, dst_payloadlen, dst_payload, qos, retain, false);
+			mosquitto__free(dst_payload);
+			return rc;
+		}else{
+			return send__publish(mosq, local_mid, topic, payloadlen, payload, qos, retain, false);
+		}
 	}else{
 		message = mosquitto__calloc(1, sizeof(struct mosquitto_message_all));
 		if(!message) return MOSQ_ERR_NOMEM;
@@ -604,6 +616,13 @@ int mosquitto_publish(struct mosquitto *mosq, int *mid, const char *topic, int p
 				message->state = mosq_ms_wait_for_pubrec;
 			}
 			pthread_mutex_unlock(&mosq->out_message_mutex);
+			// For v5, interpert payload
+			if(mosq->protocol == mosq_p_mqtt5){
+				if(packet__payload_convert(mosq, PROTOCOL_VERSION_v311, PROTOCOL_VERSION_v5, (uint32_t)message->msg.payloadlen, message->msg.payload, &dst_payloadlen, &dst_payload)) return MOSQ_ERR_NOMEM;
+				mosquitto__free(message->msg.payload);
+				message->msg.payloadlen = dst_payloadlen;
+				message->msg.payload =  dst_payload;
+			}
 			return send__publish(mosq, message->msg.mid, message->msg.topic, message->msg.payloadlen, message->msg.payload, message->msg.qos, message->msg.retain, message->dup);
 		}else{
 			message->state = mosq_ms_invalid;
@@ -1201,6 +1220,8 @@ int mosquitto_opts_set(struct mosquitto *mosq, enum mosq_opt_t option, void *val
 				mosq->protocol = mosq_p_mqtt31;
 			}else if(ival == MQTT_PROTOCOL_V311){
 				mosq->protocol = mosq_p_mqtt311;
+			}else if(ival == MQTT_PROTOCOL_V5){
+				mosq->protocol = mosq_p_mqtt5;
 			}else{
 				return MOSQ_ERR_INVAL;
 			}
@@ -1404,4 +1425,5 @@ int mosquitto_sub_topic_tokens_free(char ***topics, int count)
 
 	return MOSQ_ERR_SUCCESS;
 }
+
 

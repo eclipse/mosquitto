@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
 
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add mqtt version 5.
 */
 
 #include <assert.h>
@@ -64,6 +65,9 @@ int send__connect(struct mosquitto *mosq, uint16_t keepalive, bool clean_session
 	}else if(mosq->protocol == mosq_p_mqtt311){
 		version = MQTT_PROTOCOL_V311;
 		headerlen = 10;
+	}else if(mosq->protocol == mosq_p_mqtt5){
+		version = MQTT_PROTOCOL_V5;
+		headerlen = 10;
 	}else{
 		return MOSQ_ERR_INVAL;
 	}
@@ -84,6 +88,8 @@ int send__connect(struct mosquitto *mosq, uint16_t keepalive, bool clean_session
 			payloadlen += 2+strlen(password);
 		}
 	}
+	// For v5, no property so far.	
+	if(version == MQTT_PROTOCOL_V5) payloadlen++;
 
 	packet->command = CONNECT;
 	packet->remaining_length = headerlen+payloadlen;
@@ -98,6 +104,8 @@ int send__connect(struct mosquitto *mosq, uint16_t keepalive, bool clean_session
 		packet__write_string(packet, PROTOCOL_NAME_v31, strlen(PROTOCOL_NAME_v31));
 	}else if(version == MQTT_PROTOCOL_V311){
 		packet__write_string(packet, PROTOCOL_NAME_v311, strlen(PROTOCOL_NAME_v311));
+	}else if(version == MQTT_PROTOCOL_V5){
+		packet__write_string(packet, PROTOCOL_NAME_v5, strlen(PROTOCOL_NAME_v5));
 	}
 #if defined(WITH_BROKER) && defined(WITH_BRIDGE)
 	if(mosq->bridge && mosq->bridge->try_private && mosq->bridge->try_private_accepted){
@@ -118,6 +126,11 @@ int send__connect(struct mosquitto *mosq, uint16_t keepalive, bool clean_session
 	}
 	packet__write_byte(packet, byte);
 	packet__write_uint16(packet, keepalive);
+
+	// For v5, no property so far.	
+	if(version == MQTT_PROTOCOL_V5){
+		packet__write_byte(packet, 0);
+	}
 
 	/* Payload */
 	packet__write_string(packet, clientid, strlen(clientid));
@@ -142,4 +155,5 @@ int send__connect(struct mosquitto *mosq, uint16_t keepalive, bool clean_session
 #endif
 	return packet__queue(mosq, packet);
 }
+
 
