@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
 
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add mqtt version 5.
 */
 
 #include <assert.h>
@@ -44,6 +45,8 @@ int send__subscribe(struct mosquitto *mosq, int *mid, const char *topic, uint8_t
 	if(!packet) return MOSQ_ERR_NOMEM;
 
 	packetlen = 2 + 2+strlen(topic) + 1;
+	// For v5, no property so far.	
+	if(mosq->protocol == mosq_p_mqtt5) packetlen++;
 
 	packet->command = SUBSCRIBE | (1<<1);
 	packet->remaining_length = packetlen;
@@ -58,9 +61,14 @@ int send__subscribe(struct mosquitto *mosq, int *mid, const char *topic, uint8_t
 	if(mid) *mid = (int)local_mid;
 	packet__write_uint16(packet, local_mid);
 
+	// For v5, no property so far.	
+	if(mosq->protocol == mosq_p_mqtt5){
+		packet__write_byte(packet, 0);
+	}
+
 	/* Payload */
 	packet__write_string(packet, topic, strlen(topic));
-	packet__write_byte(packet, topic_qos);
+	packet__write_byte(packet, topic_qos);  // For v5, qos has many infomation.	
 
 #ifdef WITH_BROKER
 # ifdef WITH_BRIDGE
@@ -72,4 +80,5 @@ int send__subscribe(struct mosquitto *mosq, int *mid, const char *topic, uint8_t
 
 	return packet__queue(mosq, packet);
 }
+
 

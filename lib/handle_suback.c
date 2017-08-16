@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
 
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add mqtt version 5.
 */
 
 #include <assert.h>
@@ -21,6 +22,7 @@ Contributors:
 #include "logging_mosq.h"
 #include "memory_mosq.h"
 #include "packet_mosq.h"
+#include "mqtt3_protocol.h"
 
 #ifdef WITH_BROKER
 #  include "mosquitto_broker_internal.h"
@@ -35,6 +37,7 @@ int handle__suback(struct mosquitto *mosq)
 	int qos_count;
 	int i = 0;
 	int rc;
+	struct mosquitto_v5_property property;
 
 	assert(mosq);
 #ifdef WITH_BROKER
@@ -44,6 +47,17 @@ int handle__suback(struct mosquitto *mosq)
 #endif
 	rc = packet__read_uint16(&mosq->in_packet, &mid);
 	if(rc) return rc;
+
+	// Read and parse suback v5 property. (So far, read only.)
+	if(mosq->protocol == mosq_p_mqtt5){
+		memset(&property, 0, sizeof(struct mosquitto_v5_property));
+		rc = packet__read_property(mosq, &mosq->in_packet, &property, SUBACK);
+		if(rc != MQTT5_RC_SUCCESS){
+			packet__property_content_free(&property);
+			return rc;
+		}
+		packet__property_content_free(&property);
+	}
 
 	qos_count = mosq->in_packet.remaining_length - mosq->in_packet.pos;
 	granted_qos = mosquitto__malloc(qos_count*sizeof(int));
@@ -70,4 +84,5 @@ int handle__suback(struct mosquitto *mosq)
 
 	return MOSQ_ERR_SUCCESS;
 }
+
 

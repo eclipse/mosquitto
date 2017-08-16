@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
  
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add mqtt version 5.
 */
 
 #ifndef MQTT3_PROTOCOL_H
@@ -50,4 +51,7 @@ Contributors:
 
 #define MQTT_MAX_PAYLOAD 268435455
 
+#include "mqtt5_protocol.h"
+
 #endif
+

@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
  
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add mqtt version 5.
 */
 
 
@@ -255,7 +256,7 @@ void print_usage(void)
 	printf(" -t : mqtt topic to publish to.\n");
 	printf(" -u : provide a username (requires MQTT 3.1 broker)\n");
 	printf(" -V : specify the version of the MQTT protocol to use when connecting.\n");
-	printf("      Can be mqttv31 or mqttv311. Defaults to mqttv311.\n");
+	printf("      Can be mqttv31 or mqttv311 or mqttv5. Defaults to mqttv311.\n");
 	printf(" --help : display this message.\n");
 	printf(" --quiet : don't print error messages.\n");
 	printf(" --will-payload : payload for the client Will, which is sent by the broker in case of\n");
@@ -449,3 +450,4 @@ int main(int argc, char *argv[])
 	}
 	return rc;
 }
+

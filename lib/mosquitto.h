@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
  
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add mqtt version 5.
 */
 
 #ifndef MOSQUITTO_H
@@ -95,6 +96,7 @@ enum mosq_opt_t {
 
 #define MQTT_PROTOCOL_V31 3
 #define MQTT_PROTOCOL_V311 4
+#define MQTT_PROTOCOL_V5 5
 
 struct mosquitto_message{
 	int mid;
@@ -1712,3 +1714,4 @@ libmosq_EXPORT void *mosquitto_userdata(struct mosquitto *mosq);
 #endif
 
 #endif
+

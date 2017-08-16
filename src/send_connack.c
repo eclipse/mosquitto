@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
 
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add mqtt version 5.
 */
 
 #include "config.h"
@@ -25,7 +26,7 @@ Contributors:
 int send__connack(struct mosquitto *context, int ack, int result)
 {
 	struct mosquitto__packet *packet = NULL;
-	int rc;
+	int rc, len;
 
 	if(context){
 		if(context->id){
@@ -40,6 +41,10 @@ int send__connack(struct mosquitto *context, int ack, int result)
 
 	packet->command = CONNACK;
 	packet->remaining_length = 2;
+	if(context->protocol == mosq_p_mqtt5){
+		len = packet__property_len(context->current_property);
+		packet->remaining_length += variable_len(len) + len;
+	}
 	rc = packet__alloc(packet);
 	if(rc){
 		mosquitto__free(packet);
@@ -47,7 +52,13 @@ int send__connack(struct mosquitto *context, int ack, int result)
 	}
 	packet->payload[packet->pos+0] = ack;
 	packet->payload[packet->pos+1] = result;
+	
+	if(context->protocol == mosq_p_mqtt5){
+		packet->pos += 2;
+		packet__write_property(context, packet, context->current_property, CONNACK);
+	}
 
 	return packet__queue(context, packet);
 }
+
 

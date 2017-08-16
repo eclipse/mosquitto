@@ -11,7 +11,6 @@ and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
 
 Contributors:
-   Roger Light - initial implementation and documentation.
    Tatsuzo Osawa - Add mqtt version 5.
 */
 
@@ -24,30 +23,26 @@ Contributors:
 #include "util_mosq.h"
 
 
-int send__suback(struct mosquitto *context, uint16_t mid, uint32_t payloadlen, const void *payload)
+// Use only for v5
+int send__unsuback(struct mosquitto *context, uint16_t mid, uint32_t payloadlen, const void *payload)
 {
 	struct mosquitto__packet *packet = NULL;
 	int rc;
 
-	log__printf(NULL, MOSQ_LOG_DEBUG, "Sending SUBACK to %s", context->id);
+	log__printf(NULL, MOSQ_LOG_DEBUG, "Sending UNSUBACK to %s", context->id);
 
 	packet = mosquitto__calloc(1, sizeof(struct mosquitto__packet));
 	if(!packet) return MOSQ_ERR_NOMEM;
 
-	packet->command = SUBACK;
-	packet->remaining_length = 2+payloadlen;
-	if(context->protocol == mosq_p_mqtt5){
-		packet->remaining_length++;
-	}
+	packet->command = UNSUBACK;
+	packet->remaining_length = 3+payloadlen;
 	rc = packet__alloc(packet);
 	if(rc){
 		mosquitto__free(packet);
 		return rc;
 	}
 	packet__write_uint16(packet, mid);
-	if(context->protocol == mosq_p_mqtt5){
-		packet__write_byte(packet, 0);  // no property so far.
-	}
+	packet__write_byte(packet, 0);  // no property so far.
 	if(payloadlen){
 		packet__write_bytes(packet, payload, payloadlen);
 	}

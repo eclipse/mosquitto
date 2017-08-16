@@ -39,6 +39,7 @@ set (MOSQ_SRCS
 	../lib/send_disconnect.c
 	../lib/send_publish.c
 	send_suback.c
+	send_unsuback.c
 	signals.c
 	../lib/send_subscribe.c
 	../lib/send_unsubscribe.c
@@ -175,5 +176,6 @@ endif (${WITH_TLS} STREQUAL ON)
 if (UNIX AND NOT APPLE)
 	install(CODE "EXEC_PROGRAM(/sbin/ldconfig)")
 endif (UNIX AND NOT APPLE)
+
 
 

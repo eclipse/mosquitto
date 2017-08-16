@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
 
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add mqtt version 5.
 */
 
 #include <assert.h>
@@ -25,6 +26,7 @@ Contributors:
 #include "packet_mosq.h"
 #include "send_mosq.h"
 #include "time_mosq.h"
+#include "mqtt3_protocol.h"
 
 
 int handle__publish(struct mosquitto *mosq)
@@ -33,6 +35,7 @@ int handle__publish(struct mosquitto *mosq)
 	struct mosquitto_message_all *message;
 	int rc = 0;
 	uint16_t mid;
+	struct mosquitto_v5_property property;
 
 	assert(mosq);
 
@@ -62,6 +65,17 @@ int handle__publish(struct mosquitto *mosq)
 			return rc;
 		}
 		message->msg.mid = (int)mid;
+	}
+
+	// Read and parse publish v5 property. (So far, read only.)
+	if(mosq->protocol == mosq_p_mqtt5){
+		memset(&property, 0, sizeof(struct mosquitto_v5_property));
+		rc = packet__read_property(mosq, &mosq->in_packet, &property, PUBLISH);
+		if(rc != MQTT5_RC_SUCCESS){
+			packet__property_content_free(&property);
+			return rc;
+		}
+		packet__property_content_free(&property);
 	}
 
 	message->msg.payloadlen = mosq->in_packet.remaining_length - mosq->in_packet.pos;
@@ -118,4 +132,5 @@ int handle__publish(struct mosquitto *mosq)
 			return MOSQ_ERR_PROTOCOL;
 	}
 }
+
 

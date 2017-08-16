@@ -12,7 +12,7 @@ and the Eclipse Distribution License is available at
  
 Contributors:
    Roger Light - initial implementation and documentation.
-   Tatsuzo Osawa - Add epoll.
+   Tatsuzo Osawa - Add epoll. Add mqtt version 5.
 */
 
 #ifndef MOSQUITTO_INTERNAL_H
@@ -113,7 +113,8 @@ enum mosquitto__protocol {
 	mosq_p_invalid = 0,
 	mosq_p_mqtt31 = 1,
 	mosq_p_mqtt311 = 2,
-	mosq_p_mqtts = 3
+	mosq_p_mqtts = 3,
+	mosq_p_mqtt5 = 4,
 };
 
 enum mosquitto__threaded_state {
@@ -140,6 +141,60 @@ struct mosquitto__packet{
 	uint16_t mid;
 	uint8_t command;
 	int8_t remaining_count;
+};
+
+// property for mqtt version 5
+typedef int varint_t;  // MQTT5_MAX_VARIABLE_BYTE_INT(268435455) <= INT_MAX(32bit: 2147483647)
+
+struct mosquitto_v5_property{
+	bool is_payload_format_indicator;
+	uint8_t payload_format_indicator;
+	bool is_publication_expiry_interval;
+	uint32_t publication_expiry_interval;
+	char *content_type;
+	char *response_topic;
+	char *correlation_data;
+	uint16_t correlation_data_len;
+	varint_t *subscription_identifiers;  // allowed to appear multiple times
+	int subscription_identifiers_count;	
+	bool is_session_expiry_interval;
+	uint32_t session_expiry_interval;
+	char *assigned_client_identifier;
+	bool is_server_keep_alive;
+	uint16_t server_keep_alive;
+	char *authentication_method;
+	char *authentication_data;
+	uint16_t authentication_data_len;
+	bool is_request_problem_information;
+	uint8_t request_problem_information;
+	bool is_will_delay_interval;
+	uint32_t will_delay_interval;
+	bool is_request_response_information;
+	uint8_t request_response_information;
+	char *response_information;
+	char *server_reference;
+	char *reason_string;
+	bool is_receive_maximum;
+	uint16_t receive_maximum;
+	bool is_topic_alias_maximum;
+	uint16_t topic_alias_maximum;
+	bool is_topic_alias;
+	uint16_t topic_alias;
+	bool is_maximum_qos;
+	uint8_t maximum_qos;
+	bool is_retain_available;
+	uint8_t retain_available;
+	char **user_property_keys;  // allowed to appear multiple times
+	char **user_property_values;  // allowed to appear multiple times
+	int user_propertys_count;
+	bool is_maximum_packet_size;
+	uint32_t maximum_packet_size;
+	bool is_wildcard_subscription_available;
+	uint8_t wildcard_subscription_available;
+	bool is_subscription_identifier_available;
+	uint8_t subscription_identifier_available;
+	bool is_shared_subscription_available;
+	uint8_t shared_subscription_available;
 };
 
 struct mosquitto_message_all{
@@ -278,9 +333,24 @@ struct mosquitto {
 #ifdef WITH_EPOLL
 	uint32_t events;
 #endif
+	// for version 5
+	struct mosquitto_v5_property *current_property;
+	uint8_t rc_current;
+	bool is_session_expiry_interval;  // if false, session does not expire
+	uint32_t session_expiry_interval;
+	uint32_t will_delay_interval;
+	uint16_t receive_maximum;
+	bool is_maximum_packet_size;  // if false, maximum is unlimited
+	uint32_t maximum_packet_size;
+	uint16_t topic_alias_maximum;
+	uint8_t request_response_information;
+	uint8_t request_problem_information;
+	char *authentication_method;
+	char *authentication_data;
 };
 
 #define STREMPTY(str) (str[0] == '\0')
 
 #endif
+
 

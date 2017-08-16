@@ -12,7 +12,7 @@ and the Eclipse Distribution License is available at
  
 Contributors:
    Roger Light - initial implementation and documentation.
-   Tatsuzo Osawa - Add epoll.
+   Tatsuzo Osawa - Add epoll, Add mqtt version 5.
 */
 
 #ifndef MOSQUITTO_BROKER_INTERNAL_H
@@ -264,6 +264,7 @@ struct mosquitto_msg_store{
 	uint16_t mid;
 	uint8_t qos;
 	bool retain;
+	uint8_t version;   // for v5
 };
 
 struct mosquitto_client_msg{
@@ -493,6 +494,7 @@ int restore_privileges(void);
  * ============================================================ */
 int send__connack(struct mosquitto *context, int ack, int result);
 int send__suback(struct mosquitto *context, uint16_t mid, uint32_t payloadlen, const void *payload);
+int send__unsuback(struct mosquitto *context, uint16_t mid, uint32_t payloadlen, const void *payload);
 
 /* ============================================================
  * Network functions
@@ -511,6 +513,7 @@ int handle__disconnect(struct mosquitto_db *db, struct mosquitto *context);
 int handle__publish(struct mosquitto_db *db, struct mosquitto *context);
 int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context);
 int handle__unsubscribe(struct mosquitto_db *db, struct mosquitto *context);
+int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context);
 
 /* ============================================================
  * Database handling
@@ -532,7 +535,7 @@ int db__message_write(struct mosquitto_db *db, struct mosquitto *context);
 void db__message_dequeue_first(struct mosquitto *context);
 int db__messages_delete(struct mosquitto_db *db, struct mosquitto *context);
 int db__messages_easy_queue(struct mosquitto_db *db, struct mosquitto *context, const char *topic, int qos, uint32_t payloadlen, const void *payload, int retain);
-int db__message_store(struct mosquitto_db *db, const char *source, uint16_t source_mid, char *topic, int qos, uint32_t payloadlen, mosquitto__payload_uhpa *payload, int retain, struct mosquitto_msg_store **stored, dbid_t store_id);
+int db__message_store(struct mosquitto_db *db, uint8_t version, const char *source, uint16_t source_mid, char *topic, int qos, uint32_t payloadlen, mosquitto__payload_uhpa *payload, int retain, struct mosquitto_msg_store **stored, dbid_t store_id);
 int db__message_store_find(struct mosquitto *context, uint16_t mid, struct mosquitto_msg_store **stored);
 void db__msg_store_add(struct mosquitto_db *db, struct mosquitto_msg_store *store);
 void db__msg_store_remove(struct mosquitto_db *db, struct mosquitto_msg_store *store);
@@ -559,6 +562,8 @@ int sub__messages_queue(struct mosquitto_db *db, const char *source_id, const ch
  * ============================================================ */
 struct mosquitto *context__init(struct mosquitto_db *db, mosq_sock_t sock);
 void context__cleanup(struct mosquitto_db *db, struct mosquitto *context, bool do_free);
+int context__current_property_init(struct mosquitto *context);
+void context__current_property_free(struct mosquitto *context);
 void context__disconnect(struct mosquitto_db *db, struct mosquitto *context);
 void context__add_to_disused(struct mosquitto_db *db, struct mosquitto *context);
 void context__free_disused(struct mosquitto_db *db);
@@ -624,4 +629,5 @@ struct libwebsocket_context *mosq_websockets_init(struct mosquitto__listener *li
 void do_disconnect(struct mosquitto_db *db, struct mosquitto *context);
 
 #endif
+
 

@@ -42,6 +42,7 @@ OBJS=	mosquitto.o \
 		send_mosq.o \
 		send_publish.o \
 		send_suback.o \
+		send_unsuback.o \
 		send_subscribe.o \
 		send_unsubscribe.o \
 		service.o \
@@ -160,6 +161,9 @@ send_publish.o : ../lib/send_publish.c ../lib/send_mosq.h
 send_suback.o : send_suback.c mosquitto_broker_internal.h
 	${CROSS_COMPILE}${CC} $(BROKER_CFLAGS) -c $< -o $@
 
+send_unsuback.o : send_unsuback.c mosquitto_broker_internal.h
+	${CROSS_COMPILE}${CC} $(BROKER_CFLAGS) -c $< -o $@
+
 send_subscribe.o : ../lib/send_subscribe.c ../lib/send_mosq.h
 	${CROSS_COMPILE}${CC} $(BROKER_CFLAGS) -c $< -o $@
 
@@ -227,3 +231,4 @@ clean :
 
 reallyclean : clean
 	-rm -rf *.orig *.db
+

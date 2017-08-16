@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
 
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add mqtt version 5.
 */
 
 #include <assert.h>
@@ -41,6 +42,8 @@ int handle__pubrel(struct mosquitto_db *db, struct mosquitto *mosq)
 	struct mosquitto_message_all *message = NULL;
 #endif
 	int rc;
+	uint8_t result = 0;
+	struct mosquitto_v5_property property;
 
 	assert(mosq);
 	if(mosq->protocol == mosq_p_mqtt311){
@@ -50,6 +53,22 @@ int handle__pubrel(struct mosquitto_db *db, struct mosquitto *mosq)
 	}
 	rc = packet__read_uint16(&mosq->in_packet, &mid);
 	if(rc) return rc;
+	// Read and parse pubrel reason code and v5 property. (So far, read only.)
+	if(mosq->protocol == mosq_p_mqtt5){
+		rc = packet__read_byte(&mosq->in_packet, &result);
+		if(rc) return rc;
+		if(result){
+			// Prevent warning.
+		}
+
+		memset(&property, 0, sizeof(struct mosquitto_v5_property));
+		rc = packet__read_property(mosq, &mosq->in_packet, &property, PUBREL);
+		if(rc != MQTT5_RC_SUCCESS){
+			packet__property_content_free(&property);
+			return rc;
+		}
+		packet__property_content_free(&property);
+	}
 #ifdef WITH_BROKER
 	log__printf(NULL, MOSQ_LOG_DEBUG, "Received PUBREL from %s (Mid: %d)", mosq->id, mid);
 
@@ -79,4 +98,5 @@ int handle__pubrel(struct mosquitto_db *db, struct mosquitto *mosq)
 
 	return MOSQ_ERR_SUCCESS;
 }
+
 
