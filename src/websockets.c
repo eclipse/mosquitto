@@ -25,6 +25,9 @@ INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
 CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
+
+Contributors:
+   Tatsuzo Osawa - Add unix domain socket listener.
 */
 
 #ifdef WITH_WEBSOCKETS
@@ -612,6 +615,16 @@ struct libwebsocket_context *mosq_websockets_init(struct mosquitto__listener *li
 	info.protocols = p;
 	info.gid = -1;
 	info.uid = -1;
+#ifndef WIN32
+	if(listener->use_unixsocket){
+#if LWS_LIBRARY_VERSION_MAJOR>1
+		info.options |= LWS_SERVER_OPTION_UNIX_SOCK;
+#else
+		log__printf(NULL, MOSQ_LOG_ERR, "Error: Websockets on unix domain socket needs libwebsockets 2.0 or later.");
+		return NULL;
+#endif
+	}
+#endif
 #ifdef WITH_TLS
 	info.ssl_ca_filepath = listener->cafile;
 	info.ssl_cert_filepath = listener->certfile;
@@ -652,9 +665,18 @@ struct libwebsocket_context *mosq_websockets_init(struct mosquitto__listener *li
 
 	lws_set_log_level(log_level, log_wrap);
 
-	log__printf(NULL, MOSQ_LOG_INFO, "Opening websockets listen socket on port %d.", listener->port);
+#ifndef WIN32
+	if(listener->use_unixsocket){
+		log__printf(NULL, MOSQ_LOG_INFO, "Opening websockets listen on unix domain socket %s.", listener->host);
+	}
+#else
+	{
+		log__printf(NULL, MOSQ_LOG_INFO, "Opening websockets listen socket on port %d.", listener->port);
+	}
+#endif
 	return libwebsocket_create_context(&info);
 }
 
 
 #endif
+

@@ -700,6 +700,17 @@
 					</listitem>
 				</varlistentry>
 				<varlistentry>
+					<term><option>listener</option> <replaceable>unix:unix-path</replaceable></term>
+					<listitem>
+						<para>Listen for incoming internal connection on the
+							unix domain socket represented by unix-path.
+						</para>
+						<para>This can be applied both mqtt and websockets. To use websockets, this need libwebsockets 2.0 or later compiled with unix domain socket support option. Mosquitto must have proper privileges to handle the path.</para>
+						<para>This option may be specified multiple times. Mosquitto can create simultaniously both TCP and unix listener.</para>
+						<para>Not reloaded on reload signal.</para>
+					</listitem>
+				</varlistentry>
+				<varlistentry>
 					<term><option>max_connections</option> <replaceable>count</replaceable></term>
 					<listitem>
 						<para>Limit the total number of clients connected for
@@ -1522,3 +1533,4 @@ topic clients/total in 0 test/mosquitto/org $SYS/broker/
 		<para>Roger Light <email>roger@atchoo.org</email></para>
 	</refsect1>
 </refentry>
+

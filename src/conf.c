@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
  
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add unix domain socket listener.
 */
 
 #include <config.h>
@@ -30,6 +31,7 @@ Contributors:
 #ifndef WIN32
 #  include <netdb.h>
 #  include <sys/socket.h>
+#  include <unistd.h>
 #else
 #  include <winsock2.h>
 #  include <ws2tcpip.h>
@@ -1132,17 +1134,43 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, const 
 							return MOSQ_ERR_NOMEM;
 						}
 						tmp_int = atoi(token);
-						if(tmp_int < 1 || tmp_int > 65535){
-							log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid port value (%d).", tmp_int);
-							return MOSQ_ERR_INVAL;
+#ifndef WIN32 	// Listeners for unix domain socket
+						if(strlen(token) > 5 && tmp_int == 0){
+							token = strtok_r(token, ":", &saveptr);
+							if(token && strcmp(token, "unix")) {
+								log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid listener string.");
+								return MOSQ_ERR_INVAL;
+							}
+							cur_listener = &config->listeners[config->listener_count-1];
+							memset(cur_listener, 0, sizeof(struct mosquitto__listener));
+							cur_listener->use_unixsocket = true;
+						}else
+#endif
+						{
+							if(tmp_int < 1 || tmp_int > 65535){
+								log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid port value (%d).", tmp_int);
+								return MOSQ_ERR_INVAL;
+							}
+							cur_listener = &config->listeners[config->listener_count-1];
+							memset(cur_listener, 0, sizeof(struct mosquitto__listener));
 						}
-						cur_listener = &config->listeners[config->listener_count-1];
-						memset(cur_listener, 0, sizeof(struct mosquitto__listener));
 						cur_listener->protocol = mp_mqtt;
 						cur_listener->port = tmp_int;
 						token = strtok_r(NULL, "", &saveptr);
 						if(token){
 							cur_listener->host = mosquitto__strdup(token);
+#ifndef WIN32 	// Listeners for unix domain socket
+							if(cur_listener->use_unixsocket){
+								if(access(cur_listener->host, F_OK) == 0){
+									log__printf(NULL, MOSQ_LOG_ERR, "Error: The path of unix domain socket already exist.");
+									return MOSQ_ERR_INVAL;
+								}
+								if(errno != ENOENT){
+									log__printf(NULL, MOSQ_LOG_ERR, "Error: The path of unix domain socket is illegal.");
+									return MOSQ_ERR_INVAL;
+								}
+							}
+#endif
 						}else{
 							cur_listener->host = NULL;
 						}
@@ -1958,3 +1986,4 @@ static int conf__parse_string(char **token, const char *name, char **value, char
 	}
 	return MOSQ_ERR_SUCCESS;
 }
+
