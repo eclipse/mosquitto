@@ -1,0 +1,80 @@
+/*
+Copyright (c) 2009-2017 Roger Light <roger@atchoo.org>
+
+All rights reserved. This program and the accompanying materials
+are made available under the terms of the Eclipse Public License v1.0
+and Eclipse Distribution License v1.0 which accompany this distribution.
+ 
+The Eclipse Public License is available at
+   http://www.eclipse.org/legal/epl-v10.html
+and the Eclipse Distribution License is available at
+  http://www.eclipse.org/org/documents/edl-v10.php.
+ 
+Contributors:
+   Tatsuzo Osawa - Add mqtt version 5.
+*/
+
+#ifndef MQTT5_PROTOCOL_H
+#define MQTT5_PROTOCOL_H
+
+/* For version 5 of the MQTT protocol */
+
+#define PROTOCOL_NAME_v5 "MQTT"
+#define PROTOCOL_VERSION_v5 5
+
+#define AUTH 0xF0  // Added a new message type for version 5
+
+/* Reason Codes for version 5 */
+
+#define MQTT5_RC_SUCCESS 0
+#define MQTT5_RC_NORMAL_DISCONNECTION 0
+#define MQTT5_RC_GRANTED_QOS_0 0
+#define MQTT5_RC_GRANTED_QOS_1 1
+#define MQTT5_RC_GRANTED_QOS_2 2
+#define MQTT5_RC_DISCONNECT_WITH_WILL_MESSAGE 4
+#define MQTT5_RC_NO_MATCHING_SUBSCRIBERS 16
+#define MQTT5_RC_NO_SUBSCRIPTION_FOUND 17
+#define MQTT5_RC_CONTINUE_AUTHENTICATION 24
+#define MQTT5_RC_RE_AUTHENTICATE 25
+#define MQTT5_RC_UNSPECIFIED_ERROR 128
+#define MQTT5_RC_MALFORMED_PACKET 129
+#define MQTT5_RC_PROTOCOL_ERROR 130
+#define MQTT5_RC_IMPLEMENTATION_SPECIFIC_ERROR 131
+#define MQTT5_RC_UNSUPPORTED_PROTOCOL_VERSION 132
+#define MQTT5_RC_CLIENT_IDENTIFIER_NOT_VALID 133
+#define MQTT5_RC_BAD_USER_NAME_OR_PASSWORD 134
+#define MQTT5_RC_NOT_AUTHORIZED 135
+#define MQTT5_RC_SERVER_UNAVAILABLE 136
+#define MQTT5_RC_SERVER_BUSY 137
+#define MQTT5_RC_BANNED 138
+#define MQTT5_RC_SERVER_SHUTTING_DOWN 139
+#define MQTT5_RC_BAD_AUTHENTICATION_METHOD 140
+#define MQTT5_RC_KEEP_ALIVE_TIMEOUT 141
+#define MQTT5_RC_SESSION_TAKEN_OVER 142
+#define MQTT5_RC_TOPIC_FILTER_INVALID 143
+#define MQTT5_RC_TOPIC_NAME_INVALID 144
+#define MQTT5_RC_PACKET_IDENTIFIER_IN_USE 145
+#define MQTT5_RC_PACKET_IDENTIFIER_NOT_FOUND 146
+#define MQTT5_RC_RECEIVE_MAXIMUM_EXCEEDED 147
+#define MQTT5_RC_TOPIC_ALIAS_INVALID 148
+#define MQTT5_RC_PACKET_TOO_LARGE 149
+#define MQTT5_RC_MESSAGE_RATE_TOO_HIGH 150
+#define MQTT5_RC_QUOTA_EXCEEDED 151
+#define MQTT5_RC_ADMINISTRATIVE_ACTION 152
+#define MQTT5_RC_PAYLOAD_FORMAT_INVALID 153
+#define MQTT5_RC_RETAIN_NOT_SUPPORTED 154
+#define MQTT5_RC_QOS_NOT_SUPPORTED 155
+#define MQTT5_RC_USE_ANOTHER_SERVER 156
+#define MQTT5_RC_SERVER_MOVED 157
+#define MQTT5_RC_SHARED_SUBSCRIPTION_NOT_SUPPORTED 158
+#define MQTT5_RC_CONNECTION_RATE_EXCEEDED 159
+#define MQTT5_RC_MAXIMUM_CONNECT_TIME 160
+#define MQTT5_RC_SUBSCRIPTION_IDENTIFIERS_NOT_SUPPORTED 161
+#define MQTT5_RC_WILDCARD_SUBSCRIPTIONS_NOT_SUPPORTED 162
+
+/* Property Identifiers for version 5 */
+
+	// Add in the future.
+
+#endif
+

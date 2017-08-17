@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
 
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add mqtt version 5.
 */
 
 #include <stdio.h>
@@ -21,6 +22,7 @@ Contributors:
 
 #include "mosquitto_broker_internal.h"
 #include "mqtt3_protocol.h"
+#include "mqtt5_protocol.h"
 #include "memory_mosq.h"
 #include "packet_mosq.h"
 #include "send_mosq.h"
@@ -165,22 +167,28 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 			goto handle_connect_error;
 		}
 		context->protocol = mosq_p_mqtt31;
-	}else if(!strcmp(protocol_name, PROTOCOL_NAME_v311)){
-		if((protocol_version&0x7F) != PROTOCOL_VERSION_v311){
-			if(db->config->connection_messages == true){
-				log__printf(NULL, MOSQ_LOG_INFO, "Invalid protocol version %d in CONNECT from %s.",
-						protocol_version, context->address);
-			}
-			send__connack(context, 0, CONNACK_REFUSED_PROTOCOL_VERSION);
-			rc = MOSQ_ERR_PROTOCOL;
-			goto handle_connect_error;
+	}else if(!strcmp(protocol_name, PROTOCOL_NAME_v311)){  // == PROTOCOL_NAME_v5
+		switch(protocol_version&0x7F){
+			case PROTOCOL_VERSION_v311:
+				context->protocol = mosq_p_mqtt311;
+				break;
+			case PROTOCOL_VERSION_v5:
+				context->protocol = mosq_p_mqtt5;
+				break;
+			default:
+				if(db->config->connection_messages == true){
+					log__printf(NULL, MOSQ_LOG_INFO, "Invalid protocol version %d in CONNECT from %s.",
+							protocol_version, context->address);
+				}
+				send__connack(context, 0, CONNACK_REFUSED_PROTOCOL_VERSION);
+				rc = MOSQ_ERR_PROTOCOL;
+				goto handle_connect_error;
 		}
 		if((context->in_packet.command&0x0F) != 0x00){
 			/* Reserved flags not set to 0, must disconnect. */
 			rc = MOSQ_ERR_PROTOCOL;
 			goto handle_connect_error;
 		}
-		context->protocol = mosq_p_mqtt311;
 	}else{
 		if(db->config->connection_messages == true){
 			log__printf(NULL, MOSQ_LOG_INFO, "Invalid protocol \"%s\" in CONNECT from %s.",
@@ -196,14 +204,14 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 		rc = 1;
 		goto handle_connect_error;
 	}
-	if(context->protocol == mosq_p_mqtt311){
+	if((context->protocol == mosq_p_mqtt311)||(context->protocol == mosq_p_mqtt5)){
 		if((connect_flags & 0x01) != 0x00){
 			rc = MOSQ_ERR_PROTOCOL;
 			goto handle_connect_error;
 		}
 	}
 
-	clean_session = (connect_flags & 0x02) >> 1;
+	clean_session = (connect_flags & 0x02) >> 1; // NOTE: Clean_session is called Clean_start for v5
 	will = connect_flags & 0x04;
 	will_qos = (connect_flags & 0x18) >> 3;
 	if(will_qos == 3){
@@ -221,6 +229,14 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 		goto handle_connect_error;
 	}
 
+	/* Skip v5 property so far. Should be implimented in the future. */
+	if(context->protocol == mosq_p_mqtt5){
+		rc = packet__read_property(context, &context->in_packet);
+		if(rc != MQTT5_RC_SUCCESS){
+			goto handle_connect_error;
+		}
+	}
+
 	if(packet__read_string(&context->in_packet, &client_id)){
 		rc = 1;
 		goto handle_connect_error;
@@ -232,13 +248,17 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 			send__connack(context, 0, CONNACK_REFUSED_IDENTIFIER_REJECTED);
 			rc = MOSQ_ERR_PROTOCOL;
 			goto handle_connect_error;
-		}else{ /* mqtt311 */
+		}else{ /* mqtt311 or mqtt5 */
 			mosquitto__free(client_id);
 			client_id = NULL;
 
 			if(clean_session == 0 || db->config->allow_zero_length_clientid == false){
-				send__connack(context, 0, CONNACK_REFUSED_IDENTIFIER_REJECTED);
-				rc = MOSQ_ERR_PROTOCOL;
+				if(context->protocol == mosq_p_mqtt5){
+					rc = MQTT5_RC_CLIENT_IDENTIFIER_NOT_VALID;
+				}else{
+					send__connack(context, 0, CONNACK_REFUSED_IDENTIFIER_REJECTED);
+					rc = MOSQ_ERR_PROTOCOL;
+				}
 				goto handle_connect_error;
 			}else{
 				client_id = client_id_gen(db);
@@ -253,8 +273,12 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 	/* clientid_prefixes check */
 	if(db->config->clientid_prefixes){
 		if(strncmp(db->config->clientid_prefixes, client_id, strlen(db->config->clientid_prefixes))){
-			send__connack(context, 0, CONNACK_REFUSED_NOT_AUTHORIZED);
-			rc = 1;
+			if(context->protocol == mosq_p_mqtt5){
+				rc = MQTT5_RC_NOT_AUTHORIZED;
+			}else{
+				send__connack(context, 0, CONNACK_REFUSED_NOT_AUTHORIZED);
+				rc = 1;
+			}
 			goto handle_connect_error;
 		}
 	}
@@ -264,7 +288,7 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 		goto handle_connect_error;
 	}
 
-	if(will){
+ 	if(will){
 		will_struct = mosquitto__calloc(1, sizeof(struct mosquitto_message));
 		if(!will_struct){
 			rc = MOSQ_ERR_NOMEM;
@@ -316,7 +340,7 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 			}
 		}
 	}else{
-		if(context->protocol == mosq_p_mqtt311){
+		if((context->protocol == mosq_p_mqtt311) || (context->protocol == mosq_p_mqtt5)){
 			if(will_qos != 0 || will_retain != 0){
 				rc = MOSQ_ERR_PROTOCOL;
 				goto handle_connect_error;
@@ -341,7 +365,7 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 					if(context->protocol == mosq_p_mqtt31){
 						/* Password flag given, but no password. Ignore. */
 						password_flag = 0;
-					}else if(context->protocol == mosq_p_mqtt311){
+					}else if((context->protocol == mosq_p_mqtt311) || (context->protocol == mosq_p_mqtt5)){
 						rc = MOSQ_ERR_PROTOCOL;
 						goto handle_connect_error;
 					}
@@ -354,13 +378,13 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 			if(context->protocol == mosq_p_mqtt31){
 				/* Username flag given, but no username. Ignore. */
 				username_flag = 0;
-			}else if(context->protocol == mosq_p_mqtt311){
+			}else if((context->protocol == mosq_p_mqtt311) || (context->protocol == mosq_p_mqtt5)){
 				rc = MOSQ_ERR_PROTOCOL;
 				goto handle_connect_error;
 			}
 		}
 	}else{
-		if(context->protocol == mosq_p_mqtt311){
+		if((context->protocol == mosq_p_mqtt311) || (context->protocol == mosq_p_mqtt5)){
 			if(password_flag){
 				/* username_flag == 0 && password_flag == 1 is forbidden */
 				rc = MOSQ_ERR_PROTOCOL;
@@ -372,37 +396,57 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 #ifdef WITH_TLS
 	if(context->listener && context->listener->ssl_ctx && (context->listener->use_identity_as_username || context->listener->use_subject_as_username)){
 		if(!context->ssl){
-			send__connack(context, 0, CONNACK_REFUSED_BAD_USERNAME_PASSWORD);
-			rc = 1;
+			if(context->protocol == mosq_p_mqtt5){
+				rc = MQTT5_RC_BAD_USER_NAME_OR_PASSWORD;
+			}else{
+				send__connack(context, 0, CONNACK_REFUSED_BAD_USERNAME_PASSWORD);
+				rc = 1;
+			}
 			goto handle_connect_error;
 		}
 #ifdef REAL_WITH_TLS_PSK
 		if(context->listener->psk_hint){
 			/* Client should have provided an identity to get this far. */
 			if(!context->username){
-				send__connack(context, 0, CONNACK_REFUSED_BAD_USERNAME_PASSWORD);
-				rc = 1;
+				if(context->protocol == mosq_p_mqtt5){
+					rc = MQTT5_RC_BAD_USER_NAME_OR_PASSWORD;
+				}else{
+					send__connack(context, 0, CONNACK_REFUSED_BAD_USERNAME_PASSWORD);
+					rc = 1;
+				}
 				goto handle_connect_error;
 			}
 		}else{
 #endif /* REAL_WITH_TLS_PSK */
 			client_cert = SSL_get_peer_certificate(context->ssl);
 			if(!client_cert){
-				send__connack(context, 0, CONNACK_REFUSED_BAD_USERNAME_PASSWORD);
-				rc = 1;
+				if(context->protocol == mosq_p_mqtt5){
+					rc = MQTT5_RC_BAD_USER_NAME_OR_PASSWORD;
+				}else{
+					send__connack(context, 0, CONNACK_REFUSED_BAD_USERNAME_PASSWORD);
+					rc = 1;
+				}
 				goto handle_connect_error;
 			}
 			name = X509_get_subject_name(client_cert);
 			if(!name){
-				send__connack(context, 0, CONNACK_REFUSED_BAD_USERNAME_PASSWORD);
-				rc = 1;
+				if(context->protocol == mosq_p_mqtt5){
+					rc = MQTT5_RC_BAD_USER_NAME_OR_PASSWORD;
+				}else{
+					send__connack(context, 0, CONNACK_REFUSED_BAD_USERNAME_PASSWORD);
+					rc = 1;
+				}
 				goto handle_connect_error;
 			}
 			if (context->listener->use_identity_as_username) { //use_identity_as_username
 				i = X509_NAME_get_index_by_NID(name, NID_commonName, -1);
 				if(i == -1){
-					send__connack(context, 0, CONNACK_REFUSED_BAD_USERNAME_PASSWORD);
-					rc = 1;
+					if(context->protocol == mosq_p_mqtt5){
+						rc = MQTT5_RC_BAD_USER_NAME_OR_PASSWORD;
+					}else{
+						send__connack(context, 0, CONNACK_REFUSED_BAD_USERNAME_PASSWORD);
+						rc = 1;
+					}
 					goto handle_connect_error;
 				}
 				name_entry = X509_NAME_get_entry(name, i);
@@ -442,9 +486,13 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 				case MOSQ_ERR_SUCCESS:
 					break;
 				case MOSQ_ERR_AUTH:
-					send__connack(context, 0, CONNACK_REFUSED_NOT_AUTHORIZED);
+					if(context->protocol == mosq_p_mqtt5){
+						rc = MQTT5_RC_NOT_AUTHORIZED;
+					}else{
+						send__connack(context, 0, CONNACK_REFUSED_NOT_AUTHORIZED);
+						rc = 1;
+					}
 					context__disconnect(db, context);
-					rc = 1;
 					goto handle_connect_error;
 					break;
 				default:
@@ -460,8 +508,12 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 		}
 
 		if(!username_flag && db->config->allow_anonymous == false){
-			send__connack(context, 0, CONNACK_REFUSED_NOT_AUTHORIZED);
-			rc = 1;
+			if(context->protocol == mosq_p_mqtt5){
+				rc = MQTT5_RC_NOT_AUTHORIZED;
+			}else{
+				send__connack(context, 0, CONNACK_REFUSED_NOT_AUTHORIZED);
+				rc = 1;
+			}
 			goto handle_connect_error;
 		}
 #ifdef WITH_TLS
@@ -477,8 +529,12 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 				goto handle_connect_error;
 			}
 		}else{
-			send__connack(context, 0, CONNACK_REFUSED_NOT_AUTHORIZED);
-			rc = 1;
+			if(context->protocol == mosq_p_mqtt5){
+				rc = MQTT5_RC_NOT_AUTHORIZED;
+			}else{
+				send__connack(context, 0, CONNACK_REFUSED_NOT_AUTHORIZED);
+				rc = 1;
+			}
 			goto handle_connect_error;
 		}
 	}
@@ -535,6 +591,10 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 
 		found_context->clean_session = true;
 		found_context->state = mosq_cs_disconnecting;
+		/* For v5, send DISCONNECT with reason code SESSION_TAKEN_OVER. */
+		if(found_context->protocol == mosq_p_mqtt5){
+			send__disconnect_v5(found_context, MQTT5_RC_SESSION_TAKEN_OVER);
+		}
 		do_disconnect(db, found_context);
 	}
 
@@ -612,6 +672,16 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 	return send__connack(context, connect_ack, CONNACK_ACCEPTED);
 
 handle_connect_error:
+	/* For v5, should send explicit CONNACK from server before disconnect a network connection. */
+	if(context->protocol == mosq_p_mqtt5){
+		if(rc == MOSQ_ERR_PROTOCOL){
+			rc = MQTT5_RC_MALFORMED_PACKET;
+		}else if(rc == MOSQ_ERR_NOMEM) {
+			rc = MQTT5_RC_UNSPECIFIED_ERROR;
+		}
+		send__connack(context, 0, rc);
+	}
+
 	mosquitto__free(client_id);
 	mosquitto__free(username);
 	mosquitto__free(password);
@@ -628,22 +698,56 @@ handle_connect_error:
 
 int handle__disconnect(struct mosquitto_db *db, struct mosquitto *context)
 {
+	int rc;
+	uint8_t result = 0;
+
 	if(!context){
 		return MOSQ_ERR_INVAL;
 	}
-	if(context->in_packet.remaining_length != 0){
+	if((context->in_packet.remaining_length != 0) && (context->protocol != mosq_p_mqtt5)){
 		return MOSQ_ERR_PROTOCOL;
 	}
-	log__printf(NULL, MOSQ_LOG_DEBUG, "Received DISCONNECT from %s", context->id);
-	if(context->protocol == mosq_p_mqtt311){
+	if(context->protocol == mosq_p_mqtt5){
+		if(context->in_packet.remaining_length >= 1){
+			rc = packet__read_byte(&context->in_packet, &result);
+			if(rc != MQTT5_RC_SUCCESS){
+				do_disconnect(db, context);
+				return MOSQ_ERR_PROTOCOL;	
+			}
+		}
+		if(context->in_packet.remaining_length >= 2){
+			/* Skip v5 property so far. Should be implimented in the future. */
+			rc = packet__read_property(context, &context->in_packet);
+			if(rc != MQTT5_RC_SUCCESS){
+				do_disconnect(db, context);
+				return MOSQ_ERR_PROTOCOL;	
+			}
+		}
+		log__printf(NULL, MOSQ_LOG_DEBUG, "Received DISCONNECT from %s (%d)", context->id, result);
+	}else{
+		log__printf(NULL, MOSQ_LOG_DEBUG, "Received DISCONNECT from %s", context->id);
+	}
+	if((context->protocol == mosq_p_mqtt311) || (context->protocol == mosq_p_mqtt5)){
 		if((context->in_packet.command&0x0F) != 0x00){
 			do_disconnect(db, context);
 			return MOSQ_ERR_PROTOCOL;
+		}
+	}
+	/* For v5 and reason code NORMAL_DISCONNECTION received,
+	   server must discard any Will Message associated
+	   with the current connection without publishing it */
+	if((context->protocol == mosq_p_mqtt5) && (result == MQTT5_RC_NORMAL_DISCONNECTION)){
+		if(context->will){
+			mosquitto__free(context->will->topic);
+			mosquitto__free(context->will->payload);
+			mosquitto__free(context->will);
+			context->will = NULL;
 		}
 	}
 	context->state = mosq_cs_disconnecting;
 	do_disconnect(db, context);
 	return MOSQ_ERR_SUCCESS;
 }
+
 
 

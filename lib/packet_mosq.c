@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
  
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add mqtt version 5.   
 */
 
 #include <assert.h>
@@ -29,6 +30,7 @@ Contributors:
 
 #include "memory_mosq.h"
 #include "mqtt3_protocol.h"
+#include "mqtt5_protocol.h"
 #include "net_mosq.h"
 #include "packet_mosq.h"
 #include "read_handle.h"
@@ -40,6 +42,7 @@ Contributors:
 #  define G_MSGS_SENT_INC(A)
 #  define G_PUB_MSGS_SENT_INC(A)
 #endif
+#include "logging_mosq.h"
 
 int packet__alloc(struct mosquitto__packet *packet)
 {
@@ -246,6 +249,97 @@ void packet__write_uint16(struct mosquitto__packet *packet, uint16_t word)
 {
 	packet__write_byte(packet, MOSQ_MSB(word));
 	packet__write_byte(packet, MOSQ_LSB(word));
+}
+
+
+/* Read variable byte integer for v5. */
+int packet__read_varint(struct mosquitto__packet *packet, varint_t *x)
+{
+	int multiplier = 1;
+	int pos = 0;
+	uint8_t encodebyte;
+
+	assert(packet);
+	*x = 0;
+
+	do {
+		if(packet->pos+pos+1 > packet->remaining_length) return MOSQ_ERR_PROTOCOL;
+
+		encodebyte = packet->payload[packet->pos+pos];
+		*x += (encodebyte & 127) * multiplier;
+		if(multiplier > 128*128*128){
+			return MOSQ_ERR_PROTOCOL;
+		}
+		multiplier *= 128;
+		pos++;
+	} while((encodebyte & 128) != 0);
+
+	packet->pos += pos;
+	return MOSQ_ERR_SUCCESS;
+}
+
+/* Write variable byte integer for v5. */
+void packet__write_varint(struct mosquitto__packet *packet, varint_t x)
+{
+	uint8_t encodebyte;
+
+	assert(packet);
+	assert(x <= MAX_VARIABLE_BYTE_INT);
+
+	do {
+		encodebyte = x % 128;
+		x /= 128;
+		if(x > 0){
+			encodebyte |= 128;
+		}
+		packet__write_byte(packet, encodebyte);		
+	} while(x > 0);
+}
+
+size_t varint_len(varint_t x)
+{
+	assert(x <= MAX_VARIABLE_BYTE_INT);
+    if(x < 128) return 1;
+	if(x < 16384) return 2;
+	if(x < 2097152) return 3;
+	return 4;
+}
+
+/* Read properties for v5. */
+/* Skip properties and forward packet->pos so far. Should be implimented in the future. */
+int packet__read_property(struct mosquitto *mosq, struct mosquitto__packet *packet)
+{
+	varint_t len = 0;
+	void *tmp_buff = NULL;
+	int rc = 9;
+	assert(packet);
+
+	if(packet__read_varint(packet, &len)){
+		log__printf(mosq, MOSQ_LOG_INFO, "Reading v5 properties (Length: Invalid)");
+		return MQTT5_RC_MALFORMED_PACKET;
+	}
+	log__printf(mosq, MOSQ_LOG_DEBUG, "Reading v5 properties (Length: %d)", len);
+
+	if(len == 0) return MOSQ_ERR_SUCCESS;
+
+	tmp_buff = mosquitto__malloc(len);
+	if(!tmp_buff){
+		return MOSQ_ERR_NOMEM;
+	}
+	rc = packet__read_bytes(packet, tmp_buff, len);
+	mosquitto__free(tmp_buff);
+	return rc;
+}
+
+/* Write properties for v5. */
+/* Write zero length so far. Should be implimented in the future. */
+void packet__write_property(struct mosquitto *mosq, struct mosquitto__packet *packet)
+{
+	varint_t len = 0;
+	assert(packet);
+
+	packet__write_varint(packet, len);
+	log__printf(mosq, MOSQ_LOG_DEBUG, "Writing v5 properties (Length: %d)", len);
 }
 
 
@@ -532,4 +626,5 @@ int packet__read(struct mosquitto *mosq)
 	pthread_mutex_unlock(&mosq->msgtime_mutex);
 	return rc;
 }
+
 

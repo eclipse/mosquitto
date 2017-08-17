@@ -12,7 +12,7 @@ clean :
 test-compile : 
 	$(MAKE) -C c
 
-test : test-compile 01 02 03 04 05 06 07 08 09 10 11
+test : test-compile 01 02 03 04 05 06 07 08 09 10 11 12
 
 01 :
 	./01-connect-success.py
@@ -100,3 +100,7 @@ endif
 
 11 :
 	./11-persistent-subscription.py
+
+12 :
+	./12-mqttv5.py
+

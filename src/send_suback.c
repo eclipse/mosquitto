@@ -12,12 +12,14 @@ and the Eclipse Distribution License is available at
 
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add mqtt version 5.
 */
 
 #include "config.h"
 
 #include "mosquitto_broker_internal.h"
 #include "mqtt3_protocol.h"
+#include "mqtt5_protocol.h"
 #include "memory_mosq.h"
 #include "packet_mosq.h"
 #include "util_mosq.h"
@@ -35,15 +37,22 @@ int send__suback(struct mosquitto *context, uint16_t mid, uint32_t payloadlen, c
 
 	packet->command = SUBACK;
 	packet->remaining_length = 2+payloadlen;
+	if(context->protocol == mosq_p_mqtt5){
+		packet->remaining_length += varint_len(0);
+	}
 	rc = packet__alloc(packet);
 	if(rc){
 		mosquitto__free(packet);
 		return rc;
 	}
 	packet__write_uint16(packet, mid);
+	if(context->protocol == mosq_p_mqtt5){
+		packet__write_property(context, packet);
+	}
 	if(payloadlen){
 		packet__write_bytes(packet, payload, payloadlen);
 	}
 
 	return packet__queue(context, packet);
 }
+

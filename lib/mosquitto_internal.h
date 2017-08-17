@@ -12,7 +12,7 @@ and the Eclipse Distribution License is available at
  
 Contributors:
    Roger Light - initial implementation and documentation.
-   Tatsuzo Osawa - Add epoll.
+   Tatsuzo Osawa - Add epoll, add mqtt version 5.
 */
 
 #ifndef MOSQUITTO_INTERNAL_H
@@ -113,7 +113,8 @@ enum mosquitto__protocol {
 	mosq_p_invalid = 0,
 	mosq_p_mqtt31 = 1,
 	mosq_p_mqtt311 = 2,
-	mosq_p_mqtts = 3
+	mosq_p_mqtts = 3,
+	mosq_p_mqtt5 = 4,
 };
 
 enum mosquitto__threaded_state {
@@ -283,4 +284,5 @@ struct mosquitto {
 #define STREMPTY(str) (str[0] == '\0')
 
 #endif
+
 

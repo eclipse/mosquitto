@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
  
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add mqtt version 5.   
 */
 #ifndef PACKET_MOSQ_H
 #define PACKET_MOSQ_H
@@ -27,15 +28,23 @@ int packet__alloc(struct mosquitto__packet *packet);
 void packet__cleanup(struct mosquitto__packet *packet);
 int packet__queue(struct mosquitto *mosq, struct mosquitto__packet *packet);
 
+typedef uint32_t varint_t;
+size_t varint_len(varint_t x);
+#define MAX_VARIABLE_BYTE_INT 268435455
+
 int packet__read_byte(struct mosquitto__packet *packet, uint8_t *byte);
 int packet__read_bytes(struct mosquitto__packet *packet, void *bytes, uint32_t count);
 int packet__read_string(struct mosquitto__packet *packet, char **str);
 int packet__read_uint16(struct mosquitto__packet *packet, uint16_t *word);
+int packet__read_varint(struct mosquitto__packet *packet, varint_t *x);
+int packet__read_property(struct mosquitto *mosq, struct mosquitto__packet *packet);
 
 void packet__write_byte(struct mosquitto__packet *packet, uint8_t byte);
 void packet__write_bytes(struct mosquitto__packet *packet, const void *bytes, uint32_t count);
 void packet__write_string(struct mosquitto__packet *packet, const char *str, uint16_t length);
 void packet__write_uint16(struct mosquitto__packet *packet, uint16_t word);
+void packet__write_varint(struct mosquitto__packet *packet, varint_t x);
+void packet__write_property(struct mosquitto *mosq, struct mosquitto__packet *packet);
 
 int packet__write(struct mosquitto *mosq);
 #ifdef WITH_BROKER
@@ -45,3 +54,4 @@ int packet__read(struct mosquitto *mosq);
 #endif
 
 #endif
+

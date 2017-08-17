@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
  
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add mqtt version 5.
 */
 
 #include <assert.h>
@@ -22,6 +23,7 @@ Contributors:
 
 #include "mosquitto_broker_internal.h"
 #include "mqtt3_protocol.h"
+#include "mqtt5_protocol.h"
 #include "memory_mosq.h"
 #include "packet_mosq.h"
 #include "read_handle.h"
@@ -32,31 +34,45 @@ Contributors:
 
 int handle__packet(struct mosquitto_db *db, struct mosquitto *context)
 {
+	int rc;
 	if(!context) return MOSQ_ERR_INVAL;
 
 	switch((context->in_packet.command)&0xF0){
 		case PINGREQ:
-			return handle__pingreq(context);
+			rc = handle__pingreq(context);
+			break;
 		case PINGRESP:
-			return handle__pingresp(context);
+			rc = handle__pingresp(context);
+			break;
 		case PUBACK:
-			return handle__pubackcomp(db, context, "PUBACK");
+			rc = handle__pubackcomp(db, context, "PUBACK");
+			break;
 		case PUBCOMP:
-			return handle__pubackcomp(db, context, "PUBCOMP");
+			rc = handle__pubackcomp(db, context, "PUBCOMP");
+			break;
 		case PUBLISH:
-			return handle__publish(db, context);
+			rc = handle__publish(db, context);
+			break;
 		case PUBREC:
-			return handle__pubrec(context);
+			rc = handle__pubrec(context);
+			break;
 		case PUBREL:
-			return handle__pubrel(db, context);
+			rc = handle__pubrel(db, context);
+			break;
 		case CONNECT:
 			return handle__connect(db, context);
 		case DISCONNECT:
 			return handle__disconnect(db, context);
 		case SUBSCRIBE:
-			return handle__subscribe(db, context);
+			rc = handle__subscribe(db, context);
+			break;
 		case UNSUBSCRIBE:
-			return handle__unsubscribe(db, context);
+			rc = handle__unsubscribe(db, context);
+			break;
+		case AUTH:
+			log__printf(NULL, MOSQ_LOG_INFO, "Received AUTH from %s, but not supperted.", context->id);
+			rc = MQTT5_RC_PROTOCOL_ERROR;
+			break;
 #ifdef WITH_BRIDGE
 		case CONNACK:
 			return handle__connack(db, context);
@@ -67,7 +83,19 @@ int handle__packet(struct mosquitto_db *db, struct mosquitto *context)
 #endif
 		default:
 			/* If we don't recognise the command, return an error straight away. */
-			return MOSQ_ERR_PROTOCOL;
+			rc = MOSQ_ERR_PROTOCOL;
 	}
+
+	/* For v5, should send explicit DISCONNECT from server before disconnect a network connection. */
+	if((context->protocol == mosq_p_mqtt5) && (rc != MQTT5_RC_SUCCESS)){
+		if(rc == MOSQ_ERR_PROTOCOL){
+			rc = MQTT5_RC_MALFORMED_PACKET;
+		}else if(rc < MQTT5_RC_UNSPECIFIED_ERROR) {
+			rc = MQTT5_RC_UNSPECIFIED_ERROR;
+		}
+		send__disconnect_v5(context, rc);
+	}
+	return rc;
 }
+
 

@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
 
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add mqtt version 5.
 */
 
 #include <stdio.h>
@@ -22,6 +23,7 @@ Contributors:
 #include "mosquitto_broker_internal.h"
 #include "memory_mosq.h"
 #include "packet_mosq.h"
+#include "mqtt5_protocol.h"
 
 
 
@@ -36,23 +38,30 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 	uint32_t payloadlen = 0;
 	int len;
 	char *sub_mount;
+	uint8_t opt, no_local, retain, retain_handle;
 
 	if(!context) return MOSQ_ERR_INVAL;
 	log__printf(NULL, MOSQ_LOG_DEBUG, "Received SUBSCRIBE from %s", context->id);
 	/* FIXME - plenty of potential for memory leaks here */
 
-	if(context->protocol == mosq_p_mqtt311){
+	if((context->protocol == mosq_p_mqtt311) || (context->protocol == mosq_p_mqtt5)){
 		if((context->in_packet.command&0x0F) != 0x02){
 			return MOSQ_ERR_PROTOCOL;
 		}
 	}
-	if(packet__read_uint16(&context->in_packet, &mid)) return 1;
+	if(packet__read_uint16(&context->in_packet, &mid)) return MOSQ_ERR_PROTOCOL;
+
+	/* Skip v5 property so far. Should be implimented in the future. */
+	if(context->protocol == mosq_p_mqtt5){
+		rc = packet__read_property(context, &context->in_packet);
+		if(rc) return rc;
+	}
 
 	while(context->in_packet.pos < context->in_packet.remaining_length){
 		sub = NULL;
 		if(packet__read_string(&context->in_packet, &sub)){
 			mosquitto__free(payload);
-			return 1;
+			return MOSQ_ERR_PROTOCOL;
 		}
 
 		if(sub){
@@ -62,7 +71,7 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 						context->address);
 				mosquitto__free(sub);
 				mosquitto__free(payload);
-				return 1;
+				return MOSQ_ERR_PROTOCOL;
 			}
 			if(mosquitto_sub_topic_check(sub)){
 				log__printf(NULL, MOSQ_LOG_INFO,
@@ -70,29 +79,63 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 						context->address);
 				mosquitto__free(sub);
 				mosquitto__free(payload);
-				return 1;
+				return MOSQ_ERR_PROTOCOL;
 			}
 			if(mosquitto_validate_utf8(sub, strlen(sub))){
 				log__printf(NULL, MOSQ_LOG_INFO,
 						"Malformed UTF-8 in subscription string from %s, disconnecting.",
 						context->id);
 				mosquitto__free(sub);
-				return 1;
+				return MOSQ_ERR_PROTOCOL;
 			}
 
-			if(packet__read_byte(&context->in_packet, &qos)){
+			if(packet__read_byte(&context->in_packet, &opt)){
 				mosquitto__free(sub);
 				mosquitto__free(payload);
-				return 1;
+				return MOSQ_ERR_PROTOCOL;
 			}
+			if(context->protocol == mosq_p_mqtt5){
+				qos = opt & 0x03;
+			}else{
+				qos = opt;
+			}
+			no_local = (opt & 0x04) >> 2;
+			retain = (opt & 0x08) >> 3;
+			retain_handle = (opt & 0x30) >> 4;
 			if(qos > 2){
 				log__printf(NULL, MOSQ_LOG_INFO,
 						"Invalid QoS in subscription command from %s, disconnecting.",
 						context->address);
 				mosquitto__free(sub);
 				mosquitto__free(payload);
-				return 1;
+				return MOSQ_ERR_PROTOCOL;
 			}
+			/* V5 new options should be implimented in the future. */
+			if(context->protocol == mosq_p_mqtt5){
+				if(no_local == 1){
+					// Should check shared subscription.
+				}
+				if(retain){
+					// Dummy (Prevent warning.)
+				}
+				if(retain_handle > 2){
+					log__printf(NULL, MOSQ_LOG_INFO,
+							"Invalid Retain Handling option in subscription command from %s, disconnecting.",
+							context->address);
+					mosquitto__free(sub);
+					mosquitto__free(payload);
+					return MQTT5_RC_PROTOCOL_ERROR;
+				}
+				if((opt & 0xC0) != 0){
+					log__printf(NULL, MOSQ_LOG_INFO,
+							"Invalid reserved option in subscription command from %s, disconnecting.",
+							context->address);
+					mosquitto__free(sub);
+					mosquitto__free(payload);
+					return MQTT5_RC_PROTOCOL_ERROR;
+				}
+			}
+
 			if(context->listener && context->listener->mount_point){
 				len = strlen(context->listener->mount_point) + strlen(sub) + 1;
 				sub_mount = mosquitto__malloc(len+1);
@@ -108,9 +151,13 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 				sub = sub_mount;
 
 			}
-			log__printf(NULL, MOSQ_LOG_DEBUG, "\t%s (QoS %d)", sub, qos);
+			if(context->protocol == mosq_p_mqtt5){
+				log__printf(NULL, MOSQ_LOG_DEBUG, "\t%s (QoS %d, NL %d, RAP %d, RH %d)", sub, qos, no_local, retain, retain_handle);
+			}else{
+				log__printf(NULL, MOSQ_LOG_DEBUG, "\t%s (QoS %d)", sub, qos);				
+			}
 
-			if(context->protocol == mosq_p_mqtt311){
+			if((context->protocol == mosq_p_mqtt311) || (context->protocol == mosq_p_mqtt5)){
 				rc = mosquitto_acl_check(db, context, sub, MOSQ_ACL_SUBSCRIBE);
 				switch(rc){
 					case MOSQ_ERR_SUCCESS:
@@ -148,7 +195,7 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 		}
 	}
 
-	if(context->protocol == mosq_p_mqtt311){
+	if((context->protocol == mosq_p_mqtt311) || (context->protocol == mosq_p_mqtt5)){
 		if(payloadlen == 0){
 			/* No subscriptions specified, protocol error. */
 			return MOSQ_ERR_PROTOCOL;
@@ -163,5 +210,6 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 
 	return rc;
 }
+
 
 

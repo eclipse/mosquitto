@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
 
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add mqtt version 5.
 */
 
 #include <assert.h>
@@ -23,6 +24,7 @@ Contributors:
 #include "memory_mosq.h"
 #include "messages_mosq.h"
 #include "mqtt3_protocol.h"
+#include "mqtt5_protocol.h"
 #include "net_mosq.h"
 #include "packet_mosq.h"
 #include "read_handle.h"
@@ -42,12 +44,29 @@ int handle__pubackcomp(struct mosquitto *mosq, const char *type)
 {
 	uint16_t mid;
 	int rc;
+	uint8_t result = 0;
 
 	assert(mosq);
 	rc = packet__read_uint16(&mosq->in_packet, &mid);
 	if(rc) return rc;
+
+	if(mosq->protocol == mosq_p_mqtt5){
+		if(mosq->in_packet.remaining_length > 2){
+			rc = packet__read_byte(&mosq->in_packet, &result);
+			if(rc) return rc;
+		}
+		if(mosq->in_packet.remaining_length >= 4){
+			/* Skip v5 property so far. Should be implimented in the future. */
+			rc = packet__read_property(mosq, &mosq->in_packet);
+			if(rc) return rc;
+		}
+	}
 #ifdef WITH_BROKER
-	log__printf(NULL, MOSQ_LOG_DEBUG, "Received %s from %s (Mid: %d)", type, mosq->id, mid);
+	if(mosq->protocol == mosq_p_mqtt5){
+		log__printf(NULL, MOSQ_LOG_DEBUG, "Received %s from %s (Mid: %d) (%d)", type, mosq->id, mid, result);
+	}else{
+		log__printf(NULL, MOSQ_LOG_DEBUG, "Received %s from %s (Mid: %d)", type, mosq->id, mid);
+	}
 
 	if(mid){
 		rc = db__message_delete(db, mosq, mid, mosq_md_out);
@@ -75,4 +94,5 @@ int handle__pubackcomp(struct mosquitto *mosq, const char *type)
 
 	return MOSQ_ERR_SUCCESS;
 }
+
 

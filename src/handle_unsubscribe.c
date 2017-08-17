@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
 
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add mqtt version 5.
 */
 
 #include <stdio.h>
@@ -22,6 +23,7 @@ Contributors:
 #include "mosquitto_broker_internal.h"
 #include "memory_mosq.h"
 #include "mqtt3_protocol.h"
+#include "mqtt5_protocol.h"
 #include "packet_mosq.h"
 #include "send_mosq.h"
 /*
@@ -39,17 +41,19 @@ int handle__unsubscribe(struct mosquitto_db *db, struct mosquitto *context)
 	if(!context) return MOSQ_ERR_INVAL;
 	log__printf(NULL, MOSQ_LOG_DEBUG, "Received UNSUBSCRIBE from %s", context->id);
 
-	if(context->protocol == mosq_p_mqtt311){
+	if((context->protocol == mosq_p_mqtt311) || (context->protocol == mosq_p_mqtt5)){
 		if((context->in_packet.command&0x0F) != 0x02){
 			return MOSQ_ERR_PROTOCOL;
 		}
 	}
-	if(packet__read_uint16(&context->in_packet, &mid)) return 1;
+	if(packet__read_uint16(&context->in_packet, &mid)) return MOSQ_ERR_PROTOCOL;
+
+	/* UNSUBSCRIBE has no v5 property. */
 
 	while(context->in_packet.pos < context->in_packet.remaining_length){
 		sub = NULL;
 		if(packet__read_string(&context->in_packet, &sub)){
-			return 1;
+			return MOSQ_ERR_PROTOCOL;
 		}
 
 		if(sub){
@@ -58,21 +62,21 @@ int handle__unsubscribe(struct mosquitto_db *db, struct mosquitto *context)
 						"Empty unsubscription string from %s, disconnecting.",
 						context->id);
 				mosquitto__free(sub);
-				return 1;
+				return MOSQ_ERR_PROTOCOL;
 			}
 			if(mosquitto_sub_topic_check(sub)){
 				log__printf(NULL, MOSQ_LOG_INFO,
 						"Invalid unsubscription string from %s, disconnecting.",
 						context->id);
 				mosquitto__free(sub);
-				return 1;
+				return MOSQ_ERR_PROTOCOL;
 			}
 			if(mosquitto_validate_utf8(sub, strlen(sub))){
 				log__printf(NULL, MOSQ_LOG_INFO,
 						"Malformed UTF-8 in unsubscription string from %s, disconnecting.",
 						context->id);
 				mosquitto__free(sub);
-				return 1;
+				return MOSQ_ERR_PROTOCOL;
 			}
 
 			log__printf(NULL, MOSQ_LOG_DEBUG, "\t%s", sub);
@@ -87,4 +91,5 @@ int handle__unsubscribe(struct mosquitto_db *db, struct mosquitto *context)
 
 	return send__command_with_mid(context, UNSUBACK, mid, false);
 }
+
 

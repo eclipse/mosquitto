@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
 
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add mqtt version 5.
 */
 
 #include <assert.h>
@@ -20,7 +21,10 @@ Contributors:
 #include "mosquitto_internal.h"
 #include "logging_mosq.h"
 #include "mqtt3_protocol.h"
+#include "mqtt5_protocol.h"
 #include "send_mosq.h"
+#include "memory_mosq.h"
+#include "packet_mosq.h"
 
 #ifdef WITH_BROKER
 #  include "mosquitto_broker_internal.h"
@@ -38,5 +42,28 @@ int send__disconnect(struct mosquitto *mosq)
 	log__printf(mosq, MOSQ_LOG_DEBUG, "Client %s sending DISCONNECT", mosq->id);
 #endif
 	return send__simple_command(mosq, DISCONNECT);
+}
+
+int send__disconnect_v5(struct mosquitto *mosq, int result)
+{
+	struct mosquitto__packet *packet = NULL;
+	int rc;
+	assert(mosq);
+
+	log__printf(NULL, MOSQ_LOG_DEBUG, "Sending DISCONNECT to %s (%d)", mosq->id, result);
+
+	packet = mosquitto__calloc(1, sizeof(struct mosquitto__packet));
+	if(!packet) return MOSQ_ERR_NOMEM;
+
+	packet->command = DISCONNECT;
+	packet->remaining_length = 1;
+	rc = packet__alloc(packet);
+	if(rc){
+		mosquitto__free(packet);
+		return rc;
+	}
+	packet__write_byte(packet, result);
+
+	return packet__queue(mosq, packet);
 }
 

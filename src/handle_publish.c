@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
 
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add mqtt version 5.
 */
 
 #include <assert.h>
@@ -22,6 +23,7 @@ Contributors:
 
 #include "mosquitto_broker_internal.h"
 #include "mqtt3_protocol.h"
+#include "mqtt5_protocol.h"
 #include "memory_mosq.h"
 #include "packet_mosq.h"
 #include "read_handle.h"
@@ -52,20 +54,24 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 
 	payload.ptr = NULL;
 
+	int property_pos = 0;
+
 	dup = (header & 0x08)>>3;
 	qos = (header & 0x06)>>1;
 	if(qos == 3){
 		log__printf(NULL, MOSQ_LOG_INFO,
 				"Invalid QoS in PUBLISH from %s, disconnecting.", context->id);
-		return 1;
+		return MOSQ_ERR_PROTOCOL;
 	}
 	retain = (header & 0x01);
 
-	if(packet__read_string(&context->in_packet, &topic)) return 1;
+	if(packet__read_string(&context->in_packet, &topic)) return MOSQ_ERR_PROTOCOL;
 	if(STREMPTY(topic)){
 		/* Invalid publish topic, disconnect client. */
 		mosquitto__free(topic);
-		return 1;
+		/* NOTE: For v5, zero length of topic is valid for using topic alias.
+		         Should be implimented later */
+		return MOSQ_ERR_PROTOCOL;
 	}
 #ifdef WITH_BRIDGE
 	if(context->bridge && context->bridge->topics && context->bridge->topic_remapping){
@@ -118,18 +124,28 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 	if(mosquitto_pub_topic_check(topic) != MOSQ_ERR_SUCCESS){
 		/* Invalid publish topic, just swallow it. */
 		mosquitto__free(topic);
-		return 1;
+		return MOSQ_ERR_PROTOCOL;
 	}
 
 	if(mosquitto_validate_utf8(topic, strlen(topic)) != MOSQ_ERR_SUCCESS){
 		mosquitto__free(topic);
-		return 1;
+		return MOSQ_ERR_PROTOCOL;
 	}
 
 	if(qos > 0){
 		if(packet__read_uint16(&context->in_packet, &mid)){
 			mosquitto__free(topic);
-			return 1;
+			return MOSQ_ERR_PROTOCOL;
+		}
+	}
+
+	/* Skip v5 property so far. Should be implimented in the future. */
+	if(context->protocol == mosq_p_mqtt5){
+		property_pos = context->in_packet.pos;
+		rc = packet__read_property(context, &context->in_packet);
+		if(rc != MQTT5_RC_SUCCESS){
+			mosquitto__free(topic);
+			return rc;
 		}
 	}
 
@@ -152,8 +168,20 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 	if(payloadlen){
 		if(db->config->message_size_limit && payloadlen > db->config->message_size_limit){
 			log__printf(NULL, MOSQ_LOG_DEBUG, "Dropped too large PUBLISH from %s (d%d, q%d, r%d, m%d, '%s', ... (%ld bytes))", context->id, dup, qos, retain, mid, topic, (long)payloadlen);
+			if(context->protocol == mosq_p_mqtt5){
+				mosquitto__free(topic);
+				return MQTT5_RC_PACKET_TOO_LARGE;
+				/* For v5, no need to process_bad_message because server can send DISCONNECT. */
+			}
 			goto process_bad_message;
 		}
+	}
+	/* For v5, merge property to payload in order to transfer messages. */
+	if(context->protocol == mosq_p_mqtt5){
+		payloadlen += context->in_packet.pos - property_pos;
+		context->in_packet.pos -= context->in_packet.pos - property_pos;
+	}
+	if(payloadlen){
 		if(UHPA_ALLOC(payload, payloadlen+1) == 0){
 			mosquitto__free(topic);
 			return MOSQ_ERR_NOMEM;
@@ -161,7 +189,7 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 		if(packet__read_bytes(&context->in_packet, UHPA_ACCESS(payload, payloadlen), payloadlen)){
 			mosquitto__free(topic);
 			UHPA_FREE(payload, payloadlen);
-			return 1;
+			return MOSQ_ERR_PROTOCOL;
 		}
 	}
 
@@ -169,6 +197,12 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 	rc = mosquitto_acl_check(db, context, topic, MOSQ_ACL_WRITE);
 	if(rc == MOSQ_ERR_ACL_DENIED){
 		log__printf(NULL, MOSQ_LOG_DEBUG, "Denied PUBLISH from %s (d%d, q%d, r%d, m%d, '%s', ... (%ld bytes))", context->id, dup, qos, retain, mid, topic, (long)payloadlen);
+		if(context->protocol == mosq_p_mqtt5){
+			mosquitto__free(topic);
+			UHPA_FREE(payload, payloadlen);
+			return MQTT5_RC_NOT_AUTHORIZED;
+			/* For v5, no need to process_bad_message because server can send DISCONNECT. */
+		}
 		goto process_bad_message;
 	}else if(rc != MOSQ_ERR_SUCCESS){
 		mosquitto__free(topic);
@@ -241,4 +275,5 @@ process_bad_message:
 	}
 	return 1;
 }
+
 

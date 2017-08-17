@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
  
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Add mqtt version 5.
 */
 #ifndef SEND_MOSQ_H
 #define SEND_MOSQ_H
@@ -24,6 +25,7 @@ int send__real_publish(struct mosquitto *mosq, uint16_t mid, const char *topic, 
 
 int send__connect(struct mosquitto *mosq, uint16_t keepalive, bool clean_session);
 int send__disconnect(struct mosquitto *mosq);
+int send__disconnect_v5(struct mosquitto *mosq, int result);
 int send__pingreq(struct mosquitto *mosq);
 int send__pingresp(struct mosquitto *mosq);
 int send__puback(struct mosquitto *mosq, uint16_t mid);
@@ -35,3 +37,4 @@ int send__subscribe(struct mosquitto *mosq, int *mid, const char *topic, uint8_t
 int send__unsubscribe(struct mosquitto *mosq, int *mid, const char *topic);
 
 #endif
+
