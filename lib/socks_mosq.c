@@ -364,6 +364,7 @@ int mosquitto__socks5_read(struct mosquitto *mosq)
 			/* Auth passed */
 			_mosquitto_packet_cleanup(&mosq->in_packet);
 			mosq->state = mosq_cs_new;
+			_mosquitto_socket_connect_step3(mosq, mosq->host, mosq->port, mosq->bind_address, true);
 			return _mosquitto_send_connect(mosq, mosq->keepalive, mosq->clean_session);
 		}else{
 			i = mosq->in_packet.payload[1];

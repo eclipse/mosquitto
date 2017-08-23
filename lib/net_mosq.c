@@ -653,7 +653,10 @@ int _mosquitto_socket_connect(struct mosquitto *mosq, const char *host, uint16_t
 	if(rc > 0) return rc;
 
 	mosq->sock = sock;
-	rc = _mosquitto_socket_connect_step3(mosq, host, port, bind_address, blocking);
+
+	/* Set up ssl only if not using proxy */
+	if( mosq->state == mosq_cs_new )
+		rc = _mosquitto_socket_connect_step3(mosq, host, port, bind_address, blocking);
 
 	return rc;
 }
