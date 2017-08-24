@@ -12,7 +12,7 @@ and the Eclipse Distribution License is available at
  
 Contributors:
    Roger Light - initial implementation and documentation.
-   Tatsuzo Osawa - Add epoll.
+   Tatsuzo Osawa - Add epoll. Fix subs memory issue.
 */
 
 #ifndef MOSQUITTO_BROKER_INTERNAL_H
@@ -547,7 +547,7 @@ void sys_tree__update(struct mosquitto_db *db, int interval, time_t start_time);
  * Subscription functions
  * ============================================================ */
 int sub__add(struct mosquitto_db *db, struct mosquitto *context, const char *sub, int qos, struct mosquitto__subhier **root);
-struct mosquitto__subhier *sub__add_hier_entry(struct mosquitto__subhier **parent, const char *topic, size_t len);
+struct mosquitto__subhier *sub__add_hier_entry(struct mosquitto__subhier *parent, struct mosquitto__subhier **head, const char *topic, size_t len);
 int sub__remove(struct mosquitto_db *db, struct mosquitto *context, const char *sub, struct mosquitto__subhier *root);
 void sub__tree_print(struct mosquitto__subhier *root, int level);
 int sub__clean_session(struct mosquitto_db *db, struct mosquitto *context);

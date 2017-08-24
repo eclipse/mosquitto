@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
  
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Fix subs memory issue.
 */
 
 #include <assert.h>
@@ -121,10 +122,10 @@ int db__open(struct mosquitto__config *config, struct mosquitto_db *db)
 
 	db->subs = NULL;
 
-	subhier = sub__add_hier_entry(&db->subs, " ", strlen(" "));
+	subhier = sub__add_hier_entry(NULL, &db->subs, " ", strlen(" "));
 	if(!subhier) return MOSQ_ERR_NOMEM;
 
-	subhier = sub__add_hier_entry(&db->subs, "$SYS", strlen("$SYS"));
+	subhier = sub__add_hier_entry(NULL, &db->subs, "$SYS", strlen("$SYS"));
 	if(!subhier) return MOSQ_ERR_NOMEM;
 
 	db->unpwd = NULL;
@@ -143,6 +144,7 @@ static void subhier_clean(struct mosquitto_db *db, struct mosquitto__subhier **s
 	struct mosquitto__subhier *peer, *subhier_tmp;
 	struct mosquitto__subleaf *leaf, *nextleaf;
 
+	if(!*subhier) return;	
 	HASH_ITER(hh, *subhier, peer, subhier_tmp){
 		leaf = peer->subs;
 		while(leaf){
@@ -156,9 +158,15 @@ static void subhier_clean(struct mosquitto_db *db, struct mosquitto__subhier **s
 		subhier_clean(db, &peer->children);
 		UHPA_FREE_TOPIC(peer);
 
-		HASH_DELETE(hh, *subhier, peer);
-		mosquitto__free(peer);
+		// skip head for preventing to collapse *subhier
+		if(*subhier != peer){
+			HASH_DELETE(hh, *subhier, peer);
+			mosquitto__free(peer);
+		}
 	}
+	peer = *subhier;
+	HASH_DELETE(hh, *subhier, peer);
+	mosquitto__free(peer);	
 }
 
 int db__close(struct mosquitto_db *db)
