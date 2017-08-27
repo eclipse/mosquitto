@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
  
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Fix persistent subscription issue.
 */
 
 #include "config.h"
@@ -279,7 +280,9 @@ static int persist__subs_retain_write(struct mosquitto_db *db, FILE *db_fptr, st
 	slen = strlen(topic) + node->topic_len + 2;
 	thistopic = mosquitto__malloc(sizeof(char)*slen);
 	if(!thistopic) return MOSQ_ERR_NOMEM;
-	if(level > 1 || strlen(topic)){
+	if(level == 1 && strlen(topic) == 1 && topic[0] == ' '){
+		snprintf(thistopic, slen, "%s", UHPA_ACCESS_TOPIC(node));
+	}else if(level > 1 || strlen(topic)){
 		snprintf(thistopic, slen, "%s/%s", topic, UHPA_ACCESS_TOPIC(node));
 	}else{
 		snprintf(thistopic, slen, "%s", UHPA_ACCESS_TOPIC(node));
