@@ -4,12 +4,12 @@ Copyright (c) 2014-2016 Roger Light <roger@atchoo.org>
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
 and Eclipse Distribution License v1.0 which accompany this distribution.
- 
+
 The Eclipse Public License is available at
    http://www.eclipse.org/legal/epl-v10.html
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
- 
+
 Contributors:
    Roger Light - initial implementation and documentation.
 */
@@ -18,6 +18,7 @@ Contributors:
 #define CLIENT_CONFIG_H
 
 #include <stdio.h>
+#include <mosquitto_broker_internal.h>
 
 /* pub_client.c modes */
 #define MSGMODE_NONE 0
@@ -29,6 +30,9 @@ Contributors:
 
 #define CLIENT_PUB 1
 #define CLIENT_SUB 2
+
+#define BRIDGE_NEW 	1
+#define BRIDGE_DEL	2
 
 struct mosq_config {
 	char *id;
@@ -90,9 +94,13 @@ struct mosq_config {
 	char *socks5_username;
 	char *socks5_password;
 #endif
+	struct mosquitto__bridge bridge;
+	int bridgeType;
+	int know_bridge_connection;
 };
 
 int client_config_load(struct mosq_config *config, int pub_or_sub, int argc, char *argv[]);
+int client_config_load_bridge(struct mosq_config *config, int argc, char *argv[]);
 void client_config_cleanup(struct mosq_config *cfg);
 int client_opts_set(struct mosquitto *mosq, struct mosq_config *cfg);
 int client_id_generate(struct mosq_config *cfg, const char *id_base);
