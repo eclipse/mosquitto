@@ -10,6 +10,7 @@ endif
 
 OBJS=	mosquitto.o \
 		bridge.o \
+		bridge_dynamic.o\
 		conf.o \
 		conf_includedir.o \
 		context.o \
@@ -62,6 +63,9 @@ mosquitto.o : mosquitto.c mosquitto_broker_internal.h
 	${CROSS_COMPILE}${CC} $(BROKER_CFLAGS) -c $< -o $@
 
 bridge.o : bridge.c mosquitto_broker_internal.h
+	${CROSS_COMPILE}${CC} $(BROKER_CFLAGS) -c $< -o $@
+
+bridge_dynamic.o : bridge_dynamic.c mosquitto_broker_internal.h
 	${CROSS_COMPILE}${CC} $(BROKER_CFLAGS) -c $< -o $@
 
 conf.o : conf.c mosquitto_broker_internal.h
@@ -222,7 +226,7 @@ uninstall :
 	-rm -f ${DESTDIR}${prefix}/include/mosquitto_plugin.h
 	-rm -f ${DESTDIR}${prefix}/bin/mosquitto_passwd
 
-clean : 
+clean :
 	-rm -f *.o mosquitto mosquitto_passwd
 
 reallyclean : clean

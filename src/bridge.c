@@ -4,12 +4,12 @@ Copyright (c) 2009-2016 Roger Light <roger@atchoo.org>
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
 and Eclipse Distribution License v1.0 which accompany this distribution.
- 
+
 The Eclipse Public License is available at
    http://www.eclipse.org/legal/epl-v10.html
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
- 
+
 Contributors:
    Roger Light - initial implementation and documentation.
 */
@@ -27,7 +27,6 @@ Contributors:
 #include <ws2tcpip.h>
 #endif
 
-#include "config.h"
 
 #include "mosquitto.h"
 #include "mosquitto_broker_internal.h"
@@ -106,6 +105,44 @@ int bridge__new(struct mosquitto_db *db, struct mosquitto__bridge *bridge)
 #else
 	return bridge__connect(db, new_context);
 #endif
+}
+
+int bridge__del(struct mosquitto_db *db, int index)
+{
+	struct mosquitto *old_context = NULL;
+	struct mosquitto **bridges;
+	char *local_id;
+	int i;
+
+	assert(db);
+
+	local_id = mosquitto__strdup(db->bridges[index]->bridge->local_clientid);
+	HASH_FIND(hh_id, db->contexts_by_id, local_id, strlen(local_id), old_context);
+	if(old_context){
+		HASH_DELETE(hh_id,db->contexts_by_id,old_context);
+	}else{
+		log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to found bridge %s in db",local_id);
+	}
+
+	db->bridge_count--;
+
+	for(i=index; i<db->bridge_count; i++){
+		db->bridges[i] = db->bridges[i+1];
+	}
+
+	bridge__disconnect(db,old_context);
+
+	if(db->bridge_count==0){
+		db->bridges[0] = NULL;
+	}else{
+		bridges = mosquitto__realloc(db->bridges, (db->bridge_count)*sizeof(struct mosquitto *));
+		if(bridges){
+			db->bridges = bridges;
+		}else{
+			return MOSQ_ERR_NOMEM;
+		}
+	}
+	return 0;
 }
 
 #if defined(__GLIBC__) && defined(WITH_ADNS)
@@ -374,6 +411,47 @@ int bridge__connect(struct mosquitto_db *db, struct mosquitto *context)
 		net__socket_close(db, context);
 		return rc;
 	}
+}
+
+int bridge__disconnect(struct mosquitto_db *db, struct mosquitto *context)
+{
+	int rc;
+	char *notification_topic;
+	int notification_topic_len;
+	uint8_t notification_payload;
+
+	if(!context || !context->bridge) return MOSQ_ERR_INVAL;
+
+	bridge__packet_cleanup(context);
+
+	db__messages_delete(db, context);
+
+	sub__clean_session(db, context);
+
+	notification_topic_len = strlen(context->bridge->remote_clientid)+strlen("$SYS/broker/connection//state");
+	notification_topic = mosquitto__malloc(sizeof(char)*(notification_topic_len+1));
+	if(!notification_topic) return MOSQ_ERR_NOMEM;
+
+	snprintf(notification_topic, notification_topic_len+1, "$SYS/broker/connection/%s/state", context->bridge->remote_clientid);
+
+	notification_payload = '0';
+	db__messages_easy_queue(db, context, notification_topic, 1, 1, &notification_payload, 1);
+
+	log__printf(NULL, MOSQ_LOG_NOTICE, "Disconnecting bridge %s (%s:%d)", context->bridge->name, context->bridge->addresses[0].address, context->bridge->addresses[0].port);
+	rc = send__disconnect(context);
+	if(rc<0){
+		log__printf(NULL, MOSQ_LOG_ERR, "Error disconnecting bridge: %s.", gai_strerror(errno));
+		return rc;
+	}
+	HASH_DELETE(hh_sock, db->contexts_by_sock, context);
+	net__socket_close(db, context);
+	context->sock = INVALID_SOCKET;
+	context->pollfd_index = -1;
+	context__disconnect(db, context);
+
+	free(context);
+
+	return rc;
 }
 #endif
 

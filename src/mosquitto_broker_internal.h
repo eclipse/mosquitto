@@ -4,12 +4,12 @@ Copyright (c) 2009-2016 Roger Light <roger@atchoo.org>
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
 and Eclipse Distribution License v1.0 which accompany this distribution.
- 
+
 The Eclipse Public License is available at
    http://www.eclipse.org/legal/epl-v10.html
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
- 
+
 Contributors:
    Roger Light - initial implementation and documentation.
    Tatsuzo Osawa - Add epoll.
@@ -576,10 +576,15 @@ int log__printf(struct mosquitto *mosq, int level, const char *fmt, ...) __attri
  * ============================================================ */
 #ifdef WITH_BRIDGE
 int bridge__new(struct mosquitto_db *db, struct mosquitto__bridge *bridge);
+int bridge__del(struct mosquitto_db *db, int index);
 int bridge__connect(struct mosquitto_db *db, struct mosquitto *context);
+int bridge__disconnect(struct mosquitto_db *db, struct mosquitto *context);
 int bridge__connect_step1(struct mosquitto_db *db, struct mosquitto *context);
 int bridge__connect_step2(struct mosquitto_db *db, struct mosquitto *context);
 void bridge__packet_cleanup(struct mosquitto *context);
+int bridge__dynamic_analyse(struct mosquitto_db *db, char *topic, void* payload, uint32_t payloadlen);
+int bridge__dynamic_parse_payload_new(struct mosquitto_db *db, void* payload, struct mosquitto__config *config);
+int bridge__dynamic_parse_payload_del(void* payload, struct mosquitto_db *db, int *index);
 #endif
 
 /* ============================================================
@@ -624,4 +629,3 @@ struct libwebsocket_context *mosq_websockets_init(struct mosquitto__listener *li
 void do_disconnect(struct mosquitto_db *db, struct mosquitto *context);
 
 #endif
-
