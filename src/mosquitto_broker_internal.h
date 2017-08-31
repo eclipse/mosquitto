@@ -184,6 +184,7 @@ struct mosquitto__config {
 	bool allow_anonymous;
 	bool allow_duplicate_messages;
 	bool allow_zero_length_clientid;
+	bool allow_sys_update;
 	char *auto_id_prefix;
 	int auto_id_prefix_len;
 	int autosave_interval;
