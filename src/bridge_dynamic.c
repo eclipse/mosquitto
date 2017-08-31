@@ -19,6 +19,8 @@ Contributor:
 #include "send_mosq.h"
 #include "util_mosq.h"
 
+static int config__check(struct mosquitto__config *config);
+
 int bridge__dynamic_analyse(struct mosquitto_db *db, char *topic, void* payload, uint32_t payloadlen)
 {
 	int rc;
@@ -36,7 +38,11 @@ int bridge__dynamic_analyse(struct mosquitto_db *db, char *topic, void* payload,
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to parse PUBLISH.");
 			return rc;
 		}
-
+		rc = config__check(&config);
+		if(rc != 0){
+			log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to parse PUBLISH.");
+			return rc;
+		}
 		if(bridge__new(db, &(config.bridges[config.bridge_count-1]))){
 			log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Unable to connect to bridge %s.",
 					config.bridges[config.bridge_count-1].name);
@@ -157,6 +163,7 @@ int bridge__dynamic_parse_payload_new(struct mosquitto_db *db, void* payload, st
 						}
 						cur_bridge->keepalive = 60;
 						cur_bridge->notifications = true;
+						cur_bridge->notifications_local_only = false;
 						cur_bridge->start_type = bst_automatic;
 						cur_bridge->idle_timeout = 60;
 						cur_bridge->restart_timeout = 30;
@@ -363,4 +370,60 @@ int bridge__dynamic_parse_payload_del(void* payload, struct mosquitto_db *db, in
 	}
 
 	return 0;
+}
+
+static int config__check(struct mosquitto__config *config)
+{
+	/* Checks that are easy to make after the config has been loaded. */
+
+#ifdef WITH_BRIDGE
+	int i, j;
+	struct mosquitto__bridge *bridge1, *bridge2;
+	char hostname[256];
+	int len;
+
+	/* Check for bridge duplicate local_clientid, need to generate missing IDs
+	 * first. */
+	for(i=0; i<config->bridge_count; i++){
+		bridge1 = &config->bridges[i];
+
+		if(!bridge1->remote_clientid){
+			if(!gethostname(hostname, 256)){
+				len = strlen(hostname) + strlen(bridge1->name) + 2;
+				bridge1->remote_clientid = mosquitto__malloc(len);
+				if(!bridge1->remote_clientid){
+					return MOSQ_ERR_NOMEM;
+				}
+				snprintf(bridge1->remote_clientid, len, "%s.%s", hostname, bridge1->name);
+			}else{
+				return 1;
+			}
+		}
+
+		if(!bridge1->local_clientid){
+			len = strlen(bridge1->remote_clientid) + strlen("local.") + 2;
+			bridge1->local_clientid = mosquitto__malloc(len);
+			if(!bridge1->local_clientid){
+				log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
+				return MOSQ_ERR_NOMEM;
+			}
+			snprintf(bridge1->local_clientid, len, "local.%s", bridge1->remote_clientid);
+		}
+	}
+
+	for(i=0; i<config->bridge_count; i++){
+		bridge1 = &config->bridges[i];
+		for(j=i+1; j<config->bridge_count; j++){
+			bridge2 = &config->bridges[j];
+			if(!strcmp(bridge1->local_clientid, bridge2->local_clientid)){
+				log__printf(NULL, MOSQ_LOG_ERR, "Error: Bridge local_clientid "
+						"'%s' is not unique. Try changing or setting the "
+						"local_clientid value for one of the bridges.",
+						bridge1->local_clientid);
+				return MOSQ_ERR_INVAL;
+			}
+		}
+	}
+#endif
+	return MOSQ_ERR_SUCCESS;
 }

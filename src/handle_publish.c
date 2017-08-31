@@ -176,6 +176,14 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 		return rc;
 	}
 
+	/* Check if demand concern bridge dynamic */
+		rc = bridge__dynamic_analyse(db, topic, UHPA_ACCESS(payload, payloadlen), payloadlen);
+		if(rc != 0 ){
+			log__printf(NULL, MOSQ_LOG_DEBUG, "Denied PUBLISH Invalid bridge dynamic configuration.");
+			goto process_bad_message;
+		}else{
+			return rc;
+		}
 	log__printf(NULL, MOSQ_LOG_DEBUG, "Received PUBLISH from %s (d%d, q%d, r%d, m%d, '%s', ... (%ld bytes))", context->id, dup, qos, retain, mid, topic, (long)payloadlen);
 	if(qos > 0){
 		db__message_store_find(context, mid, &stored);
