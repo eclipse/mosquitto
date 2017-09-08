@@ -468,7 +468,7 @@ int sub__add(struct mosquitto_db *db, struct mosquitto *context, const char *sub
 		}
 
 	}
-	rc = sub__add_recurse(db, context, qos, subhier, tokens);
+	rc = sub__add_recurse(db, context, qos, subhier, tokens->next);
 
 	sub__topic_tokens_free(tokens);
 
@@ -490,7 +490,7 @@ int sub__remove(struct mosquitto_db *db, struct mosquitto *context, const char *
 
 	HASH_FIND(hh, root, UHPA_ACCESS_TOPIC(tokens), tokens->topic_len, subhier);
 	if(subhier){
-		rc = sub__remove_recurse(db, context, subhier, tokens);
+		rc = sub__remove_recurse(db, context, subhier, tokens->next);
 	}else{
 		printf("nope\n");
 	}
@@ -523,9 +523,9 @@ int sub__messages_queue(struct mosquitto_db *db, const char *source_id, const ch
 			/* We have a message that needs to be retained, so ensure that the subscription
 			 * tree for its topic exists.
 			 */
-			sub__add_recurse(db, NULL, 0, subhier, tokens);
+			sub__add_recurse(db, NULL, 0, subhier, tokens->next);
 		}
-		sub__search(db, subhier, tokens, source_id, topic, qos, retain, *stored, true);
+		sub__search(db, subhier, tokens->next, source_id, topic, qos, retain, *stored, true);
 	}
 	sub__topic_tokens_free(tokens);
 
@@ -725,7 +725,7 @@ int sub__retain_queue(struct mosquitto_db *db, struct mosquitto *context, const 
 	HASH_FIND(hh, db->subs, UHPA_ACCESS_TOPIC(tokens), tokens->topic_len, subhier);
 
 	if(subhier){
-		retain__search(db, subhier, tokens, context, sub, sub_qos, 0);
+		retain__search(db, subhier, tokens->next, context, sub, sub_qos, 0);
 	}
 	while(tokens){
 		tail = tokens->next;
