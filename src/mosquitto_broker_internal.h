@@ -493,6 +493,7 @@ int restore_privileges(void);
  * ============================================================ */
 int send__connack(struct mosquitto *context, int ack, int result);
 int send__suback(struct mosquitto *context, uint16_t mid, uint32_t payloadlen, const void *payload);
+int send__unsuback(struct mosquitto *context, uint16_t mid, uint32_t payloadlen, const void *payload);
 
 /* ============================================================
  * Network functions
@@ -624,4 +625,5 @@ struct libwebsocket_context *mosq_websockets_init(struct mosquitto__listener *li
 void do_disconnect(struct mosquitto_db *db, struct mosquitto *context);
 
 #endif
+
 

@@ -86,6 +86,7 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 						"Malformed UTF-8 in subscription string from %s, disconnecting.",
 						context->id);
 				mosquitto__free(sub);
+				mosquitto__free(payload);
 				return MOSQ_ERR_PROTOCOL;
 			}
 
@@ -210,6 +211,7 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 
 	return rc;
 }
+
 
 
 

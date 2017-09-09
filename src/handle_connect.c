@@ -554,7 +554,7 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 			}
 		}
 
-		if(context->protocol == mosq_p_mqtt311){
+		if((context->protocol == mosq_p_mqtt311) || (context->protocol == mosq_p_mqtt5)){
 			if(clean_session == 0){
 				connect_ack |= 0x01;
 			}
@@ -748,6 +748,7 @@ int handle__disconnect(struct mosquitto_db *db, struct mosquitto *context)
 	do_disconnect(db, context);
 	return MOSQ_ERR_SUCCESS;
 }
+
 
 
 
