@@ -144,7 +144,6 @@ static void subhier_clean(struct mosquitto_db *db, struct mosquitto__subhier **s
 	struct mosquitto__subhier *peer, *subhier_tmp;
 	struct mosquitto__subleaf *leaf, *nextleaf;
 
-	if(!*subhier) return;	
 	HASH_ITER(hh, *subhier, peer, subhier_tmp){
 		leaf = peer->subs;
 		while(leaf){
@@ -158,15 +157,9 @@ static void subhier_clean(struct mosquitto_db *db, struct mosquitto__subhier **s
 		subhier_clean(db, &peer->children);
 		UHPA_FREE_TOPIC(peer);
 
-		// skip head for preventing to collapse *subhier
-		if(*subhier != peer){
-			HASH_DELETE(hh, *subhier, peer);
-			mosquitto__free(peer);
-		}
+		HASH_DELETE(hh, *subhier, peer);
+		mosquitto__free(peer);
 	}
-	peer = *subhier;
-	HASH_DELETE(hh, *subhier, peer);
-	mosquitto__free(peer);	
 }
 
 int db__close(struct mosquitto_db *db)
