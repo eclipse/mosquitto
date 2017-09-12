@@ -94,6 +94,11 @@ endif
 09 :
 	./09-plugin-auth-unpwd-success.py
 	./09-plugin-auth-unpwd-fail.py
+	./09-plugin-auth-acl-sub.py
+	./09-plugin-auth-v2-unpwd-success.py
+	./09-plugin-auth-v2-unpwd-fail.py
+	./09-plugin-auth-defer-unpwd-success.py
+	./09-plugin-auth-defer-unpwd-fail.py
 
 10 :
 	./10-listener-mount-point.py
