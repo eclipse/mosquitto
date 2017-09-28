@@ -1234,6 +1234,23 @@ libmosq_EXPORT void mosquitto_unsubscribe_callback_set(struct mosquitto *mosq, v
 libmosq_EXPORT void mosquitto_log_callback_set(struct mosquitto *mosq, void (*on_log)(struct mosquitto *, void *, int, const char *));
 
 /*
+ * Function: mosquitto_ssl_ctx_callback_set
+ *
+ * Set the SSL_CTX callback. This should be used if you want to set additional parameters
+ * in the OpenSSL context before opening the connection.
+ *
+ *  mosq -       a valid mosquitto instance.
+ *  on_ssl_ctx - a callback function in the following form:
+ *               void callback(struct mosquitto *mosq, void *obj, void *ssl_ctx)
+
+ * Callback Parameters:
+ *  mosq -    the mosquitto instance making the callback.
+ *  obj -     the user data provided in <mosquitto_new>
+ *  ssl_ctx - the OpenSSL SSL_CTX structure
+ */
+libmosq_EXPORT void mosquitto_ssl_ctx_callback_set(struct mosquitto *mosq, void (*on_ssl_ctx)(struct mosquitto *, void *, void *));
+
+/*
  * Function: mosquitto_reconnect_delay_set
  *
  * Control the behaviour of the client when it has unexpectedly disconnected in

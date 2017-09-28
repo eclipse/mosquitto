@@ -1286,6 +1286,15 @@ void mosquitto_log_callback_set(struct mosquitto *mosq, void (*on_log)(struct mo
 	pthread_mutex_unlock(&mosq->log_callback_mutex);
 }
 
+void mosquitto_ssl_ctx_callback_set(struct mosquitto *mosq, void (*on_ssl_ctx)(struct mosquitto *, void *, void *))
+{
+#ifdef WITH_TLS
+	pthread_mutex_lock(&mosq->callback_mutex);
+	mosq->on_ssl_ctx = on_ssl_ctx;
+	pthread_mutex_unlock(&mosq->callback_mutex);
+#endif
+}
+
 void mosquitto_user_data_set(struct mosquitto *mosq, void *userdata)
 {
 	if(mosq){
