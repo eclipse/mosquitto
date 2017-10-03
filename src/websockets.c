@@ -583,7 +583,7 @@ static void log_wrap(int level, const char *line)
 	log__printf(NULL, MOSQ_LOG_WEBSOCKETS, "%s", l);
 }
 
-struct libwebsocket_context *mosq_websockets_init(struct mosquitto__listener *listener, int log_level)
+struct libwebsocket_context *mosq_websockets_init(struct mosquitto__listener *listener, const struct mosquitto__config *conf)
 {
 	struct lws_context_creation_info info;
 	struct libwebsocket_protocols *p;
@@ -625,6 +625,9 @@ struct libwebsocket_context *mosq_websockets_init(struct mosquitto__listener *li
 #if LWS_LIBRARY_VERSION_MAJOR>1
 	info.options |= LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
 #endif
+#if defined(LWS_LIBRARY_VERSION_NUMBER) && LWS_LIBRARY_VERSION_NUMBER>=1007000
+    info.max_http_header_data = conf->websockets_headers_size;
+#endif
 
 	user = mosquitto__calloc(1, sizeof(struct libws_mqtt_hack));
 	if(!user){
@@ -650,7 +653,7 @@ struct libwebsocket_context *mosq_websockets_init(struct mosquitto__listener *li
 	info.user = user;
 	listener->ws_protocol = p;
 
-	lws_set_log_level(log_level, log_wrap);
+	lws_set_log_level(conf->websockets_log_level, log_wrap);
 
 	log__printf(NULL, MOSQ_LOG_INFO, "Opening websockets listen socket on port %d.", listener->port);
 	return libwebsocket_create_context(&info);

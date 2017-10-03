@@ -784,6 +784,18 @@
 							Defaults to 0.</para>
 					</listitem>
 				</varlistentry>
+				<varlistentry>
+					<term><option>websockets_headers_size</option> <replaceable>size</replaceable></term>
+					<listitem>
+                        <para>Change the websockets headers size. This is a
+							global option, it is not possible to set per
+							listener. This is the value passed to libwebsockets
+							max_http_header_data which is used for the buffer size
+							to process HTTP headers. See the libwebsockets documention
+							for more details. A value of 0 (the default) means to
+							use libwebsockets' default (which is 1024).</para>
+					</listitem>
+				</varlistentry>
 			</variablelist>
 		</refsect2>
 		<refsect2>
