@@ -278,6 +278,10 @@ struct mosquitto {
 #ifdef WITH_EPOLL
 	uint32_t events;
 #endif
+	/* If set, ignore ipv6 addresses.
+	   This variable will be set to true when a connection to an ipv6 address is attempted.
+	   If the connection is successfully set-up, the value will be reset. */
+	bool ignore_ipv6;
 };
 
 #define STREMPTY(str) (str[0] == '\0')

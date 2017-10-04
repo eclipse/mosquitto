@@ -326,6 +326,9 @@ int net__try_connect(struct mosquitto *mosq, const char *host, uint16_t port, mo
 	}
 
 	for(rp = ainfo; rp != NULL; rp = rp->ai_next){
+		/* Only ignore ipv6 if there is another entry in the list */
+		if (mosq->ignore_ipv6 && rp->ai_family == PF_INET6 && NULL != rp->ai_next) continue;
+
 		*sock = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
 		if(*sock == INVALID_SOCKET) continue;
 
@@ -380,6 +383,11 @@ int net__try_connect(struct mosquitto *mosq, const char *host, uint16_t port, mo
 		COMPAT_CLOSE(*sock);
 		*sock = INVALID_SOCKET;
 	}
+	if (rp && rp->ai_family == PF_INET6)
+		mosq->ignore_ipv6 = true;
+	else
+		mosq->ignore_ipv6 = false;
+
 	freeaddrinfo(ainfo);
 	if(bind_address){
 		freeaddrinfo(ainfo_bind);

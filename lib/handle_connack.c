@@ -39,6 +39,7 @@ int handle__connack(struct mosquitto *mosq)
 	pthread_mutex_lock(&mosq->callback_mutex);
 	if(mosq->on_connect){
 		mosq->in_callback = true;
+		mosq->ignore_ipv6 = false;
 		mosq->on_connect(mosq, mosq->userdata, result);
 		mosq->in_callback = false;
 	}
