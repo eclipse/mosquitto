@@ -336,6 +336,12 @@ int mqtt3_handle_connect(struct mosquitto_db *db, struct mosquitto *context)
 
 #ifdef WITH_TLS
 	if(context->listener && context->listener->ssl_ctx && context->listener->use_identity_as_username){
+		/* Don't need the username or password if provided */
+		_mosquitto_free(username);
+		username = NULL;
+		_mosquitto_free(password);
+		password = NULL;
+
 		if(!context->ssl){
 			_mosquitto_send_connack(context, 0, CONNACK_REFUSED_BAD_USERNAME_PASSWORD);
 			rc = 1;

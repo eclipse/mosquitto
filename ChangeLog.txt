@@ -1,6 +1,12 @@
 Broker:
 - Use constant time memcmp for password comparisons.
 - Fix incorrect PSK key being used if it had leading zeroes.
+- Fix memory leak if a client provided a username/password for a listener with
+  use_identity_as_username configured.
+- Fix use_identity_as_username not working on websockets clients.
+- Don't crash if an auth plugin returns MOSQ_ERR_AUTH for a username check on
+  a websockets client. Closes #490.
+- Fix 08-ssl-bridge.py test when using async dns lookups. Closes #507.
 
 Client library:
 - Fix incorrect PSK key being used if it had leading zeroes.

@@ -201,6 +201,12 @@ static int callback_mqtt(struct libwebsocket_context *context,
 				mosq->ws_context = context;
 #endif
 				mosq->wsi = wsi;
+				if(in){
+					mosq->ssl = (SSL *)in;
+					if(!mosq->listener->ssl_ctx){
+						mosq->listener->ssl_ctx = SSL_get_SSL_CTX(mosq->ssl);
+					}
+				}
 				u->mosq = mosq;
 			}else{
 				return -1;
@@ -234,6 +240,7 @@ static int callback_mqtt(struct libwebsocket_context *context,
 					mosq->pollfd_index = -1;
 				}
 				mosq->wsi = NULL;
+				mosq->ssl = NULL;
 				do_disconnect(db, mosq);
 			}
 			break;
