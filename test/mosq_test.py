@@ -91,6 +91,19 @@ def remaining_length(packet):
     return (packet, rl)
 
 
+def to_hex_string(packet):
+    if len(packet) == 0:
+        return ""
+
+    s = ""
+    while len(packet) > 0:
+        packet0 = struct.unpack("!B", packet[0])
+        s = s+hex(packet0[0]) + " "
+        packet = packet[1:]
+
+    return s
+
+
 def to_string(packet):
     if len(packet) == 0:
         return ""
@@ -149,6 +162,9 @@ def to_string(packet):
             pack_format = "!" + str(slen)+'s' + str(len(packet)-slen) + 's'
             (password, packet) = struct.unpack(pack_format, packet)
             s = s+", password="+password
+
+        if flags&1:
+            s = s+", reserved=1"
 
         return s
     elif cmd == 0x20:
@@ -250,7 +266,7 @@ def to_string(packet):
         # Reserved
         return "0xF0"
 
-def gen_connect(client_id, clean_session=True, keepalive=60, username=None, password=None, will_topic=None, will_qos=0, will_retain=False, will_payload="", proto_ver=3):
+def gen_connect(client_id, clean_session=True, keepalive=60, username=None, password=None, will_topic=None, will_qos=0, will_retain=False, will_payload="", proto_ver=3, connect_reserved=False):
     if (proto_ver&0x7F) == 3 or proto_ver == 0:
         remaining_length = 12
     elif (proto_ver&0x7F) == 4:
@@ -262,6 +278,10 @@ def gen_connect(client_id, clean_session=True, keepalive=60, username=None, pass
         remaining_length = remaining_length + 2+len(client_id)
 
     connect_flags = 0
+
+    if connect_reserved:
+        connect_flags = connect_flags | 0x01
+
     if clean_session:
         connect_flags = connect_flags | 0x02
 

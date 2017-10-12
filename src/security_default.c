@@ -33,6 +33,9 @@ static int _pw_digest(const char *password, const unsigned char *salt, unsigned 
 static int _base64_decode(char *in, unsigned char **decoded, unsigned int *decoded_len);
 #endif
 
+static int mosquitto__memcmp_const(const void *ptr1, const void *b, size_t len);
+
+
 int mosquitto_security_init_default(struct mosquitto_db *db, bool reload)
 {
 	int rc;
@@ -261,6 +264,26 @@ int mosquitto_acl_check_default(struct mosquitto_db *db, struct mosquitto *conte
 	}
 
 	acl_root = db->acl_patterns;
+
+	if(acl_root){
+		/* We are using pattern based acls. Check whether the username or
+		 * client id contains a + or # and if so deny access.
+		 *
+		 * Without this, a malicious client may configure its username/client
+		 * id to bypass ACL checks (or have a username/client id that cannot
+		 * publish or receive messages to its own place in the hierarchy).
+		 */
+		if(context->username && strpbrk(context->username, "+#")){
+			_mosquitto_log_printf(NULL, MOSQ_LOG_NOTICE, "ACL denying access to client with dangerous username \"%s\"", context->username);
+			return MOSQ_ERR_ACL_DENIED;
+		}
+
+		if(context->id && strpbrk(context->id, "+#")){
+			_mosquitto_log_printf(NULL, MOSQ_LOG_NOTICE, "ACL denying access to client with dangerous client id \"%s\"", context->id);
+			return MOSQ_ERR_ACL_DENIED;
+		}
+	}
+
 	/* Loop through all pattern ACLs. */
 	clen = strlen(context->id);
 	while(acl_root){
@@ -332,7 +355,7 @@ static int _aclfile_parse(struct mosquitto_db *db)
 	if(!db || !db->config) return MOSQ_ERR_INVAL;
 	if(!db->config->acl_file) return MOSQ_ERR_SUCCESS;
 
-	aclfile = _mosquitto_fopen(db->config->acl_file, "rt");
+	aclfile = _mosquitto_fopen(db->config->acl_file, "rt", false);
 	if(!aclfile){
 		_mosquitto_log_printf(NULL, MOSQ_LOG_ERR, "Error: Unable to open acl_file \"%s\".", db->config->acl_file);
 		return 1;
@@ -491,7 +514,7 @@ static int _pwfile_parse(const char *file, struct _mosquitto_unpwd **root)
 	int len;
 	char *saveptr = NULL;
 
-	pwfile = _mosquitto_fopen(file, "rt");
+	pwfile = _mosquitto_fopen(file, "rt", false);
 	if(!pwfile){
 		_mosquitto_log_printf(NULL, MOSQ_LOG_ERR, "Error: Unable to open pwfile \"%s\".", file);
 		return 1;
@@ -630,6 +653,23 @@ static int _psk_file_parse(struct mosquitto_db *db)
 	return MOSQ_ERR_SUCCESS;
 }
 
+
+static int mosquitto__memcmp_const(const void *a, const void *b, size_t len)
+{
+	int i;
+	int rc = 0;
+
+	if(!a || !b) return 1;
+
+	for(i=0; i<len; i++){
+		if( ((char *)a)[i] != ((char *)b)[i] ){
+			rc = 1;
+		}
+	}
+	return rc;
+}
+
+
 int mosquitto_unpwd_check_default(struct mosquitto_db *db, const char *username, const char *password)
 {
 	struct _mosquitto_unpwd *u, *tmp;
@@ -650,7 +690,7 @@ int mosquitto_unpwd_check_default(struct mosquitto_db *db, const char *username,
 #ifdef WITH_TLS
 					rc = _pw_digest(password, u->salt, u->salt_len, hash, &hash_len);
 					if(rc == MOSQ_ERR_SUCCESS){
-						if(hash_len == u->password_len && !memcmp(u->password, hash, hash_len)){
+						if(hash_len == u->password_len && !mosquitto__memcmp_const(u->password, hash, hash_len)){
 							return MOSQ_ERR_SUCCESS;
 						}else{
 							return MOSQ_ERR_AUTH;

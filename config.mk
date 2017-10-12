@@ -86,7 +86,7 @@ WITH_SOCKS:=yes
 
 # Also bump lib/mosquitto.h, CMakeLists.txt,
 # installer/mosquitto.nsi, installer/mosquitto-cygwin.nsi
-VERSION=1.4.11
+VERSION=1.4.14
 TIMESTAMP:=$(shell date "+%F %T%z")
 
 # Client library SO version. Bump if incompatible API/ABI changes are made.
@@ -157,10 +157,6 @@ endif
 ifeq ($(UNAME),QNX)
 	BROKER_LIBS:=$(BROKER_LIBS) -lsocket
 	LIB_LIBS:=$(LIB_LIBS) -lsocket
-endif
-
-ifeq ($(UNAME),Linux)
-	BROKER_LIBS:=$(BROKER_LIBS) -lanl
 endif
 
 ifeq ($(WITH_WRAP),yes)

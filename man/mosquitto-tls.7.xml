@@ -50,6 +50,7 @@
 		<itemizedlist mark="circle">
 			<listitem><para>openssl req -out server.csr -key server.key -new</para></listitem>
 		</itemizedlist>
+		<note><para>When prompted for the CN (Common Name), please enter either your server (or broker) hostname or domain name.</para></note>
 
 		<para>Send the CSR to the CA, or sign it with your CA key:</para>
 		<itemizedlist mark="circle">

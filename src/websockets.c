@@ -201,6 +201,12 @@ static int callback_mqtt(struct libwebsocket_context *context,
 				mosq->ws_context = context;
 #endif
 				mosq->wsi = wsi;
+				if(in){
+					mosq->ssl = (SSL *)in;
+					if(!mosq->listener->ssl_ctx){
+						mosq->listener->ssl_ctx = SSL_get_SSL_CTX(mosq->ssl);
+					}
+				}
 				u->mosq = mosq;
 			}else{
 				return -1;
@@ -218,6 +224,8 @@ static int callback_mqtt(struct libwebsocket_context *context,
 				u->mosq = NULL;
 				return -1;
 			}
+			mosq->sock = libwebsocket_get_socket_fd(wsi);
+			HASH_ADD(hh_sock, db->contexts_by_sock, sock, sizeof(mosq->sock), mosq);
 			break;
 
 		case LWS_CALLBACK_CLOSED:
@@ -226,7 +234,13 @@ static int callback_mqtt(struct libwebsocket_context *context,
 			}
 			mosq = u->mosq;
 			if(mosq){
+				if(mosq->sock > 0){
+					HASH_DELETE(hh_sock, db->contexts_by_sock, mosq);
+					mosq->sock = INVALID_SOCKET;
+					mosq->pollfd_index = -1;
+				}
 				mosq->wsi = NULL;
+				mosq->ssl = NULL;
 				do_disconnect(db, mosq);
 			}
 			break;
@@ -287,10 +301,6 @@ static int callback_mqtt(struct libwebsocket_context *context,
 				_mosquitto_free(packet);
 
 				mosq->next_msg_out = mosquitto_time() + mosq->keepalive;
-
-				if(mosq->current_out_packet){
-					libwebsocket_callback_on_writable(mosq->ws_context, mosq->wsi);
-				}
 			}
 			if(mosq->state == mosq_cs_disconnect_ws || mosq->state == mosq_cs_disconnecting){
 				return -1;
@@ -412,6 +422,9 @@ static int callback_http(struct libwebsocket_context *context,
 	char *filename, *filename_canonical;
 	unsigned char buf[4096];
 	struct stat filestat;
+	struct mosquitto_db *db = &int_db;
+	struct mosquitto *mosq;
+	struct lws_pollargs *pollargs = (struct lws_pollargs *)in;
 
 	/* FIXME - ssl cert verification is done here. */
 
@@ -582,6 +595,15 @@ static int callback_http(struct libwebsocket_context *context,
 			}
 			break;
 #endif
+
+		case LWS_CALLBACK_ADD_POLL_FD:
+		case LWS_CALLBACK_DEL_POLL_FD:
+		case LWS_CALLBACK_CHANGE_MODE_POLL_FD:
+			HASH_FIND(hh_sock, db->contexts_by_sock, &pollargs->fd, sizeof(pollargs->fd), mosq);
+			if(mosq && (pollargs->events & POLLOUT)){
+				mosq->ws_want_write = true;
+			}
+			break;
 
 		default:
 			return 0;

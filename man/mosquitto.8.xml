@@ -473,7 +473,8 @@
 
 	<refsect1>
 		<title>Bugs</title>
-		<para><command>mosquitto</command> bug information can be found at <uri type="webpage">https://bugs.eclipse.org/bugs/describecomponents.cgi?product=Mosquitto</uri></para>
+		<para><command>mosquitto</command> bug information can be found at
+			<ulink url="https://github.com/eclipse/mosquitto/issues"/></para>
 	</refsect1>
 
 	<refsect1>
@@ -499,7 +500,7 @@
 			</member>
 			<member>
 				<citerefentry>
-					<refentrytitle><link xlink:href="http://www.linuxmanpages.com/man5/hosts_access.5.html">hosts_access</link></refentrytitle>
+					<refentrytitle><link xlink:href="https://linux.die.net/man/5/hosts_access">hosts_access</link></refentrytitle>
 					<manvolnum>5</manvolnum>
 				</citerefentry>
 			</member>

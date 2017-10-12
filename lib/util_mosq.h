@@ -32,7 +32,7 @@ void _mosquitto_check_keepalive(struct mosquitto_db *db, struct mosquitto *mosq)
 void _mosquitto_check_keepalive(struct mosquitto *mosq);
 #endif
 uint16_t _mosquitto_mid_generate(struct mosquitto *mosq);
-FILE *_mosquitto_fopen(const char *path, const char *mode);
+FILE *_mosquitto_fopen(const char *path, const char *mode, bool restrict_read);
 
 #ifdef REAL_WITH_TLS_PSK
 int _mosquitto_hex2bin(const char *hex, unsigned char *bin, int bin_max_len);

@@ -143,6 +143,8 @@ void mqtt3_context_cleanup(struct mosquitto_db *db, struct mosquitto *context, b
 		context->address = NULL;
 	}
 
+	mqtt3_context_send_will(db, context);
+
 	if(context->id){
 		assert(db); /* db can only be NULL here if the client hasn't sent a
 					   CONNECT and hence wouldn't have an id. */
@@ -163,12 +165,6 @@ void mqtt3_context_cleanup(struct mosquitto_db *db, struct mosquitto *context, b
 		context->out_packet = context->out_packet->next;
 		_mosquitto_free(packet);
 	}
-	if(context->will){
-		if(context->will->topic) _mosquitto_free(context->will->topic);
-		if(context->will->payload) _mosquitto_free(context->will->payload);
-		_mosquitto_free(context->will);
-		context->will = NULL;
-	}
 	if(do_free || context->clean_session){
 		msg = context->msgs;
 		while(msg){
@@ -185,7 +181,8 @@ void mqtt3_context_cleanup(struct mosquitto_db *db, struct mosquitto *context, b
 	}
 }
 
-void mqtt3_context_disconnect(struct mosquitto_db *db, struct mosquitto *ctxt)
+
+void mqtt3_context_send_will(struct mosquitto_db *db, struct mosquitto *ctxt)
 {
 	if(ctxt->state != mosq_cs_disconnecting && ctxt->will){
 		if(mosquitto_acl_check(db, ctxt, ctxt->will->topic, MOSQ_ACL_WRITE) == MOSQ_ERR_SUCCESS){
@@ -199,6 +196,13 @@ void mqtt3_context_disconnect(struct mosquitto_db *db, struct mosquitto *ctxt)
 		_mosquitto_free(ctxt->will);
 		ctxt->will = NULL;
 	}
+}
+
+
+void mqtt3_context_disconnect(struct mosquitto_db *db, struct mosquitto *ctxt)
+{
+	mqtt3_context_send_will(db, ctxt);
+
 	ctxt->disconnect_t = time(NULL);
 	_mosquitto_socket_close(db, ctxt);
 }

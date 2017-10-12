@@ -226,6 +226,7 @@ struct mosquitto {
 	struct libwebsocket *wsi;
 #    endif
 #  endif
+	bool ws_want_write;
 #else
 #  ifdef WITH_SOCKS
 	char *socks5_host;

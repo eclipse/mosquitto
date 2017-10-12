@@ -1,3 +1,77 @@
+Broker:
+- Use constant time memcmp for password comparisons.
+- Fix incorrect PSK key being used if it had leading zeroes.
+- Fix memory leak if a client provided a username/password for a listener with
+  use_identity_as_username configured.
+- Fix use_identity_as_username not working on websockets clients.
+- Don't crash if an auth plugin returns MOSQ_ERR_AUTH for a username check on
+  a websockets client. Closes #490.
+- Fix 08-ssl-bridge.py test when using async dns lookups. Closes #507.
+
+Client library:
+- Fix incorrect PSK key being used if it had leading zeroes.
+
+
+1.4.14 - 20170710
+=================
+
+Broker:
+- Fix regression from 1.4.13 where persistence data was not being saved.
+
+
+1.4.13 - 20170627
+=================
+
+Security:
+- Fix CVE-2017-9868. The persistence file was readable by all local users,
+  potentially allowing sensitive information to be leaked.
+  This can also be fixed administratively, by restricting access to the
+  directory in which the persistence file is stored.
+
+Broker:
+- Fix for poor websockets performance.
+- Fix lazy bridges not timing out for idle_timeout. Closes #417.
+- Fix problems with large retained messages over websockets. Closes #427.
+- Set persistence file to only be readable by owner, except on Windows. Closes
+  #468.
+- Fix CONNECT check for reserved=0, as per MQTT v3.1.1 check MQTT-3.1.2-3.
+- When the broker stop, wills for any connected clients are now "sent". Closes
+  #477.
+- Auth plugins can be configured to disable the check for +# in
+  usernames/client ids with the auth_plugin_deny_special_chars option.
+  Partially closes #462.
+- Restrictions for CVE-2017-7650 have been relaxed - '/' is allowed in
+  usernames/client ids. Remainder of fix for #462.
+
+Clients:
+- Don't use / in auto-generated client ids.
+
+
+1.4.12 - 20170528
+=================
+
+Security:
+- Fix CVE-2017-7650, which allows clients with username or client id set to
+  '#' or '+' to bypass pattern based ACLs or third party plugins. The fix
+  denies message sending or receiving of messages for clients with a '#' or
+  '+' in their username or client id and if the message is subject to a
+  pattern ACL check or plugin check.
+  Patches for other versions are available at
+  https://mosquitto.org/files/cve/2017-7650/
+
+Broker:
+- Fix mosquitto.db from becoming corrupted due to client messages being
+  persisted with no stored message. Closes #424.
+- Fix bridge not restarting properly. Closes #428.
+- Fix unitialized memory in gets_quiet on Windows. Closes #426.
+- Fix building with WITH_ADNS=no for systems that don't use glibc. Closes
+  #415.
+- Fixes to readme.md.
+- Fix deprecation warning for OpenSSL 1.1. PR #416.
+- Don't segfault on duplicate bridge names. Closes #446.
+- Fix CVE-2017-7650.
+
+
 1.4.11 - 20170220
 =================
 

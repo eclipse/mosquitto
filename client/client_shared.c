@@ -727,14 +727,14 @@ int client_id_generate(struct mosq_config *cfg, const char *id_base)
 		hostname[0] = '\0';
 		gethostname(hostname, 256);
 		hostname[255] = '\0';
-		len = strlen(id_base) + strlen("/-") + 6 + strlen(hostname);
+		len = strlen(id_base) + strlen("|-") + 6 + strlen(hostname);
 		cfg->id = malloc(len);
 		if(!cfg->id){
 			if(!cfg->quiet) fprintf(stderr, "Error: Out of memory.\n");
 			mosquitto_lib_cleanup();
 			return 1;
 		}
-		snprintf(cfg->id, len, "%s/%d-%s", id_base, getpid(), hostname);
+		snprintf(cfg->id, len, "%s|%d-%s", id_base, getpid(), hostname);
 		if(strlen(cfg->id) > MOSQ_MQTT_ID_MAX_LENGTH){
 			/* Enforce maximum client id length of 23 characters */
 			cfg->id[MOSQ_MQTT_ID_MAX_LENGTH] = '\0';

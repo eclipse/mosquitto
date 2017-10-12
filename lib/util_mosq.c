@@ -18,7 +18,12 @@ Contributors:
 #include <string.h>
 
 #ifdef WIN32
-#include <winsock2.h>
+#  include <winsock2.h>
+#  include <aclapi.h>
+#  include <io.h>
+#  include <lmcons.h>
+#else
+#  include <sys/stat.h>
 #endif
 
 
@@ -322,23 +327,37 @@ int _mosquitto_hex2bin(const char *hex, unsigned char *bin, int bin_max_len)
 {
 	BIGNUM *bn = NULL;
 	int len;
+	int leading_zero = 0;
+	int start = 0;
+	int i = 0;
+
+	/* Count the number of leading zero */
+	for(i=0; i<strlen(hex); i=i+2) {
+		if(strncmp(hex + i, "00", 2) == 0) {
+			leading_zero++;
+			/* output leading zero to bin */
+			bin[start++] = 0;
+		}else{
+			break;
+		}
+	}
 
 	if(BN_hex2bn(&bn, hex) == 0){
 		if(bn) BN_free(bn);
 		return 0;
 	}
-	if(BN_num_bytes(bn) > bin_max_len){
+	if(BN_num_bytes(bn) + leading_zero > bin_max_len){
 		BN_free(bn);
 		return 0;
 	}
 
-	len = BN_bn2bin(bn, bin);
+	len = BN_bn2bin(bn, bin + leading_zero);
 	BN_free(bn);
-	return len;
+	return len + leading_zero;
 }
 #endif
 
-FILE *_mosquitto_fopen(const char *path, const char *mode)
+FILE *_mosquitto_fopen(const char *path, const char *mode, bool restrict_read)
 {
 #ifdef WIN32
 	char buf[4096];
@@ -347,10 +366,69 @@ FILE *_mosquitto_fopen(const char *path, const char *mode)
 	if(rc == 0 || rc > 4096){
 		return NULL;
 	}else{
-		return fopen(buf, mode);
+		if (restrict_read) {
+			HANDLE hfile;
+			SECURITY_ATTRIBUTES sec;
+			EXPLICIT_ACCESS ea;
+			PACL pacl = NULL;
+			char username[UNLEN + 1];
+			int ulen = UNLEN;
+			SECURITY_DESCRIPTOR sd;
+
+			GetUserName(username, &ulen);
+			if (!InitializeSecurityDescriptor(&sd, SECURITY_DESCRIPTOR_REVISION)) {
+				return NULL;
+			}
+			BuildExplicitAccessWithName(&ea, username, GENERIC_ALL, SET_ACCESS, NO_INHERITANCE);
+			if (SetEntriesInAcl(1, &ea, NULL, &pacl) != ERROR_SUCCESS) {
+				return NULL;
+			}
+			if (!SetSecurityDescriptorDacl(&sd, TRUE, pacl, FALSE)) {
+				LocalFree(pacl);
+				return NULL;
+			}
+
+			sec.nLength = sizeof(SECURITY_ATTRIBUTES);
+			sec.bInheritHandle = FALSE;
+			sec.lpSecurityDescriptor = &sd;
+
+			hfile = CreateFile(buf, GENERIC_READ | GENERIC_WRITE, 0,
+				&sec,
+				CREATE_NEW,
+				FILE_ATTRIBUTE_NORMAL,
+				NULL);
+
+			LocalFree(pacl);
+
+			int fd = _open_osfhandle((intptr_t)hfile, 0);
+			if (fd < 0) {
+				return NULL;
+			}
+
+			FILE *fptr = _fdopen(fd, mode);
+			if (!fptr) {
+				_close(fd);
+				return NULL;
+			}
+			return fptr;
+
+		}else {
+			return fopen(buf, mode);
+		}
 	}
 #else
-	return fopen(path, mode);
+	if (restrict_read) {
+		FILE *fptr;
+		mode_t old_mask;
+
+		old_mask = umask(0077);
+		fptr = fopen(path, mode);
+		umask(old_mask);
+
+		return fptr;
+	}else{
+		return fopen(path, mode);
+	}
 #endif
 }
 

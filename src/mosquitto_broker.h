@@ -106,6 +106,7 @@ struct mqtt3_config {
 	bool allow_anonymous;
 	bool allow_duplicate_messages;
 	bool allow_zero_length_clientid;
+	bool auth_plugin_deny_special_chars;
 	char *auto_id_prefix;
 	int auto_id_prefix_len;
 	int autosave_interval;
@@ -452,6 +453,7 @@ void mqtt3_context_cleanup(struct mosquitto_db *db, struct mosquitto *context, b
 void mqtt3_context_disconnect(struct mosquitto_db *db, struct mosquitto *context);
 void mosquitto__add_context_to_disused(struct mosquitto_db *db, struct mosquitto *context);
 void mosquitto__free_disused_contexts(struct mosquitto_db *db);
+void mqtt3_context_send_will(struct mosquitto_db *db, struct mosquitto *context);
 
 /* ============================================================
  * Logging functions

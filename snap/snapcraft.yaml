@@ -34,9 +34,13 @@ parts:
     build-packages:
       - libssl-dev
       - uuid-dev
+      - libc-ares-dev
+      - xsltproc
+      - docbook-xsl
     stage-packages:
       - libssl1.0.0
       - libuuid1
+      - libc-ares2
     prime:
     - usr/local/sbin/mosquitto
     - lib/*-linux-gnu/libcrypto.so*

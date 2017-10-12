@@ -1,0 +1,23 @@
+{
+  "@context": "https://raw.githubusercontent.com/codemeta/codemeta/master/codemeta.jsonld",
+  "@type": "Code",
+  "author": [
+    {
+      "@id": "http://orcid.org/0000-0001-9218-7797",
+      "@type": "Person",
+      "email": "",
+      "name": "Roger A. Light",
+      "affiliation": ""
+    }
+  ],
+  "identifier": "",
+  "codeRepository": "https://github.com/eclipse/mosquitto",
+  "datePublished": "2017-05-17",
+  "dateModified": "2017-05-17",
+  "dateCreated": "2017-05-17",
+  "description": "Broker and client implementation of the MQTT protocol.",
+  "keywords": "IoT, MQTT, messaging, pubsub",
+  "license": "EPL 2.0 / EDL 2.0",
+  "title": "Mosquitto",
+  "version": "v1.4.11"
+}

@@ -41,7 +41,7 @@
 	<refsect1>
 		<title>Description</title>
 		<para><command>mosquitto_passwd</command> is a tool for managing
-			password files the mosquitto MQTT broker.</para>
+			password files for the mosquitto MQTT broker.</para>
 		<para>Usernames must not contain ":". Passwords are stored in a similar
 			format to
 			<citerefentry><refentrytitle>crypt</refentrytitle><manvolnum>3</manvolnum></citerefentry>.</para>
@@ -123,8 +123,8 @@
 
 	<refsect1>
 		<title>Bugs</title>
-		<para><command>mosquitto_passwd</command> bug information can be found at
-			<uri type="webpage">https://bugs.eclipse.org/bugs/describecomponents.cgi?product=Mosquitto</uri></para>
+		<para><command>mosquitto</command> bug information can be found at
+			<ulink url="https://github.com/eclipse/mosquitto/issues"/></para>
 	</refsect1>
 
 	<refsect1>

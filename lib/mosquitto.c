@@ -653,7 +653,7 @@ int mosquitto_tls_set(struct mosquitto *mosq, const char *cafile, const char *ca
 	if(!mosq || (!cafile && !capath) || (certfile && !keyfile) || (!certfile && keyfile)) return MOSQ_ERR_INVAL;
 
 	if(cafile){
-		fptr = _mosquitto_fopen(cafile, "rt");
+		fptr = _mosquitto_fopen(cafile, "rt", false);
 		if(fptr){
 			fclose(fptr);
 		}else{
@@ -680,7 +680,7 @@ int mosquitto_tls_set(struct mosquitto *mosq, const char *cafile, const char *ca
 	}
 
 	if(certfile){
-		fptr = _mosquitto_fopen(certfile, "rt");
+		fptr = _mosquitto_fopen(certfile, "rt", false);
 		if(fptr){
 			fclose(fptr);
 		}else{
@@ -704,7 +704,7 @@ int mosquitto_tls_set(struct mosquitto *mosq, const char *cafile, const char *ca
 	}
 
 	if(keyfile){
-		fptr = _mosquitto_fopen(keyfile, "rt");
+		fptr = _mosquitto_fopen(keyfile, "rt", false);
 		if(fptr){
 			fclose(fptr);
 		}else{
@@ -971,9 +971,10 @@ int mosquitto_loop(struct mosquitto *mosq, int timeout, int max_packets)
 				/* Fake write possible, to stimulate output write even though
 				 * we didn't ask for it, because at that point the publish or
 				 * other command wasn't present. */
-				FD_SET(mosq->sock, &writefds);
+				if(mosq->sock != INVALID_SOCKET)
+					FD_SET(mosq->sock, &writefds);
 			}
-			if(FD_ISSET(mosq->sock, &writefds)){
+			if(mosq->sock != INVALID_SOCKET && FD_ISSET(mosq->sock, &writefds)){
 #ifdef WITH_TLS
 				if(mosq->want_connect){
 					rc = mosquitto__socket_connect_tls(mosq);

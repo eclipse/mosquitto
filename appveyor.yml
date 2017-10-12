@@ -3,7 +3,7 @@ os: Visual Studio 2013
 environment:
   CMAKE_ARGS: -DCMAKE_BUILD_TYPE=Release
   NSIS_ROOT: C:\nsis
-  SSL_VER: 1_0_2h
+  SSL_VER: 1_0_2k
 
 configuration:
   - Release

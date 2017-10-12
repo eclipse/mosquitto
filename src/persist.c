@@ -79,6 +79,16 @@ static int mqtt3_db_client_messages_write(struct mosquitto_db *db, FILE *db_fptr
 
 	cmsg = context->msgs;
 	while(cmsg){
+		if(!strncmp(cmsg->store->topic, "$SYS", 4)
+				&& cmsg->store->ref_count <= 1
+				&& cmsg->store->dest_id_count == 0){
+
+			/* This $SYS message won't have been persisted, so we can't persist
+			 * this client message. */
+			cmsg = cmsg->next;
+			continue;
+		}
+
 		slen = strlen(context->id);
 
 		length = htonl(sizeof(dbid_t) + sizeof(uint16_t) + sizeof(uint8_t) +
@@ -394,7 +404,7 @@ int mqtt3_db_backup(struct mosquitto_db *db, bool shutdown)
 	}
 #endif
 
-	db_fptr = _mosquitto_fopen(outfile, "wb");
+	db_fptr = _mosquitto_fopen(outfile, "wb", true);
 	if(db_fptr == NULL){
 		_mosquitto_log_printf(NULL, MOSQ_LOG_INFO, "Error saving in-memory database, unable to open %s for writing.", outfile);
 		goto error;
@@ -811,7 +821,7 @@ int mqtt3_db_restore(struct mosquitto_db *db)
 
 	db->msg_store_load = NULL;
 
-	fptr = _mosquitto_fopen(db->config->persistence_filepath, "rb");
+	fptr = _mosquitto_fopen(db->config->persistence_filepath, "rb", false);
 	if(fptr == NULL) return MOSQ_ERR_SUCCESS;
 	rlen = fread(&header, 1, 15, fptr);
 	if(rlen == 0){

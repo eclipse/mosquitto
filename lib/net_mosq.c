@@ -114,7 +114,9 @@ void _mosquitto_net_init(void)
 void _mosquitto_net_cleanup(void)
 {
 #ifdef WITH_TLS
-	ERR_remove_state(0);
+	#if OPENSSL_VERSION_NUMBER < 0x10100000L
+		ERR_remove_state(0);
+	#endif
 	ENGINE_cleanup();
 	CONF_modules_unload(1);
 	ERR_free_strings();
@@ -212,33 +214,39 @@ int _mosquitto_socket_close(struct mosquitto *mosq)
 
 	assert(mosq);
 #ifdef WITH_TLS
-	if(mosq->ssl){
-		SSL_shutdown(mosq->ssl);
-		SSL_free(mosq->ssl);
-		mosq->ssl = NULL;
-	}
-	if(mosq->ssl_ctx){
-		SSL_CTX_free(mosq->ssl_ctx);
-		mosq->ssl_ctx = NULL;
+#ifdef WITH_WEBSOCKETS
+	if(!mosq->wsi)
+#endif
+	{
+		if(mosq->ssl){
+			SSL_shutdown(mosq->ssl);
+			SSL_free(mosq->ssl);
+			mosq->ssl = NULL;
+		}
+		if(mosq->ssl_ctx){
+			SSL_CTX_free(mosq->ssl_ctx);
+			mosq->ssl_ctx = NULL;
+		}
 	}
 #endif
 
-	if((int)mosq->sock >= 0){
-#ifdef WITH_BROKER
-		HASH_DELETE(hh_sock, db->contexts_by_sock, mosq);
-#endif
-		rc = COMPAT_CLOSE(mosq->sock);
-		mosq->sock = INVALID_SOCKET;
 #ifdef WITH_WEBSOCKETS
-	}else if(mosq->sock == WEBSOCKET_CLIENT){
+	if(mosq->wsi)
+	{
 		if(mosq->state != mosq_cs_disconnecting){
 			mosq->state = mosq_cs_disconnect_ws;
 		}
-		if(mosq->wsi){
-			libwebsocket_callback_on_writable(mosq->ws_context, mosq->wsi);
-		}
-		mosq->sock = INVALID_SOCKET;
+		libwebsocket_callback_on_writable(mosq->ws_context, mosq->wsi);
+	}else
 #endif
+	{
+		if((int)mosq->sock >= 0){
+#ifdef WITH_BROKER
+			HASH_DELETE(hh_sock, db->contexts_by_sock, mosq);
+#endif
+			rc = COMPAT_CLOSE(mosq->sock);
+			mosq->sock = INVALID_SOCKET;
+		}
 	}
 
 #ifdef WITH_BROKER
@@ -462,6 +470,7 @@ int _mosquitto_try_connect(struct mosquitto *mosq, const char *host, uint16_t po
 int mosquitto__socket_connect_tls(struct mosquitto *mosq)
 {
 	int ret, err;
+	ERR_clear_error();
 	ret = SSL_connect(mosq->ssl);
 	if(ret != 1) {
 		err = SSL_get_error(mosq->ssl, ret);
@@ -760,6 +769,7 @@ ssize_t _mosquitto_net_read(struct mosquitto *mosq, void *buf, size_t count)
 	errno = 0;
 #ifdef WITH_TLS
 	if(mosq->ssl){
+		ERR_clear_error();
 		ret = SSL_read(mosq->ssl, buf, count);
 		if(ret <= 0){
 			err = SSL_get_error(mosq->ssl, ret);
@@ -810,6 +820,7 @@ ssize_t _mosquitto_net_write(struct mosquitto *mosq, void *buf, size_t count)
 #ifdef WITH_TLS
 	if(mosq->ssl){
 		mosq->want_write = false;
+		ERR_clear_error();
 		ret = SSL_write(mosq->ssl, buf, count);
 		if(ret < 0){
 			err = SSL_get_error(mosq->ssl, ret);

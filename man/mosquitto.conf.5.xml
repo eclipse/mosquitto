@@ -203,6 +203,31 @@
 				</listitem>
 			</varlistentry>
 			<varlistentry>
+				<term><option>auth_plugin_deny_special_chars</option> [ true | false ]</term>
+				<listitem>
+					<para>If <replaceable>true</replaceable> then before an ACL
+						check is made, the username/client id of the client
+						needing the check is searched for the presence of
+						either a '+' or '#' character. If either of these
+						characters is found in either the username or client
+						id, then the ACL check is denied before it is sent to
+						the plugin.</para>
+					<para>This check prevents the case where a malicious user
+						could circumvent an ACL check by using one of these
+						characters as their username or client id. This is the
+						same issue as was reported with mosquitto itself as
+						CVE-2017-7650.</para>
+					<para>If you are entirely sure that the plugin you are
+						using is not vulnerable to this attack (i.e. if you
+						never use usernames or client ids in topics) then you
+						can disable this extra check and hence have all ACL
+						checks delivered to your plugin by setting this option
+						to <replaceable>false</replaceable>.</para>
+					<para>Defaults to <replaceable>true</replaceable>.</para>
+					<para>Not currently reloaded on reload signal.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
 				<term><option>autosave_interval</option> <replaceable>seconds</replaceable></term>
 				<listitem>
 					<para>The number of seconds that mosquitto will wait
@@ -1396,8 +1421,8 @@ topic clients/total in 0 test/mosquitto/org $SYS/broker/
 
 	<refsect1>
 		<title>Bugs</title>
-		<para><command>mosquitto</command> bug information can be found at <uri
-				type="webpage">https://bugs.eclipse.org/bugs/describecomponents.cgi?product=Mosquitto</uri></para>
+		<para><command>mosquitto</command> bug information can be found at
+			<ulink url="https://github.com/eclipse/mosquitto/issues"/></para>
 	</refsect1>
 
 	<refsect1>
