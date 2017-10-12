@@ -137,6 +137,7 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 	sigaddset(&sigblock, SIGUSR1);
 	sigaddset(&sigblock, SIGUSR2);
 	sigaddset(&sigblock, SIGHUP);
+	sigaddset(&sigblock, SIGWINCH);
 #endif
 
 #ifndef WITH_EPOLL
