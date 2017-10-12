@@ -59,6 +59,7 @@ extern bool flag_reload;
 extern bool flag_db_backup;
 #endif
 extern bool flag_tree_print;
+extern bool flag_bridge_reconnect;
 extern int run;
 
 #ifdef WITH_EPOLL
@@ -544,6 +545,21 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 			sub__tree_print(db->subs, 0);
 			flag_tree_print = false;
 		}
+#ifdef WITH_BRIDGE
+    if(flag_bridge_reconnect){
+      for(i=0; i<db->bridge_count; i++){
+        if(!db->bridges[i]) continue;
+
+        context = db->bridges[i];
+
+        if(context->sock == INVALID_SOCKET){
+          context->bridge->restart_t = 1;
+        }
+      }
+      flag_bridge_reconnect = false;
+    }
+#endif
+
 #ifdef WITH_WEBSOCKETS
 		for(i=0; i<db->config->listener_count; i++){
 			/* Extremely hacky, should be using the lws provided external poll

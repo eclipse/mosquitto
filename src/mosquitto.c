@@ -61,6 +61,7 @@ bool flag_reload = false;
 bool flag_db_backup = false;
 #endif
 bool flag_tree_print = false;
+bool flag_bridge_reconnect = false;
 int run;
 #ifdef WITH_WRAP
 #include <syslog.h>
@@ -190,6 +191,14 @@ void mosquitto__daemonise(void)
 #endif
 }
 
+
+/* Signal handler for SIGWINCH - reconnect to bridge(s). */
+void handle_sigwinch(int signal)
+{
+#ifdef WITH_BRIDGE
+  flag_bridge_reconnect = true;
+#endif
+}
 
 int main(int argc, char *argv[])
 {
@@ -340,6 +349,7 @@ int main(int argc, char *argv[])
 #ifndef WIN32
 	signal(SIGUSR1, handle_sigusr1);
 	signal(SIGUSR2, handle_sigusr2);
+	signal(SIGWINCH, handle_sigwinch);
 	signal(SIGPIPE, SIG_IGN);
 #endif
 #ifdef WIN32

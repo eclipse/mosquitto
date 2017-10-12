@@ -452,6 +452,18 @@
 					testing feature only and may be removed at any time.</para>
 				</listitem>
 			</varlistentry>
+			<varlistentry>
+				<term>SIGWINCH</term>
+				<listitem>
+          <para>The SIGWINCH signal causes mosquitto to try to
+          reconnect to all bridges, which are disconnected at the
+          moment. It is useful when the internet connection is weak.
+          As soon as you have internet or vpn connectivity, you can
+          signal the broker, to try to reconnect. Set start_type to
+          auto (the default), and you can give a big number to
+          restart_timeout.</para>
+				</listitem>
+			</varlistentry>
 		</variablelist>
 	</refsect1>
 
