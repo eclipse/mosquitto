@@ -20,29 +20,29 @@ reallyclean : clean
 dist : mosquitto.8 mosquitto-tls.7 mosquitto.conf.5 mosquitto_passwd.1 mosquitto_pub.1 mosquitto_sub.1 mqtt.7 libmosquitto.3
 
 install :
-	$(INSTALL) -d ${DESTDIR}$(mandir)/man8
-	$(INSTALL) -m 644 mosquitto.8 ${DESTDIR}${mandir}/man8/mosquitto.8
-	$(INSTALL) -d ${DESTDIR}$(mandir)/man5
-	$(INSTALL) -m 644 mosquitto.conf.5 ${DESTDIR}${mandir}/man5/mosquitto.conf.5
-	$(INSTALL) -d ${DESTDIR}$(mandir)/man1
-	$(INSTALL) -m 644 mosquitto_passwd.1 ${DESTDIR}${mandir}/man1/mosquitto_passwd.1
-	$(INSTALL) -m 644 mosquitto_pub.1 ${DESTDIR}${mandir}/man1/mosquitto_pub.1
-	$(INSTALL) -m 644 mosquitto_sub.1 ${DESTDIR}${mandir}/man1/mosquitto_sub.1
-	$(INSTALL) -d ${DESTDIR}$(mandir)/man7
-	$(INSTALL) -m 644 mqtt.7 ${DESTDIR}${mandir}/man7/mqtt.7
-	$(INSTALL) -m 644 mosquitto-tls.7 ${DESTDIR}${mandir}/man7/mosquitto-tls.7
-	$(INSTALL) -d ${DESTDIR}$(mandir)/man3
-	$(INSTALL) -m 644 libmosquitto.3 ${DESTDIR}${mandir}/man3/libmosquitto.3
+	$(INSTALL) -d "${DESTDIR}$(mandir)/man8"
+	$(INSTALL) -m 644 mosquitto.8 "${DESTDIR}${mandir}/man8/mosquitto.8"
+	$(INSTALL) -d "${DESTDIR}$(mandir)/man5"
+	$(INSTALL) -m 644 mosquitto.conf.5 "${DESTDIR}${mandir}/man5/mosquitto.conf.5"
+	$(INSTALL) -d "${DESTDIR}$(mandir)/man1"
+	$(INSTALL) -m 644 mosquitto_passwd.1 "${DESTDIR}${mandir}/man1/mosquitto_passwd.1"
+	$(INSTALL) -m 644 mosquitto_pub.1 "${DESTDIR}${mandir}/man1/mosquitto_pub.1"
+	$(INSTALL) -m 644 mosquitto_sub.1 "${DESTDIR}${mandir}/man1/mosquitto_sub.1"
+	$(INSTALL) -d "${DESTDIR}$(mandir)/man7"
+	$(INSTALL) -m 644 mqtt.7 "${DESTDIR}${mandir}/man7/mqtt.7"
+	$(INSTALL) -m 644 mosquitto-tls.7 "${DESTDIR}${mandir}/man7/mosquitto-tls.7"
+	$(INSTALL) -d "${DESTDIR}$(mandir)/man3"
+	$(INSTALL) -m 644 libmosquitto.3 "${DESTDIR}${mandir}/man3/libmosquitto.3"
 
 uninstall :
-	-rm -f ${DESTDIR}${mandir}/man8/mosquitto.8
-	-rm -f ${DESTDIR}${mandir}/man5/mosquitto.conf.5
-	-rm -f ${DESTDIR}${mandir}/man1/mosquitto_passwd.1
-	-rm -f ${DESTDIR}${mandir}/man1/mosquitto_pub.1
-	-rm -f ${DESTDIR}${mandir}/man1/mosquitto_sub.1
-	-rm -f ${DESTDIR}${mandir}/man7/mqtt.7
-	-rm -f ${DESTDIR}${mandir}/man7/mosquitto-tls.7
-	-rm -f ${DESTDIR}${mandir}/man3/libmosquitto.3
+	-rm -f "${DESTDIR}${mandir}/man8/mosquitto.8"
+	-rm -f "${DESTDIR}${mandir}/man5/mosquitto.conf.5"
+	-rm -f "${DESTDIR}${mandir}/man1/mosquitto_passwd.1"
+	-rm -f "${DESTDIR}${mandir}/man1/mosquitto_pub.1"
+	-rm -f "${DESTDIR}${mandir}/man1/mosquitto_sub.1"
+	-rm -f "${DESTDIR}${mandir}/man7/mqtt.7"
+	-rm -f "${DESTDIR}${mandir}/man7/mosquitto-tls.7"
+	-rm -f "${DESTDIR}${mandir}/man3/libmosquitto.3"
 
 mosquitto.8 : mosquitto.8.xml
 	$(XSLTPROC) $^
