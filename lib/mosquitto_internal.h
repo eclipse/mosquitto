@@ -188,6 +188,9 @@ struct mosquitto {
 	char *tls_psk_identity;
 	int tls_cert_reqs;
 	bool tls_insecure;
+#if !defined(WITH_BROKER) && defined(WITH_TLS_TICKET)
+	char* tls_ticket_data;
+#endif
 #endif
 	bool want_write;
 	bool want_connect;
@@ -201,6 +204,9 @@ struct mosquitto {
 	pthread_mutex_t in_message_mutex;
 	pthread_mutex_t out_message_mutex;
 	pthread_mutex_t mid_mutex;
+#ifdef WITH_TLS_TICKET
+	pthread_mutex_t tls_ticket_mutex;
+#endif
 	pthread_t thread_id;
 #endif
 	bool clean_session;

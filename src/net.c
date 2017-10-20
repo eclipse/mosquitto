@@ -55,8 +55,16 @@ Contributors:
 #ifdef WITH_TLS
 #include "tls_mosq.h"
 #include <openssl/err.h>
+#include <openssl/rand.h>
 static int tls_ex_index_context = -1;
 static int tls_ex_index_listener = -1;
+#ifdef WITH_TLS_TICKET
+static time_t tls_ticket_key_time = 0;
+static time_t tls_ticket_valid_time = 0;
+static char tls_ticket_key_name[16];
+static unsigned char tls_ticket_aes256_key[EVP_MAX_KEY_LENGTH];
+static unsigned char tls_ticket_hmac_key[64];
+#endif
 #endif
 
 #include "sys_tree.h"
@@ -251,6 +259,44 @@ static unsigned int psk_server_callback(SSL *ssl, const char *identity, unsigned
 }
 #endif
 
+#if defined(WITH_TLS) && defined(WITH_TLS_TICKET)
+static int mosquitto__ssl_tlsext_ticket_key_cb(SSL *s, unsigned char key_name[16], unsigned char *iv, EVP_CIPHER_CTX *ctx, HMAC_CTX *hctx, int enc)
+{
+	time_t tnow = mosquitto_time();
+	const EVP_CIPHER *cipher = EVP_aes_256_cbc();
+	const EVP_MD *hashfunc = EVP_sha384();
+
+	if ((tls_ticket_key_time == 0) || (tnow - tls_ticket_key_time) > tls_ticket_valid_time){
+		int keyLen = EVP_CIPHER_key_length(cipher);
+		if ((keyLen>sizeof(tls_ticket_aes256_key))||(keyLen < 32)) return -1;
+		if (RAND_bytes(tls_ticket_aes256_key, keyLen) != 1) return -1;
+
+		if (RAND_bytes(tls_ticket_hmac_key, sizeof(tls_ticket_hmac_key)) != 1) return -1;
+
+		snprintf(tls_ticket_key_name, sizeof(tls_ticket_key_name), "MOSQ_%010u", (unsigned)tnow & 0xFFFFFFFF);
+
+		log__printf(NULL, MOSQ_LOG_DEBUG, "New ticket key generated: %s", tls_ticket_key_name);
+		tls_ticket_key_time = tnow;
+	}
+
+	if (enc){
+		int iv_len = EVP_CIPHER_iv_length(cipher);
+		if (RAND_bytes(iv, iv_len) != 1) return -1;
+
+		if (EVP_EncryptInit_ex(ctx, cipher, NULL, tls_ticket_aes256_key, iv) != 1) return -1;
+		if (HMAC_Init_ex(hctx, tls_ticket_hmac_key, sizeof(tls_ticket_hmac_key), hashfunc, NULL) != 1) return -1;
+		memcpy(key_name, tls_ticket_key_name, 16);
+		return 1;
+	}else{
+		log__printf(NULL, MOSQ_LOG_DEBUG, "Client provided a ticket");
+		if (memcmp(key_name, tls_ticket_key_name, 16) != 0) return 0;
+		if (HMAC_Init_ex(hctx, tls_ticket_hmac_key, sizeof(tls_ticket_hmac_key), hashfunc, NULL) != 1) return -1;
+		if (EVP_DecryptInit_ex(ctx, cipher, NULL, tls_ticket_aes256_key, iv) != 1) return -1;
+		return 1; // Never return 2, force negotiation of new session on expiery
+	}
+}
+#endif
+
 #ifdef WITH_TLS
 static int mosquitto__tls_server_ctx(struct mosquitto__listener *listener)
 {
@@ -328,6 +374,27 @@ static int mosquitto__tls_server_ctx(struct mosquitto__listener *listener)
 			return 1;
 		}
 	}
+
+#ifdef WITH_TLS_TICKET
+	if (listener->tls_ticket_time > 0){
+#if OPENSSL_VERSION_NUMBER >= 0x10001000L
+		rc = SSL_CTX_set_tlsext_ticket_key_cb(listener->ssl_ctx, mosquitto__ssl_tlsext_ticket_key_cb);
+		if(rc != 1){
+			log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to set TLS ticket key callback.");
+			return 1;
+		}
+		if ((tls_ticket_valid_time > 0) && (tls_ticket_valid_time != listener->tls_ticket_time)){
+			log__printf(NULL, MOSQ_LOG_ERR, "Error: Only a single consistent ticket time is suported.");
+			return 1;
+		}
+		tls_ticket_valid_time = listener->tls_ticket_time;
+#else
+		log__printf(NULL, MOSQ_LOG_ERR, "Error: To old ssl build version for ticket length parameter.");
+		return 1;
+#endif
+	}
+#endif
+
 	return MOSQ_ERR_SUCCESS;
 }
 #endif

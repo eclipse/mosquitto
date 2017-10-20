@@ -209,6 +209,9 @@ void config__init(struct mosquitto__config *config)
 	config->default_listener.crlfile = NULL;
 	config->default_listener.use_identity_as_username = false;
 	config->default_listener.use_subject_as_username = false;
+#ifdef WITH_TLS_TICKET
+	config->default_listener.tls_ticket_time = 0;
+#endif
 #endif
 	config->listeners = NULL;
 	config->listener_count = 0;
@@ -410,6 +413,9 @@ int config__parse_args(struct mosquitto__config *config, int argc, char *argv[])
 			|| config->default_listener.crlfile
 			|| config->default_listener.use_identity_as_username
 			|| config->default_listener.use_subject_as_username
+#ifdef WITH_TLS_TICKET
+			|| config->default_listener.tls_ticket_time
+#endif
 #endif
 			|| config->default_listener.use_username_as_clientid
 			|| config->default_listener.host
@@ -460,6 +466,9 @@ int config__parse_args(struct mosquitto__config *config, int argc, char *argv[])
 		config->listeners[config->listener_count-1].crlfile = config->default_listener.crlfile;
 		config->listeners[config->listener_count-1].use_identity_as_username = config->default_listener.use_identity_as_username;
 		config->listeners[config->listener_count-1].use_subject_as_username = config->default_listener.use_subject_as_username;
+#ifdef WITH_TLS_TICKET
+		config->listeners[config->listener_count-1].tls_ticket_time = config->default_listener.tls_ticket_time;
+#endif
 #endif
 	}
 
@@ -1775,6 +1784,33 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, const 
 					if(conf__parse_bool(&token, "use_subject_as_username", &cur_listener->use_subject_as_username, saveptr)) return MOSQ_ERR_INVAL;
 #else
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: TLS support not available.");
+#endif
+				}else if(!strcmp(token, "tls_ticket_time")){
+#if defined(WITH_TLS) && defined(WITH_TLS_TICKET)
+					token = strtok_r(NULL, " ", &saveptr);
+					if(token){
+						switch(token[strlen(token)-1]){
+							case 'h':
+								expiration_mult = 3600;
+								break;
+							case 'd':
+								expiration_mult = 86400;
+								break;
+							default:
+								log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid tls_ticket_time duration in configuration.");
+								return MOSQ_ERR_INVAL;
+						}
+						token[strlen(token)-1] = '\0';
+						cur_listener->tls_ticket_time = atoi(token)*expiration_mult;
+						if(cur_listener->tls_ticket_time <= 0){
+							log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid tls_ticket_time duration in configuration.");
+							return MOSQ_ERR_INVAL;
+						}
+					}else{
+						log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty tls_ticket_time value in configuration.");
+					}
+#else
+					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: TLS ticket support not available.");
 #endif
 				}else if(!strcmp(token, "user")){
 					if(reload) continue; // Drop privileges user not valid for reloading.

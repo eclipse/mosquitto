@@ -211,6 +211,9 @@ int mosquitto_reinitialise(struct mosquitto *mosq, const char *id, bool clean_se
 	pthread_mutex_init(&mosq->in_message_mutex, NULL);
 	pthread_mutex_init(&mosq->out_message_mutex, NULL);
 	pthread_mutex_init(&mosq->mid_mutex, NULL);
+#ifdef WITH_TLS_TICKET
+	pthread_mutex_init(&mosq->tls_ticket_mutex, NULL);
+#endif
 	mosq->thread_id = pthread_self();
 #endif
 
@@ -291,6 +294,9 @@ void mosquitto__destroy(struct mosquitto *mosq)
 		pthread_mutex_destroy(&mosq->in_message_mutex);
 		pthread_mutex_destroy(&mosq->out_message_mutex);
 		pthread_mutex_destroy(&mosq->mid_mutex);
+#ifdef WITH_TLS_TICKET
+		pthread_mutex_destroy(&mosq->tls_ticket_mutex);
+#endif
 	}
 #endif
 	if(mosq->sock != INVALID_SOCKET){
@@ -333,6 +339,12 @@ void mosquitto__destroy(struct mosquitto *mosq)
 
 	mosquitto__free(mosq->bind_address);
 	mosq->bind_address = NULL;
+#if !defined(WITH_BROKER) && defined(WITH_TLS) && defined(WITH_TLS_TICKET)
+	if (mosq->tls_ticket_data){
+		mosquitto__free(mosq->tls_ticket_data);
+		mosq->tls_ticket_data = NULL;
+	}
+#endif
 
 	/* Out packet cleanup */
 	if(mosq->out_packet && !mosq->current_out_packet){
@@ -765,6 +777,78 @@ int mosquitto_tls_opts_set(struct mosquitto *mosq, int cert_reqs, const char *tl
 #else
 	return MOSQ_ERR_NOT_SUPPORTED;
 
+#endif
+}
+
+int mosquitto_tls_session_set(struct mosquitto *mosq, const char* pem_session)
+{
+#if defined(WITH_TLS) && defined(WITH_TLS_TICKET)
+    int rc = MOSQ_ERR_SUCCESS;
+
+	if(!mosq || !pem_session) return MOSQ_ERR_INVAL;
+
+#ifdef WITH_THREADING
+	pthread_mutex_lock(&mosq->tls_ticket_mutex);
+#endif
+
+	if (mosq->tls_ticket_data){
+		mosquitto__free(mosq->tls_ticket_data);
+		mosq->tls_ticket_data = NULL;
+	}
+
+	mosq->tls_ticket_data = mosquitto__strdup(pem_session);
+	if (!mosq->tls_ticket_data) rc = MOSQ_ERR_NOMEM;
+
+#ifdef WITH_THREADING
+	pthread_mutex_unlock(&mosq->tls_ticket_mutex);
+#endif
+
+	return rc;
+#else
+	return MOSQ_ERR_NOT_SUPPORTED;
+#endif
+}
+
+int mosquitto_tls_session_get(struct mosquitto *mosq, char** pem_session)
+{
+	if(!pem_session) return MOSQ_ERR_INVAL;
+	*pem_session = NULL;
+
+#if defined(WITH_TLS) && defined(WITH_TLS_TICKET)
+
+	if(!mosq) return MOSQ_ERR_INVAL;
+
+#ifdef WITH_THREADING
+	pthread_mutex_lock(&mosq->tls_ticket_mutex);
+#endif
+	int rc = MOSQ_ERR_SUCCESS;
+
+	if (mosq->tls_ticket_data){
+		*pem_session = mosquitto__strdup(mosq->tls_ticket_data);
+		if (!*pem_session) rc = MOSQ_ERR_NOMEM;
+	}
+
+#ifdef WITH_THREADING
+	pthread_mutex_unlock(&mosq->tls_ticket_mutex);
+#endif
+
+	return rc;
+#else
+	return MOSQ_ERR_NOT_SUPPORTED;
+#endif
+}
+
+int mosquitto_tls_session_free(char* pem_session)
+{
+#if defined(WITH_TLS) && defined(WITH_TLS_TICKET)
+
+	if(!pem_session) return MOSQ_ERR_INVAL;
+
+	mosquitto__free(pem_session);
+
+	return MOSQ_ERR_SUCCESS;
+#else
+	return MOSQ_ERR_NOT_SUPPORTED;
 #endif
 }
 

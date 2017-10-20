@@ -86,4 +86,7 @@ MOSQ_1.5 {
 		mosquitto_message_free_contents;
 		mosquitto_validate_utf8;
 		mosquitto_userdata;
+		mosquitto_tls_session_set;
+		mosquitto_tls_session_get;
+		mosquitto_tls_session_free;
 } MOSQ_1.4;

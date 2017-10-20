@@ -1020,6 +1020,69 @@ libmosq_EXPORT int mosquitto_tls_set(struct mosquitto *mosq,
 		int (*pw_callback)(char *buf, int size, int rwflag, void *userdata));
 
 /*
+ * Function: mosquitto_tls_session_set
+ *
+ * Load tls session with a saved session in pem format to use a received
+ * tls ticket.
+ * Must be called before <mosquitto_connect>.
+ *
+ * Parameters:
+ *  mosq -        a valid mosquitto instance.
+ *  pem_session - string received from previous call to
+ *                mosquitto_tls_session_get
+ *
+ * Returns:
+ *  MOSQ_ERR_SUCCESS - on success.
+ *  MOSQ_ERR_INVAL -   if the input parameters were invalid.
+ *  MOSQ_ERR_NOMEM -   if an out of memory condition occurred.
+ *
+ * See Also:
+ *	<mosquitto_tls_session_get>
+ */
+libmosq_EXPORT int mosquitto_tls_session_set(struct mosquitto *mosq, const char* pem_session);
+
+/*
+ * Function: mosquitto_tls_session_get
+ *
+ * Get saved tls session in pem format possibly containg a saved tls ticket.
+ * Data returned is a copy (if not returning NULL) and must be freed by the client
+ * using a call to <mosquitto_tls_session_free>.
+ *
+ * Parameters:
+ *  mosq -            a valid mosquitto instance.
+ *  pem_session_ptr - set pointing to a copy of the session or NULL.
+ *
+ * Returns:
+ *  MOSQ_ERR_SUCCESS -       on success.
+ *  MOSQ_ERR_INVAL -         if the input parameters were invalid.
+ *  MOSQ_ERR_NOT_SUPPORTED - if not compiled with tls
+ *  MOSQ_ERR_NOMEM -         if an out of memory condition occurred.
+ *
+ * See Also:
+ *	<mosquitto_tls_session_set>, <mosquitto_tls_session_free>
+ */
+libmosq_EXPORT int mosquitto_tls_session_get(struct mosquitto *mosq, char** pem_session_ptr);
+
+/*
+ * Function: mosquitto_tls_session_free
+ *
+ * Free string returned by <mosquitto_tls_session_get>.
+ *
+ * Parameters:
+ *  mosq -            a valid mosquitto instance.
+ *  pem_session_ptr - set pointing to string in mosq object if any. Else set to null.
+ *
+ * Returns:
+ *  MOSQ_ERR_SUCCESS -       on success.
+ *  MOSQ_ERR_INVAL -         if the input parameters were invalid.
+ *  MOSQ_ERR_NOT_SUPPORTED - if not compiled with tls
+ *
+ * See Also:
+ *	<mosquitto_tls_session_get>
+ */
+libmosq_EXPORT int mosquitto_tls_session_free(char* pem_session);
+
+/*
  * Function: mosquitto_tls_insecure_set
  *
  * Configure verification of the server hostname in the server certificate. If

@@ -28,6 +28,11 @@ WITH_TLS:=yes
 # This must be disabled if using openssl < 1.0.
 WITH_TLS_PSK:=yes
 
+# Comment out to disable TLS Ticket key length suport. Requires
+# WITH_TLS=yes.
+# This must be disabled if using openssl < 1.0.
+WITH_TLS_TICKET:=yes
+
 # Comment out to disable client client threading support.
 WITH_THREADING:=yes
 
@@ -189,6 +194,11 @@ ifeq ($(WITH_TLS),yes)
 		BROKER_CFLAGS:=$(BROKER_CFLAGS) -DWITH_TLS_PSK
 		LIB_CFLAGS:=$(LIB_CFLAGS) -DWITH_TLS_PSK
 		CLIENT_CFLAGS:=$(CLIENT_CFLAGS) -DWITH_TLS_PSK
+	endif
+	ifeq ($(WITH_TLS_TICKET),yes)
+		BROKER_CFLAGS:=$(BROKER_CFLAGS) -DWITH_TLS_TICKET
+		LIB_CFLAGS:=$(LIB_CFLAGS) -DWITH_TLS_TICKET
+		CLIENT_CFLAGS:=$(CLIENT_CFLAGS) -DWITH_TLS_TICKET
 	endif
 endif
 

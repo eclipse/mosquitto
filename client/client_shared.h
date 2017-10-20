@@ -70,6 +70,9 @@ struct mosq_config {
 	char *psk;
 	char *psk_identity;
 #  endif
+#  ifdef WITH_TLS_TICKET
+	char *sessionfile;
+#  endif
 #endif
 	bool clean_session;
 	char **topics; /* sub */
@@ -97,5 +100,10 @@ void client_config_cleanup(struct mosq_config *cfg);
 int client_opts_set(struct mosquitto *mosq, struct mosq_config *cfg);
 int client_id_generate(struct mosq_config *cfg, const char *id_base);
 int client_connect(struct mosquitto *mosq, struct mosq_config *cfg);
+
+#if defined(WITH_TLS) && defined(WITH_TLS_TICKET)
+int client_read_file(const char* fname, char** buf);
+int client_write_file(const char* fname, const char* buf);
+#endif
 
 #endif

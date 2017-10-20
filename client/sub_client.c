@@ -31,6 +31,10 @@ Contributors:
 #include <mosquitto.h>
 #include "client_shared.h"
 
+#if defined(WITH_TLS) && defined(WITH_TLS_TICKET)
+static char *sessionfile = NULL;
+#endif
+
 bool process_messages = true;
 int msg_count = 0;
 
@@ -357,6 +361,20 @@ void my_connect_callback(struct mosquitto *mosq, void *obj, int result)
 	cfg = (struct mosq_config *)obj;
 
 	if(!result){
+#if defined(WITH_TLS) && defined(WITH_TLS_TICKET)
+		if(sessionfile){
+			char* pem_session_ptr=NULL;
+			i = mosquitto_tls_session_get(mosq, &pem_session_ptr);
+			if(i==MOSQ_ERR_SUCCESS && pem_session_ptr){
+				if(client_write_file(sessionfile, pem_session_ptr) && !cfg->quiet){
+					fprintf(stderr, "Error writing session file [%s]\n", sessionfile);
+				}
+			}
+			if(pem_session_ptr){
+				mosquitto_tls_session_free(pem_session_ptr);
+			}
+		}
+#endif
 		for(i=0; i<cfg->topic_count; i++){
 			mosquitto_subscribe(mosq, NULL, cfg->topics[i], cfg->qos);
 		}
@@ -414,6 +432,9 @@ void print_usage(void)
 	printf("                      [--ciphers ciphers] [--insecure]]\n");
 #ifdef WITH_TLS_PSK
 	printf("                     [--psk hex-key --psk-identity identity [--ciphers ciphers]]\n");
+#endif
+#ifdef WITH_TLS_TICKET
+	printf("                     [--session session_file]\n");
 #endif
 #endif
 #ifdef WITH_SOCKS
@@ -476,6 +497,9 @@ void print_usage(void)
 	printf(" --psk : pre-shared-key in hexadecimal (no leading 0x) to enable TLS-PSK mode.\n");
 	printf(" --psk-identity : client identity string for TLS-PSK mode.\n");
 #endif
+#  ifdef WITH_TLS_TICKET
+	printf(" --session : File to cache session in between runs.\n");
+#  endif
 #endif
 #ifdef WITH_SOCKS
 	printf(" --proxy : SOCKS5 proxy URL of the form:\n");
@@ -503,6 +527,10 @@ int main(int argc, char *argv[])
 		}
 		return 1;
 	}
+
+#if defined(WITH_TLS) && defined(WITH_TLS_TICKET)
+	sessionfile = cfg.sessionfile;
+#endif
 
 	if(cfg.no_retain && cfg.retained_only){
 		fprintf(stderr, "\nError: Combining '-R' and '--retained-only' makes no sense.\n");
@@ -537,6 +565,18 @@ int main(int argc, char *argv[])
 	}
 	mosquitto_connect_callback_set(mosq, my_connect_callback);
 	mosquitto_message_callback_set(mosq, my_message_callback);
+
+#if defined(WITH_TLS) && defined(WITH_TLS_TICKET)
+	if(sessionfile){
+		char* pem_session = NULL;
+		rc=0;
+		if(client_read_file(sessionfile, &pem_session) == 0){
+			rc = mosquitto_tls_session_set(mosq, pem_session);
+			free(pem_session);
+		}
+		if(rc) return rc;
+	}
+#endif
 
 	rc = client_connect(mosq, &cfg);
 	if(rc) return rc;

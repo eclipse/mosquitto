@@ -152,6 +152,9 @@ void client_config_cleanup(struct mosq_config *cfg)
 	free(cfg->psk);
 	free(cfg->psk_identity);
 #  endif
+#  ifdef WITH_TLS_TICKET
+	free(cfg->sessionfile);
+#  endif
 #endif
 	if(cfg->topics){
 		for(i=0; i<cfg->topic_count; i++){
@@ -669,6 +672,16 @@ int client_config_line_proc(struct mosq_config *cfg, int pub_or_sub, int argc, c
 				return 1;
 			}else{
 				cfg->psk_identity = strdup(argv[i+1]);
+			}
+			i++;
+#endif
+#if defined(WITH_TLS) && defined(WITH_TLS_TICKET)
+		}else if(!strcmp(argv[i], "--session")){
+			if(i==argc-1){
+				fprintf(stderr, "Error: --session argument given but no file specified.\n\n");
+				return 1;
+			}else{
+				cfg->sessionfile = strdup(argv[i+1]);
 			}
 			i++;
 #endif
@@ -1220,6 +1233,51 @@ cleanup:
 	if(host) free(host);
 	if(port) free(port);
 	return 1;
+}
+
+#endif
+
+#if defined(WITH_TLS) && defined(WITH_TLS_TICKET)
+int client_read_file(const char* fname, char** buf)
+{
+	char *data;
+	long size;
+	FILE *f = fopen(fname, "rb");
+	if (!f) return -1;
+
+	fseek(f, 0, SEEK_END);
+	size = ftell(f);
+	rewind(f);
+
+	data = malloc(size + 1);
+	if (!data){
+		fclose(f);
+		return -1;
+	}
+	if (fread(data, 1, size, f) != size){
+		fclose(f);
+		return -1;
+	}
+	fclose(f);
+
+	data[size] = '\0';
+	*buf = data;
+
+	return 0;
+}
+
+int client_write_file(const char* fname, const char* buf)
+{
+	long size=strlen(buf);
+	FILE *f = fopen(fname, "wb");
+	if (!f) return -1;
+	if (fwrite(buf, 1, size, f) != size){
+		fclose(f);
+		remove(fname);
+		return -1;
+	}
+	fclose(f);
+	return 0;
 }
 
 #endif

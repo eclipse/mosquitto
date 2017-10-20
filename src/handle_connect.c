@@ -431,6 +431,11 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 			}
 			X509_free(client_cert);
 			client_cert = NULL;
+#ifdef WITH_TLS_TICKET
+			if (SSL_session_reused(context->ssl)){
+				log__printf(NULL, MOSQ_LOG_DEBUG, "TLS Session reused.");
+			}
+#endif
 #ifdef REAL_WITH_TLS_PSK
 		}
 #endif /* REAL_WITH_TLS_PSK */

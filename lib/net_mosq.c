@@ -440,6 +440,56 @@ int net__socket_connect_tls(struct mosquitto *mosq)
 }
 #endif
 
+#if defined(WITH_TLS) && !defined(WITH_BROKER) && defined(WITH_TLS_TICKET)
+static int new_session_cb(SSL *ssl, SSL_SESSION *sess)
+{
+	struct mosquitto *mosq;
+
+	mosq = SSL_get_ex_data(ssl, tls_ex_index_mosq);
+	if(!mosq) return 0;
+
+	BIO *mem = BIO_new(BIO_s_mem());
+	if (!mem) return 0;
+
+	BIO_set_close(mem, BIO_CLOSE);
+
+	PEM_write_bio_SSL_SESSION(mem, sess);
+
+	BUF_MEM *mem_buff = NULL;
+	BIO_get_mem_ptr(mem, &mem_buff);
+
+	if (mem_buff && (mem_buff->length > 0)){
+
+#ifdef WITH_THREADING
+		pthread_mutex_lock(&mosq->tls_ticket_mutex);
+#endif
+		if (mosq->tls_ticket_data){
+			mosquitto__free(mosq->tls_ticket_data);
+			mosq->tls_ticket_data = NULL;
+		}
+
+		char* pem_session = (char*)mosquitto__malloc(mem_buff->length + 1);
+
+		if (pem_session){
+			memcpy(pem_session, mem_buff->data, mem_buff->length);
+			pem_session[mem_buff->length] = '\0';
+			mosq->tls_ticket_data = pem_session;
+		}
+#ifdef WITH_THREADING
+		pthread_mutex_unlock(&mosq->tls_ticket_mutex);
+#endif
+	}
+
+	BIO_free_all(mem);
+
+	/*
+	 * We always return a "fail" response so that the session gets freed again
+	 * because we haven't used the reference.
+	 */
+	return 0;
+}
+#endif
+
 int net__socket_connect_step3(struct mosquitto *mosq, const char *host, uint16_t port, const char *bind_address, bool blocking)
 {
 #ifdef WITH_TLS
@@ -532,6 +582,11 @@ int net__socket_connect_step3(struct mosquitto *mosq, const char *host, uint16_t
 				SSL_CTX_set_default_passwd_cb_userdata(mosq->ssl_ctx, mosq);
 			}
 
+#if !defined(WITH_BROKER) && defined(WITH_TLS_TICKET)
+			SSL_CTX_set_session_cache_mode(mosq->ssl_ctx, SSL_SESS_CACHE_CLIENT | SSL_SESS_CACHE_NO_INTERNAL);
+			SSL_CTX_sess_set_new_cb(mosq->ssl_ctx, new_session_cb);
+#endif
+
 			if(mosq->tls_certfile){
 				ret = SSL_CTX_use_certificate_chain_file(mosq->ssl_ctx, mosq->tls_certfile);
 				if(ret != 1){
@@ -577,6 +632,30 @@ int net__socket_connect_step3(struct mosquitto *mosq, const char *host, uint16_t
 			net__print_ssl_error(mosq);
 			return MOSQ_ERR_TLS;
 		}
+
+#if defined(WITH_TLS) && !defined(WITH_BROKER) && defined(WITH_TLS_TICKET)
+#ifdef WITH_THREADING
+		pthread_mutex_lock(&mosq->tls_ticket_mutex);
+#endif
+		if (mosq->tls_ticket_data){
+			SSL_SESSION *sess = NULL;
+			BIO *mem = BIO_new_mem_buf(mosq->tls_ticket_data, -1);
+
+			if (mem){
+				sess = PEM_read_bio_SSL_SESSION(mem, NULL, 0, NULL);
+
+				BIO_free_all(mem);
+
+				if (sess){
+					SSL_set_session(mosq->ssl, sess);
+					SSL_SESSION_free(sess);
+				}
+			}
+		}
+#ifdef WITH_THREADING
+		pthread_mutex_unlock(&mosq->tls_ticket_mutex);
+#endif
+#endif
 
 		SSL_set_ex_data(mosq->ssl, tls_ex_index_mosq, mosq);
 		bio = BIO_new_socket(mosq->sock, BIO_NOCLOSE);

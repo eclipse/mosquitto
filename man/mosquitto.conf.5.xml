@@ -972,6 +972,28 @@
 							used. No password will be used.</para>
 					</listitem>
 				</varlistentry>
+				<varlistentry>
+					<term><option>tls_ticket_time</option> <replaceable>duration</replaceable></term>
+					<listitem>
+						<para>Set <option>tls_ticket_time</option> to use a
+							specific tls ticket key lifespan. If set, replaces
+							the default OpenSSL implementation. The implementation
+							used issues new tickets valid within a lifespan specified.
+							When the time has passes, the cipher keys are rotated and
+							all tickets will be invalid. No new tickets are issued on
+							the same session. Each client will have to renegotiate a
+							new session on the next connection.</para>
+						<para>The valid period should be an integer followed
+							by one of h d for hour, day respectively.
+							For example:</para>
+						<itemizedlist mark="circle">
+							<listitem><para>tls_ticket_time 4h</para></listitem>
+							<listitem><para>tls_ticket_time 2d</para></listitem>
+						</itemizedlist>
+						<para>As this is a non-standard option, the default if not
+							set is to use openSSL default implementation.</para>
+					</listitem>
+				</varlistentry>
 			</variablelist>
 		</refsect2>
 	</refsect1>

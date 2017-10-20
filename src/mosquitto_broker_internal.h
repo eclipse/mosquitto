@@ -162,6 +162,9 @@ struct mosquitto__listener {
 	bool use_subject_as_username;
 	bool require_certificate;
 	char *tls_version;
+#ifdef WITH_TLS_TICKET
+	int tls_ticket_time;
+#endif
 #endif
 #ifdef WITH_WEBSOCKETS
 	struct libwebsocket_context *ws_context;

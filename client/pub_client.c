@@ -52,12 +52,29 @@ static char *username = NULL;
 static char *password = NULL;
 static bool disconnect_sent = false;
 static bool quiet = false;
+#if defined(WITH_TLS) && defined(WITH_TLS_TICKET)
+static char *sessionfile = NULL;
+#endif
 
 void my_connect_callback(struct mosquitto *mosq, void *obj, int result)
 {
 	int rc = MOSQ_ERR_SUCCESS;
 
 	if(!result){
+#if defined(WITH_TLS) && defined(WITH_TLS_TICKET)
+		if(sessionfile){
+			char* pem_session_ptr=NULL;
+			int i = mosquitto_tls_session_get(mosq, &pem_session_ptr);
+			if(i==MOSQ_ERR_SUCCESS && pem_session_ptr){
+				if(client_write_file(sessionfile, pem_session_ptr) && !quiet){
+					fprintf(stderr, "Error writing session file [%s]\n", sessionfile);
+				}
+			}
+			if(pem_session_ptr){
+				mosquitto_tls_session_free(pem_session_ptr);
+			}
+		}
+#endif
 		switch(mode){
 			case MSGMODE_CMD:
 			case MSGMODE_FILE:
@@ -224,6 +241,9 @@ void print_usage(void)
 #ifdef WITH_TLS_PSK
 	printf("                     [--psk hex-key --psk-identity identity [--ciphers ciphers]]\n");
 #endif
+#ifdef WITH_TLS_TICKET
+	printf("                     [--session session_file]\n");
+#endif
 #endif
 #ifdef WITH_SOCKS
 	printf("                     [--proxy socks-url]\n");
@@ -282,6 +302,9 @@ void print_usage(void)
 	printf(" --psk : pre-shared-key in hexadecimal (no leading 0x) to enable TLS-PSK mode.\n");
 	printf(" --psk-identity : client identity string for TLS-PSK mode.\n");
 #  endif
+#  ifdef WITH_TLS_TICKET
+	printf(" --session : File to cache session in between runs.\n");
+#  endif
 #endif
 #ifdef WITH_SOCKS
 	printf(" --proxy : SOCKS5 proxy URL of the form:\n");
@@ -331,6 +354,9 @@ int main(int argc, char *argv[])
 	username = cfg.username;
 	password = cfg.password;
 	quiet = cfg.quiet;
+#if defined(WITH_TLS) && defined(WITH_TLS_TICKET)
+	sessionfile = cfg.sessionfile;
+#endif
 
 	if(cfg.pub_mode == MSGMODE_STDIN_FILE){
 		if(load_stdin()){
@@ -380,6 +406,19 @@ int main(int argc, char *argv[])
 	if(client_opts_set(mosq, &cfg)){
 		return 1;
 	}
+
+#if defined(WITH_TLS) && defined(WITH_TLS_TICKET)
+	if(sessionfile){
+		char* pem_session = NULL;
+		rc=0;
+		if(client_read_file(sessionfile, &pem_session) == 0){
+			rc = mosquitto_tls_session_set(mosq, pem_session);
+			free(pem_session);
+		}
+		if(rc) return rc;
+	}
+#endif
+
 	rc = client_connect(mosq, &cfg);
 	if(rc) return rc;
 
