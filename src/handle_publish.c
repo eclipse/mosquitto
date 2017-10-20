@@ -179,11 +179,9 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 	/* Check if demand concern bridge dynamic */
 	if(db->config->allow_sys_update){
 		rc = bridge__dynamic_analyse(db, topic, UHPA_ACCESS(payload, payloadlen), payloadlen);
-		if(rc != 0 ){
-			log__printf(NULL, MOSQ_LOG_DEBUG, "Denied PUBLISH Invalid bridge dynamic configuration.");
-			goto process_bad_message;
-		}else{
-			return rc;
+		if(rc == MOSQ_ERR_BRIDGE_DYNA ){
+			log__printf(NULL, MOSQ_LOG_DEBUG, "PUBLISH Invalid bridge dynamic configuration.");
+			rc = 0; /* To not disturbe normal publish management */
 		}
 	}
 

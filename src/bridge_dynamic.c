@@ -29,44 +29,51 @@ int bridge__dynamic_analyse(struct mosquitto_db *db, char *topic, void* payload,
 	struct mosquitto__config config;
 	config__init(&config);
 
-	index = (int*) malloc(sizeof(int));
+	index = (int*) mosquitto__malloc(sizeof(int));
 	*index = -1;
 
 	if(strncmp("$SYS/broker/bridge/new",topic,22)==0){
 		rc = bridge__dynamic_parse_payload_new(db, payload, &config);
 		if(rc != 0){
-			log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to parse PUBLISH.");
-			return rc;
+			log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to parse PUBLISH for bridge dynamic.");
+			mosquitto__free(index);
+			return MOSQ_ERR_BRIDGE_DYNA;
 		}
 		rc = config__check(&config);
 		if(rc != 0){
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to parse PUBLISH.");
-			return rc;
+			mosquitto__free(index);
+			return MOSQ_ERR_BRIDGE_DYNA;
 		}
 		if(bridge__new(db, &(config.bridges[config.bridge_count-1]))){
 			log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Unable to connect to bridge %s.",
 					config.bridges[config.bridge_count-1].name);
+			mosquitto__free(index);
+			return MOSQ_ERR_BRIDGE_DYNA;
 		}
 	}else if(strncmp("$SYS/broker/bridge/del", topic,22)==0){
 		rc = bridge__dynamic_parse_payload_del(payload,db,index);
 		if(rc != 0){
-			log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to parse PUBLISH.");
-			return rc;
+			log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to parse PUBLISH for bridge dynamic.");
+			mosquitto__free(index);
+			return MOSQ_ERR_BRIDGE_DYNA;
 		}
 
 		if(*index == -1){
 			log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Unknow bridge name.");
-			return 0;
+			mosquitto__free(index);
+			return MOSQ_ERR_BRIDGE_DYNA;
 		}
 
 		if(bridge__del(db, *index)){
 			log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Unable to remove bridge %s.",
 					config.bridges[*index].name);
+			mosquitto__free(index);
+			return MOSQ_ERR_BRIDGE_DYNA;
 		}
 	}
 
-	free(index);
-
+	mosquitto__free(index);
 	return 0;
 }
 

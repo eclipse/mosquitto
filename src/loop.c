@@ -619,7 +619,7 @@ void do_disconnect(struct mosquitto_db *db, struct mosquitto *context)
 #endif		
 		context__disconnect(db, context);
 #ifdef WITH_BRIDGE
-		if(context->clean_session && !context->bridge){
+		if((context->clean_session && !context->bridge)){
 #else
 		if(context->clean_session){
 #endif

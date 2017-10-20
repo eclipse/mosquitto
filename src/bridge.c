@@ -19,6 +19,10 @@ Contributors:
 #include <stdio.h>
 #include <string.h>
 
+#ifdef WITH_EPOLL
+#include <sys/epoll.h>
+#endif
+
 #ifndef WIN32
 #include <netdb.h>
 #include <sys/socket.h>
@@ -52,7 +56,6 @@ int bridge__new(struct mosquitto_db *db, struct mosquitto__bridge *bridge)
 	assert(bridge);
 
 	local_id = mosquitto__strdup(bridge->local_clientid);
-
 	HASH_FIND(hh_id, db->contexts_by_id, local_id, strlen(local_id), new_context);
 	if(new_context){
 		/* (possible from persistent db) */
@@ -109,28 +112,18 @@ int bridge__new(struct mosquitto_db *db, struct mosquitto__bridge *bridge)
 
 int bridge__del(struct mosquitto_db *db, int index)
 {
-	struct mosquitto *old_context = NULL;
 	struct mosquitto **bridges;
-	char *local_id;
 	int i;
 
 	assert(db);
 
-	local_id = mosquitto__strdup(db->bridges[index]->bridge->local_clientid);
-	HASH_FIND(hh_id, db->contexts_by_id, local_id, strlen(local_id), old_context);
-	if(old_context){
-		HASH_DELETE(hh_id,db->contexts_by_id,old_context);
-	}else{
-		log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to found bridge %s in db",local_id);
-	}
+	bridge__disconnect(db,db->bridges[index]);
 
 	db->bridge_count--;
 
 	for(i=index; i<db->bridge_count; i++){
 		db->bridges[i] = db->bridges[i+1];
 	}
-
-	bridge__disconnect(db,old_context);
 
 	if(db->bridge_count==0){
 		db->bridges[0] = NULL;
@@ -304,6 +297,9 @@ int bridge__connect(struct mosquitto_db *db, struct mosquitto *context)
 	char *notification_topic;
 	int notification_topic_len;
 	uint8_t notification_payload;
+#ifdef WITH_EPOLL
+	struct epoll_event ev;
+#endif
 
 	if(!context || !context->bridge) return MOSQ_ERR_INVAL;
 
@@ -397,6 +393,19 @@ int bridge__connect(struct mosquitto_db *db, struct mosquitto *context)
 	}
 	rc = send__connect(context, context->keepalive, context->clean_session);
 	if(rc == MOSQ_ERR_SUCCESS){
+#ifdef WITH_EPOLL
+		if(context->bridge){
+			ev.data.fd = context->sock;
+			ev.events = EPOLLIN;
+			context->events = EPOLLIN;
+			if (epoll_ctl(db->epollfd, EPOLL_CTL_ADD, context->sock, &ev) == -1) {
+				log__printf(NULL, MOSQ_LOG_ERR, "Error in epoll initial registering bridge: %s", strerror(errno));
+				(void)close(db->epollfd);
+				db->epollfd = 0;
+				return MOSQ_ERR_UNKNOWN;
+			}
+		}
+#endif
 		return MOSQ_ERR_SUCCESS;
 	}else if(rc == MOSQ_ERR_ERRNO && errno == ENOTCONN){
 		return MOSQ_ERR_SUCCESS;
@@ -443,13 +452,8 @@ int bridge__disconnect(struct mosquitto_db *db, struct mosquitto *context)
 		log__printf(NULL, MOSQ_LOG_ERR, "Error disconnecting bridge: %s.", gai_strerror(errno));
 		return rc;
 	}
-	HASH_DELETE(hh_sock, db->contexts_by_sock, context);
-	net__socket_close(db, context);
-	context->sock = INVALID_SOCKET;
-	context->pollfd_index = -1;
-	context__disconnect(db, context);
 
-	free(context);
+	do_disconnect(db, context);
 
 	return rc;
 }
