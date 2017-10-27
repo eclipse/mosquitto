@@ -3,7 +3,7 @@ MAINTAINER David Audet <david.audet@ca.com>
 
 LABEL Description="Eclipse Mosquitto MQTT Broker"
 
-RUN apk --no-cache add mosquitto=1.4.14-r1 && \
+RUN apk --no-cache add mosquitto=1.4.14-r2 && \
     mkdir -p /mosquitto/config /mosquitto/data /mosquitto/log && \
     cp /etc/mosquitto/mosquitto.conf /mosquitto/config && \
     chown -R mosquitto:mosquitto /mosquitto
