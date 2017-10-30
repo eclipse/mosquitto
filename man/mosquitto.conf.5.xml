@@ -124,7 +124,7 @@
 						for the topic keyword, but using pattern as the
 						keyword.</para>
 					<para><code>pattern [read|write|readwrite] &lt;topic&gt;</code></para>
-					
+
 					<para>The patterns available for substition are:</para>
 					<itemizedlist mark="circle">
 						<listitem><para>%c to match the client id of the client</para></listitem>
@@ -399,7 +399,7 @@
 			</varlistentry>
 			<varlistentry>
 				<term><option>message_size_limit</option> <replaceable>limit</replaceable></term>
-				<listitem> 
+				<listitem>
 					<para>This option sets the maximum publish payload size
 						that the broker will allow. Received messages that
 						exceed this size will not be accepted by the broker.
