@@ -453,6 +453,41 @@ libmosq_EXPORT int mosquitto_connect_async(struct mosquitto *mosq, const char *h
 libmosq_EXPORT int mosquitto_connect_bind_async(struct mosquitto *mosq, const char *host, int port, int keepalive, const char *bind_address);
 
 /*
+ * Function: mosquitto_connect_getenv_bind
+ *
+ * Connect to an MQTT broker. This function parses hostname, port, username and
+ * password out of the environment variable given by env_var parameter. This
+ * environment variable is usually named 'MQTT_SERVER' and should have the following
+ * format: mqtt[s]://[username][:password]@host.domain[:port]
+ * Behind the scene, this function calls <mosquitto_connect_bind> and
+ * <mosquitto_username_pw_set>.
+ *
+ * Parameters:
+ * 	mosq -         a valid mosquitto instance.
+ * 	env_var -      the name of the environment variable to parse; if NULL is given,
+ * 	               'MQTT_SERVER' is tried.
+ * 	keepalive -    the number of seconds after which the broker should send a PING
+ * 	               message to the client if no other messages have been exchanged
+ * 	               in that time.
+ * 	bind_address - the hostname or ip address of the local network interface to
+ * 	               bind to.
+ *
+ * Returns:
+ * 	MOSQ_ERR_SUCCESS - on success.
+ * 	MOSQ_ERR_INVAL -   if the input parameters were invalid, e.g. no environment
+ * 	                   variable with this name exists or could not be parsed.
+ * 	MOSQ_ERR_ERRNO -   if a system call returned an error. The variable errno
+ * 	                   contains the error code, even on Windows.
+ * 	                   Use strerror_r() where available or FormatMessage() on
+ * 	                   Windows.
+ *
+ * See Also:
+ * 	<mosquitto_connect>, <mosquitto_connect_async>, <mosquitto_connect_bind_async>,
+ * 	<mosquitto_connect_bind>, <mosquitto_username_pw_set>
+ */
+libmosq_EXPORT int mosquitto_connect_getenv_bind(struct mosquitto *mosq, const char *env_var, int keepalive, const char *bind_address);
+
+/*
  * Function: mosquitto_connect_srv
  *
  * Connect to an MQTT broker. This is a non-blocking call. If you use

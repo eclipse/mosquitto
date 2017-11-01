@@ -212,6 +212,11 @@ int mosquittopp::connect_async(const char *host, int port, int keepalive, const 
 	return mosquitto_connect_bind_async(m_mosq, host, port, keepalive, bind_address);
 }
 
+int mosquittopp::connect_getenv(const char *env_var, int keepalive, const char *bind_address)
+{
+	return mosquitto_connect_getenv_bind(m_mosq, env_var, keepalive, bind_address);
+}
+
 int mosquittopp::reconnect()
 {
 	return mosquitto_reconnect(m_mosq);

@@ -18,6 +18,7 @@ Contributors:
 #include <errno.h>
 #include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #ifndef WIN32
 #include <sys/select.h>
@@ -444,6 +445,74 @@ int mosquitto_connect_bind_async(struct mosquitto *mosq, const char *host, int p
 	pthread_mutex_unlock(&mosq->state_mutex);
 
 	return mosquitto__reconnect(mosq, false);
+}
+
+int mosquitto_connect_getenv_bind(struct mosquitto *mosq, const char *env_var, int keepalive, const char *bind_address)
+{
+	char *env_value;
+	char *p, *host, *username, *password = NULL;
+	int port = 1883;
+	int rc = MOSQ_ERR_INVAL;
+
+	if(!mosq) return MOSQ_ERR_INVAL;
+
+	env_value = getenv(env_var ? : "MQTT_SERVER");
+	if(!env_value) return MOSQ_ERR_INVAL;
+
+	env_value = strdup(env_value);
+	if(!env_value) return MOSQ_ERR_NOMEM;
+
+	p = strstr(env_value, "://");
+	if(p){
+		*p = '\0'; p += 3;
+		if(strcasecmp(env_value, "mqtt") == 0){
+			port = 1883;
+		}else if(strcasecmp(env_value, "mqtts") == 0){
+			port = 8883;
+		}else{
+			goto free_out;
+		}
+	}else{
+		p = env_value;
+	}
+
+	username = p;
+	host = p;
+	p = strstr(p, "@");
+	if(p){
+		*p++ = '\0';
+		host = p;
+
+		p = strstr(username, ":");
+		if(p){
+			*p++ = '\0';
+			password = p;
+		}
+	}else{
+		username = NULL;
+		password = NULL;
+	}
+
+	p = strstr(host, "/");
+	if(p) *p++ = '\0';
+
+	p = strstr(host, ":");
+	if(p){
+		*p++ = '\0';
+		port = atoi(p);
+		if(port <= 0 || port > 65535) goto free_out;
+	}
+
+	rc = mosquitto_connect_bind(mosq, host, port, keepalive, bind_address);
+	if(rc) goto free_out;
+
+	if(username){
+		rc = mosquitto_username_pw_set(mosq, username, password);
+	}
+
+free_out:
+	free(env_value);
+	return rc;
 }
 
 int mosquitto_reconnect_async(struct mosquitto *mosq)
