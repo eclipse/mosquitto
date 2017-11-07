@@ -242,11 +242,15 @@ int mosquitto_acl_check(struct mosquitto_db *db, struct mosquitto *context, cons
 			* plugins against possible pattern based attacks.
 			*/
 			if(username && strpbrk(username, "+#")){
-				_mosquitto_log_printf(NULL, MOSQ_LOG_NOTICE, "ACL denying access to client with dangerous username \"%s\"", username);
+				if(db->config->connection_messages == true){
+					_mosquitto_log_printf(NULL, MOSQ_LOG_NOTICE, "ACL denying access to client with dangerous username \"%s\"", username);
+				}
 				return MOSQ_ERR_ACL_DENIED;
 			}
 			if(context->id && strpbrk(context->id, "+#")){
-				_mosquitto_log_printf(NULL, MOSQ_LOG_NOTICE, "ACL denying access to client with dangerous client id \"%s\"", context->id);
+				if(db->config->connection_messages == true){
+					_mosquitto_log_printf(NULL, MOSQ_LOG_NOTICE, "ACL denying access to client with dangerous client id \"%s\"", context->id);
+				}
 				return MOSQ_ERR_ACL_DENIED;
 			}
 		}

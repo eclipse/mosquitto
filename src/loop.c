@@ -323,12 +323,14 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 					 * expire it and clean up.
 					 */
 					if(now_time > context->disconnect_t+db->config->persistent_client_expiration){
-						if(context->id){
-							id = context->id;
-						}else{
-							id = "<unknown>";
+						if(db->config->connection_messages == true){
+							if(context->id){
+								id = context->id;
+							}else{
+								id = "<unknown>";
+							}
+							_mosquitto_log_printf(NULL, MOSQ_LOG_NOTICE, "Expiring persistent client %s due to timeout.", id);
 						}
-						_mosquitto_log_printf(NULL, MOSQ_LOG_NOTICE, "Expiring persistent client %s due to timeout.", id);
 #ifdef WITH_SYS_TREE
 						g_clients_expired++;
 #endif

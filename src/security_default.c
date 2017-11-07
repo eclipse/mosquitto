@@ -274,12 +274,16 @@ int mosquitto_acl_check_default(struct mosquitto_db *db, struct mosquitto *conte
 		 * publish or receive messages to its own place in the hierarchy).
 		 */
 		if(context->username && strpbrk(context->username, "+#")){
-			_mosquitto_log_printf(NULL, MOSQ_LOG_NOTICE, "ACL denying access to client with dangerous username \"%s\"", context->username);
+			if(db->config->connection_messages == true){
+				_mosquitto_log_printf(NULL, MOSQ_LOG_NOTICE, "ACL denying access to client with dangerous username \"%s\"", context->username);
+			}
 			return MOSQ_ERR_ACL_DENIED;
 		}
 
 		if(context->id && strpbrk(context->id, "+#")){
-			_mosquitto_log_printf(NULL, MOSQ_LOG_NOTICE, "ACL denying access to client with dangerous client id \"%s\"", context->id);
+			if(db->config->connection_messages == true){
+				_mosquitto_log_printf(NULL, MOSQ_LOG_NOTICE, "ACL denying access to client with dangerous client id \"%s\"", context->id);
+			}
 			return MOSQ_ERR_ACL_DENIED;
 		}
 	}
