@@ -116,7 +116,7 @@
 					<para><code>user &lt;username&gt;</code></para>
 
 					<para>The username referred to here is the same as in
-						<option>password_fil</option>e. It is not the
+						<option>password_file</option>. It is not the
 						clientid.</para>
 
 					<para>It is also possible to define ACLs based on pattern
@@ -189,7 +189,7 @@
 				<term><option>auth_opt_*</option> <replaceable>value</replaceable></term>
 				<listitem>
 					<para>Options to be passed to the auth plugin. See the
-						specific plugin instructions.  </para>
+						specific plugin instructions.</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
@@ -698,7 +698,7 @@
 							client connected to a listener with mount point
 							<replaceable>example</replaceable> can only see
 							messages that are published in the topic hierarchy
-							<replaceable>example</replaceable> and above.</para>
+							<replaceable>example</replaceable> and below.</para>
 						<para>Not reloaded on reload signal.</para>
 					</listitem>
 				</varlistentry>
