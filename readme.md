@@ -61,7 +61,7 @@ to build. For Windows, see also `readme-windows.md`.
 
 If you are building from the git repository then the documentation will not
 already be built. Use `make binary` to skip building the man pages, or install
-`docbook-xsl` on Debian/Ubuntu systems.
+`docbook-xsl` and `xsltproc` on Debian/Ubuntu systems.
 
 ### Build Dependencies
 
