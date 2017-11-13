@@ -334,8 +334,8 @@ libmosq_EXPORT int mosquitto_username_pw_set(struct mosquitto *mosq, const char 
  * 	mosq -      a valid mosquitto instance.
  * 	host -      the hostname or ip address of the broker to connect to.
  * 	port -      the network port to connect to. Usually 1883.
- * 	keepalive - the number of seconds after which the broker should send a PING
- *              message to the client if no other messages have been exchanged
+ * 	keepalive - the number of seconds after which the client should send a PING
+ *              message to the broker if no other messages have been exchanged
  *              in that time.
  *
  * Returns:
@@ -362,8 +362,8 @@ libmosq_EXPORT int mosquitto_connect(struct mosquitto *mosq, const char *host, i
  * 	mosq -         a valid mosquitto instance.
  * 	host -         the hostname or ip address of the broker to connect to.
  * 	port -         the network port to connect to. Usually 1883.
- * 	keepalive -    the number of seconds after which the broker should send a PING
- *                 message to the client if no other messages have been exchanged
+ * 	keepalive -    the number of seconds after which the client should send a PING
+ *                 message to the broker if no other messages have been exchanged
  *                 in that time.
  *  bind_address - the hostname or ip address of the local network interface to
  *                 bind to.
@@ -395,8 +395,8 @@ libmosq_EXPORT int mosquitto_connect_bind(struct mosquitto *mosq, const char *ho
  * 	mosq -      a valid mosquitto instance.
  * 	host -      the hostname or ip address of the broker to connect to.
  * 	port -      the network port to connect to. Usually 1883.
- * 	keepalive - the number of seconds after which the broker should send a PING
- *              message to the client if no other messages have been exchanged
+ * 	keepalive - the number of seconds after which the client should send a PING
+ *              message to the broker if no other messages have been exchanged
  *              in that time.
  *
  * Returns:
@@ -430,8 +430,8 @@ libmosq_EXPORT int mosquitto_connect_async(struct mosquitto *mosq, const char *h
  * 	mosq -         a valid mosquitto instance.
  * 	host -         the hostname or ip address of the broker to connect to.
  * 	port -         the network port to connect to. Usually 1883.
- * 	keepalive -    the number of seconds after which the broker should send a PING
- *                 message to the client if no other messages have been exchanged
+ * 	keepalive -    the number of seconds after which the client should send a PING
+ *                 message to the broker if no other messages have been exchanged
  *                 in that time.
  *  bind_address - the hostname or ip address of the local network interface to
  *                 bind to.
@@ -466,8 +466,8 @@ libmosq_EXPORT int mosquitto_connect_bind_async(struct mosquitto *mosq, const ch
  * Parameters:
  * 	mosq -         a valid mosquitto instance.
  * 	host -         the hostname or ip address of the broker to connect to.
- * 	keepalive -    the number of seconds after which the broker should send a PING
- *                 message to the client if no other messages have been exchanged
+ * 	keepalive -    the number of seconds after which the client should send a PING
+ *                 message to the broker if no other messages have been exchanged
  *                 in that time.
  *  bind_address - the hostname or ip address of the local network interface to
  *                 bind to.
