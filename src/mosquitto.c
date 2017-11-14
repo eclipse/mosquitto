@@ -217,7 +217,8 @@ int main(int argc, char *argv[])
 	int listensock_count = 0;
 	int listensock_index = 0;
 	struct mqtt3_config config;
-#ifdef WITH_SYS_TREE
+
+	#ifdef WITH_SYS_TREE
 	char buf[1024];
 #endif
 	int i, j;
@@ -226,6 +227,7 @@ int main(int argc, char *argv[])
 	int rc;
 #ifdef WIN32
 	SYSTEMTIME st;
+	_setmaxstdio(2048);
 #else
 	struct timeval tv;
 #endif
