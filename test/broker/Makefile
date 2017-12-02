@@ -50,6 +50,7 @@ endif
 	./03-publish-b2c-disconnect-qos2.py
 	./03-pattern-matching.py
 	./03-publish-qos1-queued-bytes.py
+	./03-pattern-matching-sys.py
 
 04 :
 	./04-retain-qos0.py
@@ -100,3 +101,4 @@ endif
 
 11 :
 	./11-persistent-subscription.py
+	./11-persistent-subscription-sys.py
