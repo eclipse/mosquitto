@@ -42,15 +42,15 @@ client_shared.o : client_shared.c client_shared.h
 	$(MAKE) -C ../lib libmosquitto.a
 
 install : all
-	$(INSTALL) -d ${DESTDIR}$(prefix)/bin
-	$(INSTALL) ${STRIP_OPTS} mosquitto_pub ${DESTDIR}${prefix}/bin/mosquitto_pub
-	$(INSTALL) ${STRIP_OPTS} mosquitto_sub ${DESTDIR}${prefix}/bin/mosquitto_sub
-	$(INSTALL) ${STRIP_OPTS} mosquitto_bridge ${DESTDIR}${prefix}/bin/mosquitto_bridge
+	$(INSTALL) -d "${DESTDIR}$(prefix)/bin"
+	$(INSTALL) ${STRIP_OPTS} mosquitto_pub "${DESTDIR}${prefix}/bin/mosquitto_pub"
+	$(INSTALL) ${STRIP_OPTS} mosquitto_sub "${DESTDIR}${prefix}/bin/mosquitto_sub"
+	$(INSTALL) ${STRIP_OPTS} mosquitto_bridge "${DESTDIR}${prefix}/bin/mosquitto_bridge"
 
 uninstall :
-	-rm -f ${DESTDIR}${prefix}/bin/mosquitto_pub
-	-rm -f ${DESTDIR}${prefix}/bin/mosquitto_sub
-	-rm -f ${DESTDIR}${prefix}/bin/mosquitto_bridge
+	-rm -f "${DESTDIR}${prefix}/bin/mosquitto_pub"
+	-rm -f "${DESTDIR}${prefix}/bin/mosquitto_sub"
+	-rm -f "${DESTDIR}${prefix}/bin/mosquitto_bridge"
 
 reallyclean : clean
 
