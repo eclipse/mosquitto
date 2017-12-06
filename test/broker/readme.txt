@@ -12,3 +12,8 @@ Numbering is as follows:
 05: Clean session tests
 06: Bridge tests
 07: Will tests
+08: SSL/TLS tests
+09: Auth plugin tests
+10: Listener tests
+11: Persistency tests
+12: HTTP plugin tests

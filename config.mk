@@ -71,6 +71,9 @@ WITH_UUID:=yes
 # Build with websockets support on the broker.
 WITH_WEBSOCKETS:=no
 
+# Build http plugin interface
+WITH_HTTP_PLUGIN:=no
+
 # Use elliptic keys in broker
 WITH_EC:=yes
 
@@ -245,6 +248,13 @@ endif
 ifeq ($(WITH_WEBSOCKETS),yes)
 	BROKER_CFLAGS:=$(BROKER_CFLAGS) -DWITH_WEBSOCKETS
 	BROKER_LIBS:=$(BROKER_LIBS) -lwebsockets
+endif
+
+ifeq ($(WITH_HTTP_PLUGIN),yes)
+	BROKER_CFLAGS:=$(BROKER_CFLAGS) -DWITH_HTTP_PLUGIN
+    ifeq ($(WITH_LIBMAGIC),yes)
+	BROKER_CFLAGS:=$(BROKER_CFLAGS) -DWITH_LIBMAGIC
+    endif
 endif
 
 ifeq ($(UNAME),SunOS)

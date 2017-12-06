@@ -39,6 +39,9 @@ Contributors:
 #    define libwebsocket_callback_reasons lws_callback_reasons
 #    define libwebsocket lws
 #  endif
+#ifdef WITH_HTTP_PLUGIN
+#  include "mosquitto_http_plugin.h"
+#endif
 #endif
 
 #include "mosquitto_internal.h"
@@ -224,6 +227,9 @@ struct mosquitto__config {
 #endif
 	struct mosquitto__auth_plugin_config *auth_plugins;
 	int auth_plugin_count;
+#ifdef WITH_HTTP_PLUGIN
+  char *http_plugin;
+#endif
 };
 
 struct mosquitto__subleaf {
@@ -342,6 +348,23 @@ struct mosquitto__auth_plugin{
 	int version;
 };
 
+#ifdef WITH_HTTP_PLUGIN
+/*
+ * http plugin methods
+ */
+typedef struct {
+  void *lib;
+  void *plugin_version;
+  void *plugin_init;
+  void *plugin_cleanup;
+  void *plugin_accept;
+  void *plugin_add_req_body_chunk;
+  void *plugin_process_request;
+  void *plugin_get_response_chunk;
+  void *plugin_connection_cleanup;
+} http_plugin_t;
+#endif
+
 struct mosquitto_db{
 	dbid_t last_db_id;
 	struct mosquitto__subhier *subs;
@@ -374,6 +397,9 @@ struct mosquitto_db{
 	struct mosquitto *ll_for_free;
 #ifdef WITH_EPOLL
 	int epollfd;
+#endif
+#ifdef WITH_HTTP_PLUGIN
+  http_plugin_t http_plugin;
 #endif
 };
 
@@ -619,6 +645,9 @@ void service_run(void);
 struct lws_context *mosq_websockets_init(struct mosquitto__listener *listener, int log_level);
 #  else
 struct libwebsocket_context *mosq_websockets_init(struct mosquitto__listener *listener, int log_level);
+#  endif
+#  ifdef WITH_HTTP_PLUGIN
+void mosq_websockets_set_http_cb(lws_callback_function *cb, size_t session_size, size_t rx_buffer_size);
 #  endif
 #endif
 void do_disconnect(struct mosquitto_db *db, struct mosquitto *context);

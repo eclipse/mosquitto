@@ -104,6 +104,18 @@ if (${WITH_WEBSOCKETS} STREQUAL ON)
 	add_definitions("-DWITH_WEBSOCKETS")
 endif (${WITH_WEBSOCKETS} STREQUAL ON)
 
+option(WITH_HTTP_PLUGIN
+	"Include http plugin support?" OFF)
+if (${WITH_HTTP_PLUGIN} STREQUAL ON)
+	add_definitions("-DWITH_HTTP_PLUGIN")
+	set (MOSQ_SRCS "${MOSQ_SRCS};http_plugable.c")
+	option(WITH_LIBMAGIC	"use libmagic?" OFF)
+	if (${WITH_LIBMAGIC} STREQUAL ON)
+	    add_definitions("-DWITH_LIBMAGIC")
+	    set (MOSQ_LIBS ${MOSQ_LIBS} magic)
+	endif (${WITH_LIBMAGIC} STREQUAL ON)
+endif (${WITH_HTTP_PLUGIN} STREQUAL ON)
+
 if (WIN32 OR CYGWIN)
 	set (MOSQ_SRCS ${MOSQ_SRCS} service.c)
 endif (WIN32 OR CYGWIN)

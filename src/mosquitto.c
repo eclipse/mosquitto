@@ -54,6 +54,10 @@ Contributors:
 #include "memory_mosq.h"
 #include "util_mosq.h"
 
+#ifdef WITH_HTTP_PLUGIN
+#  include "http_plugable.h"
+#endif
+
 struct mosquitto_db int_db;
 
 bool flag_reload = false;
@@ -320,6 +324,11 @@ int main(int argc, char *argv[])
 			}
 		}else if(config.listeners[i].protocol == mp_websockets){
 #ifdef WITH_WEBSOCKETS
+#  ifdef WITH_HTTP_PLUGIN
+                        if (mosquitto_http_module_init(mosquitto__get_db(), &config.listeners[i]) == MOSQ_ERR_SUCCESS) {
+                                mosq_websockets_set_http_cb(http_plugable_callback, sizeof(http_session_t), mosquitto_http_buffer_size);
+                        }
+#  endif
 			config.listeners[i].ws_context = mosq_websockets_init(&config.listeners[i], config.websockets_log_level);
 			if(!config.listeners[i].ws_context){
 				log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to create websockets listener on port %d.", config.listeners[i].port);

@@ -1818,6 +1818,11 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, const 
 						|| !strcmp(token, "max_log_entries")
 						|| !strcmp(token, "trace_output")){
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Unsupported rsmb configuration option \"%s\".", token);
+#ifdef WITH_HTTP_PLUGIN
+				}else if(!strcmp(token, "http_plugin")){
+					if(reload) continue; // HTTP plugin not currently valid for reloading.
+					if(conf__parse_string(&token, "http_plugin", &config->http_plugin, saveptr)) return MOSQ_ERR_INVAL;
+#endif
 				}else{
 					log__printf(NULL, MOSQ_LOG_ERR, "Error: Unknown configuration variable \"%s\".", token);
 					return MOSQ_ERR_INVAL;

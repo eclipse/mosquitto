@@ -100,3 +100,17 @@ endif
 
 11 :
 	./11-persistent-subscription.py
+
+12:
+	./12-plugin-http-get-string.py
+	@sleep 1
+	./12-plugin-http-get-vars.py
+	@sleep 1
+	./12-plugin-http-get-short_file.py
+	@sleep 1
+	./12-plugin-http-get-large_file.py
+	@sleep 1
+	./12-plugin-http-post-form.py
+	@sleep 1
+	./12-plugin-http-post-json.py
+	@sleep 1

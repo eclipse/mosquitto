@@ -583,6 +583,15 @@ static void log_wrap(int level, const char *line)
 	log__printf(NULL, MOSQ_LOG_WEBSOCKETS, "%s", l);
 }
 
+#ifdef WITH_HTTP_PLUGIN
+void mosq_websockets_set_http_cb(lws_callback_function *cb, size_t mosquitto_http_session_size, size_t rx_buffer_size) {
+  protocols[0].callback = cb;
+  protocols[0].per_session_data_size = mosquitto_http_session_size;
+  protocols[0].rx_buffer_size = rx_buffer_size;
+}
+#endif
+
+
 struct libwebsocket_context *mosq_websockets_init(struct mosquitto__listener *listener, int log_level)
 {
 	struct lws_context_creation_info info;
