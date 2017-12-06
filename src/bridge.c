@@ -183,7 +183,7 @@ int mqtt3_bridge_connect_step1(struct mosquitto_db *db, struct mosquitto *contex
 		if(context->bridge->notification_topic){
 			if(!context->bridge->initial_notification_done){
 				notification_payload = '0';
-				mqtt3_db_messages_easy_queue(db, context, context->bridge->notification_topic, 1, 1, &notification_payload, 1);
+				db__messages_easy_queue(db, context, context->bridge->notification_topic, 1, 1, &notification_payload, 1);
 				context->bridge->initial_notification_done = true;
 			}
 			notification_payload = '0';
@@ -200,7 +200,7 @@ int mqtt3_bridge_connect_step1(struct mosquitto_db *db, struct mosquitto *contex
 
 			if(!context->bridge->initial_notification_done){
 				notification_payload = '0';
-				mqtt3_db_messages_easy_queue(db, context, notification_topic, 1, 1, &notification_payload, 1);
+				db__messages_easy_queue(db, context, notification_topic, 1, 1, &notification_payload, 1);
 				context->bridge->initial_notification_done = true;
 			}
 
