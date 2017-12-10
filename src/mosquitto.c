@@ -291,7 +291,7 @@ int main(int argc, char *argv[])
 		rc = 1;
 		return rc;
 	}
-	_mosquitto_log_printf(NULL, MOSQ_LOG_INFO, "mosquitto version %s (build date %s) starting", VERSION, TIMESTAMP);
+	_mosquitto_log_printf(NULL, MOSQ_LOG_INFO, "mosquitto version %s starting", VERSION);
 	if(config.config_file){
 		_mosquitto_log_printf(NULL, MOSQ_LOG_INFO, "Config loaded from %s.", config.config_file);
 	}else{
@@ -308,8 +308,6 @@ int main(int argc, char *argv[])
 		/* Set static $SYS messages */
 		snprintf(buf, 1024, "mosquitto version %s", VERSION);
 		mqtt3_db_messages_easy_queue(&int_db, NULL, "$SYS/broker/version", 2, strlen(buf), buf, 1);
-		snprintf(buf, 1024, "%s", TIMESTAMP);
-		mqtt3_db_messages_easy_queue(&int_db, NULL, "$SYS/broker/timestamp", 2, strlen(buf), buf, 1);
 	}
 #endif
 
