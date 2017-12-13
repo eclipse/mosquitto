@@ -127,7 +127,7 @@
 						for the topic keyword, but using pattern as the
 						keyword.</para>
 					<para><code>pattern [read|write|readwrite] &lt;topic&gt;</code></para>
-					
+
 					<para>The patterns available for substition are:</para>
 					<itemizedlist mark="circle">
 						<listitem><para>%c to match the client id of the client</para></listitem>
@@ -185,6 +185,17 @@
 						correctly deal with duplicate messages even when then
 						have QoS=2.</para>
 					<para>Defaults to <replaceable>true</replaceable>.</para>
+					<para>Reloaded on reload signal.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>allow_sys_update</option> [ true | false ]</term>
+				<listitem>
+					<para>Boolean value that determines whether Mosquitto allow
+						interpret some $SYS topics. If set to <replaceable>true</replaceable>
+						then Mosquitto will interpret $SYS/broker/bridge/new and
+						$SYS/broker/bridge/del. Defaults to
+						<replaceable>false</replaceable>.</para>
 					<para>Reloaded on reload signal.</para>
 				</listitem>
 			</varlistentry>
@@ -434,7 +445,7 @@
 			</varlistentry>
 			<varlistentry>
 				<term><option>message_size_limit</option> <replaceable>limit</replaceable></term>
-				<listitem> 
+				<listitem>
 					<para>This option sets the maximum publish payload size
 						that the broker will allow. Received messages that
 						exceed this size will not be accepted by the broker.
@@ -1118,7 +1129,7 @@
 				<term><option>notifications_local_only</option> [ true | false ]</term>
 				<listitem>
 					<para>If set to <replaceable>true</replaceable>, only publish
-						notification messages to the local broker giving 
+						notification messages to the local broker giving
 						information about the state of the bridge connection.
 						Defaults to <replaceable>false</replaceable>.</para>
 				</listitem>

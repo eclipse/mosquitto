@@ -69,7 +69,7 @@ WITH_SRV:=no
 WITH_UUID:=yes
 
 # Build with websockets support on the broker.
-WITH_WEBSOCKETS:=no
+WITH_WEBSOCKETS:=yes
 
 # Use elliptic keys in broker
 WITH_EC:=yes
@@ -129,7 +129,7 @@ LIB_CXXFLAGS:=$(LIB_CFLAGS) ${CPPFLAGS}
 LIB_LDFLAGS:=${LDFLAGS}
 
 BROKER_CFLAGS:=${LIB_CFLAGS} ${CPPFLAGS} -DVERSION="\"${VERSION}\"" -DTIMESTAMP="\"${TIMESTAMP}\"" -DWITH_BROKER
-CLIENT_CFLAGS:=${CFLAGS} ${CPPFLAGS} -I../lib -DVERSION="\"${VERSION}\""
+CLIENT_CFLAGS:=${CFLAGS} ${CPPFLAGS} -I. -I.. -I../src -I../lib -DVERSION="\"${VERSION}\""
 
 ifneq ($(or $(findstring $(UNAME),FreeBSD), $(findstring $(UNAME),OpenBSD)),)
 	BROKER_LIBS:=-lm
@@ -170,6 +170,10 @@ endif
 ifeq ($(UNAME),QNX)
 	BROKER_LIBS:=$(BROKER_LIBS) -lsocket
 	LIB_LIBS:=$(LIB_LIBS) -lsocket
+endif
+
+ifeq ($(UNAME),Linux)
+	BROKER_LIBS:=$(BROKER_LIBS) -lanl
 endif
 
 ifeq ($(WITH_WRAP),yes)
@@ -281,4 +285,3 @@ ifeq ($(WITH_EPOLL),yes)
 		BROKER_CFLAGS:=$(BROKER_CFLAGS) -DWITH_EPOLL
 	endif
 endif
-

@@ -4,12 +4,12 @@ Copyright (c) 2009-2016 Roger Light <roger@atchoo.org>
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
 and Eclipse Distribution License v1.0 which accompany this distribution.
- 
+
 The Eclipse Public License is available at
    http://www.eclipse.org/legal/epl-v10.html
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
- 
+
 Contributors:
    Roger Light - initial implementation and documentation.
 */
@@ -115,6 +115,7 @@ static void config__init_reload(struct mosquitto__config *config)
 	config->allow_anonymous = true;
 	config->allow_duplicate_messages = false;
 	config->allow_zero_length_clientid = true;
+	config->allow_sys_update = false;
 	config->auto_id_prefix = NULL;
 	config->auto_id_prefix_len = 0;
 	config->autosave_interval = 1800;
@@ -656,6 +657,8 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, const 
 					if(conf__parse_bool(&token, "allow_duplicate_messages", &config->allow_duplicate_messages, saveptr)) return MOSQ_ERR_INVAL;
 				}else if(!strcmp(token, "allow_zero_length_clientid")){
 					if(conf__parse_bool(&token, "allow_zero_length_clientid", &config->allow_zero_length_clientid, saveptr)) return MOSQ_ERR_INVAL;
+				}else if(!strcmp(token, "allow_sys_update")){
+					if(conf__parse_bool(&token, "allow_sys_update", &config->allow_sys_update, saveptr)) return MOSQ_ERR_INVAL;
 				}else if(!strncmp(token, "auth_opt_", 9)){
 					if(!cur_auth_plugin){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: An auth_opt_ option exists in the config file without an auth_plugin.");
@@ -1055,7 +1058,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, const 
 							}
 							snprintf(conf_file, len, "%s\\%s", token, find_data.cFileName);
 							conf_file[len] = '\0';
-								
+
 							rc = config__read_file(config, reload, conf_file, cr, level+1, &lineno_ext);
 							if(rc){
 								FindClose(fh);
@@ -1084,7 +1087,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, const 
 									}
 									snprintf(conf_file, len, "%s/%s", token, de->d_name);
 									conf_file[len] = '\0';
-									
+
 									rc = config__read_file(config, reload, conf_file, cr, level+1, &lineno_ext);
 									if(rc){
 										closedir(dh);
@@ -1381,7 +1384,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, const 
 						return MOSQ_ERR_INVAL;
 					}
 					if(conf__parse_bool(&token, "notifications_local_only", &cur_bridge->notifications_local_only, saveptr)) return MOSQ_ERR_INVAL;
-#else					
+#else
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Bridge support not available.");
 #endif
 				}else if(!strcmp(token, "notification_topic")){
@@ -1611,7 +1614,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, const 
 					token = strtok_r(NULL, " ", &saveptr);
 					if(token){
 						cur_bridge->topic_count++;
-						cur_bridge->topics = mosquitto__realloc(cur_bridge->topics, 
+						cur_bridge->topics = mosquitto__realloc(cur_bridge->topics,
 								sizeof(struct mosquitto__bridge_topic)*cur_bridge->topic_count);
 						if(!cur_bridge->topics){
 							log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
@@ -1691,7 +1694,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, const 
 							}
 						}
 					}
-					if(cur_topic->topic == NULL && 
+					if(cur_topic->topic == NULL &&
 							(cur_topic->local_prefix == NULL || cur_topic->remote_prefix == NULL)){
 
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge remapping.");
@@ -1918,7 +1921,7 @@ static int conf__parse_bool(char **token, const char *name, bool *value, char *s
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty %s value in configuration.", name);
 		return MOSQ_ERR_INVAL;
 	}
-	
+
 	return MOSQ_ERR_SUCCESS;
 }
 

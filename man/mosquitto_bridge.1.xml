@@ -1,0 +1,292 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<?xml-stylesheet type="text/xsl" href="manpage.xsl"?>
+
+<refentry xml:id="mosquitto_bridge" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<refmeta>
+		<refentrytitle>mosquitto_bridge</refentrytitle>
+		<manvolnum>1</manvolnum>
+		<refmiscinfo class="source">Mosquitto Project</refmiscinfo>
+		<refmiscinfo class="manual">Commands</refmiscinfo>
+	</refmeta>
+
+	<refnamediv>
+		<refname>mosquitto_bridge</refname>
+		<refpurpose>an MQTT client for creating, deleting and knowing bridges dynamically</refpurpose>
+	</refnamediv>
+
+	<refsynopsisdiv>
+		<cmdsynopsis>
+			<command>mosquitto_bridge</command>
+			<group>
+				<arg choice='plain'>-a</arg>
+				<arg choice='plain'>--address</arg>
+			</group>
+			<group>
+				<arg choice='plain'>-c</arg>
+				<arg choice='plain'>--connection</arg>
+			</group>
+			<group>
+				<arg choice='plain'>-d</arg>
+				<arg choice='plain'>--del</arg>
+			</group>
+			<group>
+				<arg choice='plain'>-D</arg>
+				<arg choice='plain'>--direction</arg>
+			</group>
+			<group>
+				<arg choice='plain'>-h</arg>
+				<arg choice='plain'>--host</arg>
+			</group>
+			<group>
+				<arg choice='plain'>-k</arg>
+				<arg choice='plain'>--know</arg>
+			</group>
+			<group>
+				<arg choice='plain'>-l</arg>
+				<arg choice='plain'>--local</arg>
+			</group>
+			<group>
+				<arg choice='plain'>-n</arg>
+				<arg choice='plain'>--new</arg>
+			</group>
+			<group>
+				<arg choice='plain'>-p</arg>
+				<arg choice='plain'>--port</arg>
+			</group>
+			<group>
+				<arg choice='plain'>-P</arg>
+				<arg choice='plain'>--pw</arg>
+			</group>
+			<group>
+				<arg choice='plain'>-q</arg>
+				<arg choice='plain'>--qos</arg>
+			</group>
+			<group>
+				<arg choice='plain'>-r</arg>
+				<arg choice='plain'>--remote</arg>
+			</group>
+			<group>
+				<arg choice='plain'>-R</arg>
+				<arg choice='plain'>--remotePort</arg>
+			</group>
+			<group>
+				<arg choice='plain'>-u</arg>
+				<arg choice='plain'>--username</arg>
+			</group>
+		</cmdsynopsis>
+		<cmdsynopsis>
+			<command>mosquitto_bridge</command>
+			<group choice='plain'>
+				<arg><option>--help</option></arg>
+			</group>
+		</cmdsynopsis>
+	</refsynopsisdiv>
+
+	<refsect1>
+		<title>Description</title>
+		<para><command>mosquitto_bridge</command> is a simple MQTT
+		client that will create or delete a bridge dynamically for Mosquitto broker
+		1.4.90 or newer without shutdown or SIGHUP signal.</para>
+		<para><command>mosquitto_bridge</command> also allows to know active bridges on a broker</para>
+	</refsect1>
+
+	<refsect1>
+		<title>Options</title>
+		<para>The options below may be given on the command line.</para>
+		<variablelist>
+			<varlistentry>
+				<term><option>-a</option></term>
+				<term><option>--address</option></term>
+				<listitem>
+					<para>Define bridge address of bridge.
+						Necessary only with <option>-n</option>.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-c</option></term>
+				<term><option>--connection</option></term>
+				<listitem>
+					<para>Define the connection name of the bridge.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-d</option></term>
+				<term><option>--del</option></term>
+				<listitem>
+					<para>Delete a bridge which name is define by
+						<option>-c</option>. Can't be use with <option>-n</option>.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-D</option></term>
+				<term><option>--directoin</option></term>
+				<listitem>
+					<para>Define direction of the bridge [ in | out | both ].</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-h</option></term>
+				<term><option>--host</option></term>
+				<listitem>
+					<para>Define the network host to connect to the local
+						broker where the bridge will be create/delete or to
+						know active bridges. Defaults to localhost.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-k</option></term>
+				<term><option>--know</option></term>
+				<listitem>
+					<para>Know all bridges which are active in a broker.
+						Can only be used with options other than
+						<option>-h</option> and <option>-p</option>.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-l</option></term>
+				<term><option>--local</option></term>
+				<listitem>
+					<para>Define the local prefix for the bridge configuration.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-n</option></term>
+				<term><option>--new</option></term>
+				<listitem>
+					<para>Define to create a bridge.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-p</option></term>
+				<term><option>--port</option></term>
+				<listitem>
+					<para>Define the network port to connect to the local
+						broker where the bridge will be create/delete or to
+						know active bridges. Defaults to 1883.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-P</option></term>
+				<term><option>--pw</option></term>
+				<listitem>
+					<para>Provide a password to be used for authenticating with
+					the broker. Using this argument without also specifying a
+					username is invalid. This requires a broker that supports
+					MQTT v3.1.  See also the <option>--username</option> option.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-q</option></term>
+				<term><option>--qos</option></term>
+				<listitem>
+					<para>Specify the quality of service desired for the
+					bridge between local broker and remote broker, from 0, 1 and 2. Defaults to 0. See
+					<citerefentry><refentrytitle>mqtt</refentrytitle><manvolnum>7</manvolnum></citerefentry>
+					for more information on QoS.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-r</option></term>
+				<term><option>--remote</option></term>
+				<listitem>
+					<para>Define the remote prefix for the bridge configuration.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-R</option></term>
+				<term><option>--remotePort</option></term>
+				<listitem>
+					<para>Define the network port to connect to the remote broker. No default value.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-u</option></term>
+				<term><option>--username</option></term>
+				<listitem>
+					<para>Provide a username to be used for authenticating with
+					the broker. This requires a broker that supports MQTT v3.1.
+					See also the <option>--pw</option> argument.</para>
+				</listitem>
+			</varlistentry>
+		</variablelist>
+	</refsect1>
+
+	<refsect1>
+		<title>Examples</title>
+		<para>Note that these really are examples.</para>
+		<para>Three possiblites are available :</para>
+		<para>- Create a new bridge from a local broker to a remote broker whith
+			<literal>-n</literal> and all necessary parameters of a bridge (connection, address, topic).</para>
+		<para>- Delete a bridge present on a local bridge with <literal>-d</literal> and bridge connection name.</para>
+		<para>- Know all bridges which are active on a local broker with <literal>-k</literal>.</para>
+		<para>Creat a bridge on localhost and default port with another broker on localhost and 1884 port:</para>
+		<itemizedlist mark="circle">
+			<listitem><para>mosquitto_bridge <literal>-c</literal> testBridge
+			<literal>-a</literal> 127.0.0.1 <literal>-R</literal> 1884 <literal>-n</literal>
+			<literal>-t</literal> \# <literal>-q</literal> 0 <literal>-l</literal> local/
+			<literal>-r</literal> remote/ <literal>-D</literal> both</para></listitem>
+		</itemizedlist>
+		<para>Delete a bridge on localhost and default port:</para>
+		<itemizedlist mark="circle">
+			<listitem><para>mosquitto_bridge <literal>-c</literal> testBridge
+			<literal>-d</literal></para></listitem>
+		</itemizedlist>
+		<para>Know all active bridges on localhost and default port:</para>
+		<itemizedlist mark="circle">
+			<listitem><para>mosquitto_bridge <literal>-k</literal></para></listitem>
+		</itemizedlist>
+	</refsect1>
+
+	<refsect1>
+		<title>Bugs</title>
+		<para><command>mosquitto</command> bug information can be found at
+			<ulink url="https://github.com/eclipse/mosquitto/issues"/></para>
+	</refsect1>
+
+	<refsect1>
+		<title>See Also</title>
+		<simplelist type="inline">
+			<member>
+				<citerefentry>
+					<refentrytitle><link xlink:href="mqtt-7.html">mqtt</link></refentrytitle>
+					<manvolnum>7</manvolnum>
+				</citerefentry>
+			</member>
+			<member>
+				<citerefentry>
+					<refentrytitle><link xlink:href="mosquitto_pub-1.html">mosquitto_pub</link></refentrytitle>
+					<manvolnum>1</manvolnum>
+				</citerefentry>
+			</member>
+			<member>
+				<citerefentry>
+					<refentrytitle><link xlink:href="mosquitto_sub-1.html">mosquitto_sub</link></refentrytitle>
+					<manvolnum>1</manvolnum>
+				</citerefentry>
+			</member>
+			<member>
+				<citerefentry>
+					<refentrytitle><link xlink:href="mosquitto-8.html">mosquitto</link></refentrytitle>
+					<manvolnum>8</manvolnum>
+				</citerefentry>
+			</member>
+			<member>
+				<citerefentry>
+					<refentrytitle><link xlink:href="libmosquitto-3.html">libmosquitto</link></refentrytitle>
+					<manvolnum>3</manvolnum>
+				</citerefentry>
+			</member>
+			<member>
+				<citerefentry>
+					<refentrytitle><link xlink:href="mosquitto-tls-7.html">mosquitto-tls</link></refentrytitle>
+					<manvolnum>7</manvolnum>
+				</citerefentry>
+			</member>
+		</simplelist>
+	</refsect1>
+
+	<refsect1>
+		<title>Author</title>
+		<para>Tifaifai Maupiti <email>tifaifai.maupiti@gmail.com</email></para>
+	</refsect1>
+</refentry>

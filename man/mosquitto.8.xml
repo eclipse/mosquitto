@@ -418,6 +418,60 @@
 		broker.</para>
 		<para>For information on configuring bridges, see
 		<citerefentry><refentrytitle>mosquitto.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>.</para>
+
+		<para>Bridges can be dynamically create with a publish on <option>#SYS/broker/bridge/new</option>.
+			The minimum contents of this publish is the following :
+			<itemizedlist mark="circle">
+				<listitem><para>The &lt;connection&gt; name of bridge</para></listitem>
+				<listitem><para>The &lt;address&gt;</para></listitem>
+				<listitem><para>The &lt;topic&gt;</para></listitem>
+			</itemizedlist>
+			This content is exactly the same as configuring bridges. For more informations see
+			<citerefentry><refentrytitle>mosquitto.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>.</para>
+			<example title="Create a bridge dynamically" label="Create bridge dynamically">
+				<para>The publish contents below create and connects a bridge to the
+					broker at <option>test.mosquitto.org</option>. It
+					subscribes to the remote topic
+					<option>$SYS/broker/clients/total</option> and
+					republishes the messages received to the local topic
+					<option>test/mosquitto/org/clients/total</option>. It is publish on <option>#SYS/broker/bridge/new</option>.</para>
+				<programlisting language="config">
+connection test-mosquitto-org
+address test.mosquitto.org
+topic clients/total in 0 test/mosquitto/org $SYS/broker/
+			</programlisting></example>
+
+			<para>Bridges can be dynamically delete with a publish on <option>#SYS/broker/bridge/del</option>.
+			The unique content of this publish is the following :
+			<itemizedlist mark="circle">
+				<listitem><para>The &lt;connection&gt; name of bridge</para></listitem>
+			</itemizedlist></para>
+			<example title="Delete a bridge dynamically" label="Delete bridge dynamically">
+				<para>The publish contents below disconnects and remove a bridge to the
+					broker at <option>test.mosquitto.org</option>. It is publish on <option>#SYS/broker/bridge/del</option>.</para>
+				<programlisting language="config">
+connection test-mosquitto-org
+			</programlisting></example>
+
+			<para>Bridges dynamic security.
+				To prevent some security problems we recommand to use an acl restriction file.
+				For mor information about acl see
+				<citerefentry><refentrytitle>mosquitto.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>.</para>
+				<example title="ACL resctiction file for securise bridge dynamic management" label="ACL resctiction file for securise bridge dynamic management">
+					<para>The configuration below restrict read/write rules of <option>#SYS/broker/bridge</option> topic.</para>
+					<programlisting language="config">
+# This affects access control for clients with no username.
+topic read $SYS/#
+
+# This only affects clients with username "roger".
+user roger
+topic readwrite $SYS/broker/bridge/new
+topic readwrite $SYS/broker/bridge/del
+
+# This affects all clients.
+pattern write $SYS/broker/connection/%c/state
+				</programlisting></example>
+
 	</refsect1>
 
 	<refsect1>

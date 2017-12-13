@@ -41,6 +41,10 @@ And to publish a message:
 
     mosquitto_pub -t 'test/topic' -m 'hello world'
 
+To dynamically create a bridge, use (beta):
+
+	mosquitto_bridge -p 1883 -c testBridge -a 127.0.0.1 -R 1884 -n -t \# -q 0 -l local/ -r remote/ -D both 
+
 ## Documentation
 
 Documentation for the broker, clients and client library API can be found in

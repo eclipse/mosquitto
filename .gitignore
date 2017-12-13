@@ -8,6 +8,7 @@ cpp/*.test
 
 client/mosquitto_pub
 client/mosquitto_sub
+client/mosquitto_bridge
 examples/mysql_log/mosquitto_mysql_log
 examples/temperature_conversion/mqtt_temperature_conversion
 man/mosquitto.8
@@ -17,6 +18,7 @@ man/libmosquitto.3
 man/mosquitto_passwd.1
 man/mosquitto_pub.1
 man/mosquitto_sub.1
+man/mosquitto_bridge.1
 man/mqtt.7
 src/db_dump/mosquitto_db_dump
 src/mosquitto
