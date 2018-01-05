@@ -41,6 +41,7 @@ endif
 	./02-unsubscribe-qos0.py
 	./02-unsubscribe-qos1.py
 	./02-unsubscribe-qos2.py
+	./02-unsubscribe-invalid-no-topic.py
 
 03 :
 	./03-publish-qos1.py

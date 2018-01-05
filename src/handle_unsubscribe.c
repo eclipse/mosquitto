@@ -46,6 +46,12 @@ int handle__unsubscribe(struct mosquitto_db *db, struct mosquitto *context)
 	}
 	if(packet__read_uint16(&context->in_packet, &mid)) return 1;
 
+	if(context->protocol == mosq_p_mqtt311){
+		if(context->in_packet.pos == context->in_packet.remaining_length){
+			/* No topic specified, protocol error. */
+			return MOSQ_ERR_PROTOCOL;
+		}
+	}
 	while(context->in_packet.pos < context->in_packet.remaining_length){
 		sub = NULL;
 		if(packet__read_string(&context->in_packet, &sub)){
