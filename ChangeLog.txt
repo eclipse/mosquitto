@@ -2,6 +2,7 @@
 ==============
 
 Broker:
+- Fix UNSUBSCRIBE with no topic is accepted on MQTT 3.1.1. Closes #665.
 - Add ability to deny access to SUBSCRIBE messages as well as the current
   read/write accesses. Currently for auth plugins only.
 - Reduce calls to malloc through the use of UHPA.
