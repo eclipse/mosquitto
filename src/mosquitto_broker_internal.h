@@ -148,7 +148,23 @@ struct mosquitto__listener {
 	int sock_count;
 	int client_count;
 	enum mosquitto_protocol protocol;
+	char *acl_file;
+	char *clientid_prefixes;
+	char *password_file;
+	char *psk_file;
+	struct mosquitto__auth_plugin_config *auth_plugins_config;
+	int auth_plugin_config_count;
 	bool use_username_as_clientid;
+	bool allow_anonymous;
+	bool allow_zero_length_clientid;
+	char *auto_id_prefix;
+	int auto_id_prefix_len;
+	struct mosquitto__unpwd *unpwd;
+	struct mosquitto__acl_user *acl_list;
+	struct mosquitto__acl *acl_patterns;
+	struct mosquitto__unpwd *psk_id;
+	struct mosquitto__auth_plugin *auth_plugins;
+	int auth_plugin_count;
 #ifdef WITH_TLS
 	char *cafile;
 	char *capath;
@@ -180,15 +196,9 @@ struct mosquitto__auth_plugin_config
 
 struct mosquitto__config {
 	char *config_file;
-	char *acl_file;
-	bool allow_anonymous;
 	bool allow_duplicate_messages;
-	bool allow_zero_length_clientid;
-	char *auto_id_prefix;
-	int auto_id_prefix_len;
 	int autosave_interval;
 	bool autosave_on_changes;
-	char *clientid_prefixes;
 	bool connection_messages;
 	bool daemon;
 	struct mosquitto__listener default_listener;
@@ -201,14 +211,12 @@ struct mosquitto__config {
 	char *log_file;
 	FILE *log_fptr;
 	uint32_t message_size_limit;
-	char *password_file;
 	bool persistence;
 	char *persistence_location;
 	char *persistence_file;
 	char *persistence_filepath;
 	time_t persistent_client_expiration;
 	char *pid_file;
-	char *psk_file;
 	bool queue_qos0_messages;
 	int sys_interval;
 	bool upgrade_outgoing_qos;
@@ -222,8 +230,6 @@ struct mosquitto__config {
 	struct mosquitto__bridge *bridges;
 	int bridge_count;
 #endif
-	struct mosquitto__auth_plugin_config *auth_plugins;
-	int auth_plugin_count;
 };
 
 struct mosquitto__subleaf {
@@ -345,10 +351,6 @@ struct mosquitto__auth_plugin{
 struct mosquitto_db{
 	dbid_t last_db_id;
 	struct mosquitto__subhier *subs;
-	struct mosquitto__unpwd *unpwd;
-	struct mosquitto__acl_user *acl_list;
-	struct mosquitto__acl *acl_patterns;
-	struct mosquitto__unpwd *psk_id;
 	struct mosquitto *contexts_by_id;
 	struct mosquitto *contexts_by_sock;
 	struct mosquitto *contexts_for_free;
@@ -364,8 +366,6 @@ struct mosquitto_db{
 	int msg_store_count;
 	unsigned long msg_store_bytes;
 	struct mosquitto__config *config;
-	struct mosquitto__auth_plugin *auth_plugins;
-	int auth_plugin_count;
 #ifdef WITH_SYS_TREE
 	int subscription_count;
 	int retained_count;
@@ -599,8 +599,8 @@ int mosquitto_security_init_default(struct mosquitto_db *db, bool reload);
 int mosquitto_security_apply_default(struct mosquitto_db *db);
 int mosquitto_security_cleanup_default(struct mosquitto_db *db, bool reload);
 int mosquitto_acl_check_default(struct mosquitto_db *db, struct mosquitto *context, const char *topic, int access);
-int mosquitto_unpwd_check_default(struct mosquitto_db *db, const char *username, const char *password);
-int mosquitto_psk_key_get_default(struct mosquitto_db *db, const char *hint, const char *identity, char *key, int max_key_len);
+int mosquitto_unpwd_check_default(struct mosquitto_db *db, struct mosquitto *context, const char *username, const char *password);
+int mosquitto_psk_key_get_default(struct mosquitto_db *db, struct mosquitto *context, const char *hint, const char *identity, char *key, int max_key_len);
 
 /* ============================================================
  * Window service and signal related functions

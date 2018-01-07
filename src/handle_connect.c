@@ -14,6 +14,7 @@ Contributors:
    Roger Light - initial implementation and documentation.
 */
 
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -37,7 +38,7 @@ Contributors:
 #  include <libwebsockets.h>
 #endif
 
-static char *client_id_gen(struct mosquitto_db *db)
+static char *client_id_gen(struct mosquitto *context)
 {
 	char *client_id;
 #ifdef WITH_UUID
@@ -47,25 +48,25 @@ static char *client_id_gen(struct mosquitto_db *db)
 #endif
 
 #ifdef WITH_UUID
-	client_id = (char *)mosquitto__calloc(37 + db->config->auto_id_prefix_len, sizeof(char));
+	client_id = (char *)mosquitto__calloc(37 + context->listener->auto_id_prefix_len, sizeof(char));
 	if(!client_id){
 		return NULL;
 	}
-	if(db->config->auto_id_prefix){
-		memcpy(client_id, db->config->auto_id_prefix, db->config->auto_id_prefix_len);
+	if(context->listener->auto_id_prefix){
+		memcpy(client_id, context->listener->auto_id_prefix, context->listener->auto_id_prefix_len);
 	}
 	uuid_generate_random(uuid);
-	uuid_unparse_lower(uuid, &client_id[db->config->auto_id_prefix_len]);
+	uuid_unparse_lower(uuid, &client_id[context->listener->auto_id_prefix_len]);
 #else
-	client_id = (char *)mosquitto__calloc(65 + db->config->auto_id_prefix_len, sizeof(char));
+	client_id = (char *)mosquitto__calloc(65 + context->listener->auto_id_prefix_len, sizeof(char));
 	if(!client_id){
 		return NULL;
 	}
-	if(db->config->auto_id_prefix){
-		memcpy(client_id, db->config->auto_id_prefix, db->config->auto_id_prefix_len);
+	if(context->listener->auto_id_prefix){
+		memcpy(client_id, context->listener->auto_id_prefix, context->listener->auto_id_prefix_len);
 	}
 	for(i=0; i<64; i++){
-		client_id[i+db->config->auto_id_prefix_len] = (rand()%73)+48;
+		client_id[i+context->listener->auto_id_prefix_len] = (rand()%73)+48;
 	}
 	client_id[i] = '\0';
 #endif
@@ -120,7 +121,7 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 	uint8_t username_flag, password_flag;
 	char *username = NULL, *password = NULL;
 	int rc;
-	struct mosquitto__acl_user *acl_tail;
+	struct mosquitto__acl_user *acl_tail, *acl_list;
 	struct mosquitto *found_context;
 	int slen;
 	struct mosquitto__subleaf *leaf;
@@ -132,6 +133,8 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 #endif
 
 	G_CONNECTION_COUNT_INC();
+
+	assert(context->listener);
 
 	/* Don't accept multiple CONNECT commands. */
 	if(context->state != mosq_cs_new){
@@ -236,12 +239,12 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 			mosquitto__free(client_id);
 			client_id = NULL;
 
-			if(clean_session == 0 || db->config->allow_zero_length_clientid == false){
+			if(clean_session == 0 || context->listener->allow_zero_length_clientid == false){
 				send__connack(context, 0, CONNACK_REFUSED_IDENTIFIER_REJECTED);
 				rc = MOSQ_ERR_PROTOCOL;
 				goto handle_connect_error;
 			}else{
-				client_id = client_id_gen(db);
+				client_id = client_id_gen(context);
 				if(!client_id){
 					rc = MOSQ_ERR_NOMEM;
 					goto handle_connect_error;
@@ -251,8 +254,8 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 	}
 
 	/* clientid_prefixes check */
-	if(db->config->clientid_prefixes){
-		if(strncmp(db->config->clientid_prefixes, client_id, strlen(db->config->clientid_prefixes))){
+	if(context->listener->clientid_prefixes){
+		if(strncmp(context->listener->clientid_prefixes, client_id, strlen(context->listener->clientid_prefixes))){
 			send__connack(context, 0, CONNACK_REFUSED_NOT_AUTHORIZED);
 			rc = 1;
 			goto handle_connect_error;
@@ -459,7 +462,7 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 			password = NULL;
 		}
 
-		if(!username_flag && db->config->allow_anonymous == false){
+		if(!username_flag && context->listener->allow_anonymous == false){
 			send__connack(context, 0, CONNACK_REFUSED_NOT_AUTHORIZED);
 			rc = 1;
 			goto handle_connect_error;
@@ -539,8 +542,13 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 	}
 
 	/* Associate user with its ACL, assuming we have ACLs loaded. */
-	if(db->acl_list){
-		acl_tail = db->acl_list;
+	if(!context->listener->acl_file){
+		acl_list = db->config->default_listener.acl_list;
+	}else{
+		acl_list = context->listener->acl_list;
+	}
+	if(acl_list){
+		acl_tail = acl_list;
 		while(acl_tail){
 			if(context->username){
 				if(acl_tail->username && !strcmp(context->username, acl_tail->username)){

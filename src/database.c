@@ -127,8 +127,6 @@ int db__open(struct mosquitto__config *config, struct mosquitto_db *db)
 	subhier = sub__add_hier_entry(&db->subs, "$SYS", strlen("$SYS"));
 	if(!subhier) return MOSQ_ERR_NOMEM;
 
-	db->unpwd = NULL;
-
 #ifdef WITH_PERSISTENCE
 	if(config->persistence && config->persistence_filepath){
 		if(persist__restore(db)) return 1;
