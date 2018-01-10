@@ -21,6 +21,7 @@ Contributors:
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <getopt.h>
 
 #ifdef WIN32
 #else
@@ -326,33 +327,37 @@ int mqtt3_config_parse_args(struct mqtt3_config *config, int argc, char *argv[])
 {
 	int i;
 	int port_tmp;
-
-	for(i=1; i<argc; i++){
-		if(!strcmp(argv[i], "-c") || !strcmp(argv[i], "--config-file")){
-			if(i<argc-1){
-				config->config_file = _mosquitto_strdup(argv[i+1]);
+	char *l_opt_arg;  
+	char* const short_options = "c:dhp:v";  
+	struct option long_options[] = {  
+	     { "config-file", 1, NULL, 'c'},  
+	     { "daemon",      0, NULL, 'd'},  
+	     { "help",        0, NULL, 'h'},  
+	     { "port",        1, NULL, 'p'}, 
+	     { "verbose",     0, NULL, 'v'},
+	     { NULL,          0, NULL,  0 }
+	};
+	while((c = getopt_long (argc, argv, short_options, long_options, NULL)) != -1){
+		switch(c){
+			case 'c':
+				config->config_file = _mosquitto_strdup(optarg);
 				if(!config->config_file){
 					_mosquitto_log_printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 					return MOSQ_ERR_NOMEM;
 				}
-
 				if(mqtt3_config_read(config, false)){
 					_mosquitto_log_printf(NULL, MOSQ_LOG_ERR, "Error: Unable to open configuration file.");
 					return MOSQ_ERR_INVAL;
 				}
-			}else{
-				_mosquitto_log_printf(NULL, MOSQ_LOG_ERR, "Error: -c argument given, but no config file specified.");
-				return MOSQ_ERR_INVAL;
-			}
-			i++;
-		}else if(!strcmp(argv[i], "-d") || !strcmp(argv[i], "--daemon")){
-			config->daemon = true;
-		}else if(!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")){
-			print_usage();
-			return MOSQ_ERR_INVAL;
-		}else if(!strcmp(argv[i], "-p") || !strcmp(argv[i], "--port")){
-			if(i<argc-1){
-				port_tmp = atoi(argv[i+1]);
+				break;
+			case 'd':
+				config->daemon = true;
+				break;
+			case 'h':
+				print_usage();
+				break;
+			case 'p':
+				port_tmp = atoi(optarg);
 				if(port_tmp<1 || port_tmp>65535){
 					_mosquitto_log_printf(NULL, MOSQ_LOG_ERR, "Error: Invalid port specified (%d).", port_tmp);
 					return MOSQ_ERR_INVAL;
@@ -362,20 +367,25 @@ int mqtt3_config_parse_args(struct mqtt3_config *config, int argc, char *argv[])
 					}
 					config->default_listener.port = port_tmp;
 				}
-			}else{
-				_mosquitto_log_printf(NULL, MOSQ_LOG_ERR, "Error: -p argument given, but no port specified.");
+				break;
+			case 'v':
+				config->verbose = true;
+				break;
+			case '?':
+				if (optopt == 'c'){
+					_mosquitto_log_printf(NULL, MOSQ_LOG_ERR, "Error: -c argument given, but no config file specified.");
+					return MOSQ_ERR_INVAL;	
+				}else if(optopt == 'p'){
+					_mosquitto_log_printf(NULL, MOSQ_LOG_ERR, "Error: -p argument given, but no port specified.");
+					return MOSQ_ERR_INVAL;
+				}else{
+				fprintf(stderr, "Error: Unknown option '%s'.\n",optarg);
+				print_usage();
 				return MOSQ_ERR_INVAL;
-			}
-			i++;
-		}else if(!strcmp(argv[i], "-v") || !strcmp(argv[i], "--verbose")){
-			config->verbose = true;
-		}else{
-			fprintf(stderr, "Error: Unknown option '%s'.\n",argv[i]);
-			print_usage();
-			return MOSQ_ERR_INVAL;
+				}
+				break;
 		}
-	}
-
+	}  
 	if(config->listener_count == 0
 #ifdef WITH_TLS
 			|| config->default_listener.cafile
