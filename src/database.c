@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
  
 Contributors:
    Roger Light - initial implementation and documentation.
+   Tatsuzo Osawa - Fix subs memory issue.
 */
 
 #include <assert.h>
@@ -121,10 +122,10 @@ int db__open(struct mosquitto__config *config, struct mosquitto_db *db)
 
 	db->subs = NULL;
 
-	subhier = sub__add_hier_entry(&db->subs, " ", strlen(" "));
+	subhier = sub__add_hier_entry(NULL, &db->subs, " ", strlen(" "));
 	if(!subhier) return MOSQ_ERR_NOMEM;
 
-	subhier = sub__add_hier_entry(&db->subs, "$SYS", strlen("$SYS"));
+	subhier = sub__add_hier_entry(NULL, &db->subs, "$SYS", strlen("$SYS"));
 	if(!subhier) return MOSQ_ERR_NOMEM;
 
 	db->unpwd = NULL;
