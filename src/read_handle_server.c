@@ -532,6 +532,13 @@ int mqtt3_handle_connect(struct mosquitto_db *db, struct mosquitto *context)
 				_mosquitto_log_printf(NULL, MOSQ_LOG_NOTICE, "New client connected from %s as %s (c%d, k%d).", context->address, client_id, clean_session, context->keepalive);
 			}
 		}
+
+		if(context->will) {
+			_mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Will message specified (%ld bytes) (r%d, q%d).", (long)context->will->payloadlen, context->will->retain, context->will->qos);
+			_mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "\t%s", context->will->topic);
+		} else {
+			_mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "No will message specified.");
+		}
 	}
 
 	context->id = client_id;
