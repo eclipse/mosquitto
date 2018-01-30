@@ -587,6 +587,13 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 				log__printf(NULL, MOSQ_LOG_NOTICE, "New client connected from %s as %s (c%d, k%d).", context->address, client_id, clean_session, context->keepalive);
 			}
 		}
+
+		if(context->will) {
+			log__printf(NULL, MOSQ_LOG_DEBUG, "Will message specified (%ld bytes) (r%d, q%d).", (long)context->will->payloadlen, context->will->retain, context->will->qos);
+			log__printf(NULL, MOSQ_LOG_DEBUG, "\t%s", context->will->topic);
+		} else {
+			log__printf(NULL, MOSQ_LOG_DEBUG, "No will message specified.");
+		}
 	}
 
 	context->id = client_id;
