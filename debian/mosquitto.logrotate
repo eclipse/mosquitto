@@ -1,0 +1,12 @@
+/var/log/mosquitto/mosquitto.log {
+	rotate 7
+	daily
+	compress
+	size 100k
+	nocreate
+	missingok
+	postrotate
+		/usr/bin/killall -HUP mosquitto
+	endscript
+}
+

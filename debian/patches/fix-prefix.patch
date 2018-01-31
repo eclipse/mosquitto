@@ -1,0 +1,14 @@
+Description: Install to /usr instead of /usr/local
+Author: Roger Light <roger@atchoo.org>
+Forwarded: not-needed
+--- a/config.mk
++++ b/config.mk
+@@ -249,7 +249,7 @@
+ endif
+ 
+ INSTALL?=install
+-prefix=/usr/local
++prefix=/usr
+ mandir=${prefix}/share/man
+ localedir=${prefix}/share/locale
+ STRIP?=strip

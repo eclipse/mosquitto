@@ -1,0 +1,58 @@
+Description: Debian specific fixes for multiarch support.
+Author: Roger Light <roger@atchoo.org>
+Forwarded: not-needed
+--- a/config.mk
++++ b/config.mk
+@@ -253,3 +253,5 @@
+ mandir=${prefix}/share/man
+ localedir=${prefix}/share/locale
+ STRIP?=strip
++DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
++libdir=${DESTDIR}/usr/lib/${DEB_HOST_MULTIARCH}
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -24,16 +24,16 @@
+ 	$(MAKE) -C cpp
+ 
+ install : all
+-	$(INSTALL) -d ${DESTDIR}$(prefix)/lib${LIB_SUFFIX}/
+-	$(INSTALL) libmosquitto.so.${SOVERSION} ${DESTDIR}${prefix}/lib${LIB_SUFFIX}/libmosquitto.so.${SOVERSION}
+-	ln -sf libmosquitto.so.${SOVERSION} ${DESTDIR}${prefix}/lib${LIB_SUFFIX}/libmosquitto.so
++	$(INSTALL) -d ${libdir}/
++	$(INSTALL) libmosquitto.so.${SOVERSION} ${libdir}/libmosquitto.so.${SOVERSION}
++	ln -sf libmosquitto.so.${SOVERSION} ${libdir}/libmosquitto.so
+ 	$(INSTALL) -d ${DESTDIR}${prefix}/include/
+ 	$(INSTALL) mosquitto.h ${DESTDIR}${prefix}/include/mosquitto.h
+ 	$(MAKE) -C cpp install
+ 
+ uninstall :
+-	-rm -f ${DESTDIR}${prefix}/lib${LIB_SUFFIX}/libmosquitto.so.${SOVERSION}
+-	-rm -f ${DESTDIR}${prefix}/lib${LIB_SUFFIX}/libmosquitto.so
++	-rm -f ${libdir}/libmosquitto.so.${SOVERSION}
++	-rm -f ${libdir}/libmosquitto.so
+ 	-rm -f ${DESTDIR}${prefix}/include/mosquitto.h
+ 
+ reallyclean : clean
+--- a/lib/cpp/Makefile
++++ b/lib/cpp/Makefile
+@@ -9,15 +9,15 @@
+ all : libmosquittopp.so.${SOVERSION}
+ 
+ install : all
+-	$(INSTALL) -d ${DESTDIR}$(prefix)/lib${LIB_SUFFIX}/
+-	$(INSTALL) libmosquittopp.so.${SOVERSION} ${DESTDIR}${prefix}/lib${LIB_SUFFIX}/libmosquittopp.so.${SOVERSION}
+-	ln -sf libmosquittopp.so.${SOVERSION} ${DESTDIR}${prefix}/lib${LIB_SUFFIX}/libmosquittopp.so
++	$(INSTALL) -d ${libdir}/
++	$(INSTALL) libmosquittopp.so.${SOVERSION} ${libdir}/libmosquittopp.so.${SOVERSION}
++	ln -sf libmosquittopp.so.${SOVERSION} ${libdir}/libmosquittopp.so
+ 	$(INSTALL) -d ${DESTDIR}${prefix}/include/
+ 	$(INSTALL) mosquittopp.h ${DESTDIR}${prefix}/include/mosquittopp.h
+ 	
+ uninstall :
+-	-rm -f ${DESTDIR}${prefix}/lib${LIB_SUFFIX}/libmosquittopp.so.${SOVERSION}
+-	-rm -f ${DESTDIR}${prefix}/lib${LIB_SUFFIX}/libmosquittopp.so
++	-rm -f ${libdir}/libmosquittopp.so.${SOVERSION}
++	-rm -f ${libdir}/libmosquittopp.so
+ 	-rm -f ${DESTDIR}${prefix}/include/mosquittopp.h
+ 
+ clean :

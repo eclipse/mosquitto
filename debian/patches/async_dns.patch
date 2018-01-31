@@ -1,0 +1,14 @@
+Description: Enable asynchronous DNS resolving for bridges.
+Author: Roger Light <roger@atchoo.org>
+Forwarded: not-needed
+--- a/config.mk
++++ b/config.mk
+@@ -77,7 +77,7 @@
+ WITH_SOCKS:=yes
+ 
+ # Build with async dns lookup support for bridges (temporary). Requires glibc.
+-#WITH_ADNS:=yes
++WITH_ADNS:=yes
+ 
+ # =============================================================================
+ # End of user configuration

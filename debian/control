@@ -1,0 +1,157 @@
+Source: mosquitto
+Section: net
+Priority: optional
+Maintainer: Roger A. Light <roger@atchoo.org>
+Build-Depends: debhelper (>= 10),
+               libc-ares-dev,
+               libssl-dev (>=1.0.0),
+               libwebsockets-dev (>=2.0),
+               libwrap0-dev,
+               python-all (>= 2.6.6-3~),
+               uthash-dev,
+               uuid-dev
+Standards-Version: 4.1.3
+Homepage: http://mosquitto.org/
+Vcs-Git: https://github.com/eclipse/mosquitto
+Vcs-Browser: https://github.com/eclipse/mosquitto/tree/debian
+
+Package: mosquitto
+Architecture: any
+Multi-Arch: foreign
+Depends: adduser (>= 3.10),
+         libuuid1,
+         lsb-base (>=4.1+Debian3),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Suggests: apparmor
+Description: MQTT version 3.1/3.1.1 compatible message broker
+ This is a message broker that supports version 3.1 and 3.1.1 of the MQTT
+ protocol.
+ .
+ MQTT provides a method of carrying out messaging using a publish/subscribe
+ model. It is lightweight, both in terms of bandwidth usage and ease of
+ implementation. This makes it particularly useful at the edge of the network
+ where a sensor or other simple device may be implemented using an arduino for
+ example.
+
+Package: mosquitto-dev
+Section: devel
+Architecture: all
+Multi-Arch: foreign
+Depends: mosquitto (<< ${source:Version}.1~),
+         mosquitto (>= ${source:Version}),
+         ${misc:Depends}
+Description: Development files for Mosquitto
+ Mosquitto is a message broker that supports the MQTT protocol.
+ .
+ This package contains the include files used if you wish to compile a package
+ which requires Mosquitto's source file headers.
+
+Package: libmosquitto1
+Section: libs
+Architecture: any
+Multi-Arch: same
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Description: MQTT version 3.1/3.1.1 client library
+ This is a C library for implementing MQTT version 3.1/3.1.1 clients.
+ .
+ MQTT provides a method of carrying out messaging using a publish/subscribe
+ model. It is lightweight, both in terms of bandwidth usage and ease of
+ implementation. This makes it particularly useful at the edge of the network
+ where a sensor or other simple device may be implemented using an arduino for
+ example.
+
+Package: libmosquitto-dev
+Section: libdevel
+Architecture: any
+Multi-Arch: same
+Depends: libmosquitto1 (<< ${source:Version}.1~),
+         libmosquitto1 (>= ${source:Version}),
+         ${misc:Depends}
+Replaces: libmosquitto0-dev (<< 1.2-1~)
+Breaks: libmosquitto0-dev (<< 1.2-1~)
+Description: MQTT version 3.1/3.1.1 client library, development files
+ This is the header and man page for the libmosquitto1 C library, which is a
+ library for implementing MQTT version 3.1/3.1.1 clients. This package is
+ needed to do development with libmosquitto1.
+
+Package: libmosquittopp1
+Section: libs
+Architecture: any
+Multi-Arch: same
+Pre-Depends: ${misc:Pre-Depends}
+Depends: libmosquitto1 (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: MQTT version 3.1/3.1.1 client C++ library
+ This is a C++ library for implementing MQTT version 3.1/3.1.1 clients.
+ .
+ MQTT provides a method of carrying out messaging using a publish/subscribe
+ model. It is lightweight, both in terms of bandwidth usage and ease of
+ implementation. This makes it particularly useful at the edge of the network
+ where a sensor or other simple device may be implemented using an arduino for
+ example.
+
+Package: libmosquittopp-dev
+Section: libdevel
+Architecture: any
+Multi-Arch: same
+Depends: libmosquittopp1 (<< ${source:Version}.1~),
+         libmosquittopp1 (>= ${source:Version}),
+         libmosquitto-dev,
+         ${misc:Depends}
+Replaces: libmosquittopp0-dev (<< 1.2-1~)
+Breaks: libmosquittopp0-dev (<< 1.2-1~)
+Description: MQTT version 3.1 client C++ library, development files
+ This is the header and man page for the libmosquittopp1 C++ library, which is
+ a library for implementing MQTT version 3.1 clients. This package is needed to
+ do development with libmosquittopp1.
+
+Package: mosquitto-clients
+Architecture: any
+Multi-Arch: foreign
+Depends: libmosquitto1 (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: Mosquitto command line MQTT clients
+ This is two MQTT version 3.1/3.1.1 command line clients. mosquitto_pub can be
+ used to publish messages to a broker and mosquitto_sub can be used to
+ subscribe to a topic to receive messages.
+ .
+ MQTT provides a method of carrying out messaging using a publish/subscribe
+ model. It is lightweight, both in terms of bandwidth usage and ease of
+ implementation. This makes it particularly useful at the edge of the network
+ where a sensor or other simple device may be implemented using an arduino for
+ example.
+
+Package: mosquitto-dbg
+Architecture: any
+Multi-Arch: foreign
+Priority: optional
+Section: debug
+Depends: mosquitto (= ${binary:Version}) | mosquitto-clients (= ${binary:Version}),
+         ${misc:Depends}
+Description: debugging symbols for mosquitto binaries
+ This package contains debugging files used to investigate problems with
+ the binaries provided by the packages mosquitto, mosquitto-clients,
+ libmosquitto1 and libmosquittopp1.
+
+Package: libmosquitto1-dbg
+Architecture: any
+Multi-Arch: same
+Priority: optional
+Section: debug
+Depends: libmosquitto1 (= ${binary:Version}), ${misc:Depends}
+Description: debugging symbols for libmosquitto binaries
+ This package contains debugging files used to investigate problems with
+ the binaries provided by the libmosquitto1 package.
+
+Package: libmosquittopp1-dbg
+Architecture: any
+Multi-Arch: same
+Priority: optional
+Section: debug
+Depends: libmosquittopp1 (= ${binary:Version}), ${misc:Depends}
+Description: debugging symbols for libmosquittopp binaries
+ This package contains debugging files used to investigate problems with
+ the binaries provided by the libmosquittopp1 package.

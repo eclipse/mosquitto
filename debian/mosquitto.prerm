@@ -1,0 +1,26 @@
+#!/bin/sh
+# prerm script for mosquitto
+#
+# see: dh_installdeb(1)
+
+set -e
+
+case "$1" in
+	remove|purge|deconfigure)
+		invoke-rc.d mosquitto stop
+	;;
+
+	upgrade)
+	;;
+	failed-upgrade)
+	;;
+
+	*)
+		echo "prerm called with unknown argument \`$1'" >&2
+		exit 1
+	;;
+esac
+
+#DEBHELPER#
+
+exit 0

@@ -1,0 +1,59 @@
+libmosquittopp.so.1 libmosquittopp1 #MINVER#
+ (c++)"mosqpp::lib_cleanup()@Base" 1.0
+ (c++)"mosqpp::lib_version(int*, int*, int*)@Base" 1.0
+ (c++)"mosqpp::mosquittopp::disconnect()@Base" 1.0
+ (c++)"mosqpp::mosquittopp::loop_start()@Base" 1.0
+ (c++)"mosqpp::mosquittopp::loop_write(int)@Base" 1.0
+ (c++)"mosqpp::mosquittopp::on_connect(int)@Base" 1.0
+ (c++)"mosqpp::mosquittopp::on_message(mosquitto_message const*)@Base" 1.0
+ (c++)"mosqpp::mosquittopp::on_publish(int)@Base" 1.0
+ (c++)"mosqpp::mosquittopp::socks5_set(char const*, int, char const*, char const*)@Base" 1.4
+ (c++)"mosqpp::mosquittopp::want_write()@Base" 1.0
+ (c++)"mosqpp::mosquittopp::will_clear()@Base" 1.0
+ (c++)"mosqpp::mosquittopp::tls_psk_set(char const*, char const*, char const*)@Base" 1.0
+ (c++)"mosqpp::mosquittopp::unsubscribe(int*, char const*)@Base" 1.0
+ (c++)"mosqpp::mosquittopp::loop_forever(int, int)@Base" 1.1
+ (c++)"mosqpp::mosquittopp::on_subscribe(int, int, int const*)@Base" 1.0
+ (c++)"mosqpp::mosquittopp::reinitialise(char const*, bool)@Base" 1.0
+ (c++)"mosqpp::mosquittopp::threaded_set(bool)@Base" 1.4
+ (c++)"mosqpp::mosquittopp::tls_opts_set(int, char const*, char const*)@Base" 1.0
+ (c++)"mosqpp::mosquittopp::connect_async(char const*, int, int)@Base" 1.0
+ (c++)"mosqpp::mosquittopp::connect_async(char const*, int, int, char const*)@Base" 1.2
+ (c++)"mosqpp::mosquittopp::on_disconnect(int)@Base" 1.0
+ (c++)"mosqpp::mosquittopp::user_data_set(void*)@Base" 1.0
+ (c++)"mosqpp::mosquittopp::on_unsubscribe(int)@Base" 1.0
+ (c++)"mosqpp::mosquittopp::reconnect_async()@Base" 1.2
+ (c++)"mosqpp::mosquittopp::username_pw_set(char const*, char const*)@Base" 1.0
+ (c++)"mosqpp::mosquittopp::tls_insecure_set(bool)@Base" 1.2
+ (c++)"mosqpp::mosquittopp::message_retry_set(unsigned int)@Base" 1.0
+ (c++)"mosqpp::mosquittopp::reconnect_delay_set(unsigned int, unsigned int, bool)@Base" 1.2
+ (c++)"mosqpp::mosquittopp::max_inflight_messages_set(unsigned int)@Base" 1.2
+ (c++)"mosqpp::mosquittopp::loop(int, int)@Base" 1.0
+ (c++)"mosqpp::mosquittopp::on_log(int, char const*)@Base" 1.0
+ (c++)"mosqpp::mosquittopp::socket()@Base" 1.0
+ (c++)"mosqpp::mosquittopp::connect(char const*, int, int)@Base" 1.0
+ (c++)"mosqpp::mosquittopp::connect(char const*, int, int, char const*)@Base" 1.2
+ (c++)"mosqpp::mosquittopp::publish(int*, char const*, int, void const*, int, bool)@Base" 1.0
+ (c++)"mosqpp::mosquittopp::tls_set(char const*, char const*, char const*, char const*, int (*)(char*, int, int, void*))@Base" 1.0
+ (c++)"mosqpp::mosquittopp::on_error()@Base" 1.0
+ (c++)"mosqpp::mosquittopp::opts_set(mosq_opt_t, void*)@Base" 1.4
+ (c++)"mosqpp::mosquittopp::will_set(char const*, int, void const*, int, bool)@Base" 1.0
+ (c++)"mosqpp::mosquittopp::loop_misc()@Base" 1.0
+ (c++)"mosqpp::mosquittopp::loop_read(int)@Base" 1.0
+ (c++)"mosqpp::mosquittopp::loop_stop(bool)@Base" 1.0
+ (c++)"mosqpp::mosquittopp::reconnect()@Base" 1.0
+ (c++)"mosqpp::mosquittopp::subscribe(int*, char const*, int)@Base" 1.0
+ (c++)"mosqpp::mosquittopp::mosquittopp(char const*, bool)@Base" 1.0
+ (c++)"mosqpp::mosquittopp::mosquittopp(char const*, bool)@Base" 1.0
+ (c++)"mosqpp::mosquittopp::~mosquittopp()@Base" 1.0
+ (c++)"mosqpp::mosquittopp::~mosquittopp()@Base" 1.0
+ (c++)"mosqpp::mosquittopp::~mosquittopp()@Base" 1.0
+ (c++)"mosqpp::connack_string(int)@Base" 1.0
+ (c++)"mosqpp::topic_matches_sub(char const*, char const*, bool*)@Base" 1.0
+ (c++)"mosqpp::sub_topic_tokenise(char const*, char***, int*)@Base" 1.0
+ (c++)"mosqpp::sub_topic_tokens_free(char***, int)@Base" 1.0
+ (c++)"mosqpp::lib_init()@Base" 1.0
+ (c++)"mosqpp::strerror(int)@Base" 1.0
+ (c++)"typeinfo for mosqpp::mosquittopp@Base" 1.0
+ (c++)"typeinfo name for mosqpp::mosquittopp@Base" 1.0
+ (c++)"vtable for mosqpp::mosquittopp@Base" 1.0

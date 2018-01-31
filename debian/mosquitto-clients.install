@@ -1,0 +1,4 @@
+usr/bin/mosquitto_pub
+usr/bin/mosquitto_sub
+usr/share/man/man1/mosquitto_pub.1
+usr/share/man/man1/mosquitto_sub.1

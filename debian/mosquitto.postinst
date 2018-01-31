@@ -1,0 +1,46 @@
+#!/bin/sh
+# postinst script for mosquitto
+#
+# see: dh_installdeb(1)
+
+set -e
+
+setup_mosquitto_user() {
+	if ! getent group mosquitto >/dev/null; then
+		addgroup --quiet --system mosquitto
+	fi
+
+	if ! getent passwd mosquitto >/dev/null; then
+		adduser --quiet --system --no-create-home --ingroup mosquitto --home /var/lib/mosquitto --shell /usr/sbin/nologin mosquitto
+	fi
+}
+
+fix_permissions() {
+	chown mosquitto /var/lib/mosquitto
+	chown mosquitto /var/log/mosquitto
+}
+
+case "$1" in
+	configure)
+		setup_mosquitto_user
+		fix_permissions
+	;;
+
+	abort-upgrade|abort-remove|abort-deconfigure)
+	;;
+
+	*)
+		echo "postinst called with unknown argument \`$1'" >&2
+		exit 1
+	;;
+esac
+
+# Reload AppArmor profile
+APP_PROFILE="/etc/apparmor.d/usr.sbin.mosquitto"
+if [ -f "$APP_PROFILE" ] && aa-status --enabled 2>/dev/null; then
+       apparmor_parser -r "$APP_PROFILE" || true
+fi
+
+#DEBHELPER#
+
+exit 0

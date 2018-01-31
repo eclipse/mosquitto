@@ -1,0 +1,3 @@
+# xsltproc generated man pages have long lines but look ok.  Patching the
+# generated files to use hypenation results in very odd looking files.
+mosquitto-clients binary: manpage-has-errors-from-man

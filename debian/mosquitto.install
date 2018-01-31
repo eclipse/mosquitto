@@ -1,0 +1,11 @@
+etc/mosquitto/ca_certificates/README
+etc/mosquitto/certs/README
+etc/mosquitto/conf.d/README
+etc/mosquitto/mosquitto.conf
+usr/bin/mosquitto_passwd
+usr/sbin/mosquitto
+usr/share/man/man1/mosquitto_passwd.1
+usr/share/man/man5/mosquitto.conf.5
+usr/share/man/man7/mosquitto-tls.7
+usr/share/man/man7/mqtt.7
+usr/share/man/man8/mosquitto.8

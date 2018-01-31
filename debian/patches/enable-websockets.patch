@@ -1,0 +1,14 @@
+Description: Enable websockets support.
+Author: Roger Light <roger@atchoo.org>
+Forwarded: not-needed
+--- a/config.mk
++++ b/config.mk
+@@ -65,7 +65,7 @@
+ WITH_UUID:=yes
+ 
+ # Build with websockets support on the broker.
+-WITH_WEBSOCKETS:=no
++WITH_WEBSOCKETS:=yes
+ 
+ # Use elliptic keys in broker
+ WITH_EC:=yes

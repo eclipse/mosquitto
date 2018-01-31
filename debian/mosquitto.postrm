@@ -1,0 +1,39 @@
+#!/bin/sh
+# postrm script for mosquitto
+#
+# see: dh_installdeb(1)
+
+set -e
+
+case "$1" in
+	purge)
+		rm -f /var/lib/mosquitto/mosquitto.db
+		if [ -d /var/lib/mosquitto ]; then
+			rmdir --ignore-fail-on-non-empty /var/lib/mosquitto
+		fi
+		rm -f /var/log/mosquitto/mosquitto.log*
+		if [ -d /var/log/mosquitto ]; then
+			rmdir --ignore-fail-on-non-empty /var/log/mosquitto
+		fi
+        APP_PROFILE="usr.sbin.mosquitto"
+        rm -f /etc/apparmor.d/disable/$APP_PROFILE >/dev/null 2>&1 || true
+	;;
+	remove|abort-install|abort-upgrade|disappear)
+		if which deluser >/dev/null 2>&1; then
+			deluser --quiet mosquitto > /dev/null || true
+		fi
+	;;
+
+	upgrade|failed-upgrade)
+	;;
+
+	*)
+		echo "postrm called with unknown argument \`$1'" >&2
+		exit 1
+	;;
+esac
+
+
+#DEBHELPER#
+
+exit 0

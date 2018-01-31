@@ -1,0 +1,14 @@
+Description: Debian specific fix to make build reproducible.
+Author: Roger Light <roger@atchoo.org>
+Forwarded: not-needed
+--- a/config.mk
++++ b/config.mk
+@@ -87,7 +87,7 @@
+ # Also bump lib/mosquitto.h, CMakeLists.txt,
+ # installer/mosquitto.nsi, installer/mosquitto-cygwin.nsi
+ VERSION=1.4.14
+-TIMESTAMP:=$(shell date "+%F %T%z")
++TIMESTAMP:=$(shell dpkg-parsechangelog -l../debian/changelog | grep Date | sed -e 's/Date: //')
+ 
+ # Client library SO version. Bump if incompatible API/ABI changes are made.
+ SOVERSION=1

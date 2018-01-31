@@ -1,0 +1,26 @@
+Description: Set local configuration.
+Author: Roger Light <roger@atchoo.org>
+Forwarded: not-needed
+--- a/Makefile
++++ b/Makefile
+@@ -41,6 +41,7 @@
+ endif
+ 	$(INSTALL) -d ${DESTDIR}/etc/mosquitto
+ 	$(INSTALL) -m 644 mosquitto.conf ${DESTDIR}/etc/mosquitto/mosquitto.conf.example
++	$(INSTALL) -m 644 debian.conf ${DESTDIR}/etc/mosquitto/mosquitto.conf
+ 	$(INSTALL) -m 644 aclfile.example ${DESTDIR}/etc/mosquitto/aclfile.example
+ 	$(INSTALL) -m 644 pwfile.example ${DESTDIR}/etc/mosquitto/pwfile.example
+ 	$(INSTALL) -m 644 pskfile.example ${DESTDIR}/etc/mosquitto/pskfile.example
+--- /dev/null
++++ b/debian.conf
+@@ -0,0 +1,10 @@
++# Place your local configuration in /etc/mosquitto/conf.d/
++
++pid_file /var/run/mosquitto.pid
++
++persistence true
++persistence_location /var/lib/mosquitto/
++
++log_dest file /var/log/mosquitto/mosquitto.log
++
++include_dir /etc/mosquitto/conf.d

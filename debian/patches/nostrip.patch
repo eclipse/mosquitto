@@ -1,0 +1,55 @@
+Description: Don't strip binaries on install so it can be used for the -dbg package.
+Author: Roger Light <roger@atchoo.org>
+Forwarded: not-needed
+--- a/lib/cpp/Makefile
++++ b/lib/cpp/Makefile
+@@ -10,7 +10,7 @@
+ 
+ install : all
+ 	$(INSTALL) -d ${DESTDIR}$(prefix)/lib${LIB_SUFFIX}/
+-	$(INSTALL) -s --strip-program=${CROSS_COMPILE}${STRIP} libmosquittopp.so.${SOVERSION} ${DESTDIR}${prefix}/lib${LIB_SUFFIX}/libmosquittopp.so.${SOVERSION}
++	$(INSTALL) libmosquittopp.so.${SOVERSION} ${DESTDIR}${prefix}/lib${LIB_SUFFIX}/libmosquittopp.so.${SOVERSION}
+ 	ln -sf libmosquittopp.so.${SOVERSION} ${DESTDIR}${prefix}/lib${LIB_SUFFIX}/libmosquittopp.so
+ 	$(INSTALL) -d ${DESTDIR}${prefix}/include/
+ 	$(INSTALL) mosquittopp.h ${DESTDIR}${prefix}/include/mosquittopp.h
+--- a/client/Makefile
++++ b/client/Makefile
+@@ -24,8 +24,8 @@
+ 
+ install : all
+ 	$(INSTALL) -d ${DESTDIR}$(prefix)/bin
+-	$(INSTALL) -s --strip-program=${CROSS_COMPILE}${STRIP} mosquitto_pub ${DESTDIR}${prefix}/bin/mosquitto_pub
+-	$(INSTALL) -s --strip-program=${CROSS_COMPILE}${STRIP} mosquitto_sub ${DESTDIR}${prefix}/bin/mosquitto_sub
++	$(INSTALL) mosquitto_pub ${DESTDIR}${prefix}/bin/mosquitto_pub
++	$(INSTALL) mosquitto_sub ${DESTDIR}${prefix}/bin/mosquitto_sub
+ 
+ uninstall :
+ 	-rm -f ${DESTDIR}${prefix}/bin/mosquitto_pub
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -25,7 +25,7 @@
+ 
+ install : all
+ 	$(INSTALL) -d ${DESTDIR}$(prefix)/lib${LIB_SUFFIX}/
+-	$(INSTALL) -s --strip-program=${CROSS_COMPILE}${STRIP} libmosquitto.so.${SOVERSION} ${DESTDIR}${prefix}/lib${LIB_SUFFIX}/libmosquitto.so.${SOVERSION}
++	$(INSTALL) libmosquitto.so.${SOVERSION} ${DESTDIR}${prefix}/lib${LIB_SUFFIX}/libmosquitto.so.${SOVERSION}
+ 	ln -sf libmosquitto.so.${SOVERSION} ${DESTDIR}${prefix}/lib${LIB_SUFFIX}/libmosquitto.so
+ 	$(INSTALL) -d ${DESTDIR}${prefix}/include/
+ 	$(INSTALL) mosquitto.h ${DESTDIR}${prefix}/include/mosquitto.h
+--- a/src/Makefile
++++ b/src/Makefile
+@@ -103,12 +103,12 @@
+ 
+ install : all
+ 	$(INSTALL) -d ${DESTDIR}$(prefix)/sbin
+-	$(INSTALL) -s --strip-program=${CROSS_COMPILE}${STRIP} mosquitto ${DESTDIR}${prefix}/sbin/mosquitto
++	$(INSTALL) mosquitto ${DESTDIR}${prefix}/sbin/mosquitto
+ 	$(INSTALL) -d ${DESTDIR}$(prefix)/include
+ 	$(INSTALL) mosquitto_plugin.h ${DESTDIR}${prefix}/include/mosquitto_plugin.h
+ ifeq ($(WITH_TLS),yes)
+ 	$(INSTALL) -d ${DESTDIR}$(prefix)/bin
+-	$(INSTALL) -s --strip-program=${CROSS_COMPILE}${STRIP} mosquitto_passwd ${DESTDIR}${prefix}/bin/mosquitto_passwd
++	$(INSTALL) mosquitto_passwd ${DESTDIR}${prefix}/bin/mosquitto_passwd
+ endif
+ 
+ uninstall :

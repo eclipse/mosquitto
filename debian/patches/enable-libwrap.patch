@@ -1,0 +1,14 @@
+Description: Enable compile-time support for tcp-wrappers.
+Author: Roger Light <roger@atchoo.org>
+Forwarded: not-needed
+--- a/config.mk
++++ b/config.mk
+@@ -15,7 +15,7 @@
+ # =============================================================================
+ 
+ # Uncomment to compile the broker with tcpd/libwrap support.
+-#WITH_WRAP:=yes
++WITH_WRAP:=yes
+ 
+ # Comment out to disable SSL/TLS support in the broker and client.
+ # Disabling this will also mean that passwords must be stored in plain text. It

@@ -1,0 +1,139 @@
+#! /bin/sh
+
+### BEGIN INIT INFO
+# Provides:		mosquitto
+# Required-Start:	$remote_fs $syslog
+# Required-Stop:	$remote_fs $syslog
+# Default-Start:	2 3 4 5
+# Default-Stop:		0 1 6
+# Short-Description:	mosquitto MQTT v3.1 message broker
+# Description: 
+#  This is a message broker that supports version 3.1 of the MQ Telemetry
+#  Transport (MQTT) protocol.
+#  
+#  MQTT provides a method of carrying out messaging using a publish/subscribe
+#  model. It is lightweight, both in terms of bandwidth usage and ease of
+#  implementation. This makes it particularly useful at the edge of the network
+#  where a sensor or other simple device may be implemented using an arduino for
+#  example.
+### END INIT INFO
+
+set -e
+
+PIDFILE=/var/run/mosquitto.pid
+DAEMON=/usr/sbin/mosquitto
+CONFIG=/etc/mosquitto/mosquitto.conf
+
+# /etc/init.d/mosquitto: start and stop the mosquitto MQTT message broker
+
+test -x ${DAEMON} || exit 0
+
+umask 022
+
+. /lib/lsb/init-functions
+
+# Are we running from init?
+run_by_init() {
+    ([ "$previous" ] && [ "$runlevel" ]) || [ "$runlevel" = S ]
+}
+
+export PATH="${PATH:+$PATH:}/usr/sbin:/sbin"
+
+case "$1" in
+  start)
+	if init_is_upstart; then
+	    exit 1
+	fi
+	log_daemon_msg "Starting network daemon:" "mosquitto"
+	if start-stop-daemon --start --quiet --oknodo --background  --make-pidfile --pidfile ${PIDFILE} --exec ${DAEMON} -- -c ${CONFIG} ; then
+	    log_end_msg 0
+	else
+	    log_end_msg 1
+	fi
+	;;
+  stop)
+	if init_is_upstart; then
+	    exit 0
+	fi
+	log_daemon_msg "Stopping network daemon:" "mosquitto"
+	if start-stop-daemon --stop --quiet --oknodo --pidfile ${PIDFILE}; then
+	    log_end_msg 0
+	    rm -f ${PIDFILE}
+	else
+	    log_end_msg 1
+	fi
+	;;
+
+
+  reload|force-reload)
+	if init_is_upstart; then
+	    exit 1
+	fi
+	log_daemon_msg "Reloading network daemon configuration:" "mosquitto"
+        if start-stop-daemon --stop --signal HUP --quiet --oknodo --pidfile $PIDFILE; then
+            log_end_msg 0
+        else
+            log_end_msg 1
+        fi	
+	;;
+
+  restart)
+	if init_is_upstart; then
+	    exit 1
+	fi
+	log_daemon_msg "Restarting network daemon:" "mosquitto"
+	if start-stop-daemon --stop --quiet --oknodo --retry 30 --pidfile ${PIDFILE}; then
+	    rm -f ${PIDFILE}
+	fi
+	if start-stop-daemon --start --quiet --oknodo --background --make-pidfile --pidfile ${PIDFILE} --exec ${DAEMON} -- -c ${CONFIG} ; then
+	    log_end_msg 0
+	else
+	    log_end_msg 1
+	fi
+	;;
+
+  try-restart)
+	if init_is_upstart; then
+	    exit 1
+	fi
+	log_daemon_msg "Restarting Mosquitto message broker" "mosquitto"
+	set +e
+	start-stop-daemon --stop --quiet --retry 30 --pidfile ${PIDFILE}
+	RET="$?"
+	set -e
+	case $RET in
+	    0)
+		# old daemon stopped
+		rm -f ${PIDFILE}
+		if start-stop-daemon --start --quiet --oknodo --background --make-pidfile --pidfile ${PIDFILE} --exec ${DAEMON} -- -c ${CONFIG} ; then
+		    log_end_msg 0
+		else
+		    log_end_msg 1
+		fi
+		;;
+	    1)
+		# daemon not running
+		log_progress_msg "(not running)"
+		log_end_msg 0
+		;;
+	    *)
+		# failed to stop
+		log_progress_msg "(failed to stop)"
+		log_end_msg 1
+		;;
+	esac
+	;;
+
+  status)
+	if init_is_upstart; then
+	    exit 1
+	fi
+	status_of_proc -p ${PIDFILE} ${DAEMON} mosquitto && exit 0 || exit $?
+	;;
+
+  *)
+	log_action_msg "Usage: /etc/init.d/mosquitto {start|stop|reload|force-reload|restart|try-restart|status}"
+	exit 1
+esac
+
+exit 0
