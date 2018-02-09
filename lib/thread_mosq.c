@@ -34,6 +34,7 @@ int mosquitto_loop_start(struct mosquitto *mosq)
 	if(!pthread_create(&mosq->thread_id, NULL, mosquitto__thread_main, mosq)){
 		return MOSQ_ERR_SUCCESS;
 	}else{
+		mosq->threaded = mosq_ts_none;
 		return MOSQ_ERR_ERRNO;
 	}
 #else
