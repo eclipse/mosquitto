@@ -27,6 +27,8 @@ Contributors:
 #include <netdb.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <poll.h>
+#include <stdlib.h>
 #else
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -316,11 +318,18 @@ int net__try_connect(struct mosquitto *mosq, const char *host, uint16_t port, mo
 	struct addrinfo *ainfo, *rp;
 	struct addrinfo *ainfo_bind, *rp_bind;
 	int s;
-	int rc = MOSQ_ERR_SUCCESS;
+	int rc;
 #ifdef WIN32
 	uint32_t val = 1;
 #endif
-
+   	int addrCnt = 0;
+	int foundFd = -1;
+	int numberOfConnections;
+	int remainingConnectionCnt;
+	int i;
+	struct pollfd *fds;
+ 
+	_mosquitto_log_printf(mosq, MOSQ_LOG_DEBUG, "Entering _mosquitto_try_connect");
 	*sock = INVALID_SOCKET;
 	memset(&hints, 0, sizeof(struct addrinfo));
 	hints.ai_family = AF_UNSPEC;
@@ -341,69 +350,166 @@ int net__try_connect(struct mosquitto *mosq, const char *host, uint16_t port, mo
 		}
 	}
 
+	for (rp = ainfo; rp != NULL; rp = rp->ai_next) {
+		addrCnt++;
+	}
+	_mosquitto_log_printf(mosq, MOSQ_LOG_DEBUG, "found %d addresses", addrCnt);
+
+	if ((fds = mosquitto__calloc(sizeof(struct pollfd), addrCnt)) == NULL) {
+		perror("mosquitto__calloc failed");
+		freeaddrinfo(ainfo);
+		if(bind_address){
+			freeaddrinfo(ainfo_bind);
+		}
+		return MOSQ_ERR_NOMEM;
+	}
+
+	numberOfConnections = 0;
 	for(rp = ainfo; rp != NULL; rp = rp->ai_next){
-		*sock = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
-		if(*sock == INVALID_SOCKET) continue;
+		int s;
 
 		if(rp->ai_family == AF_INET){
+			_mosquitto_log_printf(mosq, MOSQ_LOG_DEBUG, "found IPv4 address");
 			((struct sockaddr_in *)rp->ai_addr)->sin_port = htons(port);
 		}else if(rp->ai_family == AF_INET6){
+			_mosquitto_log_printf(mosq, MOSQ_LOG_DEBUG, "found IPv6 address");
 			((struct sockaddr_in6 *)rp->ai_addr)->sin6_port = htons(port);
 		}else{
-			COMPAT_CLOSE(*sock);
+			_mosquitto_log_printf(mosq, MOSQ_LOG_DEBUG, "found invalid address");
 			*sock = INVALID_SOCKET;
 			continue;
 		}
 
+		s = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+
 		if(bind_address){
 			for(rp_bind = ainfo_bind; rp_bind != NULL; rp_bind = rp_bind->ai_next){
-				if(bind(*sock, rp_bind->ai_addr, rp_bind->ai_addrlen) == 0){
+				if(bind(s, rp_bind->ai_addr, rp_bind->ai_addrlen) == 0){
 					break;
 				}
 			}
 			if(!rp_bind){
-				COMPAT_CLOSE(*sock);
+				_mosquitto_log_printf(mosq, MOSQ_LOG_DEBUG, "no suitable bind address found");
+				COMPAT_CLOSE(s);
 				*sock = INVALID_SOCKET;
 				continue;
 			}
 		}
 
-		if(!blocking){
-			/* Set non-blocking */
-			if(net__socket_nonblock(sock)){
-				continue;
-			}
+		/* Set non-blocking */
+		if(_mosquitto_socket_nonblock(s)){
+			// failed to set non blocking mode
+			COMPAT_CLOSE(s);
+			continue;
 		}
 
-		rc = connect(*sock, rp->ai_addr, rp->ai_addrlen);
-#ifdef WIN32
-		errno = WSAGetLastError();
-#endif
-		if(rc == 0 || errno == EINPROGRESS || errno == COMPAT_EWOULDBLOCK){
-			if(rc < 0 && (errno == EINPROGRESS || errno == COMPAT_EWOULDBLOCK)){
-				rc = MOSQ_ERR_CONN_PENDING;
-			}
+		_mosquitto_log_printf(mosq, MOSQ_LOG_DEBUG, "attempting connect fd = %d", s);
+		rc = connect(s, rp->ai_addr, rp->ai_addrlen);
 
-			if(blocking){
-				/* Set non-blocking */
-				if(net__socket_nonblock(sock)){
-					continue;
-				}
-			}
+		if (rc == 0) {
+			log__printf(mosq, MOSQ_LOG_DEBUG, "connect successful, fd = %d", s);
+			foundFd = s;
+			goto end;
+		} else if (errno == EINPROGRESS) {
+			// store pending connection attempt
+			log__printf(mosq, MOSQ_LOG_DEBUG, "connect pending, fd = %d", s);
+			fds[numberOfConnections].fd = s;
+			fds[numberOfConnections].events = POLLOUT;
+			fds[numberOfConnections].revents = 0x0;
+			numberOfConnections++;
+		} else {
+			// ignore any other error
+			log__printf(mosq, MOSQ_LOG_DEBUG, "connect failed, fd = %d, errno %d", s, errno);
+		}
+	}
+
+	// when reaching this point, there are either no or only pending connections
+
+	// wait for timeout, we should get out earlier once we get a connection
+	remainingConnectionCnt = numberOfConnections;
+	while(foundFd == -1 && remainingConnectionCnt) {
+		int pollWaitMs = 10000; // 10 seconds
+		int pollResult;
+
+		if (blocking) {
+			pollWaitMs = -1;
+		}
+
+		log__printf(mosq, MOSQ_LOG_DEBUG, "about to poll, %d fd remaining, pollWaitMs = %d", remainingConnectionCnt, pollWaitMs);
+		pollResult = poll(fds, numberOfConnections, pollWaitMs);
+		if (!pollResult) {
+			log__printf(mosq, MOSQ_LOG_DEBUG, "poll timed out");
+			break;
+		} else if (pollResult == -1) {
+			if (errno == EINTR) {
+				continue;
+ 			}
+			// other error, bail out
+			log__printf(mosq, MOSQ_LOG_DEBUG, "unexpected poll failure, errno %d", errno);
 			break;
 		}
 
-		COMPAT_CLOSE(*sock);
-		*sock = INVALID_SOCKET;
+		for (i = 0; i < numberOfConnections; i++) {
+			if (fds[i].revents && foundFd == -1) {
+				int error;
+				socklen_t len = sizeof(error);
+				log__printf(mosq, MOSQ_LOG_DEBUG, "fd %d revents 0x%04x", fds[i].fd, fds[i].revents);
+				if (getsockopt(fds[i].fd, SOL_SOCKET, SO_ERROR, &error, &len) == -1) {
+					// this should never happen on a valid socket
+					log__printf(mosq, MOSQ_LOG_DEBUG, "getsockopt failed for fd %d", fds[i].fd);
+					COMPAT_CLOSE(fds[i].fd);
+					fds[i].fd = -1;
+					fds[i].events = 0x0;
+					fds[i].revents = 0x0;
+					remainingConnectionCnt--;
+				} else {
+					if (error) {
+						// got some error, like 'connection refused' etc.
+						log__printf(mosq, MOSQ_LOG_DEBUG, "received error %d on fd %d", error, fds[i].fd);
+						if (error == EINPROGRESS) {
+							continue;
+						}
+						log__printf(mosq, MOSQ_LOG_DEBUG, "closing fd %d", fds[i].fd);
+						COMPAT_CLOSE(fds[i].fd);
+						fds[i].fd = -1;
+						fds[i].events = 0x0;
+						fds[i].revents = 0x0;
+						remainingConnectionCnt--;
+					} else {
+						// got a connection!
+						log__printf(mosq, MOSQ_LOG_DEBUG, "established connection on fd %d", fds[i].fd);
+						foundFd = fds[i].fd;
+						break;
+					}
+				}
+			}
+		}
 	}
+
+end:
+	// close all remaining sockets except for the established connection, if any
+	for (i = 0; i < numberOfConnections; i++) {
+		if (fds[i].fd != -1 && fds[i].fd != foundFd) {
+			log__printf(mosq, MOSQ_LOG_DEBUG, "closing fd %d", fds[i].fd);
+			COMPAT_CLOSE(fds[i].fd);
+		}
+	}
+
+	// free memory
 	freeaddrinfo(ainfo);
 	if(bind_address){
 		freeaddrinfo(ainfo_bind);
 	}
-	if(!rp){
-		return MOSQ_ERR_ERRNO;
+
+	_mosquitto_free(fds);
+
+	// return result
+	if (foundFd == -1) {
+		log__printf(mosq, MOSQ_LOG_ERR, "Failed to establish connection");
+		return MOSQ_ERR_NO_CONN;
 	}
-	return rc;
+	*sock = foundFd;
+	return MOSQ_ERR_SUCCESS;
 }
 
 
