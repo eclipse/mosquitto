@@ -645,7 +645,7 @@ int _mosquitto_socket_connect_step3(struct mosquitto *mosq, const char *host, ui
 int _mosquitto_socket_connect(struct mosquitto *mosq, const char *host, uint16_t port, const char *bind_address, bool blocking)
 {
 	mosq_sock_t sock = INVALID_SOCKET;
-	int rc;
+	int rc, rc2;
 
 	if(!mosq || !host || !port) return MOSQ_ERR_INVAL;
 
@@ -653,7 +653,8 @@ int _mosquitto_socket_connect(struct mosquitto *mosq, const char *host, uint16_t
 	if(rc > 0) return rc;
 
 	mosq->sock = sock;
-	rc = _mosquitto_socket_connect_step3(mosq, host, port, bind_address, blocking);
+	rc2 = _mosquitto_socket_connect_step3(mosq, host, port, bind_address, blocking);
+	if (rc2 > 0) return rc2;
 
 	return rc;
 }
