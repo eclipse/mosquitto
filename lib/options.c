@@ -71,6 +71,14 @@ int mosquitto_username_pw_set(struct mosquitto *mosq, const char *username, cons
 	return MOSQ_ERR_SUCCESS;
 }
 
+int mosquitto_connect_timeout_set(struct mosquitto *mosq, unsigned int connect_timeout)
+{
+	if(!mosq) return MOSQ_ERR_INVAL;
+
+	mosq->connect_timeout = connect_timeout;
+
+	return MOSQ_ERR_SUCCESS;
+}
 
 int mosquitto_reconnect_delay_set(struct mosquitto *mosq, unsigned int reconnect_delay, unsigned int reconnect_delay_max, bool reconnect_exponential_backoff)
 {
