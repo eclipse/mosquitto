@@ -1305,6 +1305,19 @@ libmosq_EXPORT void mosquitto_unsubscribe_callback_set(struct mosquitto *mosq, v
 libmosq_EXPORT void mosquitto_log_callback_set(struct mosquitto *mosq, void (*on_log)(struct mosquitto *, void *, int, const char *));
 
 /*
+ * Function: mosquitto_connect_timeout_set
+ *
+ * Control the behaviour of the client when it tries to establish
+ * a connection to the broker. The default behaviour if this function
+ * is not used is to wait for at most 10000 ms in non-blocking mode.
+ *
+ * Returns:
+ *	MOSQ_ERR_SUCCESS - on success.
+ * 	MOSQ_ERR_INVAL -   if the input parameters were invalid.
+ */
+libmosq_EXPORT int mosquitto_connect_timeout_set(struct mosquitto *mosq, unsigned int connect_timeout);
+
+/*
  * Function: mosquitto_reconnect_delay_set
  *
  * Control the behaviour of the client when it has unexpectedly disconnected in
