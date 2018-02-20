@@ -275,6 +275,7 @@ struct mosquitto {
 	ares_channel achan;
 #  endif
 #endif
+	unsigned int connect_timeout;
 
 #ifdef WITH_BROKER
 	UT_hash_handle hh_id;
