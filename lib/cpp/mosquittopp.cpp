@@ -220,6 +220,11 @@ int mosquittopp::connect_async(const char *host, int port, int keepalive, const 
 	return mosquitto_connect_bind_async(m_mosq, host, port, keepalive, bind_address);
 }
 
+void mosquittopp::connect_timeout_set(unsigned int connect_timeout)
+{
+	mosquitto_connect_timeout_set(m_mosq, connect_timeout);
+}
+
 int mosquittopp::reconnect()
 {
 	return mosquitto_reconnect(m_mosq);
