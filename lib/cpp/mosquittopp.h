@@ -96,6 +96,7 @@ class mosqpp_EXPORT mosquittopp {
 		int connect_async(const char *host, int port=1883, int keepalive=60);
 		int connect(const char *host, int port, int keepalive, const char *bind_address);
 		int connect_async(const char *host, int port, int keepalive, const char *bind_address);
+		void connect_timeout_set(unsigned int connect_timeout);
 		int reconnect();
 		int reconnect_async();
 		int disconnect();
