@@ -219,7 +219,6 @@ int mosquitto_loop_forever(struct mosquitto *mosq, int timeout, int max_packets)
 			case MOSQ_ERR_PROTOCOL:
 			case MOSQ_ERR_INVAL:
 			case MOSQ_ERR_NOT_FOUND:
-			case MOSQ_ERR_TLS:
 			case MOSQ_ERR_PAYLOAD_SIZE:
 			case MOSQ_ERR_NOT_SUPPORTED:
 			case MOSQ_ERR_AUTH:
@@ -228,6 +227,7 @@ int mosquitto_loop_forever(struct mosquitto *mosq, int timeout, int max_packets)
 			case MOSQ_ERR_EAI:
 			case MOSQ_ERR_PROXY:
 				return rc;
+			case MOSQ_ERR_TLS:
 			case MOSQ_ERR_ERRNO:
 				break;
 		}
