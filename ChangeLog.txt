@@ -1,3 +1,16 @@
+1.4.15 - 20180228
+=================
+
+Security:
+- Fix CVE-2017-7652. If a SIGHUP is sent to the broker when there are no more
+  file descriptors, then opening the configuration file will fail and security
+  settings will be set back to their default values.
+- Fix CVE-2017-7651. Unauthenticated clients can cause excessive memory use by
+  setting "remaining length" to be a large value. This is now mitigated by
+  limiting the size of remaining length to valid values. A "memory_limit"
+  configuration option has also been added to allow the overall memory used by
+  the broker to be limited.
+
 Broker:
 - Use constant time memcmp for password comparisons.
 - Fix incorrect PSK key being used if it had leading zeroes.

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2014 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2018 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -259,8 +259,8 @@ int main(int argc, char *argv[])
 
 	_mosquitto_net_init();
 
-	mqtt3_config_init(&config);
-	rc = mqtt3_config_parse_args(&config, argc, argv);
+	mqtt3_config_init(&int_db, &config);
+	rc = mqtt3_config_parse_args(&int_db, &config, argc, argv);
 	if(rc != MOSQ_ERR_SUCCESS) return rc;
 	int_db.config = &config;
 
@@ -292,8 +292,8 @@ int main(int argc, char *argv[])
 		return rc;
 	}
 	_mosquitto_log_printf(NULL, MOSQ_LOG_INFO, "mosquitto version %s (build date %s) starting", VERSION, TIMESTAMP);
-	if(config.config_file){
-		_mosquitto_log_printf(NULL, MOSQ_LOG_INFO, "Config loaded from %s.", config.config_file);
+	if(int_db.config_file){
+		_mosquitto_log_printf(NULL, MOSQ_LOG_INFO, "Config loaded from %s.", int_db.config_file);
 	}else{
 		_mosquitto_log_printf(NULL, MOSQ_LOG_INFO, "Using default config.");
 	}

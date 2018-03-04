@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2014 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2018 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -37,8 +37,32 @@ static unsigned long memcount = 0;
 static unsigned long max_memcount = 0;
 #endif
 
+#ifdef WITH_BROKER
+static size_t mem_limit = 0;
+void memory__set_limit(size_t lim)
+{
+#ifdef LINUX
+	struct rlimit r;
+
+	r.rlim_cur = lim;
+	r.rlim_max = lim;
+
+	setrlimit(RLIMIT_CPU, &r);
+
+	mem_limit = 0;
+#else
+	mem_limit = lim;
+#endif
+}
+#endif
+
 void *_mosquitto_calloc(size_t nmemb, size_t size)
 {
+#ifdef REAL_WITH_MEMORY_TRACKING
+	if(mem_limit && memcount + size > mem_limit){
+		return NULL;
+	}
+#endif
 	void *mem = calloc(nmemb, size);
 
 #ifdef REAL_WITH_MEMORY_TRACKING
@@ -64,6 +88,11 @@ void _mosquitto_free(void *mem)
 
 void *_mosquitto_malloc(size_t size)
 {
+#ifdef REAL_WITH_MEMORY_TRACKING
+	if(mem_limit && memcount + size > mem_limit){
+		return NULL;
+	}
+#endif
 	void *mem = malloc(size);
 
 #ifdef REAL_WITH_MEMORY_TRACKING
@@ -90,6 +119,11 @@ unsigned long _mosquitto_max_memory_used(void)
 
 void *_mosquitto_realloc(void *ptr, size_t size)
 {
+#ifdef REAL_WITH_MEMORY_TRACKING
+	if(mem_limit && memcount + size > mem_limit){
+		return NULL;
+	}
+#endif
 	void *mem;
 #ifdef REAL_WITH_MEMORY_TRACKING
 	if(ptr){
@@ -110,6 +144,11 @@ void *_mosquitto_realloc(void *ptr, size_t size)
 
 char *_mosquitto_strdup(const char *s)
 {
+#ifdef REAL_WITH_MEMORY_TRACKING
+	if(mem_limit && memcount + strlen(s) > mem_limit){
+		return NULL;
+	}
+#endif
 	char *str = strdup(s);
 
 #ifdef REAL_WITH_MEMORY_TRACKING

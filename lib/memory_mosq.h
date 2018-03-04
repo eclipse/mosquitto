@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2010-2014 Roger Light <roger@atchoo.org>
+Copyright (c) 2010-2018 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -33,5 +33,9 @@ unsigned long _mosquitto_max_memory_used(void);
 #endif
 void *_mosquitto_realloc(void *ptr, size_t size);
 char *_mosquitto_strdup(const char *s);
+
+#ifdef WITH_BROKER
+void memory__set_limit(size_t lim);
+#endif
 
 #endif

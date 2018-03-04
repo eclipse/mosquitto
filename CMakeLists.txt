@@ -11,7 +11,7 @@ project(mosquitto)
 cmake_minimum_required(VERSION 2.8)
 # Only for version 3 and up. cmake_policy(SET CMP0042 NEW)
 
-set (VERSION 1.4.14)
+set (VERSION 1.4.15)
 
 if (WIN32)
 	execute_process(COMMAND cmd /c echo %DATE% %TIME% OUTPUT_VARIABLE TIMESTAMP
@@ -51,13 +51,18 @@ else (WIN32)
 	set (SHAREDIR "${DATAROOTDIR}/mosquitto")
 endif (WIN32)
 
+set( _DEFAULT_SSL_OPT ON )
+if( WIN32 )
+  set( _DEFAULT_SSL_OPT OFF )
+endif()
+
 option(WITH_TLS
-	"Include SSL/TLS support?" ON)
+	"Include SSL/TLS support?" ${_DEFAULT_SSL_OPT})
 option(WITH_TLS_PSK
-	"Include TLS-PSK support (requires WITH_TLS)?" ON)
+	"Include TLS-PSK support (requires WITH_TLS)?" ${_DEFAULT_SSL_OPT})
 option(WITH_EC
-	"Include Elliptic Curve support (requires WITH_TLS)?" ON)
-if (${WITH_TLS} STREQUAL ON)
+	"Include Elliptic Curve support (requires WITH_TLS)?" ${_DEFAULT_SSL_OPT})
+if ( WITH_TLS )
 	find_package(OpenSSL REQUIRED)
 	add_definitions("-DWITH_TLS")
 
@@ -68,16 +73,35 @@ if (${WITH_TLS} STREQUAL ON)
 	if (${WITH_EC} STREQUAL ON)
 		add_definitions("-DWITH_EC")
 	endif (${WITH_EC} STREQUAL ON)
-else (${WITH_TLS} STREQUAL ON)
+else ( WITH_TLS )
 	set (OPENSSL_INCLUDE_DIR "")
-endif (${WITH_TLS} STREQUAL ON)
+endif ( WITH_TLS )
+
+unset( _DEFAULT_SSL_OPT )
 
 option(WITH_SOCKS "Include SOCKS5 support?" ON)
 if (${WITH_SOCKS} STREQUAL ON)
 	add_definitions("-DWITH_SOCKS")
 endif (${WITH_SOCKS} STREQUAL ON)
 
-option(WITH_SRV "Include SRV lookup support?" ON)
+set( _DEFAULT_SRV_OPT ON )
+if( WIN32 )
+  set( _DEFAULT_SRV_OPT OFF )
+endif()
+option(WITH_SRV "Include SRV lookup support?" ${_DEFAULT_SRV_OPT})
+if( WITH_SRV )
+  find_package( c-ares REQUIRED )
+  set( ARPA_WIN_INCLUDES "${CMAKE_CURRENT_LIST_DIR}/ext/include" )
+endif()
+
+unset( _DEFAULT_SRV_OPT )
+
+set( _DEFAULT_THREADING_OPT ON )
+if( WIN32 )
+  set( _DEFAULT_THREADING_OPT OFF )
+endif()
+option(WITH_THREADING "Include client library threading support?" ${_DEFAULT_THREADING_OPT})
+unset( _DEFAULT_THREADING_OPT )
 
 # ========================================
 # Include projects

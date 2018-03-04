@@ -5,6 +5,7 @@
 	<xsl:param name="html.stylesheet">man.css</xsl:param>
 	<!-- Generate ansi style function synopses. -->
 	<xsl:param name="man.funcsynopsis.style">ansi</xsl:param>
+	<xsl:param name="funcsynopsis.style">ansi</xsl:param>
 	<xsl:param name="make.clean.html" select="1"></xsl:param>
 	<xsl:param name="make.valid.html" select="1"></xsl:param>
 	<xsl:param name="html.cleanup" select="1"></xsl:param>

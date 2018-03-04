@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2014 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2018 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -390,7 +390,7 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 #endif
 		if(flag_reload){
 			_mosquitto_log_printf(NULL, MOSQ_LOG_INFO, "Reloading config.");
-			mqtt3_config_read(db->config, true);
+			mqtt3_config_read(db, db->config, true);
 			mosquitto_security_cleanup(db, true);
 			mosquitto_security_init(db, true);
 			mosquitto_security_apply(db);

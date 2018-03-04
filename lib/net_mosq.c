@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2014 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2018 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -1089,6 +1089,36 @@ int _mosquitto_packet_read(struct mosquitto *mosq)
 		/* We have finished reading remaining_length, so make remaining_count
 		 * positive. */
 		mosq->in_packet.remaining_count *= -1;
+
+#ifdef WITH_BROKER
+		/* Check packet sizes before allocating memory.
+		 * Will need modifying for MQTT v5. */
+		switch(mosq->in_packet.command & 0xF0){
+			case CONNECT:
+				if(mosq->in_packet.remaining_length > 327699){
+					return MOSQ_ERR_PROTOCOL;
+				}
+				break;
+
+			case PUBACK:
+			case PUBREC:
+			case PUBREL:
+			case PUBCOMP:
+			case UNSUBACK:
+				if(mosq->in_packet.remaining_length != 2){
+					return MOSQ_ERR_PROTOCOL;
+				}
+				break;
+
+			case PINGREQ:
+			case PINGRESP:
+			case DISCONNECT:
+				if(mosq->in_packet.remaining_length != 0){
+					return MOSQ_ERR_PROTOCOL;
+				}
+				break;
+		}
+#endif
 
 		if(mosq->in_packet.remaining_length > 0){
 			mosq->in_packet.payload = _mosquitto_malloc(mosq->in_packet.remaining_length*sizeof(uint8_t));

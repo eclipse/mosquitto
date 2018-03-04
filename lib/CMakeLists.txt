@@ -1,7 +1,6 @@
 add_subdirectory(cpp)
 
-option(WITH_THREADING "Include client library threading support?" ON)
-if (${WITH_THREADING} STREQUAL ON)
+if ( WITH_THREADING )
 	add_definitions("-DWITH_THREADING")
 	if (WIN32)
 		set (PTHREAD_LIBRARIES C:\\pthreads\\Pre-built.2\\lib\\x86\\pthreadVC2.lib)
@@ -15,10 +14,10 @@ if (${WITH_THREADING} STREQUAL ON)
 		endif()
 		set (PTHREAD_INCLUDE_DIR "")
 	endif (WIN32)
-else (${WITH_THREADING} STREQUAL ON)
+else ( WITH_THREADING )
 	set (PTHREAD_LIBRARIES "")
 	set (PTHREAD_INCLUDE_DIR "")
-endif (${WITH_THREADING} STREQUAL ON)
+endif ( WITH_THREADING )
 
 include_directories(${mosquitto_SOURCE_DIR} ${mosquitto_SOURCE_DIR}/lib
 			${STDBOOL_H_PATH} ${STDINT_H_PATH}
@@ -59,16 +58,13 @@ if (WIN32)
 	set (LIBRARIES ${LIBRARIES} ws2_32)
 endif (WIN32)
 
-if (${WITH_SRV} STREQUAL ON)
-	# Simple detect c-ares
-	find_path(ARES_HEADER ares.h)
-	if (ARES_HEADER)
-		add_definitions("-DWITH_SRV")
-		set (LIBRARIES ${LIBRARIES} cares)
-	else (ARES_HEADER)
-		message(WARNING "c-ares library not found.")
-	endif (ARES_HEADER)
-endif (${WITH_SRV} STREQUAL ON)
+if( WITH_SRV )
+  set( LIBRARIES ${LIBRARIES} c-ares::cares )
+  add_definitions( "-DWITH_SRV" ) 
+  if( WIN32 )
+    include_directories( ${ARPA_WIN_INCLUDES} )
+  endif()
+endif()
 
 target_link_libraries(libmosquitto ${LIBRARIES})
 
