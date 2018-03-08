@@ -34,6 +34,7 @@ struct mosquitto *context__init(struct mosquitto_db *db, mosq_sock_t sock)
 	context = mosquitto__calloc(1, sizeof(struct mosquitto));
 	if(!context) return NULL;
 	
+	context->connect_timeout = 10000; /* Default to 10s */
 	context->pollfd_index = -1;
 	context->state = mosq_cs_new;
 	context->sock = sock;
