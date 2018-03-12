@@ -42,6 +42,7 @@ MOSQ_1.0 {
 		mosquitto_strerror;
 		mosquitto_connack_string;
 		mosquitto_tls_set;
+		mosquitto_tls_set_uri;
 		mosquitto_tls_opts_set;
 		mosquitto_tls_psk_set;
 		mosquitto_sub_topic_tokenise;

@@ -45,6 +45,10 @@ struct mosquitto_db;
 #define INVALID_SOCKET -1
 #endif
 
+#ifdef WITH_TLS
+#define ENGINE_CMD_NOT_OPTIONAL 0
+#endif
+
 /* Macros for accessing the MSB and LSB of a uint16_t */
 #define MOSQ_MSB(A) (uint8_t)((A & 0xFF00) >> 8)
 #define MOSQ_LSB(A) (uint8_t)(A & 0x00FF)
@@ -69,8 +73,10 @@ ssize_t net__read(struct mosquitto *mosq, void *buf, size_t count);
 ssize_t net__write(struct mosquitto *mosq, void *buf, size_t count);
 
 #ifdef WITH_TLS
-int net__socket_apply_tls(struct mosquitto *mosq);
-int net__socket_connect_tls(struct mosquitto *mosq);
+int _mosquitto_socket_apply_tls(struct mosquitto *mosq);
+int mosquitto__socket_connect_tls(struct mosquitto *mosq);
+
+int _mosquitto_parse_uri(const char *uri, const char **translated_path);
 #endif
 
 #endif

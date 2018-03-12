@@ -1022,6 +1022,65 @@ libmosq_EXPORT int mosquitto_tls_set(struct mosquitto *mosq,
 		int (*pw_callback)(char *buf, int size, int rwflag, void *userdata));
 
 /*
+ * Function: mosquitto_tls_set_uri
+ *
+ * Configure the client for certificate based SSL/TLS support when certs and private
+ * keys are passed as file URIs or are located in a trusted platform module (TPM)/
+ * hardware security module (HSM). All certs and keys must be passed in as URIs.
+ * Must be called before <mosquitto_connect>.
+ *
+ * Cannot be used in conjunction with <mosquitto_tls_psk_set>.
+ *
+ * Define the Certificate Authority certificates to be trusted (ie. the server
+ * certificate must be signed with one of these certificates) using cafile.
+ *
+ * If the server you are connecting to requires clients to provide a
+ * certificate, define certpath and keypath with your client certificate and
+ * private key. The private key can be passed as a filepath URI (RFC8089) or a
+ * PKCS#11 (RFC7512) compliant URI to the private key. If your private key
+ * is encrypted, provide a password callback function or you will have to
+ * enter the password at the command line.
+ *
+ * Parameters:
+ *  mosq -        	   a valid mosquitto instance.
+ *  cafileuri -      	   filepath URI to a file containing the PEM encoded trusted CA
+ *                	   certificate files. Either cafileuri or capath must not be NULL.
+ *  capath -      	   path to a directory containing the PEM encoded trusted CA
+ *                	   certificate files. See mosquitto.conf for more details on
+ *                	   configuring this directory. Either cafile or capath must not
+ *                	   be NULL.
+ *  certfileuri -	   path to a file containing the PEM encoded certificate file
+ *                         for this client. If NULL, keyfileuri must also be NULL and no
+ *                         client certificate will be used.
+ *  keyfileuri -	   PKCS#11 compliant URI for a private key stored in a PKCS#11
+ *  		           compliant TPM/HSM or a file URI. This field cannot be null.
+ *  pw_callback - 	   if keyfile is encrypted, set pw_callback to allow your client
+ *                         to pass the correct password for decryption. If set to NULL,
+ *                         the password must be entered on the command line.
+ *                         Your callback must write the password into "buf", which is
+ *                         "size" bytes long. The return value must be the length of the
+ *                         password. "userdata" will be set to the calling mosquitto
+ *                         instance.
+ *  libp11_path -          path to the libp11 engine library used for accessing the private
+ *                         keys
+ *  pkcs11_provider_path - path to PKCS#11 provider library used for accessing the
+ *                         private keys
+ *
+ * Returns:
+ *	MOSQ_ERR_SUCCESS - on success.
+ * 	MOSQ_ERR_INVAL -   if the input parameters were invalid.
+ * 	MOSQ_ERR_NOMEM -   if an out of memory condition occurred.
+ *
+ * See Also:
+ *	<mosquitto_tls_opts_set>, <mosquitto_tls_psk_set>, <mosquitto_tls_insecure_set>
+ */
+libmosq_EXPORT int mosquitto_tls_set_uri(struct mosquitto *mosq,
+		const char *cafileuri, const char *capath,
+		const char *certfileuri, const char *keyfileuri,
+		int (*pw_callback)(char *buf, int size, int rwflag, void *userdata),
+		const char *libp11_path, const char *pkcs11_provider_path);
+
+/*
  * Function: mosquitto_tls_insecure_set
  *
  * Configure verification of the server hostname in the server certificate. If

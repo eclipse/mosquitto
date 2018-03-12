@@ -74,6 +74,18 @@ all : 01 02 03 04 08 09
 08-ssl-fake-cacert.test : 08-ssl-fake-cacert.c
 	$(CC) $< -o $@ $(CFLAGS) $(LIBS)
 
+08-ssl-connect-no-auth-uri.test : 08-ssl-connect-no-auth-uri.c
+	$(CC) $< -o $@ $(CFLAGS) $(LIBS)
+
+08-ssl-connect-cert-auth-uri.test : 08-ssl-connect-cert-auth-uri.c
+	$(CC) $< -o $@ $(CFLAGS) $(LIBS)
+
+08-ssl-bad-pkcs11-uri.test: 08-ssl-bad-pkcs11-uri.c
+	$(CC) $< -o $@ $(CFLAGS) $(LIBS)
+
+08-ssl-successful-pkcs11-tls-set.test: 08-ssl-successful-pkcs11-tls-set.c
+	$(CC) $< -o $@ $(CFLAGS) $(LIBS)
+
 09-util-topic-matching.test : 09-util-topic-matching.c
 	$(CC) $< -o $@ $(CFLAGS) $(LIBS)
 
@@ -91,7 +103,7 @@ all : 01 02 03 04 08 09
 
 04 : 04-retain-qos0.test
 
-08 : 08-ssl-connect-no-auth.test 08-ssl-connect-cert-auth.test 08-ssl-connect-cert-auth-enc.test 08-ssl-bad-cacert.test 08-ssl-fake-cacert.test
+08 : 08-ssl-connect-no-auth.test 08-ssl-connect-no-auth-uri.test 08-ssl-connect-cert-auth.test 08-ssl-connect-cert-auth-uri.test 08-ssl-connect-cert-auth-enc.test 08-ssl-bad-cacert.test 08-ssl-fake-cacert.test 08-ssl-successful-pkcs11-tls-set.test 08-ssl-bad-pkcs11-uri.test
 
 09 : 09-util-topic-matching.test 09-util-topic-tokenise.test 09-util-utf8-validate.test
 

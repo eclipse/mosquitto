@@ -442,6 +442,8 @@ int client_config_line_proc(struct mosq_config *cfg, int pub_or_sub, int argc, c
 			}
 		}else if(!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")){
 			cfg->debug = true;
+		}else if(!strcmp(argv[i], "--uri")){
+			cfg->uri = true;
 		}else if(!strcmp(argv[i], "-f") || !strcmp(argv[i], "--file")){
 			if(pub_or_sub == CLIENT_SUB){
 				goto unknown_option;
@@ -852,6 +854,22 @@ int client_config_line_proc(struct mosq_config *cfg, int pub_or_sub, int argc, c
 				goto unknown_option;
 			}
 			cfg->verbose = 1;
+		}else if(!strcmp(argv[i], "--libp11-path")){
+			if(i==argc-1){
+				fprintf(stderr, "Error: libp11-path argument given but no library specified.\n\n");
+				return 1;
+			}else{
+				cfg->libp11_path = strdup(argv[i+1]);
+			}
+			i++;
+		}else if(!strcmp(argv[i], "--pkcs11-provider-path")){
+			if(i==argc-1){
+				fprintf(stderr, "Error: pkcs11-provider-path argument given but no provider specified.\n\n");
+				return 1;
+			}else{
+				cfg->pkcs11_provider_path = strdup(argv[i+1]);
+			}
+			i++;
 		}else{
 			goto unknown_option;
 		}
@@ -882,8 +900,15 @@ int client_opts_set(struct mosquitto *mosq, struct mosq_config *cfg)
 		return 1;
 	}
 #ifdef WITH_TLS
-	if((cfg->cafile || cfg->capath)
-			&& mosquitto_tls_set(mosq, cfg->cafile, cfg->capath, cfg->certfile, cfg->keyfile, NULL)){
+	if((cfg->cafile || cfg->capath) && cfg->uri){
+		if(mosquitto_tls_set_uri(mosq, cfg->cafile, cfg->capath, cfg->certfile, cfg->keyfile, NULL,
+			cfg->libp11_path, cfg->pkcs11_provider_path)){
+			if(!cfg->quiet) fprintf(stderr, "Error: Problem setting TLS options with URI.\n");
+			mosquitto_lib_cleanup();
+			return 1;
+		}
+	}else if((cfg->cafile || cfg->capath)
+			&& mosquitto_tls_set(mosq, cfg->cafile, cfg->capath, cfg->certfile, cfg->keyfile, NULL)) {
 
 		if(!cfg->quiet) fprintf(stderr, "Error: Problem setting TLS options.\n");
 		mosquitto_lib_cleanup();

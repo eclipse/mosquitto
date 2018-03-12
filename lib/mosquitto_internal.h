@@ -26,6 +26,7 @@ Contributors:
 
 #ifdef WITH_TLS
 #  include <openssl/ssl.h>
+#  include <openssl/engine.h>
 #else
 #  include <time.h>
 #endif
@@ -68,6 +69,11 @@ struct mosquitto_client_msg;
 typedef SOCKET mosq_sock_t;
 #else
 typedef int mosq_sock_t;
+#endif
+
+#ifdef WITH_TLS
+#define FILE_URI_PREFIX "file://"
+#define PKCS11_URI_PREFIX "pkcs11:"
 #endif
 
 enum mosquitto_msg_direction {
@@ -177,6 +183,8 @@ struct mosquitto {
 #ifdef WITH_TLS
 	SSL *ssl;
 	SSL_CTX *ssl_ctx;
+	ENGINE *openssl_engine;
+	bool use_pkcs11;
 	char *tls_cafile;
 	char *tls_capath;
 	char *tls_certfile;
@@ -186,6 +194,8 @@ struct mosquitto {
 	char *tls_ciphers;
 	char *tls_psk;
 	char *tls_psk_identity;
+	char *libp11_path;
+	char *pkcs11_provider_path;
 	int tls_cert_reqs;
 	bool tls_insecure;
 #endif

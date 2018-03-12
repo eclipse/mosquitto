@@ -63,9 +63,12 @@ struct mosq_config {
 	char *capath;
 	char *certfile;
 	char *keyfile;
+	bool uri;
 	char *ciphers;
 	bool insecure;
 	char *tls_version;
+	char *libp11_path;
+	char *pkcs11_provider_path;
 #  ifdef WITH_TLS_PSK
 	char *psk;
 	char *psk_identity;

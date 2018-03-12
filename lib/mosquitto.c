@@ -314,6 +314,12 @@ void mosquitto__destroy(struct mosquitto *mosq)
 	mosquitto__free(mosq->tls_ciphers);
 	mosquitto__free(mosq->tls_psk);
 	mosquitto__free(mosq->tls_psk_identity);
+	if(mosq->openssl_engine){
+		ENGINE_finish(mosq->openssl_engine);
+		ENGINE_free(mosq->openssl_engine);
+	}
+	mosquitto__free(mosq->libp11_path);
+	mosquitto__free(mosq->pkcs11_provider_path);
 #endif
 
 	mosquitto__free(mosq->address);
@@ -635,88 +641,237 @@ int mosquitto_unsubscribe(struct mosquitto *mosq, int *mid, const char *sub)
 	return send__unsubscribe(mosq, mid, sub);
 }
 
-int mosquitto_tls_set(struct mosquitto *mosq, const char *cafile, const char *capath, const char *certfile, const char *keyfile, int (*pw_callback)(char *buf, int size, int rwflag, void *userdata))
-{
 #ifdef WITH_TLS
-	FILE *fptr;
+static int _mosquitto_tls_cleanup_paths(struct mosquitto *mosq)
+{
+	if(mosq->tls_cafile){
+		mosquitto__free(mosq->tls_cafile);
+		mosq->tls_cafile = NULL;
+	}
+	if(mosq->tls_capath){
+		mosquitto__free(mosq->tls_capath);
+		mosq->tls_capath = NULL;
+	}
+	if(mosq->tls_certfile){
+		mosquitto__free(mosq->tls_certfile);
+		mosq->tls_certfile = NULL;
+	}
+	if(mosq->libp11_path){
+		mosquitto__free(mosq->libp11_path);
+		mosq->libp11_path = NULL;
+	}
+	if(mosq->pkcs11_provider_path){
+		mosquitto__free(mosq->pkcs11_provider_path);
+		mosq->pkcs11_provider_path = NULL;
+	}
+}
 
-	if(!mosq || (!cafile && !capath) || (certfile && !keyfile) || (!certfile && keyfile)) return MOSQ_ERR_INVAL;
-
-	mosquitto__free(mosq->tls_cafile);
-	mosq->tls_cafile = NULL;
-	if(cafile){
-		fptr = mosquitto__fopen(cafile, "rt", false);
+static int _mosquitto_tls_check_and_set_uri(char **destination_uri, const char *input_uri, const char *input_path){
+	FILE *fptr = NULL;
+	if(input_path){
+		fptr = mosquitto__fopen(input_path, "rt", false);
 		if(fptr){
 			fclose(fptr);
 		}else{
 			return MOSQ_ERR_INVAL;
 		}
-		mosq->tls_cafile = mosquitto__strdup(cafile);
+	}
+	*destination_uri = mosquitto__strdup(input_uri);
+	if(!(*destination_uri)){
+		return MOSQ_ERR_NOMEM;
+	}
+	return MOSQ_ERR_SUCCESS;
+}
 
-		if(!mosq->tls_cafile){
-			return MOSQ_ERR_NOMEM;
-		}
+static int _mosquitto_tls_set_internal(struct mosquitto *mosq, const char *cafileuri, const char *cadirpath,
+		                       const char *certfileuri, const char *keyfileuri,
+				       int (*pw_callback)(char *buf, int size, int rwflag, void *userdata))
+{
+	FILE *fptr = NULL;
+	const char *cafilepath = NULL;
+	const char *certfilepath = NULL;
+	const char *keyfilepath = NULL;
+	int ret = MOSQ_ERR_SUCCESS;
+
+	ret = _mosquitto_parse_uri(cafileuri, &cafilepath);
+	if(ret != MOSQ_ERR_SUCCESS){
+		return ret;
+	}
+	ret = _mosquitto_parse_uri(certfileuri, &certfilepath);
+	if(ret != MOSQ_ERR_SUCCESS){
+		return ret;
+	}
+	ret = _mosquitto_parse_uri(keyfileuri, &keyfilepath);
+	if(ret != MOSQ_ERR_SUCCESS){
+		return ret;
 	}
 
-	mosquitto__free(mosq->tls_capath);
-	mosq->tls_capath = NULL;
-	if(capath){
-		mosq->tls_capath = mosquitto__strdup(capath);
+	if(!mosq || (!cafilepath && !cadirpath) ||
+	   (certfilepath && !keyfilepath) ||
+	   (!certfilepath && keyfilepath)) return MOSQ_ERR_INVAL;
+
+	ret = _mosquitto_tls_check_and_set_uri(&(mosq->tls_cafile), cafileuri, cafilepath);
+	if(ret != MOSQ_ERR_SUCCESS){
+		return ret;
+	}
+
+	if(cadirpath){
+		mosq->tls_capath = mosquitto__strdup(cadirpath);
 		if(!mosq->tls_capath){
 			return MOSQ_ERR_NOMEM;
 		}
 	}
 
-	mosquitto__free(mosq->tls_certfile);
-	mosq->tls_certfile = NULL;
-	if(certfile){
-		fptr = mosquitto__fopen(certfile, "rt", false);
-		if(fptr){
-			fclose(fptr);
-		}else{
-			mosquitto__free(mosq->tls_cafile);
-			mosq->tls_cafile = NULL;
-
-			mosquitto__free(mosq->tls_capath);
-			mosq->tls_capath = NULL;
-			return MOSQ_ERR_INVAL;
-		}
-		mosq->tls_certfile = mosquitto__strdup(certfile);
-		if(!mosq->tls_certfile){
-			return MOSQ_ERR_NOMEM;
-		}
+	ret = _mosquitto_tls_check_and_set_uri(&(mosq->tls_certfile), certfileuri, certfilepath);
+	if(ret != MOSQ_ERR_SUCCESS){
+		return ret;
 	}
 
-	mosquitto__free(mosq->tls_keyfile);
-	mosq->tls_keyfile = NULL;
-	if(keyfile){
-		fptr = mosquitto__fopen(keyfile, "rt", false);
-		if(fptr){
-			fclose(fptr);
-		}else{
-			mosquitto__free(mosq->tls_cafile);
-			mosq->tls_cafile = NULL;
-
-			mosquitto__free(mosq->tls_capath);
-			mosq->tls_capath = NULL;
-
-			mosquitto__free(mosq->tls_certfile);
-			mosq->tls_certfile = NULL;
-			return MOSQ_ERR_INVAL;
-		}
-		mosq->tls_keyfile = mosquitto__strdup(keyfile);
+	if ((keyfilepath == keyfileuri) && keyfileuri){
+		mosq->tls_keyfile = mosquitto__strdup(keyfileuri);
 		if(!mosq->tls_keyfile){
 			return MOSQ_ERR_NOMEM;
+		}
+		mosq->use_pkcs11 = true;
+	} else{
+		ret = _mosquitto_tls_check_and_set_uri(&(mosq->tls_keyfile), keyfileuri, keyfilepath);
+		if(ret != MOSQ_ERR_SUCCESS){
+			return ret;
 		}
 	}
 
 	mosq->tls_pw_callback = pw_callback;
 
+	return MOSQ_ERR_SUCCESS;
+}
+
+static int _mosquitto_tls_set_pkcs11_paths(struct mosquitto *mosq, const char *libp11_path,
+					   const char *pkcs11_provider_path)
+{
+	FILE *fptr = NULL;
+	if (!mosq->use_pkcs11){
+		return MOSQ_ERR_SUCCESS;
+	}
+	fptr = mosquitto__fopen(libp11_path, "rb", false);
+	if (!fptr){
+		log__printf(mosq, MOSQ_LOG_ERR,
+			    "Libp11 path invalid");
+		return MOSQ_ERR_INVAL;
+	}
+	fclose(fptr);
+	fptr = mosquitto__fopen(pkcs11_provider_path, "rb", false);
+	if (!fptr) {
+		log__printf(mosq, MOSQ_LOG_ERR,
+			    "pkcs11 provider path invalid");
+		return MOSQ_ERR_INVAL;
+	}
+	fclose(fptr);
+	mosq->libp11_path = mosquitto__strdup(libp11_path);
+	if(!mosq->libp11_path){
+		log__printf(mosq, MOSQ_LOG_ERR,
+			    "Failed to copy libp11 path");
+		return MOSQ_ERR_INVAL;
+	}
+	mosq->pkcs11_provider_path = mosquitto__strdup(pkcs11_provider_path);
+	if(!mosq->pkcs11_provider_path){
+		log__printf(mosq, MOSQ_LOG_ERR,
+			    "Failed to copy pkcs11 provider path");
+		return MOSQ_ERR_INVAL;
+	}
+	return MOSQ_ERR_SUCCESS;
+}
+
+static int _mosquitto_tls_copy_file_uri(char **uri, const char *filepath)
+{
+	size_t uri_len = 0;
+	if(filepath){
+		uri_len = strlen(filepath) + strlen(FILE_URI_PREFIX) + 1;
+		*uri = (char*)mosquitto__malloc(uri_len);
+		if(!(*uri)){
+			return MOSQ_ERR_NOMEM;
+		}
+		snprintf(*uri, uri_len, "%s%s", FILE_URI_PREFIX, filepath);
+		return MOSQ_ERR_SUCCESS;
+	}else{
+		uri_len = strlen(FILE_URI_PREFIX) + 1;
+		*uri = (char*)mosquitto__malloc(uri_len);
+		if(!(*uri)){
+			return MOSQ_ERR_NOMEM;
+		}
+		snprintf(*uri, uri_len, FILE_URI_PREFIX);
+		return MOSQ_ERR_SUCCESS;
+	}
+}
+#endif
+
+int mosquitto_tls_set_uri(struct mosquitto *mosq, const char *cafileuri, const char *cadirpath, const char *certfileuri,
+			  const char *keyfileuri, int (*pw_callback)(char *buf, int size, int rwflag, void *userdata),
+			  const char *libp11_path, const char *pkcs11_provider_path)
+{
+#ifdef WITH_TLS
+	mosq->use_pkcs11 = false;
+
+	if(_mosquitto_tls_set_internal(mosq, cafileuri, cadirpath, certfileuri,
+				       keyfileuri, pw_callback) != MOSQ_ERR_SUCCESS){
+		_mosquitto_tls_cleanup_paths(mosq);
+		return MOSQ_ERR_INVAL;
+	}
+
+	if(_mosquitto_tls_set_pkcs11_paths(mosq, libp11_path, pkcs11_provider_path) != MOSQ_ERR_SUCCESS){
+		_mosquitto_tls_cleanup_paths(mosq);
+		return MOSQ_ERR_INVAL;
+	}
 
 	return MOSQ_ERR_SUCCESS;
 #else
 	return MOSQ_ERR_NOT_SUPPORTED;
+#endif
+}
 
+int mosquitto_tls_set(struct mosquitto *mosq, const char *cafile, const char *capath, const char *certfile,
+		      const char *keyfile, int (*pw_callback)(char *buf, int size, int rwflag, void *userdata))
+{
+#ifdef WITH_TLS
+	/* filepaths are not URIs, so append file:// to path before sending _tls_set_uri */
+	int ret = MOSQ_ERR_SUCCESS;
+	char *cafileuri = NULL;
+	char *certfileuri = NULL;
+	char *keyfileuri = NULL;
+
+	if(!cafile && !capath){
+		return MOSQ_ERR_INVAL;
+	}
+
+	ret = _mosquitto_tls_copy_file_uri(&cafileuri, cafile);
+	if(ret != MOSQ_ERR_SUCCESS){
+		goto tls_set_cleanup;
+	}
+
+	ret = _mosquitto_tls_copy_file_uri(&certfileuri, certfile);
+	if(ret != MOSQ_ERR_SUCCESS){
+		goto tls_set_cleanup;
+	}
+
+	ret = _mosquitto_tls_copy_file_uri(&keyfileuri, keyfile);
+	if(ret != MOSQ_ERR_SUCCESS){
+		goto tls_set_cleanup;
+	}
+
+	ret = mosquitto_tls_set_uri(mosq, cafileuri, capath, certfileuri, keyfileuri, pw_callback, NULL, NULL);
+
+tls_set_cleanup:
+	if(cafileuri){
+		mosquitto__free(cafileuri);
+	}
+	if(certfileuri){
+		mosquitto__free(certfileuri);
+	}
+	if(keyfileuri){
+		mosquitto__free(keyfileuri);
+	}
+	return ret;
+#else
+	return MOSQ_ERR_NOT_SUPPORTED;
 #endif
 }
 

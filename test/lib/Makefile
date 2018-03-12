@@ -40,7 +40,12 @@ ifeq ($(WITH_TLS),yes)
 	./08-ssl-connect-no-auth.py $@/08-ssl-connect-no-auth.test
 	./08-ssl-connect-cert-auth.py $@/08-ssl-connect-cert-auth.test
 	./08-ssl-connect-cert-auth-enc.py $@/08-ssl-connect-cert-auth-enc.test
-	./08-ssl-bad-cacert.py $@/08-ssl-bad-cacert.test
+	./08-ssl-tls-set.py $@/08-ssl-bad-cacert.test
+	./08-ssl-connect-cert-auth.py $@/08-ssl-connect-cert-auth-uri.test
+	./08-ssl-connect-no-auth.py $@/08-ssl-connect-no-auth-uri.test
+	./08-ssl-tls-set.py $@/08-ssl-bad-pkcs11-uri.test
+	./08-ssl-connect-cert-auth.py $@/08-ssl-connect-cert-auth-uri.test
+	./08-ssl-tls-set.py $@/08-ssl-successful-pkcs11-tls-set.test
 	#./08-ssl-fake-cacert.py $@/08-ssl-fake-cacert.test
 endif
 	./09-util-topic-matching.py $@/09-util-topic-matching.test

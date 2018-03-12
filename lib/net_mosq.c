@@ -157,6 +157,11 @@ int net__socket_close(struct mosquitto *mosq)
 			mosq->ssl_ctx = NULL;
 		}
 	}
+	if(mosq->openssl_engine){
+		ENGINE_finish(mosq->openssl_engine);
+		ENGINE_free(mosq->openssl_engine);
+		mosq->openssl_engine = NULL;
+	}
 #endif
 
 #ifdef WITH_WEBSOCKETS
@@ -206,6 +211,86 @@ static unsigned int psk_client_callback(SSL *ssl, const char *hint,
 	len = mosquitto__hex2bin(mosq->tls_psk, psk, max_psk_len);
 	if (len < 0) return 0;
 	return len;
+}
+#endif
+
+#ifdef WITH_TLS
+static int initialize_openssl_pkcs11_engine(struct mosquitto *mosq)
+{
+        ENGINE_load_builtin_engines();
+	mosq->openssl_engine =  ENGINE_by_id("dynamic");
+        if(!mosq->openssl_engine){
+		log__printf(mosq, MOSQ_LOG_ERR, "Unable to find OpenSSL Engine with id dynamic.");
+                return MOSQ_ERR_TLS;
+        }
+
+        if(!ENGINE_ctrl_cmd_string(mosq->openssl_engine, "SO_PATH", mosq->libp11_path, ENGINE_CMD_NOT_OPTIONAL)){
+		log__printf(mosq, MOSQ_LOG_ERR, "Unable to run OpenSSL Engine control cmd SO_PATH.");
+                return MOSQ_ERR_TLS;
+        }
+
+        if(!ENGINE_ctrl_cmd_string(mosq->openssl_engine, "ID", "pkcs11", ENGINE_CMD_NOT_OPTIONAL)){
+		log__printf(mosq, MOSQ_LOG_ERR, "Unable to run OpenSSL Engine ctrl cmd ID");
+		return MOSQ_ERR_TLS;
+        }
+
+        if(!ENGINE_ctrl_cmd_string(mosq->openssl_engine, "LIST_ADD", "1", ENGINE_CMD_NOT_OPTIONAL)){
+		log__printf(mosq, MOSQ_LOG_ERR, "Unable to run OpenSSL Engine ctrl cmd LIST_ADD.");
+                return MOSQ_ERR_TLS;
+        }
+
+        if(!ENGINE_ctrl_cmd_string(mosq->openssl_engine, "LOAD", NULL, ENGINE_CMD_NOT_OPTIONAL)){
+		log__printf(mosq, MOSQ_LOG_ERR, "Unable to run OpenSSL Engine ctrl cmd LOAD.");
+                return MOSQ_ERR_TLS;
+        }
+
+        if(!ENGINE_ctrl_cmd_string(mosq->openssl_engine, "MODULE_PATH", mosq->pkcs11_provider_path,
+				   ENGINE_CMD_NOT_OPTIONAL)){
+		log__printf(mosq, MOSQ_LOG_ERR, "Unable to run OpenSSL Engine ctrl cmd MODULE_PATH.");
+                return MOSQ_ERR_TLS;
+        }
+
+        ENGINE_set_default(mosq->openssl_engine, ENGINE_METHOD_ALL);
+        mosq->openssl_engine = ENGINE_by_id("pkcs11");
+        if(!mosq->openssl_engine){
+		log__printf(mosq, MOSQ_LOG_ERR, "Unable to find OpenSSL Engine with id pkcs11.");
+                return MOSQ_ERR_TLS;
+        }
+
+        if(!ENGINE_init(mosq->openssl_engine)){
+		log__printf(mosq, MOSQ_LOG_ERR, "Unable to init OpenSSL Engine.");
+                ENGINE_free(mosq->openssl_engine);
+                return MOSQ_ERR_TLS;
+        }
+
+        return MOSQ_ERR_SUCCESS;
+}
+
+/* uri is expected to be a valid character pointer */
+int _mosquitto_parse_uri(const char *uri, const char **translated_path){
+	char *path_substr = NULL;
+
+	if(uri==NULL){
+		return MOSQ_ERR_INVAL;
+	}
+
+	path_substr = strstr(uri, PKCS11_URI_PREFIX);
+	if(path_substr == uri){
+		*translated_path = uri;
+		return MOSQ_ERR_SUCCESS;
+	}
+
+	path_substr = strstr(uri, FILE_URI_PREFIX);
+	if(path_substr == uri){
+		if(strlen(uri) == strlen(FILE_URI_PREFIX)){
+			*translated_path = NULL;
+			return MOSQ_ERR_SUCCESS;
+		}
+		*translated_path = (uri + strlen(FILE_URI_PREFIX));
+		return MOSQ_ERR_SUCCESS;
+	}
+
+	return MOSQ_ERR_INVAL;
 }
 #endif
 
@@ -445,12 +530,23 @@ int net__socket_connect_tls(struct mosquitto *mosq)
 int net__socket_connect_step3(struct mosquitto *mosq, const char *host, uint16_t port, const char *bind_address, bool blocking)
 {
 #ifdef WITH_TLS
-	int ret;
+	int ret = 0;
 	BIO *bio;
+	const char *cafilepath = NULL;
+	const char *certpath = NULL;
+	const char *keypath = NULL;
 #endif
 
 #ifdef WITH_TLS
 	if(mosq->tls_cafile || mosq->tls_capath || mosq->tls_psk){
+		if(mosq->use_pkcs11 && !mosq->openssl_engine){
+			if(initialize_openssl_pkcs11_engine(mosq) == MOSQ_ERR_TLS){
+				log__printf(mosq, MOSQ_LOG_ERR, "OpenSSL Engine init failed.");
+				return MOSQ_ERR_TLS;
+			}else{
+				log__printf(mosq, MOSQ_LOG_DEBUG, "OpenSSL Engine init successful.");
+			}
+		}
 #if OPENSSL_VERSION_NUMBER >= 0x10001000L
 		if(!mosq->tls_version){
 			mosq->ssl_ctx = SSL_CTX_new(SSLv23_client_method());
@@ -499,22 +595,42 @@ int net__socket_connect_step3(struct mosquitto *mosq, const char *host, uint16_t
 				return MOSQ_ERR_TLS;
 			}
 		}
-		if(mosq->tls_cafile || mosq->tls_capath){
-			ret = SSL_CTX_load_verify_locations(mosq->ssl_ctx, mosq->tls_cafile, mosq->tls_capath);
+
+		ret = _mosquitto_parse_uri(mosq->tls_cafile, &cafilepath);
+		if (ret != MOSQ_ERR_SUCCESS){
+			log__printf(mosq, MOSQ_LOG_ERR, "Error: Unable to parse CA certificates, check paths");
+			COMPAT_CLOSE(mosq->sock);
+			return ret;
+		}
+		ret = _mosquitto_parse_uri(mosq->tls_certfile, &certpath);
+		if (ret != MOSQ_ERR_SUCCESS){
+			log__printf(mosq, MOSQ_LOG_ERR, "Error: Unable to parse client certificate, check paths");
+			COMPAT_CLOSE(mosq->sock);
+			return ret;
+		}
+		ret = _mosquitto_parse_uri(mosq->tls_keyfile, &keypath);
+		if (ret != MOSQ_ERR_SUCCESS){
+			log__printf(mosq, MOSQ_LOG_ERR, "Error: Unable to parse client private key, check paths");
+			COMPAT_CLOSE(mosq->sock);
+			return ret;
+		}
+
+		if(cafilepath || mosq->tls_capath){
+			ret = SSL_CTX_load_verify_locations(mosq->ssl_ctx, cafilepath, mosq->tls_capath);
 			if(ret == 0){
 #ifdef WITH_BROKER
-				if(mosq->tls_cafile && mosq->tls_capath){
-					log__printf(mosq, MOSQ_LOG_ERR, "Error: Unable to load CA certificates, check bridge_cafile \"%s\" and bridge_capath \"%s\".", mosq->tls_cafile, mosq->tls_capath);
-				}else if(mosq->tls_cafile){
-					log__printf(mosq, MOSQ_LOG_ERR, "Error: Unable to load CA certificates, check bridge_cafile \"%s\".", mosq->tls_cafile);
+				if(cafilepath && mosq->tls_capath){
+					log__printf(mosq, MOSQ_LOG_ERR, "Error: Unable to load CA certificates, check bridge_cafile \"%s\" and bridge_capath \"%s\".", cafilepath, mosq->tls_capath);
+				}else if(cafilepath){
+					log__printf(mosq, MOSQ_LOG_ERR, "Error: Unable to load CA certificates, check bridge_cafile \"%s\".", mosq->tls_capath);
 				}else{
 					log__printf(mosq, MOSQ_LOG_ERR, "Error: Unable to load CA certificates, check bridge_capath \"%s\".", mosq->tls_capath);
 				}
 #else
-				if(mosq->tls_cafile && mosq->tls_capath){
-					log__printf(mosq, MOSQ_LOG_ERR, "Error: Unable to load CA certificates, check cafile \"%s\" and capath \"%s\".", mosq->tls_cafile, mosq->tls_capath);
+				if(cafilepath && mosq->tls_capath){
+					log__printf(mosq, MOSQ_LOG_ERR, "Error: Unable to load CA certificates, check cafile \"%s\" and capath \"%s\".", cafilepath, mosq->tls_capath);
 				}else if(mosq->tls_cafile){
-					log__printf(mosq, MOSQ_LOG_ERR, "Error: Unable to load CA certificates, check cafile \"%s\".", mosq->tls_cafile);
+					log__printf(mosq, MOSQ_LOG_ERR, "Error: Unable to load CA certificates, check cafile \"%s\".", mosq->tls_capath);
 				}else{
 					log__printf(mosq, MOSQ_LOG_ERR, "Error: Unable to load CA certificates, check capath \"%s\".", mosq->tls_capath);
 				}
@@ -534,8 +650,8 @@ int net__socket_connect_step3(struct mosquitto *mosq, const char *host, uint16_t
 				SSL_CTX_set_default_passwd_cb_userdata(mosq->ssl_ctx, mosq);
 			}
 
-			if(mosq->tls_certfile){
-				ret = SSL_CTX_use_certificate_chain_file(mosq->ssl_ctx, mosq->tls_certfile);
+			if(certpath){
+				ret = SSL_CTX_use_certificate_chain_file(mosq->ssl_ctx, certpath);
 				if(ret != 1){
 #ifdef WITH_BROKER
 					log__printf(mosq, MOSQ_LOG_ERR, "Error: Unable to load client certificate, check bridge_certfile \"%s\".", mosq->tls_certfile);
@@ -547,17 +663,51 @@ int net__socket_connect_step3(struct mosquitto *mosq, const char *host, uint16_t
 					return MOSQ_ERR_TLS;
 				}
 			}
-			if(mosq->tls_keyfile){
-				ret = SSL_CTX_use_PrivateKey_file(mosq->ssl_ctx, mosq->tls_keyfile, SSL_FILETYPE_PEM);
-				if(ret != 1){
+			if(keypath){
+				if(mosq->use_pkcs11){
+					EVP_PKEY* key = ENGINE_load_private_key(mosq->openssl_engine, keypath, NULL, NULL);
+					if(key == 0){
 #ifdef WITH_BROKER
-					log__printf(mosq, MOSQ_LOG_ERR, "Error: Unable to load client key file, check bridge_keyfile \"%s\".", mosq->tls_keyfile);
+						log__printf(mosq, MOSQ_LOG_ERR,
+							    "Error: Unable to load client key from HSM, check bridge_keyfile \"%s\".",
+							    mosq->tls_keyfile);
 #else
-					log__printf(mosq, MOSQ_LOG_ERR, "Error: Unable to load client key file \"%s\".", mosq->tls_keyfile);
+						log__printf(mosq, MOSQ_LOG_ERR,
+							    "Error: Unable to load client key from HSM\"%s\".",
+							    mosq->tls_keyfile);
 #endif
-					COMPAT_CLOSE(mosq->sock);
-					net__print_ssl_error(mosq);
-					return MOSQ_ERR_TLS;
+						COMPAT_CLOSE(mosq->sock);
+						return MOSQ_ERR_TLS;
+					}
+
+					if(SSL_CTX_use_PrivateKey(mosq->ssl_ctx, key) != 1){
+#ifdef WITH_BROKER
+						log__printf(mosq, MOSQ_LOG_ERR,
+							    "Error: Unable to use client key got from HSM, check bridge_keyfile \"%s\".",
+							    mosq->tls_keyfile);
+#else
+						log__printf(mosq, MOSQ_LOG_ERR,
+							    "Error: Unable to use client key got from HSM \"%s\".",
+							    mosq->tls_keyfile);
+#endif
+						COMPAT_CLOSE(mosq->sock);
+						return MOSQ_ERR_TLS;
+					}
+				}else{
+					ret = SSL_CTX_use_PrivateKey_file(mosq->ssl_ctx, keypath, SSL_FILETYPE_PEM);
+					if(ret != 1){
+#ifdef WITH_BROKER
+						log__printf(mosq, MOSQ_LOG_ERR,
+							    "Error: Unable to load client key file, check bridge_keyfile \"%s\".",
+							    mosq->tls_keyfile);
+#else
+						log__printf(mosq, MOSQ_LOG_ERR,
+							    "Error: Unable to load client key file \"%s\".",
+							    mosq->tls_keyfile);
+#endif
+						COMPAT_CLOSE(mosq->sock);
+						return MOSQ_ERR_TLS;
+					}
 				}
 				ret = SSL_CTX_check_private_key(mosq->ssl_ctx);
 				if(ret != 1){

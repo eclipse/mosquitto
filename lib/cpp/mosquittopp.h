@@ -107,6 +107,9 @@ class mosqpp_EXPORT mosquittopp {
 		void message_retry_set(unsigned int message_retry);
 		void user_data_set(void *userdata);
 		int tls_set(const char *cafile, const char *capath=NULL, const char *certfile=NULL, const char *keyfile=NULL, int (*pw_callback)(char *buf, int size, int rwflag, void *userdata)=NULL);
+		int tls_set_uri(const char *cafileuri, const char *cadirpath=NULL, const char *certfileuri="file://", const char *keyfileuri="file://",
+				int (*pw_callback)(char *buf, int size, int rwflag, void *userdata)=NULL,
+				const char *libp11_path=NULL, const char *pkcs11_provider_path=NULL);
 		int tls_opts_set(int cert_reqs, const char *tls_version=NULL, const char *ciphers=NULL);
 		int tls_insecure_set(bool value);
 		int tls_psk_set(const char *psk, const char *identity, const char *ciphers=NULL);

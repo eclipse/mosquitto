@@ -343,6 +343,14 @@ int mosquittopp::tls_set(const char *cafile, const char *capath, const char *cer
 	return mosquitto_tls_set(m_mosq, cafile, capath, certfile, keyfile, pw_callback);
 }
 
+int mosquittopp::tls_set_uri(const char *cafileuri, const char *cadirpath, const char *certfileuri, const char *keyfileuri,
+			     int (*pw_callback)(char *buf, int size, int rwflag, void *userdata),
+			     const char *libp11_path, const char *pkcs11_provider_path)
+{
+	return mosquitto_tls_set_uri(m_mosq, cafileuri, cadirpath, certfileuri, keyfileuri,
+			pw_callback, libp11_path, pkcs11_provider_path);
+}
+
 int mosquittopp::tls_opts_set(int cert_reqs, const char *tls_version, const char *ciphers)
 {
 	return mosquitto_tls_opts_set(m_mosq, cert_reqs, tls_version, ciphers);

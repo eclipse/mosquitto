@@ -472,6 +472,9 @@ void print_usage(void)
 	printf("              hostname. Using this option means that you cannot be sure that the\n");
 	printf("              remote host is the server you wish to connect to and so is insecure.\n");
 	printf("              Do not use this option in a production environment.\n");
+	printf(" --uri : specify CA, cert and key as URIs\n");
+	printf(" --libp11-path : provide the path to the libp11 library for loading keys from TPMs/HSMs\n");
+	printf(" --pkcs11-provider-path : provide the path to the pkcs11 provider library for loading keys from TPMs/HSMs\n");
 #ifdef WITH_TLS_PSK
 	printf(" --psk : pre-shared-key in hexadecimal (no leading 0x) to enable TLS-PSK mode.\n");
 	printf(" --psk-identity : client identity string for TLS-PSK mode.\n");
