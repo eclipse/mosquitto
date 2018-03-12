@@ -153,6 +153,8 @@ struct mosquitto_message_all{
 	struct mosquitto_message msg;
 };
 
+#define MOSQUITTO_DEFAULT_CONNECT_TIMEOUT 10000
+
 struct mosquitto {
 	mosq_sock_t sock;
 #ifndef WITH_BROKER

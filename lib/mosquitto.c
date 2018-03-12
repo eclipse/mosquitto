@@ -173,7 +173,7 @@ int mosquitto_reinitialise(struct mosquitto *mosq, const char *id, bool clean_se
 	mosq->in_callback = false;
 	mosq->in_queue_len = 0;
 	mosq->out_queue_len = 0;
-	mosq->connect_timeout = 10000;
+	mosq->connect_timeout = MOSQUITTO_DEFAULT_CONNECT_TIMEOUT;
 	mosq->reconnect_delay = 1;
 	mosq->reconnect_delay_max = 1;
 	mosq->reconnect_exponential_backoff = false;
