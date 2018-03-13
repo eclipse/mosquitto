@@ -631,6 +631,14 @@ int _mosquitto_socket_connect_step3(struct mosquitto *mosq, const char *host, ui
 		}
 		SSL_set_bio(mosq->ssl, bio, bio);
 
+		/*
+		 * required for the SNI resolving
+		 */
+		if(SSL_set_tlsext_host_name(mosq->ssl, host) != 1) {
+			COMPAT_CLOSE(mosq->sock);
+			return MOSQ_ERR_TLS;
+		}
+
 		if(mosquitto__socket_connect_tls(mosq)){
 			return MOSQ_ERR_TLS;
 		}
