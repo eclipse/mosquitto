@@ -445,6 +445,15 @@ int net__socket_connect_tls(struct mosquitto *mosq)
 			COMPAT_CLOSE(mosq->sock);
 			mosq->sock = INVALID_SOCKET;
 			net__print_ssl_error(mosq);
+			if(mosq->ssl){
+				SSL_shutdown(mosq->ssl);
+				SSL_free(mosq->ssl);
+				mosq->ssl = NULL;
+			}
+			if(mosq->ssl_ctx){
+				SSL_CTX_free(mosq->ssl_ctx);
+				mosq->ssl_ctx = NULL;
+			}
 			return MOSQ_ERR_TLS;
 		}
 	}else{
@@ -519,6 +528,8 @@ static int net__init_ssl_ctx(struct mosquitto *mosq)
 				COMPAT_CLOSE(mosq->sock);
 				mosq->sock = INVALID_SOCKET;
 				net__print_ssl_error(mosq);
+				SSL_CTX_free(mosq->ssl_ctx);
+				mosq->ssl_ctx = NULL;
 				return MOSQ_ERR_TLS;
 			}
 		}
@@ -545,6 +556,8 @@ static int net__init_ssl_ctx(struct mosquitto *mosq)
 				COMPAT_CLOSE(mosq->sock);
 				mosq->sock = INVALID_SOCKET;
 				net__print_ssl_error(mosq);
+				SSL_CTX_free(mosq->ssl_ctx);
+				mosq->ssl_ctx = NULL;
 				return MOSQ_ERR_TLS;
 			}
 			if(mosq->tls_cert_reqs == 0){
@@ -569,6 +582,8 @@ static int net__init_ssl_ctx(struct mosquitto *mosq)
 					COMPAT_CLOSE(mosq->sock);
 					mosq->sock = INVALID_SOCKET;
 					net__print_ssl_error(mosq);
+					SSL_CTX_free(mosq->ssl_ctx);
+					mosq->ssl_ctx = NULL;
 					return MOSQ_ERR_TLS;
 				}
 			}
@@ -583,6 +598,8 @@ static int net__init_ssl_ctx(struct mosquitto *mosq)
 					COMPAT_CLOSE(mosq->sock);
 					mosq->sock = INVALID_SOCKET;
 					net__print_ssl_error(mosq);
+					SSL_CTX_free(mosq->ssl_ctx);
+					mosq->ssl_ctx = NULL;
 					return MOSQ_ERR_TLS;
 				}
 				ret = SSL_CTX_check_private_key(mosq->ssl_ctx);
@@ -591,6 +608,8 @@ static int net__init_ssl_ctx(struct mosquitto *mosq)
 					COMPAT_CLOSE(mosq->sock);
 					mosq->sock = INVALID_SOCKET;
 					net__print_ssl_error(mosq);
+					SSL_CTX_free(mosq->ssl_ctx);
+					mosq->ssl_ctx = NULL;
 					return MOSQ_ERR_TLS;
 				}
 			}
@@ -623,6 +642,8 @@ int net__socket_connect_step3(struct mosquitto *mosq, const char *host, uint16_t
 			COMPAT_CLOSE(mosq->sock);
 			mosq->sock = INVALID_SOCKET;
 			net__print_ssl_error(mosq);
+			SSL_CTX_free(mosq->ssl_ctx);
+			mosq->ssl_ctx = NULL;
 			return MOSQ_ERR_TLS;
 		}
 
@@ -632,6 +653,10 @@ int net__socket_connect_step3(struct mosquitto *mosq, const char *host, uint16_t
 			COMPAT_CLOSE(mosq->sock);
 			mosq->sock = INVALID_SOCKET;
 			net__print_ssl_error(mosq);
+			SSL_free(mosq->ssl);
+			mosq->ssl = NULL;
+			SSL_CTX_free(mosq->ssl_ctx);
+			mosq->ssl_ctx = NULL;
 			return MOSQ_ERR_TLS;
 		}
 		SSL_set_bio(mosq->ssl, bio, bio);
@@ -642,10 +667,19 @@ int net__socket_connect_step3(struct mosquitto *mosq, const char *host, uint16_t
 		if(SSL_set_tlsext_host_name(mosq->ssl, host) != 1) {
 			COMPAT_CLOSE(mosq->sock);
 			mosq->sock = INVALID_SOCKET;
+			SSL_free(mosq->ssl);
+			mosq->ssl = NULL;
+			SSL_CTX_free(mosq->ssl_ctx);
+			mosq->ssl_ctx = NULL;
 			return MOSQ_ERR_TLS;
 		}
 
 		if(net__socket_connect_tls(mosq)){
+		    // SSL_free should internally free BIO
+		    SSL_free(mosq->ssl);
+			mosq->ssl = NULL;
+			SSL_CTX_free(mosq->ssl_ctx);
+			mosq->ssl_ctx = NULL;
 			return MOSQ_ERR_TLS;
 		}
 
