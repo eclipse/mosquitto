@@ -465,7 +465,7 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 			password = NULL;
 		}
 
-		if(!username_flag && db->config->allow_anonymous == false){
+		if(!username_flag && db->config->allow_anonymous == false && !context->listener->allow_anonymous){
 			send__connack(context, 0, CONNACK_REFUSED_NOT_AUTHORIZED);
 			rc = 1;
 			goto handle_connect_error;

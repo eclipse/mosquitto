@@ -149,6 +149,7 @@ struct mosquitto__listener {
 	int client_count;
 	enum mosquitto_protocol protocol;
 	bool use_username_as_clientid;
+	bool allow_anonymous;
 #ifdef WITH_TLS
 	char *cafile;
 	char *capath;

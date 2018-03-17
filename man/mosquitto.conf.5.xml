@@ -160,6 +160,7 @@
 						then another means of connection should be created to
 						control authenticated client access.  Defaults to
 						<replaceable>true</replaceable>.</para>
+					<para>See also <replaceable>listener_allow_anonymous</replaceable>.</para>
 					<para>Reloaded on reload signal.</para>
 				</listitem>
 			</varlistentry>
@@ -708,6 +709,21 @@
 							also the <option>mount_point</option>
 							option.</para>
 						<para>Not reloaded on reload signal.</para>
+					</listitem>
+				</varlistentry>
+				<varlistentry>
+					<term><option>listener_allow_anonymous</option> [ true | false ]</term>
+					<listitem>
+						<para>Boolean value that determines whether clients that
+							connect without providing a username are allowed to
+							connect. If set to <replaceable>false</replaceable>
+							then another means of connection should be created to
+							control authenticated client access.  Defaults to
+							<replaceable>false</replaceable>.</para>
+						<para>See also <replaceable>allow_anonymous</replaceable>.</para>
+						<para>Anonymous connections are allowed if any of <code>allow_anonymous</code> or
+							the listener's <code>listener_allow_anonymous</code> is <code>true</code>.</para>
+						<para>Reloaded on reload signal.</para>
 					</listitem>
 				</varlistentry>
 				<varlistentry>

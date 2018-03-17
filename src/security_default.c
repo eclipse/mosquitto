@@ -753,7 +753,7 @@ int mosquitto_security_apply_default(struct mosquitto_db *db)
 	
 	HASH_ITER(hh_id, db->contexts_by_id, context, ctxt_tmp){
 		/* Check for anonymous clients when allow_anonymous is false */
-		if(!allow_anonymous && !context->username){
+		if(!allow_anonymous && !context->username && !context->listener->allow_anonymous){
 			context->state = mosq_cs_disconnecting;
 			do_disconnect(db, context);
 			continue;

@@ -1184,6 +1184,8 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, const 
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty listener value in configuration.");
 						return MOSQ_ERR_INVAL;
 					}
+				}else if(!strcmp(token, "listener_allow_anonymous")){
+					if(conf__parse_bool(&token, token, &cur_listener->allow_anonymous, saveptr)) return MOSQ_ERR_INVAL;
 				}else if(!strcmp(token, "local_clientid")){
 #ifdef WITH_BRIDGE
 					if(reload) continue; // FIXME
