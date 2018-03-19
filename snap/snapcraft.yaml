@@ -45,6 +45,8 @@ parts:
       - libc-ares-dev
       - xsltproc
       - docbook-xsl
+      - gcc
+      - g++
     stage-packages:
       - libssl1.0.0
       - libuuid1
