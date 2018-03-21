@@ -92,6 +92,14 @@ WITH_STATIC_LIBRARIES:=no
 # Build with epoll support.
 WITH_EPOLL:=yes
 
+# Prefix for gcc and g++ used to crosscompile mosquitto. If empty (default)
+# it is compiled for the host machine
+CROSS_COMPILE:=
+
+# sysroot to be used by the linker when searching for libraries. If empty (default)
+# the libraries on the host machine root filesystem will be used
+SYSROOT:=
+
 # =============================================================================
 # End of user configuration
 # =============================================================================
