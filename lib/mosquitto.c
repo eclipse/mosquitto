@@ -1435,3 +1435,7 @@ int mosquitto_sub_topic_tokens_free(char ***topics, int count)
 	return MOSQ_ERR_SUCCESS;
 }
 
+int mosquitto_is_session_present(struct mosquitto *mosq)
+{
+    return (mosq->connack_flags & 0x1) != 0;
+}

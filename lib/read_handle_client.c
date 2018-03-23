@@ -24,19 +24,20 @@ Contributors:
 
 int _mosquitto_handle_connack(struct mosquitto *mosq)
 {
-	uint8_t byte;
+	uint8_t flags;
 	uint8_t result;
 	int rc;
 
 	assert(mosq);
 	_mosquitto_log_printf(mosq, MOSQ_LOG_DEBUG, "Client %s received CONNACK", mosq->id);
-	rc = _mosquitto_read_byte(&mosq->in_packet, &byte); // Reserved byte, not used
+	rc = _mosquitto_read_byte(&mosq->in_packet, &flags); // flags byte
 	if(rc) return rc;
 	rc = _mosquitto_read_byte(&mosq->in_packet, &result);
 	if(rc) return rc;
 	pthread_mutex_lock(&mosq->callback_mutex);
 	if(mosq->on_connect){
 		mosq->in_callback = true;
+		mosq->connack_flags = flags;
 		mosq->on_connect(mosq, mosq->userdata, result);
 		mosq->in_callback = false;
 	}
