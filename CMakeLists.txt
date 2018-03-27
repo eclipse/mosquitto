@@ -87,6 +87,17 @@ if (${DOCUMENTATION} STREQUAL ON)
 endif (${DOCUMENTATION} STREQUAL ON)
 
 # ========================================
+# Build Tree config file
+# ========================================
+
+export( TARGETS libmosquitto mosquittopp FILE mosquitto-targets.cmake )
+
+configure_file( 
+    "${CMAKE_SOURCE_DIR}/cmake/mosquitto-config.build.in.cmake"
+    "${CMAKE_BINARY_DIR}/mosquitto-config.cmake"
+    @ONLY )
+
+# ========================================
 # Install config file
 # ========================================
 
