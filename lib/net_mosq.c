@@ -784,6 +784,9 @@ ssize_t _mosquitto_net_read(struct mosquitto *mosq, void *buf, size_t count)
 				}
 				errno = EPROTO;
 			}
+#ifdef WIN32
+			WSASetLastError(errno);
+#endif
 		}
 		return (ssize_t )ret;
 	}else{
