@@ -1382,10 +1382,10 @@ int _config_read_file_core(struct mqtt3_config *config, bool reload, const char 
 						_mosquitto_log_printf(NULL, MOSQ_LOG_ERR, "Error: Empty max_queued_messages value in configuration.");
 					}
 				}else if(!strcmp(token, "memory_limit")){
-					size_t lim;
+					int lim = 0;
 					if(_conf_parse_int(&token, "memory_limit", (int *)&lim, saveptr)) return MOSQ_ERR_INVAL;
 					if(lim < 0){
-						_mosquitto_log_printf(NULL, MOSQ_LOG_ERR, "Error: Invalid memory_limit value (%lu).", lim);
+						_mosquitto_log_printf(NULL, MOSQ_LOG_ERR, "Error: Invalid memory_limit value (%d).", lim);
 						return MOSQ_ERR_INVAL;
 					}
 					memory__set_limit(lim);
