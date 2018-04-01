@@ -112,6 +112,9 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 #ifdef WITH_BRIDGE
 	mosq_sock_t bridge_sock;
 	int rc;
+#if defined(__GLIBC__) && defined(WITH_ADNS)
+	int quick_restart_times = 0;
+#endif
 #endif
 	time_t expiration_check_time = 0;
 	time_t last_timeout_check = 0;
@@ -247,13 +250,21 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 				}else{
 					if((context->bridge->start_type == bst_lazy && context->bridge->lazy_reconnect)
 							|| (context->bridge->start_type == bst_automatic && now > context->bridge->restart_t)){
-						context->bridge->restart_t = 0;
 #if defined(__GLIBC__) && defined(WITH_ADNS)
+						/* Setup quick restart times for DNS lookup */
+						if (context->bridge->restart_t == 1)
+							quick_restart_times = 10;
+
+						/* reset restart time */
+						context->bridge->restart_t = 0;
+
 						if(context->adns){
 							/* Waiting on DNS lookup */
 							rc = gai_error(context->adns);
 							if(rc == EAI_INPROGRESS){
 								/* Just keep on waiting */
+								if (quick_restart_times-- > 0)
+									context->bridge->restart_t = now - 1;
 							}else if(rc == 0){
 								rc = mqtt3_bridge_connect_step2(db, context);
 								if(rc == MOSQ_ERR_SUCCESS){
@@ -290,6 +301,7 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 						}
 #else
 						{
+							context->bridge->restart_t = 0;
 							rc = mqtt3_bridge_connect(db, context);
 							if(rc == MOSQ_ERR_SUCCESS){
 								pollfds[pollfd_index].fd = context->sock;
