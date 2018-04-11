@@ -1528,6 +1528,19 @@ libmosq_EXPORT int mosquitto_pub_topic_check(const char *topic);
  */
 libmosq_EXPORT int mosquitto_sub_topic_check(const char *topic);
 
+/*
+ * Function: mosquitto_is_session_present
+ *
+ * Return 1 if session present flag is set, otherwise 0
+ * This function is safe only on a connect callback.
+ *
+ * Parameters:
+ * 	mosq -       a valid mosquitto instance.
+ * Returns:
+ * 	session present flag (1 or 0)
+ */
+libmosq_EXPORT int mosquitto_is_session_present(struct mosquitto *mosq);
+
 #ifdef __cplusplus
 }
 #endif

@@ -272,6 +272,8 @@ struct mosquitto {
 	UT_hash_handle hh_sock;
 	struct mosquitto *for_free_next;
 #endif
+
+        uint8_t connack_flags;
 };
 
 #define STREMPTY(str) (str[0] == '\0')

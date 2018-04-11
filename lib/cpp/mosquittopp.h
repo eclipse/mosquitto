@@ -79,6 +79,7 @@ class mosqpp_EXPORT mosquittopp {
 		int tls_insecure_set(bool value);
 		int tls_psk_set(const char *psk, const char *identity, const char *ciphers=NULL);
 		int opts_set(enum mosq_opt_t option, void *value);
+		bool is_session_present_on_connect();
 
 		int loop(int timeout=-1, int max_packets=1);
 		int loop_misc();

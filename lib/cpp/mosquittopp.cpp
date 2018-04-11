@@ -269,6 +269,11 @@ int mosquittopp::opts_set(enum mosq_opt_t option, void *value)
 	return mosquitto_opts_set(m_mosq, option, value);
 }
 
+bool mosquittopp::is_session_present_on_connect()
+{
+	return mosquitto_is_session_present(m_mosq);
+}
+
 int mosquittopp::threaded_set(bool threaded)
 {
 	return mosquitto_threaded_set(m_mosq, threaded);
