@@ -51,6 +51,7 @@ endif
 	./03-publish-b2c-disconnect-qos2.py
 	./03-pattern-matching.py
 	./03-publish-qos1-queued-bytes.py
+	./03-publish-qos2-inflight.py
 
 04 :
 	./04-retain-qos0.py
