@@ -132,6 +132,7 @@ class mosqpp_EXPORT mosquittopp {
 		virtual void on_subscribe(int /*mid*/, int /*qos_count*/, const int * /*granted_qos*/) {return;}
 		virtual void on_unsubscribe(int /*mid*/) {return;}
 		virtual void on_log(int /*level*/, const char * /*str*/) {return;}
+		virtual void on_ssl_ctx(void * /*ssl_ctx*/) {return;}
 		virtual void on_error() {return;}
 };
 

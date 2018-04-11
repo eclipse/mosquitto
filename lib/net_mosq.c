@@ -573,6 +573,16 @@ int net__socket_connect_step3(struct mosquitto *mosq, const char *host, uint16_t
 #endif
 		}
 
+#ifndef WITH_BROKER
+		pthread_mutex_lock(&mosq->callback_mutex);
+		if(mosq->on_ssl_ctx){
+			mosq->in_callback = true;
+			mosq->on_ssl_ctx(mosq, mosq->userdata, mosq->ssl_ctx);
+			mosq->in_callback = false;
+		}
+		pthread_mutex_unlock(&mosq->callback_mutex);
+#endif
+
 		mosq->ssl = SSL_new(mosq->ssl_ctx);
 		if(!mosq->ssl){
 			COMPAT_CLOSE(mosq->sock);

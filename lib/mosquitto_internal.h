@@ -253,6 +253,7 @@ struct mosquitto {
 	void (*on_subscribe)(struct mosquitto *, void *userdata, int mid, int qos_count, const int *granted_qos);
 	void (*on_unsubscribe)(struct mosquitto *, void *userdata, int mid);
 	void (*on_log)(struct mosquitto *, void *userdata, int level, const char *str);
+	void (*on_ssl_ctx)(struct mosquitto *, void *userdata, void *ssl_ctx);
 	//void (*on_error)();
 	char *host;
 	int port;

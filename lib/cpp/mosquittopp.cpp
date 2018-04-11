@@ -69,6 +69,12 @@ static void on_log_wrapper(struct mosquitto *mosq, void *userdata, int level, co
 	m->on_log(level, str);
 }
 
+static void on_ssl_ctx_wrapper(struct mosquitto *mosq, void *userdata, void *ssl_ctx)
+{
+	class mosquittopp *m = (class mosquittopp *)userdata;
+	m->on_ssl_ctx(ssl_ctx);
+}
+
 int lib_version(int *major, int *minor, int *revision)
 {
 	if(major) *major = LIBMOSQUITTO_MAJOR;
@@ -176,6 +182,7 @@ mosquittopp::mosquittopp(const char *id, bool clean_session)
 	mosquitto_subscribe_callback_set(m_mosq, on_subscribe_wrapper);
 	mosquitto_unsubscribe_callback_set(m_mosq, on_unsubscribe_wrapper);
 	mosquitto_log_callback_set(m_mosq, on_log_wrapper);
+	mosquitto_ssl_ctx_callback_set(m_mosq, on_ssl_ctx_wrapper);
 }
 
 mosquittopp::~mosquittopp()
@@ -196,6 +203,7 @@ int mosquittopp::reinitialise(const char *id, bool clean_session)
 		mosquitto_subscribe_callback_set(m_mosq, on_subscribe_wrapper);
 		mosquitto_unsubscribe_callback_set(m_mosq, on_unsubscribe_wrapper);
 		mosquitto_log_callback_set(m_mosq, on_log_wrapper);
+		mosquitto_ssl_ctx_callback_set(m_mosq, on_ssl_ctx_wrapper);
 	}
 	return rc;
 }
