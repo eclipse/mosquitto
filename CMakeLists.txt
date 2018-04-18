@@ -93,7 +93,6 @@ endif (${DOCUMENTATION} STREQUAL ON)
 
 install(FILES mosquitto.conf aclfile.example pskfile.example pwfile.example DESTINATION "${SYSCONFDIR}")
 
-
 # ========================================
 # Install pkg-config files
 # ========================================
@@ -102,6 +101,15 @@ configure_file(libmosquitto.pc.in libmosquitto.pc @ONLY)
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libmosquitto.pc" DESTINATION "${PKGCONFIGDIR}")
 configure_file(libmosquittopp.pc.in libmosquittopp.pc @ONLY)
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libmosquittopp.pc" DESTINATION "${PKGCONFIGDIR}")
+
+# ========================================
+# Install cmake-config file
+# ========================================
+install(EXPORT mosquitto-exports
+	FILE mosquitto-config.cmake
+	NAMESPACE mosquitto::
+	DESTINATION "${LIBDIR}/cmake/mosquitto"
+)
 
 # ========================================
 # Testing

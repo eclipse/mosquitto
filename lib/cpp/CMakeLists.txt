@@ -1,7 +1,18 @@
 add_library(mosquittopp mosquittopp.cpp)
 
-target_include_directories(mosquittopp PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(mosquittopp
+	PUBLIC
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+	$<INSTALL_INTERFACE:${INCLUDEDIR}>
+)
 target_link_libraries(mosquittopp PRIVATE libmosquitto)
+install(
+	TARGETS mosquittopp
+	EXPORT mosquitto-exports
+	RUNTIME DESTINATION "${BINDIR}"
+	LIBRARY DESTINATION "${LIBDIR}"
+)
+install(FILES mosquittopp.h DESTINATION "${INCLUDEDIR}")
 
 set_target_properties(mosquittopp PROPERTIES
 	OUTPUT_NAME mosquittopp

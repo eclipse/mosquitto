@@ -67,8 +67,8 @@ target_include_directories(libmosquitto_with_broker PUBLIC "${CMAKE_CURRENT_SOUR
 foreach(LIB libmosquitto libmosquitto_with_broker)
 	target_include_directories(${LIB}
 		PUBLIC
-		"${CMAKE_CURRENT_SOURCE_DIR}"
-		"${CMAKE_CURRENT_SOURCE_DIR}/../"
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../>
 	)
 
 	target_compile_definitions(${LIB}
@@ -146,7 +146,12 @@ else (${BUILD_SHARED_LIBS} STREQUAL ON)
 	endif (${WITH_PIC} STREQUAL ON)
 endif (${BUILD_SHARED_LIBS} STREQUAL ON)
 
+target_include_directories(libmosquitto
+	PUBLIC
+	$<INSTALL_INTERFACE:${INCLUDEDIR}>
+)
 install(TARGETS libmosquitto
+	EXPORT mosquitto-exports
 	RUNTIME DESTINATION "${BINDIR}"
 	ARCHIVE DESTINATION "${LIBDIR}"
 	LIBRARY DESTINATION "${LIBDIR}"
