@@ -3,12 +3,6 @@ add_executable(mosquitto_sub sub_client.c)
 
 foreach(CLIENT mosquitto_pub mosquitto_sub)
 	target_sources(${CLIENT} PRIVATE client_shared.c)
-
-	if (${WITH_SRV} STREQUAL ON)
-		target_compile_definitions(${CLIENT} PRIVATE WITH_SRV)
-	endif (${WITH_SRV} STREQUAL ON)
-
 	target_link_libraries(${CLIENT} PRIVATE libmosquitto)
-
 	install(TARGETS ${CLIENT} RUNTIME DESTINATION "${BINDIR}" LIBRARY DESTINATION "${LIBDIR}")
 endforeach(CLIENT)
