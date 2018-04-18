@@ -36,8 +36,8 @@ add_subdirectory(cpp)
 foreach(LIB libmosquitto libmosquitto_with_broker)
 	target_include_directories(${LIB}
 		PUBLIC
-		"${CMAKE_CURRENT_SOURCE_DIR}"
-		"${CMAKE_CURRENT_SOURCE_DIR}/../"
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../>
 	)
 
 	target_compile_definitions(${LIB}
@@ -108,7 +108,16 @@ set_target_properties(libmosquitto PROPERTIES
 	VERSION ${VERSION}
 	SOVERSION 1
 )
-install(TARGETS libmosquitto RUNTIME DESTINATION "${BINDIR}" LIBRARY DESTINATION "${LIBDIR}")
+target_include_directories(libmosquitto
+	PUBLIC
+	$<INSTALL_INTERFACE:${INCLUDEDIR}>
+)
+install(
+	TARGETS libmosquitto
+	EXPORT mosquitto-exports
+	RUNTIME DESTINATION "${BINDIR}"
+	LIBRARY DESTINATION "${LIBDIR}"
+)
 install(FILES mosquitto.h DESTINATION "${INCLUDEDIR}")
 
 if (UNIX)

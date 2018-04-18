@@ -88,3 +88,12 @@ add_subdirectory(man)
 # ========================================
 
 install(FILES mosquitto.conf aclfile.example pskfile.example pwfile.example DESTINATION "${SYSCONFDIR}")
+
+# ========================================
+# Install cmake configuration file
+# ========================================
+install(EXPORT mosquitto-exports
+	FILE mosquitto-config.cmake
+	NAMESPACE mosquitto::
+	DESTINATION "${LIBDIR}"
+)
