@@ -39,9 +39,6 @@ if (${USE_LIBWRAP} STREQUAL ON)
 	target_link_libraries(mosquitto PRIVATE wrap)
 endif (${USE_LIBWRAP} STREQUAL ON)
 
-option(INC_DB_UPGRADE
-	"Include database upgrade support? (recommended)" ON)
-
 option(INC_MEMTRACK
 	"Include memory tracking support?" ON)
 if (${INC_MEMTRACK} STREQUAL ON)

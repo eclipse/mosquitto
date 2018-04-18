@@ -48,11 +48,6 @@ WITH_PERSISTENCE:=yes
 # size', but will use slightly less memory and CPU time.
 WITH_MEMORY_TRACKING:=yes
 
-# Compile with database upgrading support? If disabled, mosquitto won't
-# automatically upgrade old database versions.
-# Not currently supported.
-#WITH_DB_UPGRADE:=yes
-
 # Comment out to remove publishing of the $SYS topic hierarchy containing
 # information about the broker state.
 WITH_SYS_TREE:=yes
