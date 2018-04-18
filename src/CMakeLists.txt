@@ -1,4 +1,5 @@
 add_executable(mosquitto
+	bridge.c
 	conf.c
 	context.c
 	database.c
