@@ -93,7 +93,10 @@ install(FILES mosquitto.conf aclfile.example pskfile.example pwfile.example DEST
 # Install cmake configuration file
 # ========================================
 install(EXPORT mosquitto-exports
-	FILE mosquitto-config.cmake
+	FILE mosquitto-targets.cmake
 	NAMESPACE mosquitto::
+	DESTINATION "${LIBDIR}"
+)
+install(FILES cmake/mosquitto-config.cmake
 	DESTINATION "${LIBDIR}"
 )
