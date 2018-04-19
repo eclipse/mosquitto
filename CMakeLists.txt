@@ -13,8 +13,6 @@ cmake_minimum_required(VERSION 2.8)
 
 set (VERSION 1.4.90)
 
-add_definitions (-DCMAKE -DVERSION=\"${VERSION}\")
-
 if (WIN32)
 	set (BINDIR .)
 	set (SBINDIR .)
@@ -35,7 +33,7 @@ else (WIN32)
 	else ("${CMAKE_INSTALL_PREFIX}" STREQUAL /usr)
 		set (SYSCONFDIR etc/mosquitto)
 	endif ("${CMAKE_INSTALL_PREFIX}" STREQUAL /usr)
-	
+
 	set (LIBDIR lib${LIB_SUFFIX})
 	set (CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${LIBDIR}")
 	set (INCLUDEDIR include)
@@ -51,29 +49,15 @@ option(WITH_TLS_PSK
 	"Include TLS-PSK support (requires WITH_TLS)?" ON)
 option(WITH_EC
 	"Include Elliptic Curve support (requires WITH_TLS)?" ON)
-if (${WITH_TLS} STREQUAL ON)
-	find_package(OpenSSL REQUIRED)
-	add_definitions("-DWITH_TLS")
-
-	if (${WITH_TLS_PSK} STREQUAL ON)
-		add_definitions("-DWITH_TLS_PSK")
-	endif (${WITH_TLS_PSK} STREQUAL ON)
-
-	if (${WITH_EC} STREQUAL ON)
-		add_definitions("-DWITH_EC")
-	endif (${WITH_EC} STREQUAL ON)
-else (${WITH_TLS} STREQUAL ON)
-	set (OPENSSL_INCLUDE_DIR "")
-endif (${WITH_TLS} STREQUAL ON)
-
 option(WITH_SOCKS "Include SOCKS5 support?" ON)
-if (${WITH_SOCKS} STREQUAL ON)
-	add_definitions("-DWITH_SOCKS")
-endif (${WITH_SOCKS} STREQUAL ON)
 
 option(WITH_SRV "Include SRV lookup support?" OFF)
 
 option(DOCUMENTATION "Build documentation?" ON)
+
+option(WITH_STATIC_LIBRARIES "Build static versions of the libmosquitto/pp libraries?" OFF)
+option(WITH_PIC "Build the static library with PIC (Position Independent Code) enabled archives?" OFF)
+option(WITH_THREADING "Include client library threading support?" ON)
 
 # ========================================
 # Include projects
