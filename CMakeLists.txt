@@ -43,21 +43,38 @@ else (WIN32)
 	set (PKGCONFIGDIR "${LIBDIR}/pkgconfig")
 endif (WIN32)
 
-option(WITH_TLS
-	"Include SSL/TLS support?" ON)
-option(WITH_TLS_PSK
-	"Include TLS-PSK support (requires WITH_TLS)?" ON)
-option(WITH_EC
-	"Include Elliptic Curve support (requires WITH_TLS)?" ON)
+# ========================================
+# Common and client only options
+# ========================================
+option(WITH_TLS "Include SSL/TLS support?" ON)
+option(WITH_TLS_PSK "Include TLS-PSK support (requires WITH_TLS)?" ON)
+option(WITH_EC "Include Elliptic Curve support (requires WITH_TLS)?" ON)
+option(WITH_THREADING "Include client library threading support?" ON)
+option(WITH_SRV "Include SRV lookup support?" ON)
 option(WITH_SOCKS "Include SOCKS5 support?" ON)
-
-option(WITH_SRV "Include SRV lookup support?" OFF)
-
 option(DOCUMENTATION "Build documentation?" ON)
 
 option(WITH_STATIC_LIBRARIES "Build static versions of the libmosquitto/pp libraries?" OFF)
 option(WITH_PIC "Build the static library with PIC (Position Independent Code) enabled archives?" OFF)
-option(WITH_THREADING "Include client library threading support?" ON)
+
+# ========================================
+# Broker only options
+# ========================================
+option(WITH_ADNS "Include async DNS support?" OFF)
+option(WITH_WRAP "Include tcpd/libwrap support?" OFF)
+option(WITH_BRIDGE "Include bridge support?" ON)
+option(WITH_PERSISTENCE "Include persistence support?" ON)
+option(WITH_MEMORY_TRACKING "Include memory tracking support?" ON)
+option(WITH_SYS_TREE "Include $SYS tree support?" ON)
+option(WITH_WEBSOCKETS "Include websockets support?" OFF)
+option(WITH_EC "Include Elliptic Curve support (requires WITH_TLS)?" ON)
+option(WITH_GETADDRINFO_A "Include getaddrinfo_a support?" OFF)
+# Linux only - please report if supported on your platform
+option(WITH_UUID "Build using libuuid for clientid generation" ON)
+
+if (CMAKE_SYSTEM_NAME STREQUAL Linux)
+	option(WITH_SYSTEMD "Include systemd support?" OFF)
+endif (CMAKE_SYSTEM_NAME STREQUAL Linux)
 
 # ========================================
 # Include projects
