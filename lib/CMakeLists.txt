@@ -135,16 +135,15 @@ set_target_properties(libmosquitto PROPERTIES
 	OUTPUT_NAME mosquitto
 	VERSION ${VERSION}
 )
-if (${WITH_STATIC_LIBRARIES} STREQUAL ON)
-	set(BUILD_SHARED_LIBS ON)
+if (${BUILD_SHARED_LIBS} STREQUAL ON)
+	set_target_properties(libmosquitto PROPERTIES SOVERSION 1)
+else (${BUILD_SHARED_LIBS} STREQUAL ON)
 	target_compile_definitions(libmosquitto PUBLIC LIBMOSQUITTO_STATIC)
 
 	if (${WITH_PIC} STREQUAL ON)
 		set_target_properties(libmosquitto PROPERTIES POSITION_INDEPENDENT_CODE 1)
 	endif (${WITH_PIC} STREQUAL ON)
-else (${WITH_STATIC_LIBRARIES} STREQUAL ON)
-	set_target_properties(libmosquitto PROPERTIES SOVERSION 1)
-endif (${WITH_STATIC_LIBRARIES} STREQUAL ON)
+endif (${BUILD_SHARED_LIBS} STREQUAL ON)
 
 install(TARGETS libmosquitto
 	RUNTIME DESTINATION "${BINDIR}"

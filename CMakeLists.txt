@@ -54,7 +54,7 @@ option(WITH_SRV "Include SRV lookup support?" ON)
 option(WITH_SOCKS "Include SOCKS5 support?" ON)
 option(DOCUMENTATION "Build documentation?" ON)
 
-option(WITH_STATIC_LIBRARIES "Build static versions of the libmosquitto/pp libraries?" OFF)
+option(BUILD_SHARED_LIBS "Build shared versions of the libmosquitto/pp libraries?" ON)
 option(WITH_PIC "Build the static library with PIC (Position Independent Code) enabled archives?" OFF)
 
 # ========================================
