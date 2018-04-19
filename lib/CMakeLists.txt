@@ -18,6 +18,7 @@ add_library(libmosquitto
 	memory_mosq.c
 	messages_mosq.c
 	mosquitto.c
+	net_mosq.c
 	options.c
 	packet_mosq.c
 	read_handle.c
