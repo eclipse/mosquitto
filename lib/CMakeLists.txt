@@ -17,7 +17,7 @@ add_library(libmosquitto SHARED
 	util_mosq.c
 	will_mosq.c
 )
-add_library(libmosquitto_with_broker SHARED
+add_library(libmosquitto_with_broker STATIC
 	memory_mosq.c
 	net_mosq.c
 	read_handle_shared.c
