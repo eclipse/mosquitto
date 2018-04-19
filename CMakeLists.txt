@@ -21,8 +21,6 @@ else (WIN32)
 			OUTPUT_STRIP_TRAILING_WHITESPACE)
 endif (WIN32)
 
-add_definitions (-DCMAKE -DVERSION=\"${VERSION}\" -DTIMESTAMP=\"${TIMESTAMP}\")
-
 if (WIN32)
 	set (BINDIR .)
 	set (SBINDIR .)
@@ -42,7 +40,7 @@ else (WIN32)
 	else ("${CMAKE_INSTALL_PREFIX}" STREQUAL /usr)
 		set (SYSCONFDIR etc/mosquitto)
 	endif ("${CMAKE_INSTALL_PREFIX}" STREQUAL /usr)
-	
+
 	set (LIBDIR lib${LIB_SUFFIX})
 	set (CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${LIBDIR}")
 	set (INCLUDEDIR include)
@@ -51,33 +49,30 @@ else (WIN32)
 	set (SHAREDIR "${DATAROOTDIR}/mosquitto")
 endif (WIN32)
 
-option(WITH_TLS
-	"Include SSL/TLS support?" ON)
-option(WITH_TLS_PSK
-	"Include TLS-PSK support (requires WITH_TLS)?" ON)
-option(WITH_EC
-	"Include Elliptic Curve support (requires WITH_TLS)?" ON)
-if (${WITH_TLS} STREQUAL ON)
-	find_package(OpenSSL REQUIRED)
-	add_definitions("-DWITH_TLS")
-
-	if (${WITH_TLS_PSK} STREQUAL ON)
-		add_definitions("-DWITH_TLS_PSK")
-	endif (${WITH_TLS_PSK} STREQUAL ON)
-
-	if (${WITH_EC} STREQUAL ON)
-		add_definitions("-DWITH_EC")
-	endif (${WITH_EC} STREQUAL ON)
-else (${WITH_TLS} STREQUAL ON)
-	set (OPENSSL_INCLUDE_DIR "")
-endif (${WITH_TLS} STREQUAL ON)
-
-option(WITH_SOCKS "Include SOCKS5 support?" ON)
-if (${WITH_SOCKS} STREQUAL ON)
-	add_definitions("-DWITH_SOCKS")
-endif (${WITH_SOCKS} STREQUAL ON)
-
+# ========================================
+# Common and client only options
+# ========================================
+option(WITH_DOCS "Build man page documentation?" ON)
+option(WITH_TLS "Include SSL/TLS support?" ON)
+option(WITH_TLS_PSK "Include TLS-PSK support (requires WITH_TLS)?" ON)
+option(WITH_EC "Include Elliptic Curve support (requires WITH_TLS)?" ON)
+option(WITH_THREADING "Include client library threading support?" ON)
 option(WITH_SRV "Include SRV lookup support?" ON)
+option(WITH_SOCKS "Include SOCKS5 support?" ON)
+
+# ========================================
+# Broker only options
+# ========================================
+option(WITH_ADNS "Include async DNS support?" OFF)
+option(WITH_WRAP "Include tcpd/libwrap support?" OFF)
+option(WITH_BRIDGE "Include bridge support?" ON)
+option(WITH_PERSISTENCE "Include persistence support?" ON)
+option(WITH_MEMORY_TRACKING "Include memory tracking support?" ON)
+option(WITH_SYS_TREE "Include $SYS tree support?" ON)
+option(WITH_WEBSOCKETS "Include websockets support?" OFF)
+option(WITH_EC "Include Elliptic Curve support (requires WITH_TLS)?" ON)
+# Linux only - please report if supported on your platform
+option(WITH_UUID "Build using libuuid for clientid generation" ON)
 
 # ========================================
 # Include projects
@@ -93,3 +88,15 @@ add_subdirectory(man)
 # ========================================
 
 install(FILES mosquitto.conf aclfile.example pskfile.example pwfile.example DESTINATION "${SYSCONFDIR}")
+
+# ========================================
+# Install cmake configuration file
+# ========================================
+install(EXPORT mosquitto-exports
+	FILE mosquitto-targets.cmake
+	NAMESPACE mosquitto::
+	DESTINATION "${LIBDIR}"
+)
+install(FILES cmake/mosquitto-config.cmake
+	DESTINATION "${LIBDIR}"
+)
