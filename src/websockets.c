@@ -537,9 +537,9 @@ static int callback_http(struct libwebsocket_context *context,
 			}
 
 #ifdef WIN32
-			if((filestat.st_mode & S_IFDIF) != S_IFDIR){
+			if((filestat.st_mode & S_IFDIR) == S_IFDIR){
 #else
-			if(!S_ISDIR(filestat.st_mode)){
+			if(S_IFDIR(filestat.st_mode)){
 #endif
 				fclose(u->fptr);
 				u->fptr = NULL;
