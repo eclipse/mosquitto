@@ -443,7 +443,7 @@ static char *http__canonical_filename(
 		return NULL;
 	}
 #else
-	filename_canonical = realpath(filename, NULL);
+	filename_canonical = (char*) realpath(filename, NULL);
 	mosquitto__free(filename);
 	if(!filename_canonical){
 		if(errno == EACCES){
@@ -538,8 +538,11 @@ static int callback_http(struct libwebsocket_context *context,
 				return -1;
 			}
 
-
+#ifdef WIN32
 			if((filestat.st_mode & S_IFDIR) == S_IFDIR){
+#else
+			if(S_IFDIR(filestat.st_mode)){
+#endif
 				fclose(u->fptr);
 				u->fptr = NULL;
 				free(filename_canonical);
@@ -551,7 +554,11 @@ static int callback_http(struct libwebsocket_context *context,
 				return libwebsocket_write(wsi, buf, buflen, LWS_WRITE_HTTP);
 			}
 
+#ifdef WIN32
 			if((filestat.st_mode & S_IFREG) != S_IFREG){
+#else
+			if(!S_ISREG(filestat.st_mode)){
+#endif
 				libwebsockets_return_http_status(context, wsi, HTTP_STATUS_FORBIDDEN, NULL);
 				fclose(u->fptr);
 				u->fptr = NULL;
@@ -702,7 +709,7 @@ struct libwebsocket_context *mosq_websockets_init(struct mosquitto__listener *li
 #ifdef WIN32
 		user->http_dir = _fullpath(NULL, listener->http_dir, 0);
 #else
-		user->http_dir = realpath(listener->http_dir, NULL);
+		user->http_dir = (char*)realpath(listener->http_dir, NULL);
 #endif
 		if(!user->http_dir){
 			mosquitto__free(user);
