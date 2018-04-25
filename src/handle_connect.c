@@ -575,25 +575,21 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 	}
 
 	/* Associate user with its ACL, assuming we have ACLs loaded. */
-	if(db->acl_list){
-		acl_tail = db->acl_list;
-		while(acl_tail){
-			if(context->username){
-				if(acl_tail->username && !strcmp(context->username, acl_tail->username)){
-					context->acl_list = acl_tail;
-					break;
-				}
-			}else{
-				if(acl_tail->username == NULL){
-					context->acl_list = acl_tail;
-					break;
-				}
-			}
+	acl_tail = db->config->per_listener_settings ? context->listener->acl_list : db->acl_list;
+	char *cuser = context->username;
+	if (cuser) {
+		char *acluser;
+		while (acl_tail) {
+			acluser = acl_tail->username;
+			if (acluser && !strcmp(acluser, cuser))
+				break;
 			acl_tail = acl_tail->next;
 		}
-	}else{
-		context->acl_list = NULL;
+	} else {
+		while (acl_tail && NULL != acl_tail->username)
+			acl_tail = acl_tail->next;
 	}
+	context->acl_list = acl_tail;
 
 	if(will_struct){
 		context->will = will_struct;
