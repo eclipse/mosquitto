@@ -33,6 +33,7 @@ Dirk O. Kaar
 Dominik Obermaier
 Dominik Zajac
 Ed Morris
+Emmanuel Frecon
 Fabian Ruff
 Fang Chong
 Frank Hansen
