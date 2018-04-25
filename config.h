@@ -28,4 +28,5 @@
 #define uthash_malloc(sz) mosquitto__malloc(sz)
 #define uthash_free(ptr,sz) mosquitto__free(ptr)
 
+#define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
