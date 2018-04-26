@@ -4,12 +4,12 @@ Copyright (c) 2009-2018 Roger Light <roger@atchoo.org>
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
 and Eclipse Distribution License v1.0 which accompany this distribution.
- 
+
 The Eclipse Public License is available at
    http://www.eclipse.org/legal/epl-v10.html
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
- 
+
 Contributors:
    Roger Light - initial implementation and documentation.
    Tatsuzo Osawa - Add epoll.
@@ -193,6 +193,7 @@ struct mosquitto__security_options {
 	 * should be disabled when these options are set.
 	 */
 	char *password_file;
+	char *acl_file;
 	char *psk_file;
 	struct mosquitto__auth_plugin_config *auth_plugin_configs;
 	int auth_plugin_config_count;
@@ -235,11 +236,12 @@ struct mosquitto__listener {
 	struct mosquitto__security_options security_options;
 	struct mosquitto__unpwd *unpwd;
 	struct mosquitto__unpwd *psk_id;
+	struct mosquitto__acl_user *acl_list;
+	struct mosquitto__acl *acl_patterns;
 };
 
 struct mosquitto__config {
 	char *config_file;
-	char *acl_file;
 	bool allow_duplicate_messages;
 	int autosave_interval;
 	bool autosave_on_changes;
