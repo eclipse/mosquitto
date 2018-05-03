@@ -114,7 +114,7 @@ int net__socket_accept(struct mosquitto_db *db, mosq_sock_t listensock)
 	fromhost(&wrap_req);
 	if(!hosts_access(&wrap_req)){
 		/* Access is denied */
-		if(!mosquitto__socket_get_address(new_sock, address, 1024)){
+		if(!net__socket_get_address(new_sock, address, 1024)){
 			log__printf(NULL, MOSQ_LOG_NOTICE, "Client connection from %s denied access by tcpd.", address);
 		}
 		COMPAT_CLOSE(new_sock);
