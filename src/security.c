@@ -413,13 +413,10 @@ int mosquitto_security_cleanup(struct mosquitto_db *db, bool reload)
 
 
 //int mosquitto_acl_check(struct mosquitto_db *db, struct mosquitto *context, const char *topic, int access)
-static int acl__check_single(struct mosquitto__auth_plugin_config *auth_plugin, struct mosquitto *context, const char *topic, int access)
+static int acl__check_single(struct mosquitto__auth_plugin_config *auth_plugin, struct mosquitto *context, struct mosquitto_acl_msg *msg, int access)
 {
-	struct mosquitto_acl_msg msg;
 	const char *username;
-
-	memset(&msg, 0, sizeof(msg));
-	msg.topic = topic;
+	const char *topic = msg->topic;
 
 	username = mosquitto_client_username(context);
 	if(auth_plugin->deny_special_chars == true){
@@ -440,7 +437,7 @@ static int acl__check_single(struct mosquitto__auth_plugin_config *auth_plugin, 
 	}
 
 	if(auth_plugin->plugin.version == 3){
-		return auth_plugin->plugin.acl_check_v3(auth_plugin->plugin.user_data, access, context, &msg);
+		return auth_plugin->plugin.acl_check_v3(auth_plugin->plugin.user_data, access, context, msg);
 	}else if(auth_plugin->plugin.version == 2){
 		if(access == MOSQ_ACL_SUBSCRIBE){
 			return MOSQ_ERR_SUCCESS;
@@ -452,11 +449,12 @@ static int acl__check_single(struct mosquitto__auth_plugin_config *auth_plugin, 
 }
 
 
-int mosquitto_acl_check(struct mosquitto_db *db, struct mosquitto *context, const char *topic, int access)
+int mosquitto_acl_check(struct mosquitto_db *db, struct mosquitto *context, const char *topic, long payloadlen, void* payload, int qos, bool retain, int access)
 {
 	int rc;
 	int i;
 	struct mosquitto__security_options *opts;
+	struct mosquitto_acl_msg msg;
 
 	if(!context->id){
 		return MOSQ_ERR_ACL_DENIED;
@@ -477,8 +475,15 @@ int mosquitto_acl_check(struct mosquitto_db *db, struct mosquitto *context, cons
 		opts = &db->config->security_options;
 	}
 
+	memset(&msg, 0, sizeof(msg));
+	msg.topic = topic;
+	msg.payloadlen = payloadlen;
+	msg.payload = payload;
+	msg.qos = qos;
+	msg.retain = retain;
+
 	for(i=0; i<opts->auth_plugin_config_count; i++){
-		rc = acl__check_single(&opts->auth_plugin_configs[i], context, topic, access);
+		rc = acl__check_single(&opts->auth_plugin_configs[i], context, &msg, access);
 		if(rc != MOSQ_ERR_PLUGIN_DEFER){
 			return rc;
 		}

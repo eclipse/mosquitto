@@ -168,7 +168,7 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 	}
 
 	/* Check for topic access */
-	rc = mosquitto_acl_check(db, context, topic, MOSQ_ACL_WRITE);
+	rc = mosquitto_acl_check(db, context, topic, payloadlen, UHPA_ACCESS(payload, payloadlen), qos, retain, MOSQ_ACL_WRITE);
 	if(rc == MOSQ_ERR_ACL_DENIED){
 		log__printf(NULL, MOSQ_LOG_DEBUG, "Denied PUBLISH from %s (d%d, q%d, r%d, m%d, '%s', ... (%ld bytes))", context->id, dup, qos, retain, mid, topic, (long)payloadlen);
 		goto process_bad_message;

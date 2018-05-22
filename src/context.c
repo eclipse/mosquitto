@@ -202,7 +202,8 @@ void context__cleanup(struct mosquitto_db *db, struct mosquitto *context, bool d
 void context__send_will(struct mosquitto_db *db, struct mosquitto *ctxt)
 {
 	if(ctxt->state != mosq_cs_disconnecting && ctxt->will){
-		if(mosquitto_acl_check(db, ctxt, ctxt->will->topic, MOSQ_ACL_WRITE) == MOSQ_ERR_SUCCESS){
+		if(mosquitto_acl_check(db, ctxt, ctxt->will->topic, ctxt->will->payloadlen, ctxt->will->payload,
+							   ctxt->will->qos, ctxt->will->retain, MOSQ_ACL_WRITE) == MOSQ_ERR_SUCCESS){
 			/* Unexpected disconnect, queue the client will. */
 			db__messages_easy_queue(db, ctxt, ctxt->will->topic, ctxt->will->qos, ctxt->will->payloadlen, ctxt->will->payload, ctxt->will->retain);
 		}

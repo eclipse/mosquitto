@@ -605,7 +605,7 @@ int mosquitto_security_module_cleanup(struct mosquitto_db *db);
 int mosquitto_security_init(struct mosquitto_db *db, bool reload);
 int mosquitto_security_apply(struct mosquitto_db *db);
 int mosquitto_security_cleanup(struct mosquitto_db *db, bool reload);
-int mosquitto_acl_check(struct mosquitto_db *db, struct mosquitto *context, const char *topic, int access);
+int mosquitto_acl_check(struct mosquitto_db *db, struct mosquitto *context, const char *topic, long payloadlen, void* payload, int qos, bool retain, int access);
 int mosquitto_unpwd_check(struct mosquitto_db *db, struct mosquitto *context, const char *username, const char *password);
 int mosquitto_psk_key_get(struct mosquitto_db *db, struct mosquitto *context, const char *hint, const char *identity, char *key, int max_key_len);
 
