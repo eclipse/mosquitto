@@ -80,18 +80,23 @@ int mosquitto_publish(struct mosquitto *mosq, int *mid, const char *topic, int p
 
 		pthread_mutex_lock(&mosq->out_message_mutex);
 		queue_status = message__queue(mosq, message, mosq_md_out);
-		if(queue_status == 0){
-			if(qos == 1){
-				message->state = mosq_ms_wait_for_puback;
-			}else if(qos == 2){
-				message->state = mosq_ms_wait_for_pubrec;
-			}
-			pthread_mutex_unlock(&mosq->out_message_mutex);
-			return send__publish(mosq, message->msg.mid, message->msg.topic, message->msg.payloadlen, message->msg.payload, message->msg.qos, message->msg.retain, message->dup);
-		}else{
-			message->state = mosq_ms_invalid;
-			pthread_mutex_unlock(&mosq->out_message_mutex);
-			return MOSQ_ERR_SUCCESS;
+		switch(queue_status){
+			case 0:
+				if(qos == 1){
+					message->state = mosq_ms_wait_for_puback;
+				}else if(qos == 2){
+					message->state = mosq_ms_wait_for_pubrec;
+				}
+				pthread_mutex_unlock(&mosq->out_message_mutex);
+				return send__publish(mosq, message->msg.mid, message->msg.topic, message->msg.payloadlen, message->msg.payload, message->msg.qos, message->msg.retain, message->dup);
+			case 1:
+				message->state = mosq_ms_invalid;
+				pthread_mutex_unlock(&mosq->out_message_mutex);
+				return MOSQ_ERR_SUCCESS;
+			case 2:
+				pthread_mutex_unlock(&mosq->out_message_mutex);
+				message__cleanup(&message);
+				return MOSQ_ERR_QUEUE_LIMIT;
 		}
 	}
 }
