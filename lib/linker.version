@@ -90,4 +90,5 @@ MOSQ_1.5 {
 		mosquitto_sub_topic_check2;
 		mosquitto_topic_matches_sub2;
 		mosquitto_connect_with_flags_callback_set;
+		mosquitto_max_pub_queue_messages_set;
 } MOSQ_1.4;

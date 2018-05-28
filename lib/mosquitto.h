@@ -84,7 +84,8 @@ enum mosq_err_t {
 	MOSQ_ERR_EAI = 15,
 	MOSQ_ERR_PROXY = 16,
 	MOSQ_ERR_PLUGIN_DEFER = 17,
-	MOSQ_ERR_MALFORMED_UTF8 = 18
+	MOSQ_ERR_MALFORMED_UTF8 = 18,
+	MOSQ_ERR_QUEUE_LIMIT = 19
 };
 
 /* Error values */
@@ -1351,6 +1352,9 @@ libmosq_EXPORT int mosquitto_reconnect_delay_set(struct mosquitto *mosq, unsigne
  * higher than the maximum in flight messages on the broker may lead to
  * delays in the messages being acknowledged.
  *
+ * The real number of inflight messages published at one time can't be higer than the max_messages allowed in the queue
+ * (see mosquitto_max_pub_queue_messages_set)
+ *
  * Set to 0 for no maximum.
  *
  * Parameters:
@@ -1363,6 +1367,26 @@ libmosq_EXPORT int mosquitto_reconnect_delay_set(struct mosquitto *mosq, unsigne
  * 	MOSQ_ERR_INVAL -   if the input parameters were invalid.
  */
 libmosq_EXPORT int mosquitto_max_inflight_messages_set(struct mosquitto *mosq, unsigned int max_inflight_messages);
+
+/*
+ * Function: mosquitto_max_pub_queue_messages_set
+ *
+ * Set the number of QoS 1 and 2 messages published that can be queued
+ *
+ * The inflight messages at one time can't be higer than this number, even if max_inflight_messages whas defined otherwise
+ *
+ *
+ * Set to 0 for no maximum.
+ *
+ * Parameters:
+ *  mosq -                  a valid mosquitto instance.
+ *  max_queued_messages - the maximum number of outgoing queued messages
+ *
+ * Returns:
+ *	MOSQ_ERR_SUCCESS - on success.
+ *	MOSQ_ERR_INVAL -   if the input parameters were invalid.
+ */
+libmosq_EXPORT int mosquitto_max_pub_queue_messages_set(struct mosquitto *mosq, unsigned int max_queued_messages);
 
 /*
  * Function: mosquitto_message_retry_set

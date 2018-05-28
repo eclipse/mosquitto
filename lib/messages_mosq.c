@@ -114,6 +114,11 @@ void mosquitto_message_free_contents(struct mosquitto_message *message)
 	mosquitto__free(message->payload);
 }
 
+/* Returns:
+  *	0 - to indicate an outgoing message can be started
+  *	1 - to indicate that the inflight limit has been reached)
+  * 	2 - to indicate that the outgoing queue limit has been reached
+  */
 int message__queue(struct mosquitto *mosq, struct mosquitto_message_all *message, enum mosquitto_msg_direction dir)
 {
 	int rc = 0;
@@ -123,20 +128,24 @@ int message__queue(struct mosquitto *mosq, struct mosquitto_message_all *message
 	assert(message);
 
 	if(dir == mosq_md_out){
-		mosq->out_queue_len++;
-		message->next = NULL;
-		if(mosq->out_messages_last){
-			mosq->out_messages_last->next = message;
-		}else{
-			mosq->out_messages = message;
-		}
-		mosq->out_messages_last = message;
-		if(message->msg.qos > 0){
-			if(mosq->max_inflight_messages == 0 || mosq->inflight_messages < mosq->max_inflight_messages){
-				mosq->inflight_messages++;
+		if ((!mosq->max_out_queue_len) || (mosq->out_queue_len < mosq->max_out_queue_len)){
+			mosq->out_queue_len++;
+			message->next = NULL;
+			if(mosq->out_messages_last){
+				mosq->out_messages_last->next = message;
 			}else{
-				rc = 1;
+				mosq->out_messages = message;
 			}
+			mosq->out_messages_last = message;
+			if(message->msg.qos > 0){
+				if(mosq->max_inflight_messages == 0 || mosq->inflight_messages < mosq->max_inflight_messages){
+					mosq->inflight_messages++;
+				}else{
+					rc = 1;
+				}
+			}
+		}else{
+			rc = 2;
 		}
 	}else{
 		mosq->in_queue_len++;
@@ -393,6 +402,15 @@ int mosquitto_max_inflight_messages_set(struct mosquitto *mosq, unsigned int max
 	if(!mosq) return MOSQ_ERR_INVAL;
 
 	mosq->max_inflight_messages = max_inflight_messages;
+
+	return MOSQ_ERR_SUCCESS;
+}
+
+int mosquitto_max_pub_queue_messages_set(struct mosquitto *mosq, unsigned int max_queued_messages)
+{
+	if(!mosq) return MOSQ_ERR_INVAL;
+
+	mosq->max_out_queue_len = max_queued_messages;
 
 	return MOSQ_ERR_SUCCESS;
 }
