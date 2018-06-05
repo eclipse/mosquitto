@@ -38,4 +38,4 @@ else
 fi
 
 # Launch the snap
-$SNAP/usr/local/sbin/mosquitto -c $CONFIG_FILE $@
+$SNAP/usr/sbin/mosquitto -c $CONFIG_FILE $@
