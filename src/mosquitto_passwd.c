@@ -84,10 +84,12 @@ void print_usage(void)
 	printf("Usage: mosquitto_passwd [-c | -D] passwordfile username\n");
 	printf("       mosquitto_passwd -b passwordfile username password\n");
 	printf("       mosquitto_passwd [-B | -U] passwordfile\n");
+	printf("       mosquitto_passwd -r passwordfile username_old username_new\n");
 	printf(" -b : run in batch mode to allow passing passwords on the command line.\n");
 	printf(" -B : like -b, but takes username and password from env variables MOSQUITTO_USERNAME, MOSQUITTO_PASSWORD.\n");
 	printf(" -c : create a new password file. This will overwrite existing files.\n");
 	printf(" -D : delete the username rather than adding/updating its password.\n");
+	printf(" -r : rename the user: change username from username_old to username_new.\n");
 	printf(" -U : update a plain text password file to use hashed passwords.\n");
 	printf("\nSee http://mosquitto.org/ for more information.\n\n");
 }
@@ -228,6 +230,32 @@ int update_pwuser(FILE *fptr, FILE *ftmp, const char *username, const char *pass
 	}else{
 		return output_new_password(ftmp, username, password);
 	}
+}
+
+static int rename_user(FILE *fptr, FILE *ftmp, const char *username, const char *username_new)
+{
+	char buf[MAX_BUFFER_LEN];
+	char lbuf[MAX_BUFFER_LEN], *token;
+	bool found = false;
+
+	while(!feof(fptr) && fgets(buf, MAX_BUFFER_LEN, fptr)){
+		memcpy(lbuf, buf, MAX_BUFFER_LEN);
+		token = strtok(lbuf, ":");
+		if(!strcmp(username_new, token)){
+			fprintf(stderr, "Error: User %s already present in password file.\n", username_new);
+			return 1;
+		}
+		if(strcmp(username, token)){
+			fprintf(ftmp, "%s", buf);
+		}else{
+			fprintf(ftmp, "%s:%s", username_new, buf + strlen(username) + 1);
+			found = true;
+		}
+	}
+	if(!found){
+		fprintf(stderr, "Warning: User %s not found in password file.\n", username);
+	}
+	return 0;
 }
 
 int gets_quiet(char *s, int len)
@@ -373,10 +401,12 @@ int main(int argc, char *argv[])
 	char *password_file_tmp = NULL;
 	char *password_file = NULL;
 	char *username = NULL;
+	char *username_new = NULL;
 	char *password_cmd = NULL;
 	bool batch_mode = false;
 	bool create_new = false;
 	bool delete_user = false;
+	bool rename_mode = false;
 	FILE *fptr, *ftmp;
 	char password[MAX_BUFFER_LEN];
 	int rc;
@@ -434,6 +464,16 @@ int main(int argc, char *argv[])
 				fprintf(stderr, "Error: -B argument given but username or password missing from env vars.\n");
 				return 1;
 			}
+		}
+	}else if(!strcmp(argv[1], "-r")){
+		rename_mode = true;
+		if(argc != 5){
+			fprintf(stderr, "Error: -r argument given but password file, username_old or username_new missing.\n");
+			return 1;
+		}else{
+			password_file_tmp = argv[2];
+			username = argv[3];
+			username_new = argv[4];
 		}
 	}else if(!strcmp(argv[1], "-U")){
 		if(argc != 3){
@@ -521,6 +561,8 @@ int main(int argc, char *argv[])
 			rc = delete_pwuser(fptr, ftmp, username);
 		}else if(do_update_file){
 			rc = update_file(fptr, ftmp);
+		}else if(rename_mode){
+			rc = rename_user(fptr, ftmp, username, username_new);
 		}else{
 			if(batch_mode){
 				/* Update password for individual user */

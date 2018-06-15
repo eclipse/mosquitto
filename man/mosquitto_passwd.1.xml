@@ -39,6 +39,13 @@
 			</group>
 			<arg choice='plain'><replaceable>passwordfile</replaceable></arg>
 		</cmdsynopsis>
+		<cmdsynopsis>
+			<command>mosquitto_passwd</command>
+			<arg choice='plain'><option>-r</option></arg>
+			<arg choice='plain'><replaceable>passwordfile</replaceable></arg>
+			<arg choice='plain'><replaceable>username_old</replaceable></arg>
+			<arg choice='plain'><replaceable>username_new</replaceable></arg>
+		</cmdsynopsis>
 	</refsynopsisdiv>
 
 	<refsect1>
@@ -84,6 +91,14 @@
 				<listitem>
 					<para>Delete the specified user from the password
 						file.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-r</option></term>
+				<listitem>
+					<para>Rename the user: change username from
+					<option>username_old</option> to
+					<option>username_new</option>.</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
