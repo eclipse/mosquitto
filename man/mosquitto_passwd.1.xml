@@ -33,7 +33,10 @@
 		</cmdsynopsis>
 		<cmdsynopsis>
 			<command>mosquitto_passwd</command>
-			<arg choice='plain'><option>-U</option></arg>
+			<group>
+				<arg choice='plain'><option>-B</option></arg>
+				<arg choice='plain'><option>-U</option></arg>
+			</group>
 			<arg choice='plain'><replaceable>passwordfile</replaceable></arg>
 		</cmdsynopsis>
 	</refsynopsisdiv>
@@ -58,6 +61,15 @@
 						but should be used with care because the password will
 						be visible on the command line and in command
 						history.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-B</option></term>
+				<listitem>
+					<para>Run in batch mode. Like <option>-b</option>, but this
+						form allows the username and password to be provided
+						in the environment variables MOSQUITTO_USERNAME,
+						MOSQUITTO_PASSWORD.</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>

@@ -83,8 +83,9 @@ void print_usage(void)
 	printf("mosquitto_passwd is a tool for managing password files for mosquitto.\n\n");
 	printf("Usage: mosquitto_passwd [-c | -D] passwordfile username\n");
 	printf("       mosquitto_passwd -b passwordfile username password\n");
-	printf("       mosquitto_passwd -U passwordfile\n");
+	printf("       mosquitto_passwd [-B | -U] passwordfile\n");
 	printf(" -b : run in batch mode to allow passing passwords on the command line.\n");
+	printf(" -B : like -b, but takes username and password from env variables MOSQUITTO_USERNAME, MOSQUITTO_PASSWORD.\n");
 	printf(" -c : create a new password file. This will overwrite existing files.\n");
 	printf(" -D : delete the username rather than adding/updating its password.\n");
 	printf(" -U : update a plain text password file to use hashed passwords.\n");
@@ -419,6 +420,20 @@ int main(int argc, char *argv[])
 			password_file_tmp = argv[2];
 			username = argv[3];
 			password_cmd = argv[4];
+		}
+	}else if(!strcmp(argv[1], "-B")){
+		batch_mode = true;
+		if(argc != 3){
+			fprintf(stderr, "Error: -B argument given but password file missing.\n");
+			return 1;
+		}else{
+			password_file_tmp = argv[2];
+			username = getenv("MOSQUITTO_USERNAME");
+			password_cmd = getenv("MOSQUITTO_PASSWORD");
+			if((username == NULL) || (*username == '\0') || (password_cmd == NULL)) {
+				fprintf(stderr, "Error: -B argument given but username or password missing from env vars.\n");
+				return 1;
+			}
 		}
 	}else if(!strcmp(argv[1], "-U")){
 		if(argc != 3){
