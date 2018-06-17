@@ -153,11 +153,16 @@ static struct libwebsocket_protocols protocols[] = {
 	}
 };
 
-static void easy_address(int sock, struct mosquitto *mosq)
+static void easy_address(struct libwebsocket *wsi, struct mosquitto *mosq)
 {
 	char address[1024];
 
-	if(!net__socket_get_address(sock, address, 1024)){
+	if (lws_hdr_copy(wsi, address, 1023, WSI_TOKEN_HTTP_X_REAL_IP) > 0 ||
+#if (LWS_LIBRARY_VERSION_MAJOR > 2) || (LWS_LIBRARY_VERSION_MAJOR == 2 && LWS_LIBRARY_VERSION_MINOR >= 2)
+		lws_hdr_copy(wsi, address, 1023, WSI_TOKEN_HTTP_X_FORWARDED_FOR) > 0 ||
+#endif
+		!net__socket_get_address(libwebsocket_get_socket_fd(wsi), address, 1024)
+	) {
 		mosq->address = mosquitto__strdup(address);
 	}
 }
@@ -221,7 +226,7 @@ static int callback_mqtt(struct libwebsocket_context *context,
 			}else{
 				return -1;
 			}
-			easy_address(libwebsocket_get_socket_fd(wsi), mosq);
+			easy_address(wsi, mosq);
 			if(!mosq->address){
 				/* getpeername and inet_ntop failed and not a bridge */
 				mosquitto__free(mosq);
