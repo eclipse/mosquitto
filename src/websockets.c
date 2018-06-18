@@ -29,6 +29,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #ifdef WITH_WEBSOCKETS
 
+#define _GNU_SOURCE
+
 #include "config.h"
 
 #include <libwebsockets.h>
