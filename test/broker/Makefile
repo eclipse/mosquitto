@@ -82,6 +82,7 @@ endif
 	./06-bridge-fail-persist-resend-qos2.py
 	./06-bridge-b2br-remapping.py
 	./06-bridge-br2b-remapping.py
+	./06-bridge-per-listener-settings.py
 
 07 :
 	./07-will-qos0.py
