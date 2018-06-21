@@ -17,7 +17,7 @@ def write_config(filename, port1, port2):
         f.write("port %d\n" % (port2))
         f.write("\n")
         f.write("connection bridge_sample\n")
-        f.write("address localhost:%d\n" % (port1))
+        f.write("address 127.0.0.1:%d\n" % (port1))
         f.write("bridge_attempt_unsubscribe false\n")
         f.write("topic # in 0 local/topic/ remote/topic/\n")
         f.write("topic prefix/# in 0 local2/topic/ remote2/topic/\n")
