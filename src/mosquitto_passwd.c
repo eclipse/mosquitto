@@ -288,6 +288,7 @@ int get_password(char *password, int len)
 	char pw1[MAX_BUFFER_LEN], pw2[MAX_BUFFER_LEN];
 
 	printf("Password: ");
+	fflush(stdout);
 	if(gets_quiet(pw1, MAX_BUFFER_LEN)){
 		fprintf(stderr, "Error: Empty password.\n");
 		return 1;
@@ -295,6 +296,7 @@ int get_password(char *password, int len)
 	printf("\n");
 
 	printf("Reenter password: ");
+	fflush(stdout);
 	if(gets_quiet(pw2, MAX_BUFFER_LEN)){
 		fprintf(stderr, "Error: Empty password.\n");
 		return 1;
