@@ -14,6 +14,7 @@ Contributors:
    Roger Light - initial implementation and documentation.
    Tatsuzo Osawa - Add epoll.
 */
+/* Portions copyright © 2018 TIBCO Software Inc. */
 
 #define _GNU_SOURCE
 
@@ -608,7 +609,9 @@ void do_disconnect(struct mosquitto_db *db, struct mosquitto *context)
 			}else{
 				id = "<unknown>";
 			}
-			if(context->state != mosq_cs_disconnecting){
+			if (context->state == mosq_cs_expiring){ 
+				log__printf(NULL, MOSQ_LOG_NOTICE, "Expiring old client session %s, disconnecting.", id);
+			}else if(context->state != mosq_cs_disconnecting){
 				log__printf(NULL, MOSQ_LOG_NOTICE, "Socket error on client %s, disconnecting.", id);
 			}else{
 				log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s disconnected.", id);

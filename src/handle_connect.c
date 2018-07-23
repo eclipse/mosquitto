@@ -13,6 +13,7 @@ and the Eclipse Distribution License is available at
 Contributors:
    Roger Light - initial implementation and documentation.
 */
+/* Portions copyright © 2018 TIBCO Software Inc. */
 
 #include <stdio.h>
 #include <string.h>
@@ -578,6 +579,7 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 		}
 
 		found_context->clean_session = true;
+		found_context->state = mosq_cs_expiring;
 		do_disconnect(db, found_context);
 	}
 
