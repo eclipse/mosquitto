@@ -14,7 +14,6 @@ Contributors:
    Roger Light - initial implementation and documentation.
    Tatsuzo Osawa - Add epoll.
 */
-/* Portions copyright © 2018 TIBCO Software Inc. */
 
 #define _GNU_SOURCE
 

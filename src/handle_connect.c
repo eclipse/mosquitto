@@ -13,7 +13,6 @@ and the Eclipse Distribution License is available at
 Contributors:
    Roger Light - initial implementation and documentation.
 */
-/* Portions copyright © 2018 TIBCO Software Inc. */
 
 #include <stdio.h>
 #include <string.h>
