@@ -92,6 +92,7 @@ int handle__unsubscribe(struct mosquitto_db *db, struct mosquitto *context)
 	db->persistence_changes++;
 #endif
 
+	log__printf(NULL, MOSQ_LOG_DEBUG, "Sending UNSUBACK to %s", context->id);
 	return send__command_with_mid(context, UNSUBACK, mid, false);
 }
 
