@@ -578,6 +578,7 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 		}
 
 		found_context->clean_session = true;
+		found_context->state = mosq_cs_expiring;
 		do_disconnect(db, found_context);
 	}
 
