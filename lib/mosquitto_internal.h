@@ -60,7 +60,7 @@ Contributors:
 #  ifdef __linux__
 #    include <netdb.h>
 #  endif
-#  include "uthash.h"
+#  include "../src/uthash.h"
 struct mosquitto_client_msg;
 #endif
 

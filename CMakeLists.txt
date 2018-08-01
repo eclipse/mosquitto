@@ -13,8 +13,6 @@ cmake_minimum_required(VERSION 2.8)
 
 set (VERSION 1.5.0)
 
-add_definitions (-DCMAKE -DVERSION=\"${VERSION}\")
-
 if (WIN32)
 	set (BINDIR .)
 	set (SBINDIR .)
@@ -35,7 +33,7 @@ else (WIN32)
 	else ("${CMAKE_INSTALL_PREFIX}" STREQUAL /usr)
 		set (SYSCONFDIR etc/mosquitto)
 	endif ("${CMAKE_INSTALL_PREFIX}" STREQUAL /usr)
-	
+
 	set (LIBDIR lib${LIB_SUFFIX})
 	set (CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${LIBDIR}")
 	set (INCLUDEDIR include)
@@ -45,35 +43,38 @@ else (WIN32)
 	set (PKGCONFIGDIR "${LIBDIR}/pkgconfig")
 endif (WIN32)
 
-option(WITH_TLS
-	"Include SSL/TLS support?" ON)
-option(WITH_TLS_PSK
-	"Include TLS-PSK support (requires WITH_TLS)?" ON)
-option(WITH_EC
-	"Include Elliptic Curve support (requires WITH_TLS)?" ON)
-if (${WITH_TLS} STREQUAL ON)
-	find_package(OpenSSL REQUIRED)
-	add_definitions("-DWITH_TLS")
-
-	if (${WITH_TLS_PSK} STREQUAL ON)
-		add_definitions("-DWITH_TLS_PSK")
-	endif (${WITH_TLS_PSK} STREQUAL ON)
-
-	if (${WITH_EC} STREQUAL ON)
-		add_definitions("-DWITH_EC")
-	endif (${WITH_EC} STREQUAL ON)
-else (${WITH_TLS} STREQUAL ON)
-	set (OPENSSL_INCLUDE_DIR "")
-endif (${WITH_TLS} STREQUAL ON)
-
+# ========================================
+# Common and client only options
+# ========================================
+option(WITH_TLS "Include SSL/TLS support?" ON)
+option(WITH_TLS_PSK "Include TLS-PSK support (requires WITH_TLS)?" ON)
+option(WITH_EC "Include Elliptic Curve support (requires WITH_TLS)?" ON)
+option(WITH_THREADING "Include client library threading support?" ON)
+option(WITH_SRV "Include SRV lookup support?" ON)
 option(WITH_SOCKS "Include SOCKS5 support?" ON)
-if (${WITH_SOCKS} STREQUAL ON)
-	add_definitions("-DWITH_SOCKS")
-endif (${WITH_SOCKS} STREQUAL ON)
-
-option(WITH_SRV "Include SRV lookup support?" OFF)
-
 option(DOCUMENTATION "Build documentation?" ON)
+
+option(BUILD_SHARED_LIBS "Build shared versions of the libmosquitto/pp libraries?" ON)
+option(WITH_PIC "Build the static library with PIC (Position Independent Code) enabled archives?" OFF)
+
+# ========================================
+# Broker only options
+# ========================================
+option(WITH_ADNS "Include async DNS support?" OFF)
+option(WITH_WRAP "Include tcpd/libwrap support?" OFF)
+option(WITH_BRIDGE "Include bridge support?" ON)
+option(WITH_PERSISTENCE "Include persistence support?" ON)
+option(WITH_MEMORY_TRACKING "Include memory tracking support?" ON)
+option(WITH_SYS_TREE "Include $SYS tree support?" ON)
+option(WITH_WEBSOCKETS "Include websockets support?" OFF)
+option(WITH_EC "Include Elliptic Curve support (requires WITH_TLS)?" ON)
+option(WITH_GETADDRINFO_A "Include getaddrinfo_a support?" OFF)
+# Linux only - please report if supported on your platform
+option(WITH_UUID "Build using libuuid for clientid generation" ON)
+
+if (CMAKE_SYSTEM_NAME STREQUAL Linux)
+	option(WITH_SYSTEMD "Include systemd support?" OFF)
+endif (CMAKE_SYSTEM_NAME STREQUAL Linux)
 
 # ========================================
 # Include projects
@@ -92,7 +93,6 @@ endif (${DOCUMENTATION} STREQUAL ON)
 
 install(FILES mosquitto.conf aclfile.example pskfile.example pwfile.example DESTINATION "${SYSCONFDIR}")
 
-
 # ========================================
 # Install pkg-config files
 # ========================================
@@ -101,6 +101,15 @@ configure_file(libmosquitto.pc.in libmosquitto.pc @ONLY)
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libmosquitto.pc" DESTINATION "${PKGCONFIGDIR}")
 configure_file(libmosquittopp.pc.in libmosquittopp.pc @ONLY)
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libmosquittopp.pc" DESTINATION "${PKGCONFIGDIR}")
+
+# ========================================
+# Install cmake-config file
+# ========================================
+install(EXPORT mosquitto-exports
+	FILE mosquitto-config.cmake
+	NAMESPACE mosquitto::
+	DESTINATION "${LIBDIR}/cmake/mosquitto"
+)
 
 # ========================================
 # Testing
