@@ -12,9 +12,11 @@ if cmd_subfolder not in sys.path:
 
 import mosq_test
 
-def write_config(filename, port1, port2):
+def write_config(filename, port1, port2, port3):
     with open(filename, 'w') as f:
+        f.write("per_listener_settings true\n")
         f.write("port %d\n" % (port2))
+        f.write("listener %d 127.0.0.1\n" % (port3))
         f.write("\n")
         f.write("connection bridge_sample\n")
         f.write("address 127.0.0.1:%d\n" % (port1))
@@ -27,9 +29,9 @@ def write_config(filename, port1, port2):
         f.write("notifications false\n")
         f.write("restart_timeout 5\n")
 
-(port1, port2) = mosq_test.get_port(2)
+(port1, port2, port3) = mosq_test.get_port(3)
 conf_file = os.path.basename(__file__).replace('.py', '.conf')
-write_config(conf_file, port1, port2)
+write_config(conf_file, port1, port2, port3)
 
 rc = 1
 keepalive = 60
