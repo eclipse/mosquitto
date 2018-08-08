@@ -132,6 +132,7 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 	X509 *client_cert = NULL;
 	X509_NAME *name;
 	X509_NAME_ENTRY *name_entry;
+	ASN1_STRING *name_asn1 = NULL;
 #endif
 
 	G_CONNECTION_COUNT_INC();
@@ -447,7 +448,19 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 				}
 				name_entry = X509_NAME_get_entry(name, i);
 				if(name_entry){
-					context->username = mosquitto__strdup((char *)X509_NAME_ENTRY_get_data(name_entry));
+					name_asn1 = X509_NAME_ENTRY_get_data(name_entry);
+					if (name_asn1 == NULL) {
+						send__connack(context, 0, CONNACK_REFUSED_BAD_USERNAME_PASSWORD);
+						rc = 1;
+						goto handle_connect_error;
+					}
+					context->username = mosquitto__strdup((char *) ASN1_STRING_data(name_asn1));
+					/* Make sure there isn't an embedded NUL character in the CN */
+					if ((size_t)ASN1_STRING_length(name_asn1) != strlen(context->username)) {
+						send__connack(context, 0, CONNACK_REFUSED_BAD_USERNAME_PASSWORD);
+						rc = 1;
+						goto handle_connect_error;
+					}
 				}
 			} else { // use_subject_as_username
 				BIO *subject_bio = BIO_new(BIO_s_mem());
