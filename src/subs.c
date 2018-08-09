@@ -314,7 +314,7 @@ static int sub__add_recurse(struct mosquitto_db *db, struct mosquitto *context, 
 		return sub__add_recurse(db, context, qos, branch, tokens->next);
 	}else{
 		/* Not found */
-		branch = sub__add_hier_entry(&subhier->children, UHPA_ACCESS_TOPIC(tokens), tokens->topic_len+1);
+		branch = sub__add_hier_entry(subhier, &subhier->children, UHPA_ACCESS_TOPIC(tokens), tokens->topic_len+1);
 		if(!branch) return MOSQ_ERR_NOMEM;
 
 		return sub__add_recurse(db, context, qos, branch, tokens->next);
@@ -406,18 +406,18 @@ static void sub__search(struct mosquitto_db *db, struct mosquitto__subhier *subh
 }
 
 
-struct mosquitto__subhier *sub__add_hier_entry(struct mosquitto__subhier **parent, const char *topic, size_t len)
+struct mosquitto__subhier *sub__add_hier_entry(struct mosquitto__subhier *parent, struct mosquitto__subhier **sibling, const char *topic, size_t len)
 {
 	struct mosquitto__subhier *child;
 
-	assert(parent);
+	assert(sibling);
 
 	child = mosquitto__malloc(sizeof(struct mosquitto__subhier));
 	if(!child){
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 		return NULL;
 	}
-	child->parent = *parent;
+	child->parent = parent;
 	child->topic_len = strlen(topic);
 	if(UHPA_ALLOC_TOPIC(child) == 0){
 		child->topic_len = 0;
@@ -433,13 +433,13 @@ struct mosquitto__subhier *sub__add_hier_entry(struct mosquitto__subhier **paren
 
 	if(child->topic_len+1 > sizeof(child->topic.array)){
 		if(child->topic.ptr){
-			HASH_ADD_KEYPTR(hh, *parent, child->topic.ptr, child->topic_len, child);
+			HASH_ADD_KEYPTR(hh, *sibling, child->topic.ptr, child->topic_len, child);
 		}else{
 			mosquitto__free(child);
 			return NULL;
 		}
 	}else{
-		HASH_ADD(hh, *parent, topic.array, child->topic_len, child);
+		HASH_ADD(hh, *sibling, topic.array, child->topic_len, child);
 	}
 
 	return child;
@@ -460,7 +460,7 @@ int sub__add(struct mosquitto_db *db, struct mosquitto *context, const char *sub
 
 	HASH_FIND(hh, *root, UHPA_ACCESS_TOPIC(tokens), tokens->topic_len, subhier);
 	if(!subhier){
-		subhier = sub__add_hier_entry(root, UHPA_ACCESS_TOPIC(tokens), tokens->topic_len+1);
+		subhier = sub__add_hier_entry(NULL, root, UHPA_ACCESS_TOPIC(tokens), tokens->topic_len+1);
 		if(!subhier){
 			sub__topic_tokens_free(tokens);
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
@@ -543,12 +543,14 @@ static struct mosquitto__subhier *tmp_remove_subs(struct mosquitto__subhier *sub
 		return NULL;
 	}
 
-	if(sub->children || sub->subs){
+	if(sub->children || sub->subs || sub->retained){
 		return NULL;
 	}
 
 	parent = sub->parent;
-	HASH_DELETE(hh, parent, sub);
+	HASH_DELETE(hh, parent->children, sub);
+	UHPA_FREE_TOPIC(sub);
+	mosquitto__free(sub);
 
 	if(parent->subs == NULL
 			&& parent->children == NULL
