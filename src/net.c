@@ -36,7 +36,7 @@ Contributors:
 #include <tcpd.h>
 #endif
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined(__NetBSD__)
 #  include <netinet/in.h>
 #  include <sys/socket.h>
 #endif
