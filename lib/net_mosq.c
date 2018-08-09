@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2018 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2018 Roger Light <roger@atchoo.org> and others
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -12,6 +12,7 @@ and the Eclipse Distribution License is available at
 
 Contributors:
    Roger Light - initial implementation and documentation.
+   Jens Reimann - add support for TLS SNI, issue #782
 */
 
 #define _GNU_SOURCE
@@ -602,6 +603,15 @@ int net__socket_connect_step3(struct mosquitto *mosq, const char *host, uint16_t
 			net__print_ssl_error(mosq);
 			return MOSQ_ERR_TLS;
 		}
+
+#if OPENSSL_VERSION_NUMBER >= 0x10000000
+		_mosquitto_log_printf(mosq, MOSQ_LOG_DEBUG, "Setting TLS SNI name: %s", host);
+		if(!SSL_set_tlsext_host_name(mosq->ssl, host)){
+			_mosquitto_log_printf(mosq, MOSQ_LOG_DEBUG, "Failed setting TLS SNI name");
+			COMPAT_CLOSE(mosq->sock);
+			return MOSQ_ERR_TLS;
+		}
+#endif
 
 		SSL_set_ex_data(mosq->ssl, tls_ex_index_mosq, mosq);
 		bio = BIO_new_socket(mosq->sock, BIO_NOCLOSE);
