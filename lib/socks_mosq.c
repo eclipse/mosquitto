@@ -75,8 +75,10 @@ int mosquitto_socks5_set(struct mosquitto *mosq, const char *host, int port, con
 
 		if(password){
 			mosq->socks5_password = mosquitto__strdup(password);
-			mosquitto__free(mosq->socks5_username);
-			return MOSQ_ERR_NOMEM;
+		    	if(!mosq->socks5_password){
+    			    	mosquitto__free(mosq->socks5_username);
+        			return MOSQ_ERR_NOMEM;
+      			}
 		}
 	}
 
