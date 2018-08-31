@@ -80,7 +80,7 @@ int mosquitto_socks5_set(struct mosquitto *mosq, const char *host, int port, con
 		    	if(!mosq->socks5_password){
     			    	mosquitto__free(mosq->socks5_username);
         			return MOSQ_ERR_NOMEM;
-      			}
+			}
 		}
 	}
 
