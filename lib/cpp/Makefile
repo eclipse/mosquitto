@@ -24,7 +24,10 @@ ifeq ($(WITH_STATIC_LIBRARIES),yes)
 endif
 	$(INSTALL) -d "${DESTDIR}${prefix}/include/"
 	$(INSTALL) mosquittopp.h "${DESTDIR}${prefix}/include/mosquittopp.h"
-	
+	$(INSTALL) -d "${DESTDIR}$(prefix)/lib${LIB_SUFFIX}/pkgconfig"
+	$(INSTALL) -m644 ../../libmosquittopp.pc.in "${DESTDIR}$(prefix)/lib${LIB_SUFFIX}/pkgconfig/libmosquittopp.pc"
+	sed -i -e "s#@CMAKE_INSTALL_PREFIX@#$(prefix)#" -e "s#@VERSION@#$(VERSION)#" "${DESTDIR}$(prefix)/lib${LIB_SUFFIX}/pkgconfig/libmosquittopp.pc"
+
 uninstall :
 	-rm -f "${DESTDIR}${prefix}/lib${LIB_SUFFIX}/libmosquittopp.so.${SOVERSION}"
 	-rm -f "${DESTDIR}${prefix}/lib${LIB_SUFFIX}/libmosquittopp.so"

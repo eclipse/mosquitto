@@ -57,6 +57,9 @@ ifeq ($(WITH_STATIC_LIBRARIES),yes)
 endif
 	$(INSTALL) -d "${DESTDIR}${prefix}/include/"
 	$(INSTALL) mosquitto.h "${DESTDIR}${prefix}/include/mosquitto.h"
+	$(INSTALL) -d "${DESTDIR}$(prefix)/lib${LIB_SUFFIX}/pkgconfig"
+	$(INSTALL) -m644 ../libmosquitto.pc.in "${DESTDIR}$(prefix)/lib${LIB_SUFFIX}/pkgconfig/libmosquitto.pc"
+	sed -i -e "s#@CMAKE_INSTALL_PREFIX@#$(prefix)#" -e "s#@VERSION@#$(VERSION)#" "${DESTDIR}$(prefix)/lib${LIB_SUFFIX}/pkgconfig/libmosquitto.pc"
 	$(MAKE) -C cpp install
 
 uninstall :
