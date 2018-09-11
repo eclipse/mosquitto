@@ -329,7 +329,7 @@ int net__try_connect(struct mosquitto *mosq, const char *host, uint16_t port, mo
 	int i;
 	struct pollfd *fds;
  
-	_mosquitto_log_printf(mosq, MOSQ_LOG_DEBUG, "Entering _mosquitto_try_connect");
+	log__printf(mosq, MOSQ_LOG_DEBUG, "Entering _mosquitto_try_connect");
 	*sock = INVALID_SOCKET;
 	memset(&hints, 0, sizeof(struct addrinfo));
 	hints.ai_family = AF_UNSPEC;
@@ -353,7 +353,7 @@ int net__try_connect(struct mosquitto *mosq, const char *host, uint16_t port, mo
 	for (rp = ainfo; rp != NULL; rp = rp->ai_next) {
 		addrCnt++;
 	}
-	_mosquitto_log_printf(mosq, MOSQ_LOG_DEBUG, "found %d addresses", addrCnt);
+	log__printf(mosq, MOSQ_LOG_DEBUG, "found %d addresses", addrCnt);
 
 	if ((fds = mosquitto__calloc(sizeof(struct pollfd), addrCnt)) == NULL) {
 		perror("mosquitto__calloc failed");
@@ -369,13 +369,13 @@ int net__try_connect(struct mosquitto *mosq, const char *host, uint16_t port, mo
 		int s;
 
 		if(rp->ai_family == AF_INET){
-			_mosquitto_log_printf(mosq, MOSQ_LOG_DEBUG, "found IPv4 address");
+			log__printf(mosq, MOSQ_LOG_DEBUG, "found IPv4 address");
 			((struct sockaddr_in *)rp->ai_addr)->sin_port = htons(port);
 		}else if(rp->ai_family == AF_INET6){
-			_mosquitto_log_printf(mosq, MOSQ_LOG_DEBUG, "found IPv6 address");
+			log__printf(mosq, MOSQ_LOG_DEBUG, "found IPv6 address");
 			((struct sockaddr_in6 *)rp->ai_addr)->sin6_port = htons(port);
 		}else{
-			_mosquitto_log_printf(mosq, MOSQ_LOG_DEBUG, "found invalid address");
+			log__printf(mosq, MOSQ_LOG_DEBUG, "found invalid address");
 			*sock = INVALID_SOCKET;
 			continue;
 		}
@@ -389,7 +389,7 @@ int net__try_connect(struct mosquitto *mosq, const char *host, uint16_t port, mo
 				}
 			}
 			if(!rp_bind){
-				_mosquitto_log_printf(mosq, MOSQ_LOG_DEBUG, "no suitable bind address found");
+				log__printf(mosq, MOSQ_LOG_DEBUG, "no suitable bind address found");
 				COMPAT_CLOSE(s);
 				*sock = INVALID_SOCKET;
 				continue;
@@ -397,13 +397,13 @@ int net__try_connect(struct mosquitto *mosq, const char *host, uint16_t port, mo
 		}
 
 		/* Set non-blocking */
-		if(_mosquitto_socket_nonblock(s)){
+		if(net__socket_nonblock(s)){
 			// failed to set non blocking mode
 			COMPAT_CLOSE(s);
 			continue;
 		}
 
-		_mosquitto_log_printf(mosq, MOSQ_LOG_DEBUG, "attempting connect fd = %d", s);
+		log__printf(mosq, MOSQ_LOG_DEBUG, "attempting connect fd = %d", s);
 		rc = connect(s, rp->ai_addr, rp->ai_addrlen);
 
 		if (rc == 0) {
@@ -419,7 +419,8 @@ int net__try_connect(struct mosquitto *mosq, const char *host, uint16_t port, mo
 			numberOfConnections++;
 		} else {
 			// ignore any other error
-			log__printf(mosq, MOSQ_LOG_DEBUG, "connect failed, fd = %d, errno %d", s, errno);
+			log__printf(mosq, MOSQ_LOG_DEBUG, "closing fd %d", s);
+			COMPAT_CLOSE(s);
 		}
 	}
 
@@ -501,7 +502,7 @@ end:
 		freeaddrinfo(ainfo_bind);
 	}
 
-	_mosquitto_free(fds);
+	mosquitto__free(fds);
 
 	// return result
 	if (foundFd == -1) {
