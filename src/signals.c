@@ -105,7 +105,7 @@ void handle_sigusr2(int signal)
 DWORD WINAPI SigThreadProc(void* data)
 {
 	TCHAR evt_name[MAX_PATH];
-	static HANDLE evt[4];
+	static HANDLE evt[3];
 	int pid = GetCurrentProcessId();
 
 	sprintf_s(evt_name, MAX_PATH, "mosq%d_shutdown", pid);
