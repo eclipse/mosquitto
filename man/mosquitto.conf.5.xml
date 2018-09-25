@@ -130,7 +130,7 @@
 						for the topic keyword, but using pattern as the
 						keyword.</para>
 					<para><code>pattern [read|write|readwrite] &lt;topic&gt;</code></para>
-					
+
 					<para>The patterns available for substition are:</para>
 					<itemizedlist mark="circle">
 						<listitem><para>%c to match the client id of the client</para></listitem>
@@ -196,6 +196,23 @@
 				</listitem>
 			</varlistentry>
 			<varlistentry>
+				<term><option>allow_zero_length_clientid</option> [ true | false ]</term>
+				<listitem>
+					<para>Boolean value that controls whether a client is allowed
+						to connect with a zero length client id or not.</para>
+					<para>If set to <replaceable>false</replaceable>, clients
+						connecting with a zero length client id are
+						disconnected.</para>
+					<para>If set to <replaceable>true</replaceable>, clients will
+						be allocated a client id by the broker. This means
+						it is only useful for clients with
+						<replaceable>cleansession</replaceable> set to
+						<replaceable>true</replaceable>.</para>
+					<para>This option only affects clients using MQTT v3.1.1 and
+						later.</para>
+					<para>Defaults to <replaceable>true</replaceable>.</para>
+			</varlistentry>
+			<varlistentry>
 				<term><option>auth_opt_*</option> <replaceable>value</replaceable></term>
 				<listitem>
 					<para>Options to be passed to the auth plugin. See the
@@ -242,6 +259,15 @@
 						to <replaceable>false</replaceable>.</para>
 					<para>Defaults to <replaceable>true</replaceable>.</para>
 					<para>Not currently reloaded on reload signal.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>auto_id_prefix</option> <replaceable>prefix</replaceable></term>
+				<listitem>
+					<para>If <replaceable>allow_zero_length_clientid</replaceable>
+						is <replaceable>true</replaceable>, this option allows
+						you to set a prefix to automatically generated client
+						ids in order to aid visibility in logs.</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
@@ -441,7 +467,7 @@
 			</varlistentry>
 			<varlistentry>
 				<term><option>message_size_limit</option> <replaceable>limit</replaceable></term>
-				<listitem> 
+				<listitem>
 					<para>This option sets the maximum publish payload size
 						that the broker will allow. Received messages that
 						exceed this size will not be accepted by the broker.
