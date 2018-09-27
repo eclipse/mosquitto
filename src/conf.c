@@ -2126,6 +2126,7 @@ static int conf__parse_bool(char **token, const char *name, bool *value, char *s
 			*value = true;
 		}else{
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid %s value (%s).", name, *token);
+			return MOSQ_ERR_INVAL;
 		}
 	}else{
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty %s value in configuration.", name);
