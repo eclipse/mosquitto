@@ -766,6 +766,7 @@ libmosq_EXPORT void mosquitto_message_free_contents(struct mosquitto_message *me
  * See Also:
  *	<mosquitto_loop_forever>, <mosquitto_loop_start>, <mosquitto_loop_stop>
  */
+libmosq_EXPORT int mosquitto_loop_simple(struct mosquitto *mosq, int timeout, int max_packets);
 libmosq_EXPORT int mosquitto_loop(struct mosquitto *mosq, int timeout, int max_packets);
 
 /*

@@ -34,6 +34,40 @@ Contributors:
 #define HAVE_PSELECT
 #endif
 
+int mosquitto_loop_simple(struct mosquitto *mosq, int timeout, int max_packets)
+{
+	int rc;
+#ifdef WITH_TLS
+				if(mosq->want_connect){
+					rc = net__socket_connect_tls(mosq);
+					if(rc) return rc;
+				}else
+#endif
+				{
+					do{
+						rc = mosquitto_loop_read(mosq, max_packets);
+						if(rc || mosq->sock == INVALID_SOCKET){
+							return rc;
+						}
+					}while(SSL_DATA_PENDING(mosq));
+				}
+			if(mosq->sock != INVALID_SOCKET){
+#ifdef WITH_TLS
+				if(mosq->want_connect){
+					rc = net__socket_connect_tls(mosq);
+					if(rc) return rc;
+				}else
+#endif
+				{
+					rc = mosquitto_loop_write(mosq, max_packets);
+					if(rc || mosq->sock == INVALID_SOCKET){
+						return rc;
+					}
+				}
+			}
+	return mosquitto_loop_misc(mosq);
+}
+
 int mosquitto_loop(struct mosquitto *mosq, int timeout, int max_packets)
 {
 #ifdef HAVE_PSELECT
