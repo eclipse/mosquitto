@@ -32,9 +32,9 @@ Foundation IP policy.
 Please read the [Eclipse Foundation policy on accepting contributions via Git](http://wiki.eclipse.org/Development_Resources/Contributing_via_Git).
 
 1. Sign the [Eclipse ECA](http://www.eclipse.org/legal/ECA.php)
-  1. Register for an Eclipse Foundation User ID. You can register [here](https://dev.eclipse.org/site_login/createaccount.php).
-  2. Log into the [Projects Portal](https://projects.eclipse.org/), and click on the '[Eclipse ECA](https://projects.eclipse.org/user/sign/eca)' link.
-2. Go to your [account settings](https://dev.eclipse.org/site_login/myaccount.php#open_tab_accountsettings) and add your GitHub username to your account.
+    1. Register for an Eclipse Foundation User ID. You can register [here](https://accounts.eclipse.org/user/register).
+    2. Log into the [Accounts Portal](https://accounts.eclipse.org/), and click on the '[Eclipse Contributor Agreement](https://accounts.eclipse.org/user/eca)' link.
+2. Go to your [account settings](https://accounts.eclipse.org/user/edit) and add your GitHub username to your account.
 3. Make sure that you _sign-off_ your Git commits in the following format:
   ``` Signed-off-by: John Smith <johnsmith@nowhere.com> ``` This is usually at the bottom of the commit message. You can automate this by adding the '-s' flag when you make the commits. e.g.   ```git commit -s -m "Adding a cool feature"```
 4. Ensure that the email address that you make your commits with is the same one you used to sign up to the Eclipse Foundation website with.
