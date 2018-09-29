@@ -23,6 +23,7 @@ MOSQ_1.0 {
 		mosquitto_message_copy;
 		mosquitto_message_free;
 		mosquitto_loop;
+		mosquitto_loop_simple;
 		mosquitto_socket;
 		mosquitto_loop_start;
 		mosquitto_loop_stop;
