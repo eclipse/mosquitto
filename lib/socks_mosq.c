@@ -24,6 +24,10 @@ Contributors:
 #else
 #  include <arpa/inet.h>
 #endif
+#ifdef __FreeBSD__
+#  include <sys/socket.h>
+#  include <netinet/in.h>
+#endif
 
 #include "mosquitto_internal.h"
 #include "memory_mosq.h"
