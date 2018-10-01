@@ -373,7 +373,9 @@ int packet__write(struct mosquitto *mosq)
 		mosquitto__free(packet);
 
 		pthread_mutex_lock(&mosq->msgtime_mutex);
-		mosq->next_msg_out = mosquitto_time() + mosq->keepalive;
+		if (!mosq->ping_t) {
+			mosq->next_msg_out = mosquitto_time() + mosq->keepalive;
+		}
 		pthread_mutex_unlock(&mosq->msgtime_mutex);
 	}
 	pthread_mutex_unlock(&mosq->current_out_packet_mutex);
