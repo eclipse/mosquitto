@@ -1,5 +1,5 @@
 include_directories(${mosquitto_SOURCE_DIR} ${mosquitto_SOURCE_DIR}/lib
-			${STDBOOL_H_PATH} ${STDINT_H_PATH})
+			${STDBOOL_H_PATH} ${STDINT_H_PATH} ${PTHREAD_INCLUDE_DIR})
 link_directories(${mosquitto_BINARY_DIR}/lib)
 
 set(shared_src client_shared.c client_shared.h)
