@@ -8,6 +8,7 @@ Wants=network-online.target
 Type=notify
 NotifyAccess=main
 ExecStart=/usr/sbin/mosquitto -c /etc/mosquitto/mosquitto.conf
+ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
 
 [Install]
