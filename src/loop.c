@@ -422,8 +422,8 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 #else
 						{
 							rc = bridge__connect(db, context);
+							context->bridge->restart_t = 0;
 							if(rc == MOSQ_ERR_SUCCESS){
-								context->bridge->restart_t = 0;
 								if(context->bridge->round_robin == false && context->bridge->cur_address != 0){
 									context->bridge->primary_retry = now + 5;
 								}
