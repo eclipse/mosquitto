@@ -451,6 +451,8 @@ struct mosquitto__bridge{
 	enum mosquitto_bridge_start_type start_type;
 	int idle_timeout;
 	int restart_timeout;
+	int backoff_base;
+	int backoff_cap;
 	int threshold;
 	bool lazy_reconnect;
 	bool attempt_unsubscribe;
