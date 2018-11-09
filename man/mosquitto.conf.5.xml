@@ -1235,11 +1235,14 @@
 				</listitem>
 			</varlistentry>
 			<varlistentry>
-				<term><option>restart_timeout</option> <replaceable>value</replaceable></term>
+				<term><option>restart_timeout</option> <replaceable>constant | base cap</replaceable></term>
 				<listitem>
 					<para>Set the amount of time a bridge using the automatic
-						start type will wait until attempting to reconnect.
-						Defaults to 30 seconds.</para>
+						start type will wait until attempting to reconnect.</para>
+					<para>It can restart on a <replaceable>constant</replaceable> period, or apply a backoff
+						mechanism using “Decorrelated Jitter”, with <replaceable>base</replaceable> and
+						<replaceable>cap</replaceable> values.</para>
+					<para>Defaults to 30 seconds.</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
