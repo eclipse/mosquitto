@@ -457,7 +457,11 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 						rc = 1;
 						goto handle_connect_error;
 					}
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 					context->username = mosquitto__strdup((char *) ASN1_STRING_data(name_asn1));
+#else
+					context->username = mosquitto__strdup((char *) ASN1_STRING_get0_data(name_asn1));
+#endif
 					if(!context->username){
 						send__connack(context, 0, CONNACK_REFUSED_SERVER_UNAVAILABLE);
 						rc = MOSQ_ERR_NOMEM;
