@@ -147,12 +147,10 @@ int mosquitto_loop(struct mosquitto *mosq, int timeout, int max_packets)
 	}else{
 		if(mosq->sock != INVALID_SOCKET){
 			if(FD_ISSET(mosq->sock, &readfds)){
-				do{
-					rc = mosquitto_loop_read(mosq, max_packets);
-					if(rc || mosq->sock == INVALID_SOCKET){
-						return rc;
-					}
-				}while(SSL_DATA_PENDING(mosq));
+				rc = mosquitto_loop_read(mosq, max_packets);
+				if(rc || mosq->sock == INVALID_SOCKET){
+					return rc;
+				}
 			}
 			if(mosq->sockpairR != INVALID_SOCKET && FD_ISSET(mosq->sockpairR, &readfds)){
 #ifndef WIN32
@@ -364,7 +362,7 @@ int mosquitto_loop_read(struct mosquitto *mosq, int max_packets)
 	/* Queue len here tells us how many messages are awaiting processing and
 	 * have QoS > 0. We should try to deal with that many in this loop in order
 	 * to keep up. */
-	for(i=0; i<max_packets; i++){
+	for(i=0; i<max_packets || SSL_DATA_PENDING(mosq); i++){
 #ifdef WITH_SOCKS
 		if(mosq->socks5_host){
 			rc = socks5__read(mosq);
