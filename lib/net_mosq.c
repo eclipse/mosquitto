@@ -145,10 +145,6 @@ int net__socket_close(struct mosquitto *mosq)
 			SSL_free(mosq->ssl);
 			mosq->ssl = NULL;
 		}
-		if(mosq->ssl_ctx){
-			SSL_CTX_free(mosq->ssl_ctx);
-			mosq->ssl_ctx = NULL;
-		}
 	}
 #endif
 
