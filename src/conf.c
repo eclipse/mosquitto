@@ -765,6 +765,9 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 						return MOSQ_ERR_INVAL;
 					}
 					while((token = strtok_r(NULL, " ", &saveptr))){
+						if (token[0] == '#'){
+							break;
+						}
 						cur_bridge->address_count++;
 						cur_bridge->addresses = mosquitto__realloc(cur_bridge->addresses, sizeof(struct bridge_address)*cur_bridge->address_count);
 						if(!cur_bridge->addresses){
@@ -1326,7 +1329,10 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 						cur_listener->security_options.allow_anonymous = -1;
 						cur_listener->protocol = mp_mqtt;
 						cur_listener->port = tmp_int;
-						token = strtok_r(NULL, "", &saveptr);
+						token = strtok_r(NULL, " ", &saveptr);
+						if (token != NULL && token[0] == '#'){
+							token = NULL;
+						}
 						mosquitto__free(cur_listener->host);
 						if(token){
 							cur_listener->host = mosquitto__strdup(token);
@@ -1870,6 +1876,9 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 						}
 						token = strtok_r(NULL, " ", &saveptr);
 						if(token){
+							if (token[0] == '#'){
+								strtok_r(NULL, "", &saveptr);
+							}
 							cur_topic->qos = atoi(token);
 							if(cur_topic->qos < 0 || cur_topic->qos > 2){
 								log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge QoS level '%s'.", token);
@@ -1879,8 +1888,11 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 							token = strtok_r(NULL, " ", &saveptr);
 							if(token){
 								cur_bridge->topic_remapping = true;
-								if(!strcmp(token, "\"\"")){
+								if(!strcmp(token, "\"\"") || token[0] == '#'){
 									cur_topic->local_prefix = NULL;
+									if (token[0] == '#'){
+										strtok_r(NULL, "", &saveptr);
+									}
 								}else{
 									if(mosquitto_pub_topic_check(token) != MOSQ_ERR_SUCCESS){
 										log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge topic local prefix '%s'.", token);
@@ -1895,7 +1907,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 
 								token = strtok_r(NULL, " ", &saveptr);
 								if(token){
-									if(!strcmp(token, "\"\"")){
+									if(!strcmp(token, "\"\"") || token[0] == '#'){
 										cur_topic->remote_prefix = NULL;
 									}else{
 										if(mosquitto_pub_topic_check(token) != MOSQ_ERR_SUCCESS){
