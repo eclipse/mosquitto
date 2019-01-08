@@ -375,7 +375,6 @@ int net__try_connect(struct mosquitto *mosq, const char *host, uint16_t port, mo
 			log__printf(mosq, MOSQ_LOG_DEBUG, "found IPv6 address");
 			((struct sockaddr_in6 *)rp->ai_addr)->sin6_port = htons(port);
 		}else{
-			*sock = INVALID_SOCKET;
 			log__printf(mosq, MOSQ_LOG_DEBUG, "found invalid address");
 			continue;
 		}
