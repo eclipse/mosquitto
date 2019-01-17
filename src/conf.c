@@ -571,6 +571,7 @@ void config__copy(struct mosquitto__config *src, struct mosquitto__config *dest)
 
 #ifdef WITH_WEBSOCKETS
 	dest->websockets_log_level = src->websockets_log_level;
+	dest->websockets_log_forwarded_for = src->websockets_log_forwarded_for;
 #endif
 }
 
@@ -2012,6 +2013,12 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 				}else if(!strcmp(token, "websockets_log_level")){
 #ifdef WITH_WEBSOCKETS
 					if(conf__parse_int(&token, "websockets_log_level", &config->websockets_log_level, saveptr)) return MOSQ_ERR_INVAL;
+#else
+					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Websockets support not available.");
+#endif
+				}else if(!strcmp(token, "websockets_log_forwarded_for")){
+#ifdef WITH_WEBSOCKETS
+					if(conf__parse_bool(&token, "websockets_log_forwarded_for", &config->websockets_log_forwarded_for, saveptr)) return MOSQ_ERR_INVAL;
 #else
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Websockets support not available.");
 #endif

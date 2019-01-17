@@ -846,6 +846,17 @@
 							Defaults to 0.</para>
 					</listitem>
 				</varlistentry>
+				<varlistentry>
+					<term><option>websockets_log_forwarded_for</option> <replaceable>level</replaceable></term>
+					<listitem>
+						<para>Change the websockets logging to read the ip from the
+							X-Real-IP/X-Forwarded-For headers if present. This is
+							usefull if mosquitto is running behind a proxy and
+							you want the client IP to show up in the log. If it
+							isn't running behind a proxy there is a risk of ip
+							address spoofing.</para>
+					</listitem>
+				</varlistentry>
 			</variablelist>
 		</refsect2>
 		<refsect2>
