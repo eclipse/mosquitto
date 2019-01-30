@@ -41,6 +41,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <stdlib.h>
 #include <errno.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 
 extern struct mosquitto_db int_db;
