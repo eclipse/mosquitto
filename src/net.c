@@ -22,6 +22,7 @@ Contributors:
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <netinet/tcp.h>
+#include <net/if.h>
 #else
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -386,6 +387,9 @@ int net__socket_listen(struct mosquitto__listener *listener)
 	X509_STORE *store;
 	X509_LOOKUP *lookup;
 #endif
+#ifdef SO_BINDTODEVICE
+	struct ifreq ifr;
+#endif
 
 	if(!listener) return MOSQ_ERR_INVAL;
 
@@ -432,6 +436,20 @@ int net__socket_listen(struct mosquitto__listener *listener)
 		if(net__socket_nonblock(&sock)){
 			return 1;
 		}
+
+#ifdef SO_BINDTODEVICE
+		if(listener->bind_interface){
+			memset(&ifr, 0, sizeof(ifr));
+			strncpy(ifr.ifr_name, listener->bind_interface, sizeof(ifr.ifr_name)-1);
+			ifr.ifr_name[sizeof(ifr.ifr_name)-1] = '\0';
+			log__printf(NULL, MOSQ_LOG_INFO, "Binding listener to interface \"%s\".", ifr.ifr_name);
+			if(setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, (void *)&ifr, sizeof(ifr)) < 0) {
+				net__print_error(MOSQ_LOG_ERR, "Error: %s");
+				COMPAT_CLOSE(sock);
+				return 1;
+			}
+		}
+#endif
 
 		if(bind(sock, rp->ai_addr, rp->ai_addrlen) == -1){
 			net__print_error(MOSQ_LOG_ERR, "Error: %s");

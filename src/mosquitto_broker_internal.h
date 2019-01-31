@@ -212,6 +212,7 @@ struct mosquitto__listener {
 	int fd;
 	uint16_t port;
 	char *host;
+	char *bind_interface;
 	int max_connections;
 	char *mount_point;
 	mosq_sock_t *socks;

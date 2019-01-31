@@ -729,6 +729,16 @@
 					</listitem>
 				</varlistentry>
 				<varlistentry>
+					<term><option>bind_interface</option> <replaceable>device</replaceable></term>
+					<listitem>
+						<para>Listen for incoming network connections only on
+							the specified interface. This is similar to the
+							preceding option but useful when an interface has
+							multiple addresses or the address may change.</para>
+						<para>Not reloaded on reload signal.</para>
+					</listitem>
+				</varlistentry>
+				<varlistentry>
 					<term><option>http_dir</option> <replaceable>directory</replaceable></term>
 					<listitem>
 						<para>When a listener is using the websockets protocol,

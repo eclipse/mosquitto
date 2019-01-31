@@ -283,6 +283,7 @@ void config__cleanup(struct mosquitto__config *config)
 	if(config->listeners){
 		for(i=0; i<config->listener_count; i++){
 			mosquitto__free(config->listeners[i].host);
+			mosquitto__free(config->listeners[i].bind_interface);
 			mosquitto__free(config->listeners[i].mount_point);
 			mosquitto__free(config->listeners[i].socks);
 			mosquitto__free(config->listeners[i].security_options.auto_id_prefix);
@@ -899,6 +900,14 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 					if(conf__attempt_resolve(config->default_listener.host, "bind_address", MOSQ_LOG_ERR, "Error")){
 						return MOSQ_ERR_INVAL;
 					}
+				}else if(!strcmp(token, "bind_interface")){
+#ifdef SO_BINDTODEVICE
+					if(reload) continue; // Listeners not valid for reloading.
+					if(conf__parse_string(&token, "bind_interface", &cur_listener->bind_interface, saveptr)) return MOSQ_ERR_INVAL;
+#else
+					log__printf(NULL, MOSQ_LOG_ERR, "Error: bind_interface specified but socket option not available.");
+					return MOSQ_ERR_INVAL;
+#endif
 				}else if(!strcmp(token, "bridge_attempt_unsubscribe")){
 #ifdef WITH_BRIDGE
 					if(reload) continue; // FIXME
