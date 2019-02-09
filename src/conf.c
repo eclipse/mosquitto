@@ -71,6 +71,7 @@ static int conf__parse_string(char **token, const char *name, char **value, char
 static int config__read_file(struct mosquitto__config *config, bool reload, const char *file, struct config_recurse *config_tmp, int level, int *lineno);
 static int config__check(struct mosquitto__config *config);
 static void config__cleanup_plugins(struct mosquitto__config *config);
+static int config__check_for_inline_comment(char **token, const char *name, char* saveptr);
 
 static char *fgets_extending(char **buf, int *buflen, FILE *stream)
 {
@@ -747,6 +748,9 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 			}
 			token = strtok_r((*buf), " ", &saveptr);
 			if(token){
+				if (token[0] == '#'){
+					continue;
+				}
 				if(!strcmp(token, "acl_file")){
 					conf__set_cur_security_options(config, cur_listener, &cur_security_options);
 					if(reload){
@@ -837,11 +841,9 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 						mosquitto__free(key);
 						return MOSQ_ERR_INVAL;
 					}
-					token += 9+strlen(key)+1;
-					while(token[0] == ' ' || token[0] == '\t'){
-						token++;
-					}
-					if(token[0]){
+					char* config_name = token;
+					token = strtok_r(NULL, " ", &saveptr);
+					if(token){
 						cur_auth_plugin_config->option_count++;
 						cur_auth_plugin_config->options = mosquitto__realloc(cur_auth_plugin_config->options, cur_auth_plugin_config->option_count*sizeof(struct mosquitto_auth_opt));
 						if(!cur_auth_plugin_config->options){
@@ -855,6 +857,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 							log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 							return MOSQ_ERR_NOMEM;
 						}
+						if (config__check_for_inline_comment(&token, config_name, saveptr)) return MOSQ_ERR_INVAL;
 					}else{
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty %s value in configuration.", key);
 						mosquitto__free(key);
@@ -1017,7 +1020,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
 					}
-					token = strtok_r(NULL, "", &saveptr);
+					token = strtok_r(NULL, " ", &saveptr);
 					if(token){
 						if(!strcmp(token, "mqttv31")){
 							cur_bridge->protocol_version = mosq_p_mqtt31;
@@ -1027,6 +1030,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 							log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge_protocol_version value (%s).", token);
 							return MOSQ_ERR_INVAL;
 						}
+						if (config__check_for_inline_comment(&token, "bridge_protocol_version", saveptr)) return MOSQ_ERR_INVAL;
 					}else{
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty bridge_protocol_version value in configuration.");
 						return MOSQ_ERR_INVAL;
@@ -1164,6 +1168,9 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 						cur_bridge->attempt_unsubscribe = true;
 						cur_bridge->protocol_version = mosq_p_mqtt311;
 						cur_bridge->primary_retry_sock = INVALID_SOCKET;
+
+						if (config__check_for_inline_comment(&token, "connection", saveptr)) return MOSQ_ERR_INVAL;
+
 					}else{
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty connection value in configuration.");
 						return MOSQ_ERR_INVAL;
@@ -1205,7 +1212,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 				}else if(!strcmp(token, "include_dir")){
 					if(level == 0){
 						/* Only process include_dir from the main config file. */
-						token = strtok_r(NULL, "", &saveptr);
+						token = strtok_r(NULL, " ", &saveptr);
 						if(!token){
 							log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty include_dir value in configuration.");
 							return 1;
@@ -1232,6 +1239,9 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 						mosquitto__free(files);
 						if(rc) return rc; /* This returns if config__read_file() fails above */
 					}
+
+					if (config__check_for_inline_comment(&token, "include_dir", saveptr)) return MOSQ_ERR_INVAL;
+
 				}else if(!strcmp(token, "keepalive_interval")){
 #ifdef WITH_BRIDGE
 					if(reload) continue; // FIXME
@@ -1297,6 +1307,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 						mosquitto__free(cur_listener->host);
 						if(token){
 							cur_listener->host = mosquitto__strdup(token);
+							if (config__check_for_inline_comment(&token, "listener", saveptr)) return MOSQ_ERR_INVAL;
 						}else{
 							cur_listener->host = NULL;
 						}
@@ -1358,7 +1369,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 								return MOSQ_ERR_INVAL;
 							}
 							/* Get remaining string. */
-							token = &token[strlen(token)+1];
+							token = strtok_r(NULL, " ", &saveptr);
 							while(token[0] == ' ' || token[0] == '\t'){
 								token++;
 							}
@@ -1368,6 +1379,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 									log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 									return MOSQ_ERR_NOMEM;
 								}
+								if (config__check_for_inline_comment(&token, "log_dest", saveptr)) return MOSQ_ERR_INVAL;
 							}else{
 								log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty \"log_dest file\" value in configuration.");
 								return MOSQ_ERR_INVAL;
@@ -1458,12 +1470,14 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 					}else{
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty log_type value in configuration.");
 					}
+					if (config__check_for_inline_comment(&token, "log_type", saveptr)) return MOSQ_ERR_INVAL;
 				}else if(!strcmp(token, "max_connections")){
 					if(reload) continue; // Listeners not valid for reloading.
 					token = strtok_r(NULL, " ", &saveptr);
 					if(token){
 						cur_listener->max_connections = atoi(token);
 						if(cur_listener->max_connections < 0) cur_listener->max_connections = -1;
+						if (config__check_for_inline_comment(&token, "max_connections", saveptr)) return MOSQ_ERR_INVAL;
 					}else{
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty max_connections value in configuration.");
 					}
@@ -1471,6 +1485,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 					token = strtok_r(NULL, " ", &saveptr);
 					if(token){
 						cr->max_inflight_bytes = atol(token);
+						if (config__check_for_inline_comment(&token, "max_inflight_bytes", saveptr)) return MOSQ_ERR_INVAL;
 					}else{
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty max_inflight_bytes value in configuration.");
 					}
@@ -1479,6 +1494,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 					if(token){
 						cr->max_inflight_messages = atoi(token);
 						if(cr->max_inflight_messages < 0) cr->max_inflight_messages = 0;
+						if (config__check_for_inline_comment(&token, "max_inflight_messages", saveptr)) return MOSQ_ERR_INVAL;
 					}else{
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty max_inflight_messages value in configuration.");
 					}
@@ -1486,6 +1502,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 					token = strtok_r(NULL, " ", &saveptr);
 					if(token){
 						cr->max_queued_bytes = atol(token); /* 63 bits is ok right? */
+						if (config__check_for_inline_comment(&token, "max_queued_bytes", saveptr)) return MOSQ_ERR_INVAL;
 					}else{
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty max_queued_bytes value in configuration.");
 					}
@@ -1494,6 +1511,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 					if(token){
 						cr->max_queued_messages = atoi(token);
 						if(cr->max_queued_messages < 0) cr->max_queued_messages = 0;
+						if (config__check_for_inline_comment(&token, "max_queued_messages", saveptr)) return MOSQ_ERR_INVAL;
 					}else{
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty max_queued_messages value in configuration.");
 					}
@@ -1616,6 +1634,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 							log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid persistent_client_expiration duration in configuration.");
 							return MOSQ_ERR_INVAL;
 						}
+						if (config__check_for_inline_comment(&token, "persistent_client_expiration", saveptr)) return MOSQ_ERR_INVAL;
 					}else{
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty persistent_client_expiration value in configuration.");
 					}
@@ -1654,6 +1673,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 							log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid protocol value (%s).", token);
 							return MOSQ_ERR_INVAL;
 						}
+						if (config__check_for_inline_comment(&token, "protocol", saveptr)) return MOSQ_ERR_INVAL;
 					}else{
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty protocol value in configuration.");
 					}
@@ -1736,6 +1756,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 							log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid start_type value in configuration (%s).", token);
 							return MOSQ_ERR_INVAL;
 						}
+						if (config__check_for_inline_comment(&token, "start_type", saveptr)) return MOSQ_ERR_INVAL;
 					}else{
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty start_type value in configuration.");
 						return MOSQ_ERR_INVAL;
@@ -1755,6 +1776,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 							log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid socket_domain value \"%s\" in configuration.", token);
 							return MOSQ_ERR_INVAL;
 						}
+						if (config__check_for_inline_comment(&token, "socket_domain", saveptr)) return MOSQ_ERR_INVAL;
 					}else{
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty socket_domain value in configuration.");
 						return MOSQ_ERR_INVAL;
@@ -1880,6 +1902,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 											log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 											return MOSQ_ERR_NOMEM;
 										}
+										if (config__check_for_inline_comment(&token, "topic", saveptr)) return MOSQ_ERR_INVAL;
 									}
 								}
 							}
@@ -2111,6 +2134,8 @@ static int conf__parse_bool(char **token, const char *name, bool *value, char *s
 		return MOSQ_ERR_INVAL;
 	}
 
+	if (config__check_for_inline_comment(token, name, saveptr)) return MOSQ_ERR_INVAL;
+
 	return MOSQ_ERR_SUCCESS;
 }
 
@@ -2124,6 +2149,8 @@ static int conf__parse_int(char **token, const char *name, int *value, char *sav
 		return MOSQ_ERR_INVAL;
 	}
 
+	if (config__check_for_inline_comment(token, name, saveptr)) return MOSQ_ERR_INVAL;
+
 	return MOSQ_ERR_SUCCESS;
 }
 
@@ -2136,6 +2163,8 @@ static int conf__parse_ssize_t(char **token, const char *name, ssize_t *value, c
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty %s value in configuration.", name);
 		return MOSQ_ERR_INVAL;
 	}
+
+	if (config__check_for_inline_comment(token, name, saveptr)) return MOSQ_ERR_INVAL;
 
 	return MOSQ_ERR_SUCCESS;
 }
@@ -2163,6 +2192,25 @@ static int conf__parse_string(char **token, const char *name, char **value, char
 		}
 	}else{
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty %s value in configuration.", name);
+		return MOSQ_ERR_INVAL;
+	}
+	return MOSQ_ERR_SUCCESS;
+}
+
+static int config__check_for_inline_comment(char **token, const char *name, char* saveptr) {
+	char* value = *token;
+	*token = strtok_r(NULL, "", &saveptr);
+
+	if (*token == NULL) return MOSQ_ERR_SUCCESS;
+
+	while(*token[0] == ' ' || *token[0] == '\t'){
+		(*token)++;
+	}
+
+	if (*token != NULL && *token[0] == '\0') return MOSQ_ERR_SUCCESS;
+
+	if (*token != NULL && *token[0] != '#'){
+		log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid configuration (%s) found after '%s' configuration value (%s).", *token, name, value);
 		return MOSQ_ERR_INVAL;
 	}
 	return MOSQ_ERR_SUCCESS;
