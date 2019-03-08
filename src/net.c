@@ -407,7 +407,11 @@ int net__socket_listen(struct mosquitto__listener *listener)
 	hints.ai_flags = AI_PASSIVE;
 	hints.ai_socktype = SOCK_STREAM;
 
-	if(getaddrinfo(listener->host, service, &hints, &ainfo)) return INVALID_SOCKET;
+	rc = getaddrinfo(listener->host, service, &hints, &ainfo);
+	if (rc){
+		log__printf(NULL, MOSQ_LOG_ERR, "Error creating listener: %s.", gai_strerror(rc));
+		return INVALID_SOCKET;
+	}
 
 	listener->sock_count = 0;
 	listener->socks = NULL;
