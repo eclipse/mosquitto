@@ -524,7 +524,7 @@
 				<term><option>--protocol-version</option></term>
 				<listitem>
 					<para>Specify which version of the MQTT protocol should be
-						used when connecting to the rmeote broker. Can be
+						used when connecting to the remote broker. Can be
 						<option>mqttv311</option> or <option>mqttv31</option>.
 						Defaults to <option>mqttv311</option>.</para>
 				</listitem>
