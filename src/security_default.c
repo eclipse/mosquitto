@@ -882,7 +882,7 @@ int mosquitto_unpwd_check_default(struct mosquitto_db *db, struct mosquitto *con
 		}
 	}
 
-	return MOSQ_ERR_AUTH;
+	return MOSQ_ERR_PLUGIN_DEFER;
 }
 
 static int unpwd__cleanup(struct mosquitto__unpwd **root, bool reload)
