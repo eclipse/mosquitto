@@ -2,6 +2,8 @@
 ==============
 
 Broker features:
+- total_memory_limit_bytes option in configuration to limit the total broker
+  memory usage.
 - Add support for MQTT v5
 - Add support for OCSP stapling.
 - Add support for ALPN on bridge TLS connections. Closes #924.

@@ -1906,6 +1906,18 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 					}
 				}else if(!strcmp(token, "store_clean_interval")){
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: store_clean_interval is no longer needed.");
+				}else if(!strcmp(token, "total_memory_limit_bytes")){
+#ifdef REAL_WITH_MEMORY_TRACKING
+					token = strtok_r(NULL, " ", &saveptr);
+					if(token){
+                  size_t mem_limit = atol(token);
+                  memory__set_limit(mem_limit);
+					}else{
+						log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty total_memory_limit_bytes value in configuration.");
+					}
+#else
+						log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Memory tracking not enabled, total_memory_limit_bytes ignored.");
+#endif
 				}else if(!strcmp(token, "sys_interval")){
 					if(conf__parse_int(&token, "sys_interval", &config->sys_interval, saveptr)) return MOSQ_ERR_INVAL;
 					if(config->sys_interval < 0 || config->sys_interval > 65535){

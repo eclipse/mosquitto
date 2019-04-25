@@ -802,6 +802,18 @@ log_timestamp_format %Y-%m-%dT%H:%M:%S
 				</listitem>
 			</varlistentry>
 			<varlistentry>
+				<term><option>total_memory_limit_bytes</option> <replaceable>count</replaceable></term>
+				<listitem>
+               <para>Memory usage will be monitored to check the broker
+                  never exceed this limit. Defaults to 0. (No maximum)
+                  In case the limit have been reached, the broker will
+                  stop accepting new messages. Mosquitto needs to be
+                  compiled with memory tracking support in order to use
+                  this option. If not, it will be ignored.</para>
+					<para>Reloaded on reload signal.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
 				<term><option>sys_interval</option> <replaceable>seconds</replaceable></term>
 				<listitem>
 					<para>The integer number of seconds between updates of the
