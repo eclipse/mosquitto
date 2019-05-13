@@ -469,6 +469,16 @@
 	</refsect1>
 
 	<refsect1>
+		<title>Upgrading</title>
+    <para>The broker stores its state in <filename>/var/lib/mosquitto/mosquitto.db</filename>
+      Across versions the file format is changing, but the broker can read all older versions.
+      It only saves out in the latest format, so once you are on a new version you can't go back
+      with the new persistence file. So it is adviseable taking a copy of the file and trying
+      it out with the newer broker, then on the off chance that you do see a problem your main
+      broker hasn't been affected.</para>
+	</refsect1>
+
+	<refsect1>
 		<title>Bugs</title>
 		<para><command>mosquitto</command> bug information can be found at
 			<ulink url="https://github.com/eclipse/mosquitto/issues"/></para>
