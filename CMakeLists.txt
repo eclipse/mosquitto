@@ -4,16 +4,11 @@
 # To configure the build options either use the CMake gui, or run the command
 # line utility including the "-i" option.
 
-set(CMAKE_LEGACY_CYGWIN_WIN32 0)
+cmake_minimum_required(VERSION 3.1)
 
-project(mosquitto)
+project(mosquitto VERSION 1.6.2)
 
-cmake_minimum_required(VERSION 2.8)
-# Only for version 3 and up. cmake_policy(SET CMP0042 NEW)
-
-set (VERSION 1.6.2)
-
-add_definitions (-DCMAKE -DVERSION=\"${VERSION}\")
+add_definitions (-DCMAKE -DVERSION=\"${PROJECT_VERSION}\")
 
 if (WIN32)
 	add_definitions("-D_CRT_SECURE_NO_WARNINGS")
@@ -86,6 +81,17 @@ if (WITH_DLT)
 endif (WITH_DLT)
 
 # ========================================
+# Settings for export target
+# ========================================
+set(MOSQUITTO_TARGETS_EXPORT_NAME        "${PROJECT_NAME}Targets")
+set(MOSQUITTO_CONFIG_INSTALL_DIR         "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}" CACHE INTERNAL "")
+set(MOSQUITTO_CMAKE_CONFIG_DIR           "${CMAKE_CURRENT_BINARY_DIR}")
+set(MOSQUITTO_CMAKE_PROJECT_TARGETS_FILE "${MOSQUITTO_CMAKE_CONFIG_DIR}/${MOSQUITTO_TARGETS_EXPORT_NAME}.cmake")
+set(MOSQUITTO_CMAKE_PROJECT_CONFIG_FILE  "${MOSQUITTO_CMAKE_CONFIG_DIR}/${PROJECT_NAME}Config.cmake")
+set(MOSQUITTO_CMAKE_VERSION_CONFIG_FILE  "${MOSQUITTO_CMAKE_CONFIG_DIR}/${PROJECT_NAME}ConfigVersion.cmake")
+set(MOSQUITTO_INCLUDE_BUILD_DIR          "${PROJECT_SOURCE_DIR}/lib/")
+
+# ========================================
 # Include projects
 # ========================================
 
@@ -102,7 +108,6 @@ endif (DOCUMENTATION)
 
 install(FILES mosquitto.conf aclfile.example pskfile.example pwfile.example DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/mosquitto")
 
-
 # ========================================
 # Install pkg-config files
 # ========================================
@@ -113,7 +118,20 @@ configure_file(libmosquittopp.pc.in libmosquittopp.pc @ONLY)
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libmosquittopp.pc" DESTINATION "${CMAKE_INSTALL_PREFIX}/share/pkgconfig")
 
 # ========================================
+# Install CMake config files
+# ========================================
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.cmake.in ${MOSQUITTO_CMAKE_PROJECT_CONFIG_FILE} @ONLY)
+install(FILES "${MOSQUITTO_CMAKE_PROJECT_CONFIG_FILE}" DESTINATION ${MOSQUITTO_CONFIG_INSTALL_DIR})
+
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(${MOSQUITTO_CMAKE_VERSION_CONFIG_FILE} COMPATIBILITY SameMajorVersion)
+install(FILES "${MOSQUITTO_CMAKE_VERSION_CONFIG_FILE}" DESTINATION ${MOSQUITTO_CONFIG_INSTALL_DIR})
+
+install(EXPORT ${MOSQUITTO_TARGETS_EXPORT_NAME} NAMESPACE ${PROJECT_NAME}:: DESTINATION ${MOSQUITTO_CONFIG_INSTALL_DIR})
+
+#========================================
 # Testing
 # ========================================
 enable_testing()
-add_test("test" make -C ${mosquitto_SOURCE_DIR}/test test)
+add_test("no-test" true)
