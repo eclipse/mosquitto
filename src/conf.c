@@ -67,6 +67,7 @@ static int conf__parse_bool(char **token, const char *name, bool *value, char *s
 static int conf__parse_int(char **token, const char *name, int *value, char *saveptr);
 static int conf__parse_ssize_t(char **token, const char *name, ssize_t *value, char *saveptr);
 static int conf__parse_string(char **token, const char *name, char **value, char *saveptr);
+static int conf__parse_path(char **token, const char *name, char **value, char *saveptr);
 static int config__read_file(struct mosquitto__config *config, bool reload, const char *file, struct config_recurse *config_tmp, int level, int *lineno);
 static int config__check(struct mosquitto__config *config);
 static void config__cleanup_plugins(struct mosquitto__config *config);
@@ -812,7 +813,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 						mosquitto__free(cur_security_options->acl_file);
 						cur_security_options->acl_file = NULL;
 					}
-					if(conf__parse_string(&token, "acl_file", &cur_security_options->acl_file, saveptr)) return MOSQ_ERR_INVAL;
+					if(conf__parse_path(&token, "acl_file", &cur_security_options->acl_file, saveptr)) return MOSQ_ERR_INVAL;
 				}else if(!strcmp(token, "address") || !strcmp(token, "addresses")){
 #ifdef WITH_BRIDGE
 					if(reload) continue; // FIXME
@@ -993,7 +994,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 						return MOSQ_ERR_INVAL;
 					}
 #endif
-					if(conf__parse_string(&token, "bridge_cafile", &cur_bridge->tls_cafile, saveptr)) return MOSQ_ERR_INVAL;
+					if(conf__parse_path(&token, "bridge_cafile", &cur_bridge->tls_cafile, saveptr)) return MOSQ_ERR_INVAL;
 #else
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Bridge and/or TLS support not available.");
 #endif
@@ -1021,7 +1022,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 						return MOSQ_ERR_INVAL;
 					}
 #endif
-					if(conf__parse_string(&token, "bridge_capath", &cur_bridge->tls_capath, saveptr)) return MOSQ_ERR_INVAL;
+					if(conf__parse_path(&token, "bridge_capath", &cur_bridge->tls_capath, saveptr)) return MOSQ_ERR_INVAL;
 #else
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Bridge and/or TLS support not available.");
 #endif
@@ -1038,7 +1039,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 						return MOSQ_ERR_INVAL;
 					}
 #endif
-					if(conf__parse_string(&token, "bridge_certfile", &cur_bridge->tls_certfile, saveptr)) return MOSQ_ERR_INVAL;
+					if(conf__parse_path(&token, "bridge_certfile", &cur_bridge->tls_certfile, saveptr)) return MOSQ_ERR_INVAL;
 #else
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Bridge and/or TLS support not available.");
 #endif
@@ -1095,7 +1096,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 						return MOSQ_ERR_INVAL;
 					}
 #endif
-					if(conf__parse_string(&token, "bridge_keyfile", &cur_bridge->tls_keyfile, saveptr)) return MOSQ_ERR_INVAL;
+					if(conf__parse_path(&token, "bridge_keyfile", &cur_bridge->tls_keyfile, saveptr)) return MOSQ_ERR_INVAL;
 #else
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Bridge and/or TLS support not available.");
 #endif
@@ -1156,14 +1157,14 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Cannot use both certificate and psk encryption in a single listener.");
 						return MOSQ_ERR_INVAL;
 					}
-					if(conf__parse_string(&token, "cafile", &cur_listener->cafile, saveptr)) return MOSQ_ERR_INVAL;
+					if(conf__parse_path(&token, "cafile", &cur_listener->cafile, saveptr)) return MOSQ_ERR_INVAL;
 #else
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: TLS support not available.");
 #endif
 				}else if(!strcmp(token, "capath")){
 #ifdef WITH_TLS
 					if(reload) continue; // Listeners not valid for reloading.
-					if(conf__parse_string(&token, "capath", &cur_listener->capath, saveptr)) return MOSQ_ERR_INVAL;
+					if(conf__parse_path(&token, "capath", &cur_listener->capath, saveptr)) return MOSQ_ERR_INVAL;
 #else
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: TLS support not available.");
 #endif
@@ -1174,7 +1175,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Cannot use both certificate and psk encryption in a single listener.");
 						return MOSQ_ERR_INVAL;
 					}
-					if(conf__parse_string(&token, "certfile", &cur_listener->certfile, saveptr)) return MOSQ_ERR_INVAL;
+					if(conf__parse_path(&token, "certfile", &cur_listener->certfile, saveptr)) return MOSQ_ERR_INVAL;
 #else
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: TLS support not available.");
 #endif
@@ -1267,21 +1268,21 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 				}else if(!strcmp(token, "crlfile")){
 #ifdef WITH_TLS
 					if(reload) continue; // Listeners not valid for reloading.
-					if(conf__parse_string(&token, "crlfile", &cur_listener->crlfile, saveptr)) return MOSQ_ERR_INVAL;
+					if(conf__parse_path(&token, "crlfile", &cur_listener->crlfile, saveptr)) return MOSQ_ERR_INVAL;
 #else
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: TLS support not available.");
 #endif
 				}else if(!strcmp(token, "dhparamfile")){
 #ifdef WITH_TLS
 					if(reload) continue; // Listeners not valid for reloading.
-					if(conf__parse_string(&token, "dhparamfile", &cur_listener->dhparamfile, saveptr)) return MOSQ_ERR_INVAL;
+					if(conf__parse_path(&token, "dhparamfile", &cur_listener->dhparamfile, saveptr)) return MOSQ_ERR_INVAL;
 #else
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: TLS support not available.");
 #endif
 				}else if(!strcmp(token, "http_dir")){
 #ifdef WITH_WEBSOCKETS
 					if(reload) continue; // Listeners not valid for reloading.
-					if(conf__parse_string(&token, "http_dir", &cur_listener->http_dir, saveptr)) return MOSQ_ERR_INVAL;
+					if(conf__parse_path(&token, "http_dir", &cur_listener->http_dir, saveptr)) return MOSQ_ERR_INVAL;
 #else
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Websockets support not available.");
 #endif
@@ -1350,7 +1351,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 				}else if(!strcmp(token, "keyfile")){
 #ifdef WITH_TLS
 					if(reload) continue; // Listeners not valid for reloading.
-					if(conf__parse_string(&token, "keyfile", &cur_listener->keyfile, saveptr)) return MOSQ_ERR_INVAL;
+					if(conf__parse_path(&token, "keyfile", &cur_listener->keyfile, saveptr)) return MOSQ_ERR_INVAL;
 #else
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: TLS support not available.");
 #endif
@@ -1465,11 +1466,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 								token++;
 							}
 							if(token[0]){
-								config->log_file = mosquitto__strdup(token);
-								if(!config->log_file){
-									log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
-									return MOSQ_ERR_NOMEM;
-								}
+								if(conf__parse_path(&token, "log_file", &config->log_file, saveptr)) return MOSQ_ERR_INVAL;
 							}else{
 								log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty \"log_dest file\" value in configuration.");
 								return MOSQ_ERR_INVAL;
@@ -1703,7 +1700,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 						mosquitto__free(cur_security_options->password_file);
 						cur_security_options->password_file = NULL;
 					}
-					if(conf__parse_string(&token, "password_file", &cur_security_options->password_file, saveptr)) return MOSQ_ERR_INVAL;
+					if(conf__parse_path(&token, "password_file", &cur_security_options->password_file, saveptr)) return MOSQ_ERR_INVAL;
 				}else if(!strcmp(token, "per_listener_settings")){
 					if(conf__parse_bool(&token, "per_listener_settings", &config->per_listener_settings, saveptr)) return MOSQ_ERR_INVAL;
 					if(cur_security_options && config->per_listener_settings){
@@ -1713,7 +1710,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 				}else if(!strcmp(token, "persistence") || !strcmp(token, "retained_persistence")){
 					if(conf__parse_bool(&token, token, &config->persistence, saveptr)) return MOSQ_ERR_INVAL;
 				}else if(!strcmp(token, "persistence_file")){
-					if(conf__parse_string(&token, "persistence_file", &config->persistence_file, saveptr)) return MOSQ_ERR_INVAL;
+					if(conf__parse_path(&token, "persistence_file", &config->persistence_file, saveptr)) return MOSQ_ERR_INVAL;
 				}else if(!strcmp(token, "persistence_location")){
 					if(conf__parse_string(&token, "persistence_location", &config->persistence_location, saveptr)) return MOSQ_ERR_INVAL;
 				}else if(!strcmp(token, "persistent_client_expiration")){
@@ -1750,7 +1747,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 					}
 				}else if(!strcmp(token, "pid_file")){
 					if(reload) continue; // pid file not valid for reloading.
-					if(conf__parse_string(&token, "pid_file", &config->pid_file, saveptr)) return MOSQ_ERR_INVAL;
+					if(conf__parse_path(&token, "pid_file", &config->pid_file, saveptr)) return MOSQ_ERR_INVAL;
 				}else if(!strcmp(token, "port")){
 					if(reload) continue; // Listener not valid for reloading.
 					if(config->default_listener.port){
@@ -1793,7 +1790,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 						mosquitto__free(cur_security_options->psk_file);
 						cur_security_options->psk_file = NULL;
 					}
-					if(conf__parse_string(&token, "psk_file", &cur_security_options->psk_file, saveptr)) return MOSQ_ERR_INVAL;
+					if(conf__parse_path(&token, "psk_file", &cur_security_options->psk_file, saveptr)) return MOSQ_ERR_INVAL;
 #else
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: TLS/TLS-PSK support not available.");
 #endif
@@ -2384,5 +2381,37 @@ static int conf__parse_string(char **token, const char *name, char **value, char
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty %s value in configuration.", name);
 		return MOSQ_ERR_INVAL;
 	}
+	return MOSQ_ERR_SUCCESS;
+}
+
+static int conf__parse_path(char **token, const char *name, char **value, char *saveptr)
+{
+	char *string_value = NULL;
+	char *home;
+	int len;
+
+	if(conf__parse_string(token, name, &string_value, saveptr)) return MOSQ_ERR_INVAL;
+
+	home = getenv("HOME");
+	if(!(strncmp(string_value, "~/", 2) == 0 && home)){
+		*value = string_value;
+		return MOSQ_ERR_SUCCESS;
+	}
+
+	*value = NULL;
+	len = snprintf(NULL, 0, "%s%s", home, string_value + 1);
+	if(len > 0){
+		*value = mosquitto__malloc(len + 1);
+		if(*value){
+			snprintf(*value, len + 1, "%s%s", home, string_value + 1);
+			mosquitto__free(string_value);
+		}
+	}
+
+	if(!*value){
+		log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
+		return MOSQ_ERR_NOMEM;
+	}
+
 	return MOSQ_ERR_SUCCESS;
 }
