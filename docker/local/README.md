@@ -17,7 +17,7 @@ Two docker volumes have been created in the image to be used for persistent stor
 
 ## User/Group
 
-The image runs mosqutto under the mosquitto user and group, which are created
+The image runs mosquitto under the mosquitto user and group, which are created
 with a uid and gid of 1883.
 
 ## Configuration
