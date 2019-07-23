@@ -79,17 +79,21 @@ endif (WITH_SRV)
 add_library(libmosquitto SHARED ${C_SRC})
 set_target_properties(libmosquitto PROPERTIES
 	POSITION_INDEPENDENT_CODE 1
-)
-
-target_link_libraries(libmosquitto ${LIBRARIES})
-
-set_target_properties(libmosquitto PROPERTIES
 	OUTPUT_NAME mosquitto
-	VERSION ${VERSION}
+	PUBLIC_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/mosquitto.h
+	VERSION ${PROJECT_VERSION}
 	SOVERSION 1
 )
 
-install(TARGETS libmosquitto RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+target_include_directories(
+	libmosquitto
+	INTERFACE
+	$<BUILD_INTERFACE:${MOSQUITTO_INCLUDE_BUILD_DIR}>
+	$<INSTALL_INTERFACE:include>
+)
+
+target_link_libraries(libmosquitto ${LIBRARIES})
+install(TARGETS libmosquitto EXPORT ${MOSQUITTO_TARGETS_EXPORT_NAME} LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}" PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 if (WITH_STATIC_LIBRARIES)
 	add_library(libmosquitto_static STATIC ${C_SRC})
@@ -102,12 +106,19 @@ if (WITH_STATIC_LIBRARIES)
 	target_link_libraries(libmosquitto_static ${LIBRARIES})
 
 	set_target_properties(libmosquitto_static PROPERTIES
+		PUBLIC_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/mosquitto.h
 		OUTPUT_NAME mosquitto
-		VERSION ${VERSION}
+		VERSION ${PROJECT_VERSION}
+	)
+
+	target_include_directories(
+		libmosquitto_static
+		INTERFACE
+		$<BUILD_INTERFACE:${MOSQUITTO_INCLUDE_BUILD_DIR}>
+		$<INSTALL_INTERFACE:include>
 	)
 
 	target_compile_definitions(libmosquitto_static PUBLIC "LIBMOSQUITTO_STATIC")
-	install(TARGETS libmosquitto_static ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}")
-endif (WITH_STATIC_LIBRARIES)
 
-install(FILES mosquitto.h DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+	install(TARGETS libmosquitto_static EXPORT ${MOSQUITTO_TARGETS_EXPORT_NAME} ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+endif (WITH_STATIC_LIBRARIES)
