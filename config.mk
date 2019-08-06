@@ -23,6 +23,10 @@
 # password authentication at all.
 WITH_TLS:=yes
 
+# Use this variable to give openssl static libraries dependencies (such as -lz
+# or -latomic) that can be retrieved for example by pkg-config
+WITH_TLS_STATIC_LIB_DEPS:=
+
 # Comment out to disable TLS/PSK support in the broker and client. Requires
 # WITH_TLS=yes.
 # This must be disabled if using openssl < 1.0.
@@ -202,7 +206,7 @@ ifeq ($(WITH_TLS),yes)
 	LIB_CPPFLAGS:=$(LIB_CPPFLAGS) -DWITH_TLS
 	PASSWD_LDADD:=$(PASSWD_LDADD) -lcrypto
 	CLIENT_CPPFLAGS:=$(CLIENT_CPPFLAGS) -DWITH_TLS
-	STATIC_LIB_DEPS:=$(STATIC_LIB_DEPS) -lssl -lcrypto
+	STATIC_LIB_DEPS:=$(STATIC_LIB_DEPS) -lssl -lcrypto $(WITH_TLS_STATIC_LIB_DEPS)
 
 	ifeq ($(WITH_TLS_PSK),yes)
 		BROKER_CPPFLAGS:=$(BROKER_CPPFLAGS) -DWITH_TLS_PSK
