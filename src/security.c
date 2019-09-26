@@ -629,7 +629,7 @@ int mosquitto_acl_check(struct mosquitto_db *db, struct mosquitto *context, cons
 	struct mosquitto__security_options *opts;
 	struct mosquitto_acl_msg msg;
 
-	if(!context->id){
+	if(!db || !context || !context->id || !topic){
 		return MOSQ_ERR_ACL_DENIED;
 	}
 
