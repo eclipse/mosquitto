@@ -79,7 +79,8 @@ RUN set -x && \
     install -m644 /build/mosq/mosquitto.conf /mosquitto/config/mosquitto.conf && \
     chown -R mosquitto:mosquitto /mosquitto && \
     apk del build-deps && \
-    rm -rf /build
+    rm -rf /build && \
+    apk --no-cache add ca-certificates
 
 VOLUME ["/mosquitto/data", "/mosquitto/log"]
 
