@@ -410,7 +410,7 @@ int cfg_add_topic(struct mosq_config *cfg, int type, char *topic, const char *ar
 		fprintf(stderr, "Error: Malformed UTF-8 in %s argument.\n\n", arg);
 		return 1;
 	}
-	if(type == CLIENT_PUB || type == CLIENT_RR){
+	if(type == CLIENT_RR){
 		if(mosquitto_pub_topic_check(topic) == MOSQ_ERR_INVAL){
 			fprintf(stderr, "Error: Invalid publish topic '%s', does it contain '+' or '#'?\n", topic);
 			return 1;
@@ -427,6 +427,7 @@ int cfg_add_topic(struct mosq_config *cfg, int type, char *topic, const char *ar
 			fprintf(stderr, "Error: Invalid subscription topic '%s', are all '+' and '#' wildcards correct?\n", topic);
 			return 1;
 		}
+		cfg->topic = strdup(topic);
 		cfg->topic_count++;
 		cfg->topics = realloc(cfg->topics, cfg->topic_count*sizeof(char *));
 		if(!cfg->topics){
@@ -434,6 +435,7 @@ int cfg_add_topic(struct mosq_config *cfg, int type, char *topic, const char *ar
 			return 1;
 		}
 		cfg->topics[cfg->topic_count-1] = strdup(topic);
+		cfg->current_topic = cfg->topics + cfg->topic_count - 1;
 	}
 	return 0;
 }

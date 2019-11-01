@@ -86,6 +86,7 @@ struct mosq_config {
 #  endif
 #endif
 	bool clean_session;
+	char **current_topic;
 	char **topics; /* sub */
 	int topic_count; /* sub */
 	bool exit_after_sub; /* sub */
