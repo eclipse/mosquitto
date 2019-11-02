@@ -144,7 +144,7 @@ int send__connect(struct mosquitto *mosq, uint16_t keepalive, bool clean_session
 	}
 #if defined(WITH_BROKER) && defined(WITH_BRIDGE)
 	if(mosq->bridge && mosq->bridge->try_private && mosq->bridge->try_private_accepted){
-		version |= 0x80;
+		version &= 0xFF;
 	}else{
 	}
 #endif
