@@ -133,10 +133,10 @@ void my_connect_callback(struct mosquitto *mosq, void *obj, int result, int flag
 			case MSGMODE_CMD:
 			case MSGMODE_FILE:
 			case MSGMODE_STDIN_FILE:
-				rc = my_publish(mosq, &mid_sent, cfg.topic, cfg.msglen, cfg.message, cfg.qos, cfg.retain);
+				rc = my_publish(mosq, &mid_sent, *cfg.current_topic, cfg.msglen, cfg.message, cfg.qos, cfg.retain);
 				break;
 			case MSGMODE_NULL:
-				rc = my_publish(mosq, &mid_sent, cfg.topic, 0, NULL, cfg.qos, cfg.retain);
+				rc = my_publish(mosq, &mid_sent, *cfg.current_topic, 0, NULL, cfg.qos, cfg.retain);
 				break;
 			case MSGMODE_STDIN_LINE:
 				status = STATUS_CONNACK_RECVD;
@@ -192,6 +192,10 @@ void my_publish_callback(struct mosquitto *mosq, void *obj, int mid, int reason_
 		err_printf(&cfg, "Warning: Publish %d failed: %s.\n", mid, mosquitto_reason_string(reason_code));
 	}
 	publish_count++;
+
+	++cfg.current_topic;
+	cfg.current_topic = (cfg.topics + cfg.topic_count == cfg.current_topic) ? cfg.topics : cfg.current_topic;
+
 
 	if(cfg.pub_mode == MSGMODE_STDIN_LINE){
 		if(mid == last_mid){
@@ -250,7 +254,7 @@ int pub_shared_loop(struct mosquitto *mosq)
 					buf_len_actual = strlen(line_buf);
 					if(line_buf[buf_len_actual-1] == '\n'){
 						line_buf[buf_len_actual-1] = '\0';
-						rc2 = my_publish(mosq, &mid_sent, cfg.topic, buf_len_actual-1, line_buf, cfg.qos, cfg.retain);
+						rc2 = my_publish(mosq, &mid_sent, *cfg.current_topic, buf_len_actual-1, line_buf, cfg.qos, cfg.retain);
 						if(rc2){
 							err_printf(&cfg, "Error: Publish returned %d, disconnecting.\n", rc2);
 							mosquitto_disconnect_v5(mosq, MQTT_RC_DISCONNECT_WITH_WILL_MSG, cfg.disconnect_props);
@@ -306,10 +310,10 @@ int pub_shared_loop(struct mosquitto *mosq)
 					case MSGMODE_CMD:
 					case MSGMODE_FILE:
 					case MSGMODE_STDIN_FILE:
-						rc = my_publish(mosq, &mid_sent, cfg.topic, cfg.msglen, cfg.message, cfg.qos, cfg.retain);
+						rc = my_publish(mosq, &mid_sent, *cfg.current_topic, cfg.msglen, cfg.message, cfg.qos, cfg.retain);
 						break;
 					case MSGMODE_NULL:
-						rc = my_publish(mosq, &mid_sent, cfg.topic, 0, NULL, cfg.qos, cfg.retain);
+						rc = my_publish(mosq, &mid_sent, *cfg.current_topic, 0, NULL, cfg.qos, cfg.retain);
 						break;
 					case MSGMODE_STDIN_LINE:
 						break;
