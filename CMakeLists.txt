@@ -97,7 +97,7 @@ if (WITH_DLT)
 endif (WITH_DLT)
 
 option(WITH_UDS_CP
-	"Include Unix Domain Socket based TCP connection passing support?" OFF)
+	"Include Unix Domain Socket based TCP connection passing support?" ON)
 if (${WITH_UDS_CP} STREQUAL ON)
         add_definitions("-DWITH_UDS_CP")
 endif (${WITH_UDS_CP} STREQUAL ON)

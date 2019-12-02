@@ -101,7 +101,7 @@ WITH_COVERAGE:=no
 WITH_UNIX_SOCKETS:=yes
 
 # Build with unix domain socket connection passing support
-WITH_UDS_CP:=no
+WITH_UDS_CP:=yes
 
 # Build mosquitto_sub with cJSON support
 WITH_CJSON:=yes
