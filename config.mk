@@ -100,6 +100,9 @@ WITH_COVERAGE:=no
 # Build with unix domain socket support
 WITH_UNIX_SOCKETS:=yes
 
+# Build with unix domain socket connection passing support
+WITH_UDS_CP:=no
+
 # Build mosquitto_sub with cJSON support
 WITH_CJSON:=yes
 
@@ -282,6 +285,10 @@ ifeq ($(WITH_UNIX_SOCKETS),yes)
 	BROKER_CPPFLAGS:=$(BROKER_CPPFLAGS) -DWITH_UNIX_SOCKETS
 	LIB_CPPFLAGS:=$(LIB_CPPFLAGS) -DWITH_UNIX_SOCKETS
 	CLIENT_CPPFLAGS:=$(CLIENT_CPPFLAGS) -DWITH_UNIX_SOCKETS
+
+	ifeq ($(WITH_UDS_CP),yes)
+	BROKER_CPPFLAGS:=$(BROKER_CPPFLAGS) -DWITH_UDS_CP
+	endif
 endif
 
 ifeq ($(WITH_WEBSOCKETS),yes)
