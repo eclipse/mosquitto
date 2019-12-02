@@ -119,12 +119,8 @@ int net__socket_accept(struct mosquitto_db *db, mosq_sock_t listensock)
 	char address[1024];
 #endif
 #if defined WITH_UNIX_SOCKETS && defined WITH_UDS_CP
-	struct fwd_con_ctx
-	{
-		uint8_t reserved;
-	} uds_fwd_context;
 	char control[CMSG_SPACE(sizeof(int))];
-	struct iovec  iov = { .iov_base = &uds_fwd_context, .iov_len = sizeof(uds_fwd_context) };
+	struct iovec  iov = { .iov_base = NULL, .iov_len = 0 };
 	struct msghdr msg = { .msg_name = NULL, .msg_namelen = 0, .msg_iov = &iov, .msg_iovlen = 1, .msg_control = control, .msg_controllen = sizeof(control) };
 	struct cmsghdr  *cmsg;
 #endif
