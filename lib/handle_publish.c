@@ -118,7 +118,7 @@ int handle__publish(struct mosquitto *mosq)
 	message->timestamp = mosquitto_time();
 	switch(message->msg.qos){
 		case 0:
-			pthread_mutex_lock(&mosq->callback_mutex);
+			mosquitto_mutex_lock(&mosq->callback_mutex);
 			if(mosq->on_message){
 				mosq->in_callback = true;
 				mosq->on_message(mosq, mosq->userdata, &message->msg);
@@ -129,14 +129,14 @@ int handle__publish(struct mosquitto *mosq)
 				mosq->on_message_v5(mosq, mosq->userdata, &message->msg, properties);
 				mosq->in_callback = false;
 			}
-			pthread_mutex_unlock(&mosq->callback_mutex);
+			mosquitto_mutex_unlock(&mosq->callback_mutex);
 			message__cleanup(&message);
 			mosquitto_property_free_all(&properties);
 			return MOSQ_ERR_SUCCESS;
 		case 1:
 			util__decrement_receive_quota(mosq);
 			rc = send__puback(mosq, message->msg.mid, 0);
-			pthread_mutex_lock(&mosq->callback_mutex);
+			mosquitto_mutex_lock(&mosq->callback_mutex);
 			if(mosq->on_message){
 				mosq->in_callback = true;
 				mosq->on_message(mosq, mosq->userdata, &message->msg);
@@ -147,7 +147,7 @@ int handle__publish(struct mosquitto *mosq)
 				mosq->on_message_v5(mosq, mosq->userdata, &message->msg, properties);
 				mosq->in_callback = false;
 			}
-			pthread_mutex_unlock(&mosq->callback_mutex);
+			mosquitto_mutex_unlock(&mosq->callback_mutex);
 			message__cleanup(&message);
 			mosquitto_property_free_all(&properties);
 			return rc;
@@ -155,10 +155,10 @@ int handle__publish(struct mosquitto *mosq)
 			message->properties = properties;
 			util__decrement_receive_quota(mosq);
 			rc = send__pubrec(mosq, message->msg.mid, 0);
-			pthread_mutex_lock(&mosq->msgs_in.mutex);
+			mosquitto_mutex_lock(&mosq->msgs_in.mutex);
 			message->state = mosq_ms_wait_for_pubrel;
 			message__queue(mosq, message, mosq_md_in);
-			pthread_mutex_unlock(&mosq->msgs_in.mutex);
+			mosquitto_mutex_unlock(&mosq->msgs_in.mutex);
 			return rc;
 		default:
 			message__cleanup(&message);

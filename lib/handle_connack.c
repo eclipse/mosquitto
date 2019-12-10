@@ -34,7 +34,7 @@ static void connack_callback(struct mosquitto *mosq, uint8_t reason_code, uint8_
 	if(reason_code == MQTT_RC_SUCCESS){
 		mosq->reconnects = 0;
 	}
-	pthread_mutex_lock(&mosq->callback_mutex);
+	mosquitto_mutex_lock(&mosq->callback_mutex);
 	if(mosq->on_connect){
 		mosq->in_callback = true;
 		mosq->on_connect(mosq, mosq->userdata, reason_code);
@@ -50,7 +50,7 @@ static void connack_callback(struct mosquitto *mosq, uint8_t reason_code, uint8_
 		mosq->on_connect_v5(mosq, mosq->userdata, reason_code, connect_flags, properties);
 		mosq->in_callback = false;
 	}
-	pthread_mutex_unlock(&mosq->callback_mutex);
+	mosquitto_mutex_unlock(&mosq->callback_mutex);
 }
 
 
@@ -109,11 +109,11 @@ int handle__connack(struct mosquitto *mosq)
 
 	switch(reason_code){
 		case 0:
-			pthread_mutex_lock(&mosq->state_mutex);
+			mosquitto_mutex_lock(&mosq->state_mutex);
 			if(mosq->state != mosq_cs_disconnecting){
 				mosq->state = mosq_cs_active;
 			}
-			pthread_mutex_unlock(&mosq->state_mutex);
+			mosquitto_mutex_unlock(&mosq->state_mutex);
 			message__retry_check(mosq);
 			return MOSQ_ERR_SUCCESS;
 		case 1:
