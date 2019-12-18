@@ -34,12 +34,12 @@ int log__printf(struct mosquitto *mosq, int priority, const char *fmt, ...)
 	assert(mosq);
 	assert(fmt);
 
-	pthread_mutex_lock(&mosq->log_callback_mutex);
+	mosquitto_mutex_lock(&mosq->log_callback_mutex);
 	if(mosq->on_log){
 		len = strlen(fmt) + 500;
 		s = mosquitto__malloc(len*sizeof(char));
 		if(!s){
-			pthread_mutex_unlock(&mosq->log_callback_mutex);
+			mosquitto_mutex_unlock(&mosq->log_callback_mutex);
 			return MOSQ_ERR_NOMEM;
 		}
 
@@ -52,7 +52,7 @@ int log__printf(struct mosquitto *mosq, int priority, const char *fmt, ...)
 
 		mosquitto__free(s);
 	}
-	pthread_mutex_unlock(&mosq->log_callback_mutex);
+	mosquitto_mutex_unlock(&mosq->log_callback_mutex);
 
 	return MOSQ_ERR_SUCCESS;
 }

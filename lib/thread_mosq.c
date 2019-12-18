@@ -32,7 +32,7 @@ int mosquitto_loop_start(struct mosquitto *mosq)
 	if(!mosq || mosq->threaded != mosq_ts_none) return MOSQ_ERR_INVAL;
 
 	mosq->threaded = mosq_ts_self;
-	if(!pthread_create(&mosq->thread_id, NULL, mosquitto__thread_main, mosq)){
+    if(!mosquitto_thread_create(&mosq->thread_id, mosquitto__thread_main, mosq)){
 		return MOSQ_ERR_SUCCESS;
 	}else{
 		return MOSQ_ERR_ERRNO;
@@ -64,10 +64,10 @@ int mosquitto_loop_stop(struct mosquitto *mosq, bool force)
 	}
 	
 	if(force){
-		pthread_cancel(mosq->thread_id);
+		mosquitto_thread_cancel(mosq->thread_id);
 	}
-	pthread_join(mosq->thread_id, NULL);
-	mosq->thread_id = pthread_self();
+	mosquitto_thread_join(mosq->thread_id);
+	mosq->thread_id = mosquitto_current_thread_handle();
 	mosq->threaded = mosq_ts_none;
 
 	return MOSQ_ERR_SUCCESS;

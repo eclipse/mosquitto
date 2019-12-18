@@ -27,6 +27,7 @@ set(C_SRC
 	messages_mosq.c messages_mosq.h
 	mosquitto.c mosquitto.h
 	mosquitto_internal.h
+    mosquitto_threading.c mosquitto_threading.h
 	mqtt_protocol.h
 	net_mosq_ocsp.c net_mosq.c net_mosq.h
 	options.c
