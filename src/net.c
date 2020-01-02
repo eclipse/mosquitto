@@ -410,6 +410,19 @@ int net__tls_server_ctx(struct mosquitto__listener *listener)
 }
 #endif
 
+/* this logs the SSL error stack when errors occur */
+static void ssl_log_error_stack(int loglevel)
+{
+  unsigned int num = 0;
+  int rc = 0;
+
+  while((rc = ERR_get_error()) != 0) {
+    log__printf(NULL, loglevel, "ssl error stack[%u]: %s\n", num, ERR_error_string(rc, NULL));
+    num++;
+  }
+
+}
+
 
 int net__load_crl_file(struct mosquitto__listener *listener)
 {
@@ -429,6 +442,7 @@ int net__load_crl_file(struct mosquitto__listener *listener)
 	if(rc < 1){
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to load certificate revocation file \"%s\". Check crlfile.", listener->crlfile);
 		net__print_error(MOSQ_LOG_ERR, "Error: %s");
+                ssl_log_error_stack(MOSQ_LOG_ERR);
 		return 1;
 	}
 	X509_STORE_set_flags(store, X509_V_FLAG_CRL_CHECK);
@@ -453,6 +467,7 @@ int net__tls_load_verify(struct mosquitto__listener *listener)
 		}else{
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to load CA certificates. Check capath \"%s\".", listener->capath);
 		}
+                ssl_log_error_stack(MOSQ_LOG_ERR);
 		net__print_error(MOSQ_LOG_ERR, "Error: %s");
 		return 1;
 	}
@@ -461,10 +476,12 @@ int net__tls_load_verify(struct mosquitto__listener *listener)
 		engine = ENGINE_by_id(listener->tls_engine);
 		if(!engine){
 			log__printf(NULL, MOSQ_LOG_ERR, "Error loading %s engine\n", listener->tls_engine);
+                        ssl_log_error_stack(MOSQ_LOG_ERR);
 			return 1;
 		}
 		if(!ENGINE_init(engine)){
 			log__printf(NULL, MOSQ_LOG_ERR, "Failed engine initialisation\n");
+                        ssl_log_error_stack(MOSQ_LOG_ERR);
 			ENGINE_free(engine);
 			return 1;
 		}
@@ -482,6 +499,7 @@ int net__tls_load_verify(struct mosquitto__listener *listener)
 	if(rc != 1){
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to load server certificate \"%s\". Check certfile.", listener->certfile);
 		net__print_error(MOSQ_LOG_ERR, "Error: %s");
+                ssl_log_error_stack(MOSQ_LOG_ERR);
 #if !defined(OPENSSL_NO_ENGINE)
 		ENGINE_FINISH(engine);
 #endif
@@ -493,11 +511,13 @@ int net__tls_load_verify(struct mosquitto__listener *listener)
 		if(listener->tls_engine_kpass_sha1){
 			if(!ENGINE_ctrl_cmd(engine, ENGINE_SECRET_MODE, ENGINE_SECRET_MODE_SHA, NULL, NULL, 0)){
 				log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to set engine secret mode sha");
+                                ssl_log_error_stack(MOSQ_LOG_ERR);
 				ENGINE_FINISH(engine);
 				return 1;
 			}
 			if(!ENGINE_ctrl_cmd(engine, ENGINE_PIN, 0, listener->tls_engine_kpass_sha1, NULL, 0)){
 				log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to set engine pin");
+                                ssl_log_error_stack(MOSQ_LOG_ERR);
 				ENGINE_FINISH(engine);
 				return 1;
 			}
@@ -506,11 +526,13 @@ int net__tls_load_verify(struct mosquitto__listener *listener)
 		EVP_PKEY *pkey = ENGINE_load_private_key(engine, listener->keyfile, ui_method, NULL);
 		if(!pkey){
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to load engine private key file \"%s\".", listener->keyfile);
+                        ssl_log_error_stack(MOSQ_LOG_ERR);
 			ENGINE_FINISH(engine);
 			return 1;
 		}
 		if(SSL_CTX_use_PrivateKey(listener->ssl_ctx, pkey) <= 0){
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to use engine private key file \"%s\".", listener->keyfile);
+                        ssl_log_error_stack(MOSQ_LOG_ERR);
 			ENGINE_FINISH(engine);
 			return 1;
 		}
@@ -530,6 +552,7 @@ int net__tls_load_verify(struct mosquitto__listener *listener)
 	if(rc != 1){
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Server certificate/key are inconsistent.");
 		net__print_error(MOSQ_LOG_ERR, "Error: %s");
+                ssl_log_error_stack(MOSQ_LOG_ERR);
 #if !defined(OPENSSL_NO_ENGINE)
 		ENGINE_FINISH(engine);
 #endif
