@@ -130,7 +130,7 @@ add_definitions (-DWITH_BROKER)
 if (WITH_DLT)
     message(STATUS "DLT_LIBDIR = ${DLT_LIBDIR}")
     link_directories(${DLT_LIBDIR})
-    set (MOSQ_LIBS ${DLT_LIBRARIES})
+    set (MOSQ_LIBS ${MOSQ_LIBS} ${DLT_LIBRARIES})
 endif (WITH_DLT)
 
 set (MOSQ_LIBS ${MOSQ_LIBS} ${OPENSSL_LIBRARIES})
