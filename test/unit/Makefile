@@ -2,7 +2,11 @@ include ../../config.mk
 
 .PHONY: all check test test-broker test-lib clean coverage
 
-CPPFLAGS:=$(CPPFLAGS) -I../.. -I../../lib -I../../src -I../../src/deps
+CPPFLAGS:=$(CPPFLAGS) -I../.. -I../../lib -I../../src
+ifeq ($(WITH_BUNDLED_DEPS),yes)
+        CPPFLAGS:=$(CPPFLAGS) -I../../src/deps
+endif
+
 CFLAGS:=$(CFLAGS) -coverage -Wall -ggdb
 LDFLAGS:=$(LDFLAGS) -coverage
 LDADD:=$(LDADD) -lcunit

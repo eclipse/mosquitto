@@ -1,10 +1,13 @@
 add_subdirectory(cpp)
 
 include_directories(${mosquitto_SOURCE_DIR} ${mosquitto_SOURCE_DIR}/lib
-			${mosquitto_SOURCE_DIR}/src/deps
 			${STDBOOL_H_PATH} ${STDINT_H_PATH}
 			${OPENSSL_INCLUDE_DIR} ${PTHREAD_INCLUDE_DIR})
 link_directories(${mosquitto_SOURCE_DIR}/lib)
+
+if (WITH_BUNDLED_DEPS)
+        include_directories(${mosquitto_SOURCE_DIR} ${mosquitto_SOURCE_DIR}/src/deps)
+endif (WITH_BUNDLED_DEPS)
 
 set(C_SRC
 	actions.c

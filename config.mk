@@ -135,7 +135,10 @@ endif
 
 STATIC_LIB_DEPS:=
 
-LIB_CPPFLAGS=$(CPPFLAGS) -I. -I.. -I../lib -I../src/deps
+LIB_CPPFLAGS=$(CPPFLAGS) -I. -I.. -I../lib
+ifeq ($(WITH_BUNDLED_DEPS),yes)
+	LIB_CPPFLAGS:=$(LIB_CPPFLAGS) -I../src/deps
+endif
 LIB_CFLAGS:=$(CFLAGS)
 LIB_CXXFLAGS:=$(CXXFLAGS)
 LIB_LDFLAGS:=$(LDFLAGS)
