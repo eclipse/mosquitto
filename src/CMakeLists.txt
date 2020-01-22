@@ -105,6 +105,9 @@ if (WITH_SYS_TREE)
 	add_definitions("-DWITH_SYS_TREE")
 endif (WITH_SYS_TREE)
 
+option(WITH_ADNS
+	"Include ADNS support?" OFF)
+
 if (CMAKE_SYSTEM_NAME STREQUAL Linux)
 	option(WITH_SYSTEMD
 		"Include systemd support?" OFF)
@@ -137,10 +140,11 @@ set (MOSQ_LIBS ${MOSQ_LIBS} ${OPENSSL_LIBRARIES})
 # Check for getaddrinfo_a
 include(CheckLibraryExists)
 check_library_exists(anl getaddrinfo_a  "" HAVE_GETADDRINFO_A)
-if (HAVE_GETADDRINFO_A)
+if (HAVE_GETADDRINFO_A AND WITH_ADNS)
+	add_definitions("-DWITH_ADNS")
 	add_definitions(-DHAVE_GETADDRINFO_A)
 	set (MOSQ_LIBS ${MOSQ_LIBS} anl)
-endif (HAVE_GETADDRINFO_A)
+endif (HAVE_GETADDRINFO_A AND WITH_ADNS)
 
 
 if (UNIX)
