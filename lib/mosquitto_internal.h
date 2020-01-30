@@ -56,10 +56,10 @@ Contributors:
 
 #include "mosquitto.h"
 #include "time_mosq.h"
+#ifdef __linux__
+#  include <netdb.h>
+#endif
 #ifdef WITH_BROKER
-#  ifdef __linux__
-#    include <netdb.h>
-#  endif
 #  include "uthash.h"
 struct mosquitto_client_msg;
 #endif
@@ -335,6 +335,9 @@ struct mosquitto {
 	ares_channel achan;
 #  endif
 #endif
+	void *host_ainfo;
+	void *bind_ainfo;
+	void (*free_addrinfo)(void*);
 	uint8_t maximum_qos;
 
 #ifdef WITH_BROKER

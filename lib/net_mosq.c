@@ -363,39 +363,12 @@ int net__try_connect_step2(struct mosquitto *mosq, uint16_t port, mosq_sock_t *s
 
 #endif
 
-
-int net__try_connect(const char *host, uint16_t port, mosq_sock_t *sock, const char *bind_address, bool blocking)
+static int net__try_connect_ainfo(const struct addrinfo *host_ainfo, uint16_t port, mosq_sock_t *sock, const struct addrinfo *bind_ainfo, bool blocking)
 {
-	struct addrinfo hints;
-	struct addrinfo *ainfo, *rp;
-	struct addrinfo *ainfo_bind, *rp_bind;
-	int s;
+	const struct addrinfo *rp, *rp_bind;
 	int rc = MOSQ_ERR_SUCCESS;
-#ifdef WIN32
-	uint32_t val = 1;
-#endif
 
-	*sock = INVALID_SOCKET;
-	memset(&hints, 0, sizeof(struct addrinfo));
-	hints.ai_family = AF_UNSPEC;
-	hints.ai_socktype = SOCK_STREAM;
-
-	s = getaddrinfo(host, NULL, &hints, &ainfo);
-	if(s){
-		errno = s;
-		return MOSQ_ERR_EAI;
-	}
-
-	if(bind_address){
-		s = getaddrinfo(bind_address, NULL, &hints, &ainfo_bind);
-		if(s){
-			freeaddrinfo(ainfo);
-			errno = s;
-			return MOSQ_ERR_EAI;
-		}
-	}
-
-	for(rp = ainfo; rp != NULL; rp = rp->ai_next){
+	for(rp = host_ainfo; rp != NULL; rp = rp->ai_next){
 		*sock = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
 		if(*sock == INVALID_SOCKET) continue;
 
@@ -409,8 +382,8 @@ int net__try_connect(const char *host, uint16_t port, mosq_sock_t *sock, const c
 			continue;
 		}
 
-		if(bind_address){
-			for(rp_bind = ainfo_bind; rp_bind != NULL; rp_bind = rp_bind->ai_next){
+		if(bind_ainfo){
+			for(rp_bind = bind_ainfo; rp_bind != NULL; rp_bind = rp_bind->ai_next){
 				if(bind(*sock, rp_bind->ai_addr, rp_bind->ai_addrlen) == 0){
 					break;
 				}
@@ -450,16 +423,106 @@ int net__try_connect(const char *host, uint16_t port, mosq_sock_t *sock, const c
 		COMPAT_CLOSE(*sock);
 		*sock = INVALID_SOCKET;
 	}
-	freeaddrinfo(ainfo);
-	if(bind_address){
-		freeaddrinfo(ainfo_bind);
-	}
+
 	if(!rp){
 		return MOSQ_ERR_ERRNO;
 	}
 	return rc;
 }
 
+int net__try_connect_ext_ainfo(struct mosquitto *mosq, const char *host, uint16_t port, mosq_sock_t *sock, const char *bind_address, bool blocking)
+{
+	struct addrinfo hints;
+	struct addrinfo *ainfo, *ainfo_bind;
+	int s;
+	int rc = MOSQ_ERR_SUCCESS;
+
+	*sock = INVALID_SOCKET;
+
+	memset(&hints, 0, sizeof(struct addrinfo));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+
+	if(mosq->host_ainfo){
+		ainfo = mosq->host_ainfo;
+		log__printf(mosq, MOSQ_LOG_DEBUG, "connect with external host address info:%p", ainfo);
+	}else{
+		s = getaddrinfo(host, NULL, &hints, &ainfo);
+		if(s){
+			errno = s;
+			return MOSQ_ERR_EAI;
+		}
+	}
+
+	if(bind_address){
+		if(mosq->bind_ainfo){
+			ainfo_bind = mosq->bind_ainfo;
+			log__printf(mosq, MOSQ_LOG_DEBUG, "connect with external bind address info:%p", ainfo_bind);
+		}else{
+			s = getaddrinfo(bind_address, NULL, &hints, &ainfo_bind);
+			if(s){
+				if(ainfo != mosq->host_ainfo){
+					freeaddrinfo(ainfo);
+				}
+				errno = s;
+				return MOSQ_ERR_EAI;
+			}
+		}
+	}else{
+		ainfo_bind = NULL;
+	}
+
+	rc = net__try_connect_ainfo(ainfo, port, sock, ainfo_bind, blocking);
+
+	if(ainfo != mosq->host_ainfo){
+		freeaddrinfo(ainfo);
+	}
+	if(bind_address){
+		if(ainfo_bind != mosq->bind_ainfo){
+			freeaddrinfo(ainfo_bind);
+		}
+	}
+	return rc;
+}
+
+int net__try_connect(const char *host, uint16_t port, mosq_sock_t *sock, const char *bind_address, bool blocking)
+{
+	struct addrinfo hints;
+	struct addrinfo *ainfo, *ainfo_bind;
+	int s;
+	int rc = MOSQ_ERR_SUCCESS;
+
+	*sock = INVALID_SOCKET;
+
+	memset(&hints, 0, sizeof(struct addrinfo));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+
+	s = getaddrinfo(host, NULL, &hints, &ainfo);
+	if(s){
+		errno = s;
+		return MOSQ_ERR_EAI;
+	}
+
+	if(bind_address){
+		s = getaddrinfo(bind_address, NULL, &hints, &ainfo_bind);
+		if(s){
+			freeaddrinfo(ainfo);
+			errno = s;
+			return MOSQ_ERR_EAI;
+		}
+	}else{
+		ainfo_bind = NULL;
+	}
+
+	rc = net__try_connect_ainfo(ainfo, port, sock, ainfo_bind, blocking);
+
+	freeaddrinfo(ainfo);
+	if(bind_address){
+		freeaddrinfo(ainfo_bind);
+	}
+	return rc;
+}
 
 #ifdef WITH_TLS
 void net__print_ssl_error(struct mosquitto *mosq)
@@ -478,6 +541,11 @@ void net__print_ssl_error(struct mosquitto *mosq)
 int net__socket_connect_tls(struct mosquitto *mosq)
 {
 	int ret, err;
+
+	if(!mosq->ssl){
+		log__printf(mosq, MOSQ_LOG_ERR, "SSL not init");
+		return MOSQ_ERR_NO_CONN;
+	}
 
 	ERR_clear_error();
 	long res;
@@ -500,23 +568,26 @@ int net__socket_connect_tls(struct mosquitto *mosq)
 	ret = SSL_connect(mosq->ssl);
 	if(ret != 1) {
 		err = SSL_get_error(mosq->ssl, ret);
-		if (err == SSL_ERROR_SYSCALL) {
-			mosq->want_connect = true;
-			return MOSQ_ERR_SUCCESS;
-		}
-		if(err == SSL_ERROR_WANT_READ){
-			mosq->want_connect = true;
-			/* We always try to read anyway */
-		}else if(err == SSL_ERROR_WANT_WRITE){
-			mosq->want_write = true;
-			mosq->want_connect = true;
-		}else{
-			net__print_ssl_error(mosq);
+		log__printf(mosq, MOSQ_LOG_DEBUG, "SSL_connect() ret:%d, err:%d, errno:%d", ret, err, errno);
+		switch(err){
+			case SSL_ERROR_WANT_READ:
+				mosq->want_connect = true;
+				return MOSQ_ERR_SUCCESS;
 
-			COMPAT_CLOSE(mosq->sock);
-			mosq->sock = INVALID_SOCKET;
-			net__print_ssl_error(mosq);
-			return MOSQ_ERR_TLS;
+			case SSL_ERROR_WANT_WRITE:
+				mosq->want_write = true;
+				mosq->want_connect = true;
+				return MOSQ_ERR_SUCCESS;
+
+			default:
+				net__print_ssl_error(mosq);
+				SSL_free(mosq->ssl);
+				mosq->ssl = NULL;
+				if(mosq->sock != INVALID_SOCKET){
+					COMPAT_CLOSE(mosq->sock);
+					mosq->sock = INVALID_SOCKET;
+				}
+				return MOSQ_ERR_TLS;
 		}
 	}else{
 		mosq->want_connect = false;
@@ -829,7 +900,7 @@ int net__socket_connect(struct mosquitto *mosq, const char *host, uint16_t port,
 
 	if(!mosq || !host || !port) return MOSQ_ERR_INVAL;
 
-	rc = net__try_connect(host, port, &sock, bind_address, blocking);
+	rc = net__try_connect_ext_ainfo(mosq, host, port, &sock, bind_address, blocking);
 	if(rc > 0) return rc;
 
 	mosq->sock = sock;
@@ -859,16 +930,27 @@ ssize_t net__read(struct mosquitto *mosq, void *buf, size_t count)
 		ret = SSL_read(mosq->ssl, buf, count);
 		if(ret <= 0){
 			err = SSL_get_error(mosq->ssl, ret);
-			if(err == SSL_ERROR_WANT_READ){
-				ret = -1;
-				errno = EAGAIN;
-			}else if(err == SSL_ERROR_WANT_WRITE){
-				ret = -1;
-				mosq->want_write = true;
-				errno = EAGAIN;
-			}else{
-				net__print_ssl_error(mosq);
-				errno = EPROTO;
+			log__printf(mosq, MOSQ_LOG_DEBUG, "SSL_read() ret:%d, err:%d, errno:%d", ret, err, errno);
+			switch(err){
+				case SSL_ERROR_WANT_READ:
+					ret = -1;
+					errno = EAGAIN;
+					break;
+
+				case SSL_ERROR_WANT_WRITE:
+					ret = -1;
+					mosq->want_write = true;
+					errno = EAGAIN;
+					break;
+
+				default:
+					net__print_ssl_error(mosq);
+					if(err != SSL_ERROR_SYSCALL && err != SSL_ERROR_SSL){
+						SSL_shutdown(mosq->ssl);
+					}
+					SSL_free(mosq->ssl);
+					mosq->ssl = NULL;
+					errno = EPROTO;
 			}
 			ERR_clear_error();
 #ifdef WIN32
@@ -905,18 +987,29 @@ ssize_t net__write(struct mosquitto *mosq, void *buf, size_t count)
 	if(mosq->ssl){
 		mosq->want_write = false;
 		ret = SSL_write(mosq->ssl, buf, count);
-		if(ret < 0){
+		if(ret <= 0){
 			err = SSL_get_error(mosq->ssl, ret);
-			if(err == SSL_ERROR_WANT_READ){
-				ret = -1;
-				errno = EAGAIN;
-			}else if(err == SSL_ERROR_WANT_WRITE){
-				ret = -1;
-				mosq->want_write = true;
-				errno = EAGAIN;
-			}else{
-				net__print_ssl_error(mosq);
-				errno = EPROTO;
+			log__printf(mosq, MOSQ_LOG_DEBUG, "SSL_write() ret:%d, err:%d, errno:%d", ret, err, errno);
+			switch(err){
+				case SSL_ERROR_WANT_READ:
+					ret = -1;
+					errno = EAGAIN;
+					break;
+
+				case SSL_ERROR_WANT_WRITE:
+					ret = -1;
+					mosq->want_write = true;
+					errno = EAGAIN;
+					break;
+
+				default:
+					net__print_ssl_error(mosq);
+					if(err != SSL_ERROR_SYSCALL && err != SSL_ERROR_SSL){
+						SSL_shutdown(mosq->ssl);
+					}
+					SSL_free(mosq->ssl);
+					mosq->ssl = NULL;
+					errno = EPROTO;
 			}
 			ERR_clear_error();
 #ifdef WIN32

@@ -264,6 +264,24 @@ void mosquitto__destroy(struct mosquitto *mosq)
 	mosquitto__free(mosq->host);
 	mosq->host = NULL;
 
+	if(mosq->host_ainfo){
+		if(mosq->free_addrinfo){
+			mosq->free_addrinfo(mosq->host_ainfo);
+		}else{
+			freeaddrinfo(mosq->host_ainfo);
+		}
+		mosq->host_ainfo = NULL;
+	}
+
+	if(mosq->bind_ainfo){
+		if(mosq->free_addrinfo){
+			mosq->free_addrinfo(mosq->bind_ainfo);
+		}else{
+			freeaddrinfo(mosq->bind_ainfo);
+		}
+		mosq->bind_ainfo = NULL;
+	}
+
 	mosquitto__free(mosq->bind_address);
 	mosq->bind_address = NULL;
 

@@ -381,6 +381,32 @@ int mosquitto_opts_set(struct mosquitto *mosq, enum mosq_opt_t option, void *val
 #else
 			return MOSQ_ERR_NOT_SUPPORTED;
 #endif
+		case MOSQ_OPT_HOST_AINFO:
+			if(mosq->host_ainfo){
+				if(mosq->free_addrinfo){
+					mosq->free_addrinfo(mosq->host_ainfo);
+				}else{
+					freeaddrinfo(mosq->host_ainfo);
+				}
+			}
+			mosq->host_ainfo = value;
+			break;
+
+		case MOSQ_OPT_BIND_AINFO:
+			if(mosq->bind_ainfo){
+				if(mosq->free_addrinfo){
+					mosq->free_addrinfo(mosq->bind_ainfo);
+				}else{
+					freeaddrinfo(mosq->bind_ainfo);
+				}
+			}
+			mosq->bind_ainfo = value;
+			break;
+
+		case MOSQ_OPT_FREE_AINFO_CALLBACK:
+			mosq->free_addrinfo = value;
+			break;
+
 		default:
 			return MOSQ_ERR_INVAL;
 	}
@@ -473,6 +499,32 @@ int mosquitto_void_option(struct mosquitto *mosq, enum mosq_opt_t option, void *
 #else
 			return MOSQ_ERR_NOT_SUPPORTED;
 #endif
+		case MOSQ_OPT_HOST_AINFO:
+			if(mosq->host_ainfo){
+				if(mosq->free_addrinfo){
+					mosq->free_addrinfo(mosq->host_ainfo);
+				}else{
+					freeaddrinfo(mosq->host_ainfo);
+				}
+			}
+			mosq->host_ainfo = value;
+			break;
+
+		case MOSQ_OPT_BIND_AINFO:
+			if(mosq->bind_ainfo){
+				if(mosq->free_addrinfo){
+					mosq->free_addrinfo(mosq->bind_ainfo);
+				}else{
+					freeaddrinfo(mosq->bind_ainfo);
+				}
+			}
+			mosq->bind_ainfo = value;
+			break;
+
+		case MOSQ_OPT_FREE_AINFO_CALLBACK:
+			mosq->free_addrinfo = value;
+			break;
+
 		default:
 			return MOSQ_ERR_INVAL;
 	}

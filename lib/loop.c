@@ -358,6 +358,13 @@ int mosquitto_loop_write(struct mosquitto *mosq, int max_packets)
 	int i;
 	if(max_packets < 1) return MOSQ_ERR_INVAL;
 
+#ifdef WITH_TLS
+	if(mosq->want_connect){
+		mosq->want_write = false;
+		return net__socket_connect_tls(mosq);
+	}
+#endif
+
 	pthread_mutex_lock(&mosq->msgs_out.mutex);
 	max_packets = mosq->msgs_out.queue_len;
 	pthread_mutex_unlock(&mosq->msgs_out.mutex);
