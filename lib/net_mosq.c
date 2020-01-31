@@ -479,6 +479,28 @@ int net__socket_connect_tls(struct mosquitto *mosq)
 {
 	int ret, err;
 
+	if(!mosq->ssl){
+		log__printf(mosq, MOSQ_LOG_ERR, "SSL not init");
+		return MOSQ_ERR_NO_CONN;
+	}
+
+#ifndef WIN32
+	/* Check connect() success or fail. */
+	socklen_t len = sizeof(err);
+	ret = getsockopt(mosq->sock, SOL_SOCKET, SO_ERROR, &err, &len);
+	log__printf(mosq, MOSQ_LOG_DEBUG, "getsockopt(%d, SOL_SOCKET, SO_ERROR) ret:%d, err:%d, errno:%d", mosq->sock, ret, err, errno);
+	if((ret != 0) || (err != 0)){
+		errno = err;
+		SSL_free(mosq->ssl);
+		mosq->ssl = NULL;
+		if(mosq->sock != INVALID_SOCKET){
+			COMPAT_CLOSE(mosq->sock);
+			mosq->sock = INVALID_SOCKET;
+		}
+		return MOSQ_ERR_ERRNO;
+	}
+#endif
+
 	ERR_clear_error();
 	long res;
 	if (mosq->tls_ocsp_required) {
@@ -500,23 +522,26 @@ int net__socket_connect_tls(struct mosquitto *mosq)
 	ret = SSL_connect(mosq->ssl);
 	if(ret != 1) {
 		err = SSL_get_error(mosq->ssl, ret);
-		if (err == SSL_ERROR_SYSCALL) {
-			mosq->want_connect = true;
-			return MOSQ_ERR_SUCCESS;
-		}
-		if(err == SSL_ERROR_WANT_READ){
-			mosq->want_connect = true;
-			/* We always try to read anyway */
-		}else if(err == SSL_ERROR_WANT_WRITE){
-			mosq->want_write = true;
-			mosq->want_connect = true;
-		}else{
-			net__print_ssl_error(mosq);
+		log__printf(mosq, MOSQ_LOG_DEBUG, "SSL_connect() ret:%d, err:%d, errno:%d", ret, err, errno);
+		switch(err){
+			case SSL_ERROR_WANT_READ:
+				mosq->want_connect = true;
+				return MOSQ_ERR_SUCCESS;
 
-			COMPAT_CLOSE(mosq->sock);
-			mosq->sock = INVALID_SOCKET;
-			net__print_ssl_error(mosq);
-			return MOSQ_ERR_TLS;
+			case SSL_ERROR_WANT_WRITE:
+				mosq->want_write = true;
+				mosq->want_connect = true;
+				return MOSQ_ERR_SUCCESS;
+
+			default:
+				net__print_ssl_error(mosq);
+				SSL_free(mosq->ssl);
+				mosq->ssl = NULL;
+				if(mosq->sock != INVALID_SOCKET){
+					COMPAT_CLOSE(mosq->sock);
+					mosq->sock = INVALID_SOCKET;
+				}
+				return MOSQ_ERR_TLS;
 		}
 	}else{
 		mosq->want_connect = false;
@@ -859,16 +884,27 @@ ssize_t net__read(struct mosquitto *mosq, void *buf, size_t count)
 		ret = SSL_read(mosq->ssl, buf, count);
 		if(ret <= 0){
 			err = SSL_get_error(mosq->ssl, ret);
-			if(err == SSL_ERROR_WANT_READ){
-				ret = -1;
-				errno = EAGAIN;
-			}else if(err == SSL_ERROR_WANT_WRITE){
-				ret = -1;
-				mosq->want_write = true;
-				errno = EAGAIN;
-			}else{
-				net__print_ssl_error(mosq);
-				errno = EPROTO;
+			log__printf(mosq, MOSQ_LOG_DEBUG, "SSL_read() ret:%d, err:%d, errno:%d", ret, err, errno);
+			switch(err){
+				case SSL_ERROR_WANT_READ:
+					ret = -1;
+					errno = EAGAIN;
+					break;
+
+				case SSL_ERROR_WANT_WRITE:
+					ret = -1;
+					mosq->want_write = true;
+					errno = EAGAIN;
+					break;
+
+				default:
+					net__print_ssl_error(mosq);
+					if(err != SSL_ERROR_SYSCALL && err != SSL_ERROR_SSL){
+						SSL_shutdown(mosq->ssl);
+					}
+					SSL_free(mosq->ssl);
+					mosq->ssl = NULL;
+					errno = EPROTO;
 			}
 			ERR_clear_error();
 #ifdef WIN32
@@ -905,18 +941,29 @@ ssize_t net__write(struct mosquitto *mosq, void *buf, size_t count)
 	if(mosq->ssl){
 		mosq->want_write = false;
 		ret = SSL_write(mosq->ssl, buf, count);
-		if(ret < 0){
+		if(ret <= 0){
 			err = SSL_get_error(mosq->ssl, ret);
-			if(err == SSL_ERROR_WANT_READ){
-				ret = -1;
-				errno = EAGAIN;
-			}else if(err == SSL_ERROR_WANT_WRITE){
-				ret = -1;
-				mosq->want_write = true;
-				errno = EAGAIN;
-			}else{
-				net__print_ssl_error(mosq);
-				errno = EPROTO;
+			log__printf(mosq, MOSQ_LOG_DEBUG, "SSL_write() ret:%d, err:%d, errno:%d", ret, err, errno);
+			switch(err){
+				case SSL_ERROR_WANT_READ:
+					ret = -1;
+					errno = EAGAIN;
+					break;
+
+				case SSL_ERROR_WANT_WRITE:
+					ret = -1;
+					mosq->want_write = true;
+					errno = EAGAIN;
+					break;
+
+				default:
+					net__print_ssl_error(mosq);
+					if(err != SSL_ERROR_SYSCALL && err != SSL_ERROR_SSL){
+						SSL_shutdown(mosq->ssl);
+					}
+					SSL_free(mosq->ssl);
+					mosq->ssl = NULL;
+					errno = EPROTO;
 			}
 			ERR_clear_error();
 #ifdef WIN32
