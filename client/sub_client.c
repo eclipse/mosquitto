@@ -76,10 +76,6 @@ void my_message_callback(struct mosquitto *mosq, void *obj, const struct mosquit
 
 	if(process_messages == false) return;
 
-	if(cfg.remove_retained && message->retain){
-		mosquitto_publish(mosq, &last_mid, message->topic, 0, NULL, 1, true);
-	}
-
 	if(cfg.retained_only && !message->retain && process_messages){
 		process_messages = false;
 		if(last_mid == 0){
@@ -94,6 +90,10 @@ void my_message_callback(struct mosquitto *mosq, void *obj, const struct mosquit
 			mosquitto_topic_matches_sub(cfg.filter_outs[i], message->topic, &res);
 			if(res) return;
 		}
+	}
+	
+    if(cfg.remove_retained && message->retain){
+		mosquitto_publish(mosq, &last_mid, message->topic, 0, NULL, 1, true);
 	}
 
 	print_message(&cfg, message);
