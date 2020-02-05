@@ -92,7 +92,7 @@ void my_message_callback(struct mosquitto *mosq, void *obj, const struct mosquit
 		}
 	}
 	
-    if(cfg.remove_retained && message->retain){
+	if(cfg.remove_retained && message->retain){
 		mosquitto_publish(mosq, &last_mid, message->topic, 0, NULL, 1, true);
 	}
 
