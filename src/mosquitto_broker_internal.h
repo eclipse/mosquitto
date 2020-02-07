@@ -479,6 +479,7 @@ struct mosquitto__bridge_topic{
 struct bridge_address{
 	char *address;
 	int port;
+	struct addrinfo *ainfo;
 };
 
 struct mosquitto__bridge{

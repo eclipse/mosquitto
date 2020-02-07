@@ -308,6 +308,10 @@ void config__cleanup(struct mosquitto__config *config)
 			if(config->bridges[i].addresses){
 				for(j=0; j<config->bridges[i].address_count; j++){
 					mosquitto__free(config->bridges[i].addresses[j].address);
+					if (config->bridges[i].addresses[j].ainfo) {
+						freeaddrinfo(config->bridges[i].addresses[j].ainfo);
+						config->bridges[i].addresses[j].ainfo = NULL;
+					}
 				}
 				mosquitto__free(config->bridges[i].addresses);
 			}
@@ -814,6 +818,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 							return MOSQ_ERR_NOMEM;
 						}
 						cur_bridge->addresses[cur_bridge->address_count-1].address = token;
+						cur_bridge->addresses[cur_bridge->address_count-1].ainfo = NULL;
 					}
 					for(i=0; i<cur_bridge->address_count; i++){
 						/* cur_bridge->addresses[i].address is now

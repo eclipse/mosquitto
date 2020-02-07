@@ -65,22 +65,9 @@ int mosquitto_loop(struct mosquitto *mosq, int timeout, int max_packets)
 		FD_SET(mosq->sock, &readfds);
 		pthread_mutex_lock(&mosq->current_out_packet_mutex);
 		pthread_mutex_lock(&mosq->out_packet_mutex);
-		if(mosq->out_packet || mosq->current_out_packet){
+		if(mosquitto_want_write(mosq)){
 			FD_SET(mosq->sock, &writefds);
 		}
-#ifdef WITH_TLS
-		if(mosq->ssl){
-			if(mosq->want_write){
-				FD_SET(mosq->sock, &writefds);
-			}else if(mosq->want_connect){
-				/* Remove possible FD_SET from above, we don't want to check
-				 * for writing if we are still connecting, unless want_write is
-				 * definitely set. The presence of outgoing packets does not
-				 * matter yet. */
-				FD_CLR(mosq->sock, &writefds);
-			}
-		}
-#endif
 		pthread_mutex_unlock(&mosq->out_packet_mutex);
 		pthread_mutex_unlock(&mosq->current_out_packet_mutex);
 	}else{
@@ -167,17 +154,9 @@ int mosquitto_loop(struct mosquitto *mosq, int timeout, int max_packets)
 					FD_SET(mosq->sock, &writefds);
 			}
 			if(mosq->sock != INVALID_SOCKET && FD_ISSET(mosq->sock, &writefds)){
-#ifdef WITH_TLS
-				if(mosq->want_connect){
-					rc = net__socket_connect_tls(mosq);
-					if(rc) return rc;
-				}else
-#endif
-				{
-					rc = mosquitto_loop_write(mosq, max_packets);
-					if(rc || mosq->sock == INVALID_SOCKET){
-						return rc;
-					}
+				rc = mosquitto_loop_write(mosq, max_packets);
+				if(rc || mosq->sock == INVALID_SOCKET){
+					return rc;
 				}
 			}
 		}
@@ -289,11 +268,11 @@ static int mosquitto__loop_rc_handle(struct mosquitto *mosq, int rc)
 	int state;
 
 	if(rc){
-		net__socket_close(mosq);
 		state = mosquitto__get_state(mosq);
 		if(state == mosq_cs_disconnecting || state == mosq_cs_disconnected){
 			rc = MOSQ_ERR_SUCCESS;
 		}
+		mosquitto__set_state(mosq, mosq_cs_disconnected);
 		pthread_mutex_lock(&mosq->callback_mutex);
 		if(mosq->on_disconnect){
 			mosq->in_callback = true;
@@ -305,7 +284,18 @@ static int mosquitto__loop_rc_handle(struct mosquitto *mosq, int rc)
 			mosq->on_disconnect_v5(mosq, mosq->userdata, rc, NULL);
 			mosq->in_callback = false;
 		}
+		/* cleanup address info */
+		if(mosq->host_ainfo){
+			if(mosq->free_addrinfo){
+				mosq->free_addrinfo(mosq->host_ainfo);
+			}else{
+				freeaddrinfo(mosq->host_ainfo);
+			}
+			mosq->host_ainfo = NULL;
+		}
 		pthread_mutex_unlock(&mosq->callback_mutex);
+		/* Close socket after disconnect callback to make sure resource already released. */
+		net__socket_close(mosq);
 	}
 	return rc;
 }
@@ -315,13 +305,24 @@ int mosquitto_loop_read(struct mosquitto *mosq, int max_packets)
 {
 	int rc;
 	int i;
-	if(max_packets < 1) return MOSQ_ERR_INVAL;
 
-#ifdef WITH_TLS
-	if(mosq->want_connect){
-		return net__socket_connect_tls(mosq);
+	int state = mosquitto__get_state(mosq);
+	if (state == mosq_cs_ssl_connect_pending) {
+		rc = net__socket_connect_step3(mosq, mosq->host);
+		if (rc == MOSQ_ERR_SUCCESS) {
+			mosquitto__set_state(mosq, mosq_cs_connected);
+			rc = mosquitto__post_connected(mosq, NULL);
+		} else if (rc == MOSQ_ERR_SSL_CONN_PENDING) {
+			mosquitto__set_state(mosq, mosq_cs_ssl_connect_pending);
+			rc = MOSQ_ERR_SUCCESS;
+		} else {
+			return mosquitto__loop_rc_handle(mosq, rc);
+		}
+
+		return mosquitto__loop_rc_handle(mosq, rc);
 	}
-#endif
+
+	if(max_packets < 1) return MOSQ_ERR_INVAL;
 
 	pthread_mutex_lock(&mosq->msgs_out.mutex);
 	max_packets = mosq->msgs_out.queue_len;
@@ -356,6 +357,39 @@ int mosquitto_loop_write(struct mosquitto *mosq, int max_packets)
 {
 	int rc;
 	int i;
+
+	int state = mosquitto__get_state(mosq);
+	if (state == mosq_cs_connect_pending) {
+		rc = net__socket_nonblock_connected(mosq, mosq->sock);
+		if (rc) {
+			if (rc == MOSQ_ERR_CONN_PENDING) {
+				return MOSQ_ERR_SUCCESS;
+			}
+			return mosquitto__loop_rc_handle(mosq, rc);
+		}
+#ifdef WITH_SOCKS
+		if(mosq->socks5_host){
+			mosquitto__set_state(mosq, mosq_cs_socks5_new);
+			rc = socks5__send(mosq);
+			return mosquitto__loop_rc_handle(mosq, rc);
+		}
+#endif
+		/* socket connected, update state makesure step 3 be called. */
+		state = mosq_cs_ssl_connect_pending;
+	}
+
+	if (state == mosq_cs_ssl_connect_pending) {
+		rc = net__socket_connect_step3(mosq, mosq->host);
+		if (rc == MOSQ_ERR_SUCCESS) {
+			mosquitto__set_state(mosq, mosq_cs_connected);
+			rc = mosquitto__post_connected(mosq, NULL);
+		} else if (rc == MOSQ_ERR_SSL_CONN_PENDING) {
+			mosquitto__set_state(mosq, mosq_cs_ssl_connect_pending);
+			rc = MOSQ_ERR_SUCCESS;
+		}
+		return mosquitto__loop_rc_handle(mosq, rc);
+	}
+
 	if(max_packets < 1) return MOSQ_ERR_INVAL;
 
 	pthread_mutex_lock(&mosq->msgs_out.mutex);

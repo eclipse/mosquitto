@@ -199,43 +199,37 @@ int net__socket_accept(struct mosquitto_db *db, mosq_sock_t listensock)
 
 #ifdef WITH_TLS
 	/* TLS init */
-	for(i=0; i<db->config->listener_count; i++){
-		for(j=0; j<db->config->listeners[i].sock_count; j++){
-			if(db->config->listeners[i].socks[j] == listensock){
-				if(db->config->listeners[i].ssl_ctx){
-					new_context->ssl = SSL_new(db->config->listeners[i].ssl_ctx);
-					if(!new_context->ssl){
-						context__cleanup(db, new_context, true);
-						return -1;
-					}
-					SSL_set_ex_data(new_context->ssl, tls_ex_index_context, new_context);
-					SSL_set_ex_data(new_context->ssl, tls_ex_index_listener, &db->config->listeners[i]);
-					new_context->want_write = true;
-					bio = BIO_new_socket(new_sock, BIO_NOCLOSE);
-					SSL_set_bio(new_context->ssl, bio, bio);
-					ERR_clear_error();
-					rc = SSL_accept(new_context->ssl);
-					if(rc != 1){
-						rc = SSL_get_error(new_context->ssl, rc);
-						if(rc == SSL_ERROR_WANT_READ){
-							/* We always want to read. */
-						}else if(rc == SSL_ERROR_WANT_WRITE){
-							new_context->want_write = true;
-						}else{
-							if(db->config->connection_messages == true){
-								e = ERR_get_error();
-								while(e){
-									log__printf(NULL, MOSQ_LOG_NOTICE,
-											"Client connection from %s failed: %s.",
-											new_context->address, ERR_error_string(e, ebuf));
-									e = ERR_get_error();
-								}
-							}
-							context__cleanup(db, new_context, true);
-							return -1;
-						}
+	if(new_context->listener->ssl_ctx){
+		new_context->ssl = SSL_new(new_context->listener->ssl_ctx);
+		if(!new_context->ssl){
+			context__cleanup(db, new_context, true);
+			return -1;
+		}
+		SSL_set_ex_data(new_context->ssl, tls_ex_index_context, new_context);
+		SSL_set_ex_data(new_context->ssl, tls_ex_index_listener, new_context->listener);
+		new_context->want_write = true;
+		bio = BIO_new_socket(new_sock, BIO_NOCLOSE);
+		SSL_set_bio(new_context->ssl, bio, bio);
+		ERR_clear_error();
+		rc = SSL_accept(new_context->ssl);
+		if(rc != 1){
+			rc = SSL_get_error(new_context->ssl, rc);
+			if(rc == SSL_ERROR_WANT_READ){
+				new_context->want_read = true;
+			}else if(rc == SSL_ERROR_WANT_WRITE){
+				new_context->want_write = true;
+			}else{
+				if(db->config->connection_messages == true){
+					e = ERR_get_error();
+					while(e){
+						log__printf(NULL, MOSQ_LOG_NOTICE,
+								"Client connection from %s failed: %s.",
+								new_context->address, ERR_error_string(e, ebuf));
+						e = ERR_get_error();
 					}
 				}
+				context__cleanup(db, new_context, true);
+				return -1;
 			}
 		}
 	}

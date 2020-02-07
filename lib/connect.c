@@ -190,8 +190,8 @@ static int mosquitto__reconnect(struct mosquitto *mosq, bool blocking, const mos
 	message__reconnect_reset(mosq);
 
 	if(mosq->sock != INVALID_SOCKET){
-        net__socket_close(mosq); //close socket
-    }
+		net__socket_close(mosq); //close socket
+	}
 
 #ifdef WITH_SOCKS
 	if(mosq->socks5_host){
@@ -201,29 +201,53 @@ static int mosquitto__reconnect(struct mosquitto *mosq, bool blocking, const mos
 	{
 		rc = net__socket_connect(mosq, mosq->host, mosq->port, mosq->bind_address, blocking);
 	}
-	if(rc>0){
-		mosquitto__set_state(mosq, mosq_cs_connect_pending);
-		return rc;
+
+	switch (rc) {
+		case MOSQ_ERR_SUCCESS:
+			mosquitto__set_state(mosq, mosq_cs_connected);
+			break;
+		case MOSQ_ERR_DNS_RESOLVE_PENDING:
+			mosquitto__set_state(mosq, mosq_cs_dns_resolve_pending);
+			return rc;
+		case MOSQ_ERR_CONN_PENDING:
+			mosquitto__set_state(mosq, mosq_cs_connect_pending);
+			/* notify success and pending connection will be handle when socket is writable */
+			return MOSQ_ERR_SUCCESS;
+		case MOSQ_ERR_SSL_CONN_PENDING:
+			mosquitto__set_state(mosq, mosq_cs_ssl_connect_pending);
+			return MOSQ_ERR_SUCCESS;
+		default:
+			net__socket_close(mosq);
+			mosquitto__set_state(mosq, mosq_cs_new);
+			return rc;
 	}
 
 #ifdef WITH_SOCKS
 	if(mosq->socks5_host){
 		mosquitto__set_state(mosq, mosq_cs_socks5_new);
-		return socks5__send(mosq);
-	}else
-#endif
-	{
-		mosquitto__set_state(mosq, mosq_cs_connected);
-		rc = send__connect(mosq, mosq->keepalive, mosq->clean_start, outgoing_properties);
-		if(rc){
+		rc = socks5__send(mosq);
+		if (rc) {
 			packet__cleanup_all(mosq);
 			net__socket_close(mosq);
 			mosquitto__set_state(mosq, mosq_cs_new);
 		}
 		return rc;
 	}
+#endif
+
+	return mosquitto__post_connected(mosq, outgoing_properties);
 }
 
+int mosquitto__post_connected(struct mosquitto *mosq, const mosquitto_property *properties)
+{
+	int rc = send__connect(mosq, mosq->keepalive, mosq->clean_start, properties);
+	if(rc){
+		packet__cleanup_all(mosq);
+		net__socket_close(mosq);
+		mosquitto__set_state(mosq, mosq_cs_new);
+	}
+	return rc;
+}
 
 int mosquitto_disconnect(struct mosquitto *mosq)
 {
@@ -263,7 +287,6 @@ int mosquitto_disconnect_v5(struct mosquitto *mosq, int reason_code, const mosqu
 void do_client_disconnect(struct mosquitto *mosq, int reason_code, const mosquitto_property *properties)
 {
 	mosquitto__set_state(mosq, mosq_cs_disconnected);
-	net__socket_close(mosq);
 
 	/* Free data and reset values */
 	pthread_mutex_lock(&mosq->out_packet_mutex);
@@ -293,5 +316,6 @@ void do_client_disconnect(struct mosquitto *mosq, int reason_code, const mosquit
 	}
 	pthread_mutex_unlock(&mosq->callback_mutex);
 	pthread_mutex_unlock(&mosq->current_out_packet_mutex);
+	net__socket_close(mosq);
 }
 

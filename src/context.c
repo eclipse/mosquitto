@@ -180,13 +180,15 @@ void context__cleanup(struct mosquitto_db *db, struct mosquitto *context, bool d
 	if(do_free || context->clean_start){
 		db__messages_delete(db, context);
 	}
-#if defined(WITH_BROKER) && defined(__GLIBC__) && defined(WITH_ADNS)
-	if(context->adns){
-		gai_cancel(context->adns);
-		mosquitto__free((struct addrinfo *)context->adns->ar_request);
-		mosquitto__free(context->adns);
+	
+	net__adns_cancel(&context->adns);
+
+#ifdef WITH_TLS
+	if(context->ssl_ctx){
+		SSL_CTX_free(context->ssl_ctx);
 	}
 #endif
+
 	if(do_free){
 		mosquitto__free(context);
 	}
@@ -235,7 +237,6 @@ void context__disconnect(struct mosquitto_db *db, struct mosquitto *context)
 		if(!context->bridge)
 #endif
 		{
-
 			if(context->will_delay_interval == 0){
 				/* This will be done later, after the will is published for delay>0. */
 				context__add_to_disused(db, context);
@@ -259,12 +260,8 @@ void context__add_to_disused(struct mosquitto_db *db, struct mosquitto *context)
 		context->id = NULL;
 	}
 
-	if(db->ll_for_free){
-		context->for_free_next = db->ll_for_free;
-		db->ll_for_free = context;
-	}else{
-		db->ll_for_free = context;
-	}
+	context->for_free_next = db->ll_for_free;
+	db->ll_for_free = context;
 }
 
 void context__free_disused(struct mosquitto_db *db)
@@ -276,6 +273,7 @@ void context__free_disused(struct mosquitto_db *db)
 	assert(db);
 
 	context = db->ll_for_free;
+	db->ll_for_free = NULL;
 	while(context){
 #ifdef WITH_WEBSOCKETS
 		if(context->wsi){
@@ -297,7 +295,6 @@ void context__free_disused(struct mosquitto_db *db)
 			context = next;
 		}
 	}
-	db->ll_for_free = NULL;
 }
 
 

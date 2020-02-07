@@ -69,6 +69,31 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, mosq_sock_t sock, 
 static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pollfds);
 #endif
 
+bool context_want_write(struct mosquitto *context)
+{
+	bool result = false;
+	if(context->current_out_packet || context->want_write || context->ws_want_write){
+		result = true;
+	}
+	
+#ifdef WITH_TLS
+	if (context->want_read) {
+		/* 
+		 * SSL want read, disable want write until read completed.
+		 * To avoid ssl handshake cannot completed since alway call SSL_write when need read.
+		 */
+		result = false;
+	}
+#endif
+	/*
+	** log__printf(NULL, MOSQ_LOG_DEBUG, "Context[%s] result:%d, r:%d, w:%d, ws:%d, c:%p",
+	** 			context->id ? context->id : "Unknown", result, context->want_read,
+	** 			context->want_write, context->ws_want_write, context->current_out_packet);
+	*/
+	return result;
+}
+
+
 #ifdef WITH_WEBSOCKETS
 static void temp__expire_websockets_clients(struct mosquitto_db *db)
 {
@@ -135,8 +160,6 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 #endif
 #ifdef WITH_BRIDGE
 	int rc;
-	int err;
-	socklen_t len;
 #endif
 
 
@@ -242,10 +265,9 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 							&& now > context->bridge->primary_retry){
 
 						if(context->bridge->primary_retry_sock == INVALID_SOCKET){
-							rc = net__try_connect(context->bridge->addresses[0].address,
+							rc = net__try_connect(context, context->bridge->addresses[0].address,
 									context->bridge->addresses[0].port,
-									&context->bridge->primary_retry_sock, NULL, false);
-
+									&context->bridge->primary_retry_sock, NULL, false, true);
 							if(rc == 0){
 								COMPAT_CLOSE(context->bridge->primary_retry_sock);
 								context->bridge->primary_retry_sock = INVALID_SOCKET;
@@ -254,20 +276,16 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 								context->bridge->cur_address = 0;
 							}
 						}else{
-							len = sizeof(int);
-							if(!getsockopt(context->bridge->primary_retry_sock, SOL_SOCKET, SO_ERROR, (char *)&err, &len)){
-								if(err == 0){
-									COMPAT_CLOSE(context->bridge->primary_retry_sock);
-									context->bridge->primary_retry_sock = INVALID_SOCKET;
-									context->bridge->primary_retry = 0;
-									net__socket_close(db, context);
-									context->bridge->cur_address = context->bridge->address_count-1;
-								}else{
-									COMPAT_CLOSE(context->bridge->primary_retry_sock);
-									context->bridge->primary_retry_sock = INVALID_SOCKET;
-									context->bridge->primary_retry = now+5;
-								}
-							}else{
+							rc = net__socket_nonblock_connected(context, context->bridge->primary_retry_sock);
+							if (rc == MOSQ_ERR_CONN_PENDING) {
+								/* Check next time */
+							} else  if(rc == MOSQ_ERR_SUCCESS) {
+								COMPAT_CLOSE(context->bridge->primary_retry_sock);
+								context->bridge->primary_retry_sock = INVALID_SOCKET;
+								context->bridge->primary_retry = 0;
+								net__socket_close(db, context);
+								context->bridge->cur_address = context->bridge->address_count-1;
+							} else {
 								COMPAT_CLOSE(context->bridge->primary_retry_sock);
 								context->bridge->primary_retry_sock = INVALID_SOCKET;
 								context->bridge->primary_retry = now+5;
@@ -284,7 +302,7 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 
 					if(db__message_write(db, context) == MOSQ_ERR_SUCCESS){
 #ifdef WITH_EPOLL
-						if(context->current_out_packet || context->state == mosq_cs_connect_pending || context->ws_want_write){
+						if(context_want_write(context)){
 							if(!(context->events & EPOLLOUT)) {
 								ev.data.fd = context->sock;
 								ev.events = EPOLLIN | EPOLLOUT;
@@ -296,8 +314,7 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 								context->events = EPOLLIN | EPOLLOUT;
 							}
 							context->ws_want_write = false;
-						}
-						else{
+						}else{
 							if(context->events & EPOLLOUT) {
 								ev.data.fd = context->sock;
 								ev.events = EPOLLIN;
@@ -313,7 +330,7 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 						pollfds[pollfd_index].fd = context->sock;
 						pollfds[pollfd_index].events = POLLIN;
 						pollfds[pollfd_index].revents = 0;
-						if(context->current_out_packet || context->state == mosq_cs_connect_pending || context->ws_want_write){
+						if(context_want_write(context)){
 							pollfds[pollfd_index].events |= POLLOUT;
 							context->ws_want_write = false;
 						}
@@ -346,7 +363,7 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 				}
 				/* Want to try to restart the bridge connection */
 				if(!context->bridge->restart_t){
-					context->bridge->restart_t = now+context->bridge->restart_timeout;
+					context->bridge->restart_t = now + context->bridge->restart_timeout;
 					context->bridge->cur_address++;
 					if(context->bridge->cur_address == context->bridge->address_count){
 						context->bridge->cur_address = 0;
@@ -355,113 +372,62 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 					if((context->bridge->start_type == bst_lazy && context->bridge->lazy_reconnect)
 							|| (context->bridge->start_type == bst_automatic && now > context->bridge->restart_t)){
 
-#if defined(__GLIBC__) && defined(WITH_ADNS)
-						if(context->adns){
-							/* Connection attempted, waiting on DNS lookup */
-							rc = gai_error(context->adns);
-							if(rc == EAI_INPROGRESS){
-								/* Just keep on waiting */
-							}else if(rc == 0){
-								rc = bridge__connect_step2(db, context);
-								if(rc == MOSQ_ERR_SUCCESS){
+						rc = bridge__connect(db, context);
+						if(rc == MOSQ_ERR_DNS_RESOLVE_PENDING){
+							/* Just keep on waiting */
+						}else if(rc == MOSQ_ERR_SUCCESS){
 #ifdef WITH_EPOLL
-									ev.data.fd = context->sock;
-									ev.events = EPOLLIN;
-									if(context->current_out_packet){
-										ev.events |= EPOLLOUT;
-									}
-									if(epoll_ctl(db->epollfd, EPOLL_CTL_ADD, context->sock, &ev) == -1) {
-										if((errno != EEXIST)||(epoll_ctl(db->epollfd, EPOLL_CTL_MOD, context->sock, &ev) == -1)) {
-												log__printf(NULL, MOSQ_LOG_DEBUG, "Error in epoll re-registering bridge: %s", strerror(errno));
-										}
-									}else{
-										context->events = ev.events;
-									}
+							ev.data.fd = context->sock;
+							ev.events = EPOLLIN;
+							if(context_want_write(context)){
+								ev.events |= EPOLLOUT;
+							}
+							if(epoll_ctl(db->epollfd, EPOLL_CTL_ADD, context->sock, &ev) == -1) {
+								if((errno != EEXIST)||(epoll_ctl(db->epollfd, EPOLL_CTL_MOD, context->sock, &ev) == -1)) {
+										log__printf(NULL, MOSQ_LOG_DEBUG, "Error in epoll re-registering bridge: %s", strerror(errno));
+								}
+							}else{
+								context->events = ev.events;
+							}
 #else
-									pollfds[pollfd_index].fd = context->sock;
-									pollfds[pollfd_index].events = POLLIN;
-									pollfds[pollfd_index].revents = 0;
-									if(context->current_out_packet){
-										pollfds[pollfd_index].events |= POLLOUT;
-									}
-									context->pollfd_index = pollfd_index;
-									pollfd_index++;
-#endif
-								}else if(rc == MOSQ_ERR_CONN_PENDING){
-									context->bridge->restart_t = 0;
-								}else{
-									context->bridge->cur_address++;
-									if(context->bridge->cur_address == context->bridge->address_count){
-										context->bridge->cur_address = 0;
-									}
-									context->bridge->restart_t = 0;
-								}
-							}else{
-								/* Need to retry */
-								if(context->adns->ar_result){
-									freeaddrinfo(context->adns->ar_result);
-								}
-								mosquitto__free(context->adns);
-								context->adns = NULL;
-								context->bridge->restart_t = 0;
+							pollfds[pollfd_index].fd = context->sock;
+							pollfds[pollfd_index].events = POLLIN;
+							pollfds[pollfd_index].revents = 0;
+							if(context_want_write(context)){
+								pollfds[pollfd_index].events |= POLLOUT;
 							}
-						}else{
-#ifdef WITH_EPOLL
-							/* clean any events triggered in previous connection */
-							context->events = 0;
+							context->pollfd_index = pollfd_index;
+							pollfd_index++;
 #endif
-							rc = bridge__connect_step1(db, context);
-							if(rc){
-								context->bridge->cur_address++;
-								if(context->bridge->cur_address == context->bridge->address_count){
-									context->bridge->cur_address = 0;
-								}
-							}else{
-								/* Short wait for ADNS lookup */
-								context->bridge->restart_t = 1;
-							}
+						} else {
+							do_disconnect(db, context, rc);
 						}
-#else
-						{
-							rc = bridge__connect(db, context);
-							context->bridge->restart_t = 0;
-							if(rc == MOSQ_ERR_SUCCESS){
-								if(context->bridge->round_robin == false && context->bridge->cur_address != 0){
-									context->bridge->primary_retry = now + 5;
-								}
-#ifdef WITH_EPOLL
-								ev.data.fd = context->sock;
-								ev.events = EPOLLIN;
-								if(context->current_out_packet){
-									ev.events |= EPOLLOUT;
-								}
-								if(epoll_ctl(db->epollfd, EPOLL_CTL_ADD, context->sock, &ev) == -1) {
-									if((errno != EEXIST)||(epoll_ctl(db->epollfd, EPOLL_CTL_MOD, context->sock, &ev) == -1)) {
-											log__printf(NULL, MOSQ_LOG_DEBUG, "Error in epoll re-registering bridge: %s", strerror(errno));
-									}
-								}else{
-									context->events = ev.events;
-								}
-#else
-								pollfds[pollfd_index].fd = context->sock;
-								pollfds[pollfd_index].events = POLLIN;
-								pollfds[pollfd_index].revents = 0;
-								if(context->current_out_packet){
-									pollfds[pollfd_index].events |= POLLOUT;
-								}
-								context->pollfd_index = pollfd_index;
-								pollfd_index++;
-#endif
-							}else{
-								context->bridge->cur_address++;
-								if(context->bridge->cur_address == context->bridge->address_count){
-									context->bridge->cur_address = 0;
-								}
-							}
-						}
-#endif
 					}
 				}
+			} else {
+#ifdef WITH_EPOLL
+				ev.data.fd = context->sock;
+				ev.events = EPOLLIN;
+				if(context_want_write(context)){
+					ev.events |= EPOLLOUT;
+				}
+				if(epoll_ctl(db->epollfd, EPOLL_CTL_ADD, context->sock, &ev) == -1) {
+					if((errno != EEXIST)||(epoll_ctl(db->epollfd, EPOLL_CTL_MOD, context->sock, &ev) == -1)) {
+							log__printf(NULL, MOSQ_LOG_DEBUG, "Error in epoll re-registering bridge: %s", strerror(errno));
+					}
+				}else{
+					context->events = ev.events;
+				}
+#else
+				pollfds[pollfd_index].fd = context->sock;
+				pollfds[pollfd_index].events = POLLIN;
+				pollfds[pollfd_index].revents = 0;
+				if(context_want_write(context)){
+					pollfds[pollfd_index].events |= POLLOUT;
+				}
+				context->pollfd_index = pollfd_index;
+				pollfd_index++;
+#endif
 			}
 		}
 #endif
@@ -693,7 +659,7 @@ void do_disconnect(struct mosquitto_db *db, struct mosquitto *context, int reaso
 				log__printf(NULL, MOSQ_LOG_DEBUG, "Error in epoll disconnecting: %s", strerror(errno));
 			}
 		}
-#endif		
+#endif
 		context__disconnect(db, context);
 	}
 }
@@ -709,8 +675,6 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 #ifndef WITH_EPOLL
 	struct mosquitto *ctxt_tmp;
 #endif
-	int err;
-	socklen_t len;
 	int rc;
 
 #ifdef WITH_EPOLL
@@ -751,38 +715,40 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 		}
 #endif
 
-#ifdef WITH_TLS
-#ifdef WITH_EPOLL
-		if(events & EPOLLOUT ||
-#else
-		if(pollfds[context->pollfd_index].revents & POLLOUT ||
-#endif
-				context->want_write ||
-				(context->ssl && context->state == mosq_cs_new)){
-#else
+
 #ifdef WITH_EPOLL
 		if(events & EPOLLOUT){
 #else			
 		if(pollfds[context->pollfd_index].revents & POLLOUT){
 #endif
-#endif
-			if(context->state == mosq_cs_connect_pending){
-				len = sizeof(int);
-				if(!getsockopt(context->sock, SOL_SOCKET, SO_ERROR, (char *)&err, &len)){
-					if(err == 0){
-						mosquitto__set_state(context, mosq_cs_new);
-#if defined(WITH_ADNS) && defined(WITH_BRIDGE)
-						if(context->bridge){
-							bridge__connect_step3(db, context);
-							continue;
-						}
-#endif
-					}
-				}else{
+#if defined(WITH_BRIDGE)
+			if((context->state == mosq_cs_connect_pending) && (context->bridge)){
+				rc = net__socket_nonblock_connected(context, context->sock);
+				if (rc == MOSQ_ERR_CONN_PENDING) {
+					/* Check next time */
+					continue;
+				} else if(rc == MOSQ_ERR_SUCCESS){
+					mosquitto__set_state(context, mosq_cs_ssl_connect_pending);
+				} else {
+					context->bridge->restart_t = 0;
+					mosquitto__set_state(context, mosq_cs_new);
 					do_disconnect(db, context, MOSQ_ERR_CONN_LOST);
 					continue;
 				}
 			}
+			if((context->state == mosq_cs_ssl_connect_pending) && (context->bridge)){
+				rc = bridge__connect_step3(db, context);
+				if (rc == MOSQ_ERR_SSL_CONN_PENDING) {
+					/* try again later. */
+				} else if (rc != MOSQ_ERR_SUCCESS) {
+					context->bridge->restart_t = 0;
+					mosquitto__set_state(context, mosq_cs_new);
+					do_disconnect(db, context, rc);
+				}
+				continue;
+			}
+#endif
+
 			rc = packet__write(context);
 			if(rc){
 				do_disconnect(db, context, rc);
@@ -811,20 +777,26 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 		}
 #endif
 
-#ifdef WITH_TLS
-#ifdef WITH_EPOLL
-		if(events & EPOLLIN ||
-#else
-		if(pollfds[context->pollfd_index].revents & POLLIN ||
-#endif
-				(context->ssl && context->state == mosq_cs_new)){
-#else
 #ifdef WITH_EPOLL
 		if(events & EPOLLIN){
 #else
 		if(pollfds[context->pollfd_index].revents & POLLIN){
 #endif
+
+#if defined(WITH_BRIDGE)
+			if((context->state == mosq_cs_ssl_connect_pending) && (context->bridge)){
+				rc = bridge__connect_step3(db, context);
+				if (rc == MOSQ_ERR_SSL_CONN_PENDING) {
+					/* try again later. */
+				} else if (rc != MOSQ_ERR_SUCCESS) {
+					context->bridge->restart_t = 0;
+					mosquitto__set_state(context, mosq_cs_new);
+					do_disconnect(db, context, rc);
+				}
+				continue;
+			}
 #endif
+
 			do{
 				rc = packet__read(db, context);
 				if(rc){

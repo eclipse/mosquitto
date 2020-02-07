@@ -418,11 +418,15 @@ int socks5__read(struct mosquitto *mosq)
 			/* Auth passed */
 			packet__cleanup(&mosq->in_packet);
 			mosquitto__set_state(mosq, mosq_cs_new);
-			if(mosq->socks5_host){
-				int rc = net__socket_connect_step3(mosq, mosq->host);
-				if(rc) return rc;
+			int rc = net__socket_connect_step3(mosq, mosq->host);
+			if (rc == MOSQ_ERR_SUCCESS) {
+				mosquitto__set_state(mosq, mosq_cs_connected);
+				rc = mosquitto__post_connected(mosq, NULL);
+			} else if (rc == MOSQ_ERR_SSL_CONN_PENDING) {
+				mosquitto__set_state(mosq, mosq_cs_ssl_connect_pending);
+				rc = MOSQ_ERR_SUCCESS;
 			}
-			return send__connect(mosq, mosq->keepalive, mosq->clean_start, NULL);
+			return rc;
 		}else{
 			i = mosq->in_packet.payload[1];
 			packet__cleanup(&mosq->in_packet);
