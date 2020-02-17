@@ -1,8 +1,46 @@
+mosquitto (1.6.8-2) unstable; urgency=medium
+
+  * Also install mqtt_protocol.h in libmosquitto-dev package.
+    (Closes: #951116)
+
+ -- Gianfranco Costamagna <locutusofborg@debian.org>  Sat, 15 Feb 2020 19:51:49 +0100
+
 mosquitto (1.6.8-1) unstable; urgency=medium
 
-  * New upstream release.
+  * Upload to unstable
 
- -- Roger A. Light <roger@atchoo.org>  Tue, 03 Dec 2019 15:04:38 +0000
+ -- Gianfranco Costamagna <locutusofborg@debian.org>  Sat, 08 Feb 2020 09:35:50 +0100
+
+mosquitto (1.6.8-1~exp3) experimental; urgency=medium
+
+  * Tweak patch 1570 to fix a build failure with non-libc libraries
+
+ -- Gianfranco Costamagna <locutusofborg@debian.org>  Sat, 25 Jan 2020 10:47:39 +0100
+
+mosquitto (1.6.8-1~exp2) experimental; urgency=medium
+
+  * Add libcares-dev dependency, to enable SRV functionality
+  * Bump std-version to 4.5.0, no changes required
+  * Simplify rules file, avoding the systemd hack in configure script
+  * Rename patches with the upstream PR number on github.
+
+ -- Gianfranco Costamagna <locutusofborg@debian.org>  Fri, 24 Jan 2020 14:19:46 +0100
+
+mosquitto (1.6.8-1~exp1) experimental; urgency=medium
+
+  * New upstream version 1.6.8 (Closes: #949585)
+  * Also install examples into etc directory
+  * Install missing mosquitto_broker.h header file
+  * Add mosquitto_rr to tools
+  * Install manpages into debian/*.manpages files
+  * Fix installation of libraries in case soname is added to the so file
+  * Bump std-version to 4.4.1, no changes required
+  * Require uthash at least 2.1.0, previously the embedded version was used during build process
+  * Bump compat level to 12
+  * Switch build system to cmake
+  * Do not override dh_auto_test anymore
+
+ -- Gianfranco Costamagna <locutusofborg@debian.org>  Wed, 22 Jan 2020 12:23:22 +0100
 
 mosquitto (1.6.7-1) unstable; urgency=medium
 

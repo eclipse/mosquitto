@@ -1,20 +1,19 @@
 #!/usr/bin/make -f
 
-export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
-export prefix=/usr
-export libdir=/usr/lib/$(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
-
 %:
-	# Don't process CMake rules, CMakeLists.txt is only included for Windows/Mac support.
-	dh $@ --buildsystem=makefile
+	dh $@ --buildsystem=cmake
 
 override_dh_installchangelogs:
 	dh_installchangelogs ChangeLog.txt
 
-override_dh_auto_build:
-	dh_auto_build -- WITH_BUNDLED_DEPS=no WITH_ADNS=yes WITH_WRAP=yes WITH_WEBSOCKETS=yes WITH_STRIP=no WITH_SYSTEMD=yes
+ifeq ($(DEB_BUILD_ARCH_OS), linux)
+SYSTEMD=ON
+else
+SYSTEMD=OFF
+endif
 
-override_dh_auto_test:
+override_dh_auto_configure:
+	dh_auto_configure -- -DWITH_BUNDLED_DEPS=OFF -DWITH_ADNS=ON -DUSE_LIBWRAP=ON -DWITH_WEBSOCKETS=ON -DWITH_DLT=ON -DWITH_SRV=ON -DWITH_SYSTEMD=${SYSTEMD}
 
 override_dh_strip:
 	dh_strip -p mosquitto --dbgsym-migration='mosquitto-dbg (<< 1.5)' -Xlibmosquitto
@@ -32,7 +31,7 @@ override_dh_auto_install:
 	install -m 644 debian/README-certs debian/tmp/etc/mosquitto/certs/README
 	install -m 644 debian/mosquitto.conf debian/tmp/etc/mosquitto/mosquitto.conf
 	install -d debian/tmp/lib/systemd/system/
-	install -m 644  ./service/systemd/mosquitto.service.notify debian/tmp/lib/systemd/system/mosquitto.service
+	install -m 644 ./service/systemd/mosquitto.service.notify debian/tmp/lib/systemd/system/mosquitto.service
 
 override_dh_makeshlibs:
 	dh_makeshlibs -- -c4

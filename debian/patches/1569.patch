@@ -1,0 +1,25 @@
+Upstream-Status: Submitted [https://github.com/eclipse/mosquitto/pull/1569]
+From fda932612afce2cead2fd2ca1c8ea543b2892177 Mon Sep 17 00:00:00 2001
+From: Gianfranco Costamagna <costamagnagianfranco@yahoo.it>
+Date: Wed, 22 Jan 2020 12:31:01 +0100
+Subject: [PATCH] Bugfix: enabling DLT was overriding everything else on linker
+ flags because of error in cmake set keyword
+
+Signed-off-by: Gianfranco Costamagna <costamagnagianfranco@yahoo.it>
+---
+ src/CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 7898ff5b1..6dfbba5e6 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -130,7 +130,7 @@ add_definitions (-DWITH_BROKER)
+ if (WITH_DLT)
+     message(STATUS "DLT_LIBDIR = ${DLT_LIBDIR}")
+     link_directories(${DLT_LIBDIR})
+-    set (MOSQ_LIBS ${DLT_LIBRARIES})
++    set (MOSQ_LIBS ${MOSQ_LIBS} ${DLT_LIBRARIES})
+ endif (WITH_DLT)
+ 
+ set (MOSQ_LIBS ${MOSQ_LIBS} ${OPENSSL_LIBRARIES})

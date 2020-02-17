@@ -1,0 +1,14 @@
+Description: Also install mqtt_protocol.h, as is done in Makefile
+Author: Gianfranco Costamagna <locutusofborg@debian.org>
+Bug-Debian: https://bugs.debian.org/951116
+Forwarded: https://github.com/eclipse/mosquitto/pull/1599
+Last-Update: 2020-02-15
+
+--- mosquitto-1.6.8.orig/lib/CMakeLists.txt
++++ mosquitto-1.6.8/lib/CMakeLists.txt
+@@ -113,4 +113,4 @@ if (WITH_STATIC_LIBRARIES)
+ 	install(TARGETS libmosquitto_static ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+ endif (WITH_STATIC_LIBRARIES)
+ 
+-install(FILES mosquitto.h DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
++install(FILES mqtt_protocol.h mosquitto.h DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")

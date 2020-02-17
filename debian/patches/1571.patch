@@ -1,0 +1,24 @@
+Upstream-Status: Submitted [https://github.com/eclipse/mosquitto/pull/1571]
+From 3fe5468f1bdca1bff1d18cf43c9e338f41aa9e32 Mon Sep 17 00:00:00 2001
+From: Gianfranco Costamagna <costamagnagianfranco@yahoo.it>
+Date: Wed, 22 Jan 2020 12:39:49 +0100
+Subject: [PATCH] Add dynamic symbols linking with cmake too
+
+Signed-off-by: Gianfranco Costamagna <costamagnagianfranco@yahoo.it>
+---
+ lib/CMakeLists.txt | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/lib/CMakeLists.txt b/lib/CMakeLists.txt
+index e1521f12a..14ba12739 100644
+--- a/lib/CMakeLists.txt
++++ b/lib/CMakeLists.txt
+@@ -88,6 +88,8 @@ set_target_properties(libmosquitto PROPERTIES
+ 	OUTPUT_NAME mosquitto
+ 	VERSION ${VERSION}
+ 	SOVERSION 1
++	LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/linker.version
++	LINK_FLAGS "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/linker.version"
+ )
+ 
+ install(TARGETS libmosquitto RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")

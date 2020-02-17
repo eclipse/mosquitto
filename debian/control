@@ -2,15 +2,18 @@ Source: mosquitto
 Section: net
 Priority: optional
 Maintainer: Roger A. Light <roger@atchoo.org>
-Build-Depends: debhelper (>= 11),
+Build-Depends: debhelper-compat (= 12),
+               cmake,
+               libc-ares-dev,
                libssl-dev (>=1.0.0),
                libsystemd-dev,
                libwebsockets-dev,
+               libdlt-dev,
                libwrap0-dev,
                pkg-config,
-               uthash-dev,
+               uthash-dev (>=2.1.0),
                uuid-dev
-Standards-Version: 4.4.0
+Standards-Version: 4.5.0
 Homepage: https://mosquitto.org/
 Vcs-Git: https://github.com/eclipse/mosquitto
 Vcs-Browser: https://github.com/eclipse/mosquitto/tree/debian

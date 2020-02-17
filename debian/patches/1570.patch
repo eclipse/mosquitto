@@ -1,0 +1,39 @@
+Upstream-Status: Submitted [https://github.com/eclipse/mosquitto/pull/1570]
+From 775677b05190380c3736bf0dbef002ee7b9bff33 Mon Sep 17 00:00:00 2001
+From: Gianfranco Costamagna <costamagnagianfranco@yahoo.it>
+Date: Wed, 22 Jan 2020 12:29:41 +0100
+Subject: [PATCH] cmake: add ADNS enable/disable dynamic support
+
+Signed-off-by: Gianfranco Costamagna <costamagnagianfranco@yahoo.it>
+---
+ src/CMakeLists.txt | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 7898ff5b1..edae76f32 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -105,6 +105,9 @@ if (WITH_SYS_TREE)
+ 	add_definitions("-DWITH_SYS_TREE")
+ endif (WITH_SYS_TREE)
+ 
++option(WITH_ADNS
++	"Include ADNS support?" OFF)
++
+ if (CMAKE_SYSTEM_NAME STREQUAL Linux)
+ 	option(WITH_SYSTEMD
+ 		"Include systemd support?" OFF)
+@@ -137,10 +140,11 @@ set (MOSQ_LIBS ${MOSQ_LIBS} ${OPENSSL_LIBRARIES})
+ # Check for getaddrinfo_a
+ include(CheckLibraryExists)
+ check_library_exists(anl getaddrinfo_a  "" HAVE_GETADDRINFO_A)
+-if (HAVE_GETADDRINFO_A)
++if (HAVE_GETADDRINFO_A AND WITH_ADNS)
++	add_definitions("-DWITH_ADNS")
+ 	add_definitions(-DHAVE_GETADDRINFO_A)
+ 	set (MOSQ_LIBS ${MOSQ_LIBS} anl)
+-endif (HAVE_GETADDRINFO_A)
++endif (HAVE_GETADDRINFO_A AND WITH_ADNS)
+ 
+ 
+ if (UNIX)

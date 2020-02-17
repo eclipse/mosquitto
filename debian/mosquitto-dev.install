@@ -1,1 +1,2 @@
 usr/include/mosquitto_plugin.h
+usr/include/mosquitto_broker.h

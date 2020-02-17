@@ -1,0 +1,67 @@
+Upstream-Status: Submitted [https://github.com/eclipse/mosquitto/pull/1568]
+From 50bfc79cae5764a6e513b684a5eb5bef2b35c856 Mon Sep 17 00:00:00 2001
+From: Gianfranco Costamagna <costamagnagianfranco@yahoo.it>
+Date: Wed, 22 Jan 2020 12:30:25 +0100
+Subject: [PATCH] Bugfix: include "deps" directory only if BUNDLED_DEPS has
+ been provided and set to true
+
+Signed-off-by: Gianfranco Costamagna <costamagnagianfranco@yahoo.it>
+---
+ config.mk          | 5 ++++-
+ lib/CMakeLists.txt | 5 ++++-
+ test/unit/Makefile | 6 +++++-
+ 3 files changed, 13 insertions(+), 3 deletions(-)
+
+diff --git a/config.mk b/config.mk
+index 51e36e0d0..0ac24b3d4 100644
+--- a/config.mk
++++ b/config.mk
+@@ -135,7 +135,10 @@ endif
+ 
+ STATIC_LIB_DEPS:=
+ 
+-LIB_CPPFLAGS=$(CPPFLAGS) -I. -I.. -I../lib -I../src/deps
++LIB_CPPFLAGS=$(CPPFLAGS) -I. -I.. -I../lib
++ifeq ($(WITH_BUNDLED_DEPS),yes)
++	LIB_CPPFLAGS:=$(LIB_CPPFLAGS) -I../src/deps
++endif
+ LIB_CFLAGS:=$(CFLAGS)
+ LIB_CXXFLAGS:=$(CXXFLAGS)
+ LIB_LDFLAGS:=$(LDFLAGS)
+diff --git a/lib/CMakeLists.txt b/lib/CMakeLists.txt
+index e1521f12a..891046a81 100644
+--- a/lib/CMakeLists.txt
++++ b/lib/CMakeLists.txt
+@@ -1,11 +1,14 @@
+ add_subdirectory(cpp)
+ 
+ include_directories(${mosquitto_SOURCE_DIR} ${mosquitto_SOURCE_DIR}/lib
+-			${mosquitto_SOURCE_DIR}/src/deps
+ 			${STDBOOL_H_PATH} ${STDINT_H_PATH}
+ 			${OPENSSL_INCLUDE_DIR} ${PTHREAD_INCLUDE_DIR})
+ link_directories(${mosquitto_SOURCE_DIR}/lib)
+ 
++if (WITH_BUNDLED_DEPS)
++        include_directories(${mosquitto_SOURCE_DIR} ${mosquitto_SOURCE_DIR}/src/deps)
++endif (WITH_BUNDLED_DEPS)
++
+ set(C_SRC
+ 	actions.c
+ 	callbacks.c
+diff --git a/test/unit/Makefile b/test/unit/Makefile
+index 9d422428d..928579492 100644
+--- a/test/unit/Makefile
++++ b/test/unit/Makefile
+@@ -2,7 +2,11 @@ include ../../config.mk
+ 
+ .PHONY: all check test test-broker test-lib clean coverage
+ 
+-CPPFLAGS:=$(CPPFLAGS) -I../.. -I../../lib -I../../src -I../../src/deps
++CPPFLAGS:=$(CPPFLAGS) -I../.. -I../../lib -I../../src
++ifeq ($(WITH_BUNDLED_DEPS),yes)
++        CPPFLAGS:=$(CPPFLAGS) -I../../src/deps
++endif
++
+ CFLAGS:=$(CFLAGS) -coverage -Wall -ggdb
+ LDFLAGS:=$(LDFLAGS) -coverage
+ LDADD:=$(LDADD) -lcunit
