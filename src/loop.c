@@ -69,6 +69,31 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, mosq_sock_t sock, 
 static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pollfds);
 #endif
 
+bool context_want_write(struct mosquitto *context)
+{
+	bool result = false;
+	if(context->current_out_packet || context->want_write || context->ws_want_write){
+		result = true;
+	}
+	
+#ifdef WITH_TLS
+	if (context->want_read) {
+		/* 
+		 * SSL want read, disable want write until read completed.
+		 * To avoid ssl handshake cannot completed since alway call SSL_write when need read.
+		 */
+		result = false;
+	}
+#endif
+	/*
+	** log__printf(NULL, MOSQ_LOG_DEBUG, "Context[%s] result:%d, r:%d, w:%d, ws:%d, c:%p",
+	** 			context->id ? context->id : "Unknown", result, context->want_read,
+	** 			context->want_write, context->ws_want_write, context->current_out_packet);
+	*/
+	return result;
+}
+
+
 #ifdef WITH_WEBSOCKETS
 static void temp__expire_websockets_clients(struct mosquitto_db *db)
 {
@@ -227,7 +252,7 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 
 					if(db__message_write(db, context) == MOSQ_ERR_SUCCESS){
 #ifdef WITH_EPOLL
-						if(context->current_out_packet || context->state == mosq_cs_connect_pending || context->ws_want_write){
+						if(context_want_write(context)){
 							if(!(context->events & EPOLLOUT)) {
 								ev.data.fd = context->sock;
 								ev.events = EPOLLIN | EPOLLOUT;
@@ -239,8 +264,7 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 								context->events = EPOLLIN | EPOLLOUT;
 							}
 							context->ws_want_write = false;
-						}
-						else{
+						}else{
 							if(context->events & EPOLLOUT) {
 								ev.data.fd = context->sock;
 								ev.events = EPOLLIN;
@@ -256,7 +280,7 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 						pollfds[pollfd_index].fd = context->sock;
 						pollfds[pollfd_index].events = POLLIN;
 						pollfds[pollfd_index].revents = 0;
-						if(context->current_out_packet || context->state == mosq_cs_connect_pending || context->ws_want_write){
+						if(context_want_write(context)){
 							pollfds[pollfd_index].events |= POLLOUT;
 							context->ws_want_write = false;
 						}
@@ -509,7 +533,7 @@ void do_disconnect(struct mosquitto_db *db, struct mosquitto *context, int reaso
 				log__printf(NULL, MOSQ_LOG_DEBUG, "Error in epoll disconnecting: %s", strerror(errno));
 			}
 		}
-#endif		
+#endif
 		context__disconnect(db, context);
 	}
 }
@@ -525,8 +549,6 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 #ifndef WITH_EPOLL
 	struct mosquitto *ctxt_tmp;
 #endif
-	int err;
-	socklen_t len;
 	int rc;
 
 #ifdef WITH_EPOLL
@@ -567,38 +589,40 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 		}
 #endif
 
-#ifdef WITH_TLS
-#ifdef WITH_EPOLL
-		if(events & EPOLLOUT ||
-#else
-		if(pollfds[context->pollfd_index].revents & POLLOUT ||
-#endif
-				context->want_write ||
-				(context->ssl && context->state == mosq_cs_new)){
-#else
+
 #ifdef WITH_EPOLL
 		if(events & EPOLLOUT){
 #else			
 		if(pollfds[context->pollfd_index].revents & POLLOUT){
 #endif
-#endif
-			if(context->state == mosq_cs_connect_pending){
-				len = sizeof(int);
-				if(!getsockopt(context->sock, SOL_SOCKET, SO_ERROR, (char *)&err, &len)){
-					if(err == 0){
-						mosquitto__set_state(context, mosq_cs_new);
-#if defined(WITH_ADNS) && defined(WITH_BRIDGE)
-						if(context->bridge){
-							bridge__connect_step3(db, context);
-							continue;
-						}
-#endif
-					}
-				}else{
+#if defined(WITH_BRIDGE)
+			if((context->state == mosq_cs_connect_pending) && (context->bridge)){
+				rc = net__socket_nonblock_connected(context, context->sock);
+				if (rc == MOSQ_ERR_CONN_PENDING) {
+					/* Check next time */
+					continue;
+				} else if(rc == MOSQ_ERR_SUCCESS){
+					mosquitto__set_state(context, mosq_cs_ssl_connect_pending);
+				} else {
+					context->bridge->restart_t = 0;
+					mosquitto__set_state(context, mosq_cs_new);
 					do_disconnect(db, context, MOSQ_ERR_CONN_LOST);
 					continue;
 				}
 			}
+			if((context->state == mosq_cs_ssl_connect_pending) && (context->bridge)){
+				rc = bridge__connect_step3(db, context);
+				if (rc == MOSQ_ERR_SSL_CONN_PENDING) {
+					/* try again later. */
+				} else if (rc != MOSQ_ERR_SUCCESS) {
+					context->bridge->restart_t = 0;
+					mosquitto__set_state(context, mosq_cs_new);
+					do_disconnect(db, context, rc);
+				}
+				continue;
+			}
+#endif
+
 			rc = packet__write(context);
 			if(rc){
 				do_disconnect(db, context, rc);
@@ -627,20 +651,26 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 		}
 #endif
 
-#ifdef WITH_TLS
-#ifdef WITH_EPOLL
-		if(events & EPOLLIN ||
-#else
-		if(pollfds[context->pollfd_index].revents & POLLIN ||
-#endif
-				(context->ssl && context->state == mosq_cs_new)){
-#else
 #ifdef WITH_EPOLL
 		if(events & EPOLLIN){
 #else
 		if(pollfds[context->pollfd_index].revents & POLLIN){
 #endif
+
+#if defined(WITH_BRIDGE)
+			if((context->state == mosq_cs_ssl_connect_pending) && (context->bridge)){
+				rc = bridge__connect_step3(db, context);
+				if (rc == MOSQ_ERR_SSL_CONN_PENDING) {
+					/* try again later. */
+				} else if (rc != MOSQ_ERR_SUCCESS) {
+					context->bridge->restart_t = 0;
+					mosquitto__set_state(context, mosq_cs_new);
+					do_disconnect(db, context, rc);
+				}
+				continue;
+			}
 #endif
+
 			do{
 				rc = packet__read(db, context);
 				if(rc){

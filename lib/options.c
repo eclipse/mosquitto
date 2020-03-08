@@ -461,7 +461,7 @@ int mosquitto_int_option(struct mosquitto *mosq, enum mosq_opt_t option, int val
 
 int mosquitto_void_option(struct mosquitto *mosq, enum mosq_opt_t option, void *value)
 {
-	if(!mosq || !value) return MOSQ_ERR_INVAL;
+	if(!mosq) return MOSQ_ERR_INVAL;
 
 	switch(option){
 		case MOSQ_OPT_SSL_CTX:
@@ -478,6 +478,32 @@ int mosquitto_void_option(struct mosquitto *mosq, enum mosq_opt_t option, void *
 #else
 			return MOSQ_ERR_NOT_SUPPORTED;
 #endif
+
+#ifndef WITH_BROKER
+		case MOSQ_OPT_HOST_AINFO:
+			if (mosq->adns) {
+				/* ADNS proccessing, notify invalid state */
+				return MOSQ_ERR_INVAL;
+			}
+			if(mosq->host_ainfo){
+				if(mosq->free_addrinfo){
+					mosq->free_addrinfo(mosq->host_ainfo);
+				}else{
+					freeaddrinfo(mosq->host_ainfo);
+				}
+			}
+			mosq->host_ainfo = value;
+			break;
+
+		case MOSQ_OPT_FREE_AINFO_CALLBACK:
+			if (mosq->adns) {
+				/* ADNS proccessing, notify invalid state */
+				return MOSQ_ERR_INVAL;
+			}
+			mosq->free_addrinfo = value;
+			break;
+#endif
+
 		default:
 			return MOSQ_ERR_INVAL;
 	}

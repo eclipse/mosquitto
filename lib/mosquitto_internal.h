@@ -56,10 +56,10 @@ Contributors:
 
 #include "mosquitto.h"
 #include "time_mosq.h"
+#ifdef __linux__
+#  include <netdb.h>
+#endif
 #ifdef WITH_BROKER
-#  ifdef __linux__
-#    include <netdb.h>
-#  endif
 #  include "uthash.h"
 struct mosquitto_client_msg;
 #endif
@@ -112,6 +112,8 @@ enum mosquitto_client_state {
 	mosq_cs_disused = 19, /* client that has been added to the disused list to be freed */
 	mosq_cs_authenticating = 20, /* Client has sent CONNECT but is still undergoing extended authentication */
 	mosq_cs_reauthenticating = 21, /* Client is undergoing reauthentication and shouldn't do anything else until complete */
+	mosq_cs_dns_resolve_pending = 22, /* DNS resolve in progress */
+	mosq_cs_ssl_connect_pending = 23, /* SSL connect in progress */
 };
 
 enum mosquitto__protocol {
@@ -210,9 +212,9 @@ struct mosquitto {
 #ifndef WITH_BROKER
 	mosq_sock_t sockpairR, sockpairW;
 #endif
-#if defined(__GLIBC__) && defined(WITH_ADNS)
-	struct gaicb *adns; /* For getaddrinfo_a */
-#endif
+	void *adns; /* For Async DNS */
+	struct addrinfo *host_ainfo;
+	void (*free_addrinfo)(void *);
 	enum mosquitto__protocol protocol;
 	char *address;
 	char *id;
@@ -256,7 +258,7 @@ struct mosquitto {
 	char *tls_alpn;
 #endif
 	bool want_write;
-	bool want_connect;
+	bool want_read;
 #if defined(WITH_THREADING) && !defined(WITH_BROKER)
 	pthread_mutex_t callback_mutex;
 	pthread_mutex_t log_callback_mutex;
@@ -352,6 +354,7 @@ struct mosquitto {
 
 #define STREMPTY(str) (str[0] == '\0')
 
+int mosquitto__post_connected(struct mosquitto *mosq, const mosquitto_property *properties);
 void do_client_disconnect(struct mosquitto *mosq, int reason_code, const mosquitto_property *properties);
 
 #endif

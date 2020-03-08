@@ -151,13 +151,15 @@ void context__cleanup(struct mosquitto_db *db, struct mosquitto *context, bool d
 	if(do_free || context->clean_start){
 		db__messages_delete(db, context);
 	}
-#if defined(WITH_BROKER) && defined(__GLIBC__) && defined(WITH_ADNS)
-	if(context->adns){
-		gai_cancel(context->adns);
-		mosquitto__free((struct addrinfo *)context->adns->ar_request);
-		mosquitto__free(context->adns);
+	
+	net__adns_cancel(&context->adns);
+
+#ifdef WITH_TLS
+	if(context->ssl_ctx){
+		SSL_CTX_free(context->ssl_ctx);
 	}
 #endif
+
 	if(do_free){
 		mosquitto__free(context);
 	}

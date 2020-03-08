@@ -177,6 +177,7 @@ int mosquitto_reinitialise(struct mosquitto *mosq, const char *id, bool clean_st
 	mosq->tls_cert_reqs = SSL_VERIFY_PEER;
 	mosq->tls_insecure = false;
 	mosq->want_write = false;
+	mosq->want_read = false;
 	mosq->tls_ocsp_required = false;
 #endif
 #ifdef WITH_THREADING
@@ -267,6 +268,17 @@ void mosquitto__destroy(struct mosquitto *mosq)
 	mosquitto__free(mosq->bind_address);
 	mosq->bind_address = NULL;
 
+	net__adns_cancel(&mosq->adns);
+
+	if(mosq->host_ainfo){
+		if(mosq->free_addrinfo){
+			mosq->free_addrinfo(mosq->host_ainfo);
+		}else{
+			freeaddrinfo(mosq->host_ainfo);
+		}
+		mosq->host_ainfo = NULL;
+	}
+
 	/* Out packet cleanup */
 	if(mosq->out_packet && !mosq->current_out_packet){
 		mosq->current_out_packet = mosq->out_packet;
@@ -313,16 +325,17 @@ int mosquitto_socket(struct mosquitto *mosq)
 bool mosquitto_want_write(struct mosquitto *mosq)
 {
 	bool result = false;
-	if(mosq->out_packet || mosq->current_out_packet){
+	if(mosq->out_packet || mosq->current_out_packet || mosq->want_write){
 		result = true;
 	}
+	
 #ifdef WITH_TLS
-	if(mosq->ssl){
-		if (mosq->want_write) {
-			result = true;
-		}else if(mosq->want_connect){
-			result = false;
-		}
+	if ((mosq->ssl) && (mosq->want_read)) {
+		/* 
+		 * SSL want read, disable want write until read completed.
+		 * To avoid ssl handshake cannot completed since alway call SSL_write when need read.
+		 */
+		result = false;
 	}
 #endif
 	return result;
@@ -332,6 +345,8 @@ bool mosquitto_want_write(struct mosquitto *mosq)
 const char *mosquitto_strerror(int mosq_errno)
 {
 	switch(mosq_errno){
+		case MOSQ_ERR_DNS_RESOLVE_PENDING:
+			return "DNS resolve pending, try again later.";
 		case MOSQ_ERR_AUTH_CONTINUE:
 			return "Continue with authentication.";
 		case MOSQ_ERR_NO_SUBSCRIBERS:

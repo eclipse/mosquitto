@@ -501,6 +501,7 @@ struct mosquitto__bridge_topic{
 struct bridge_address{
 	char *address;
 	int port;
+	struct addrinfo *ainfo;
 };
 
 struct mosquitto__bridge{
@@ -780,6 +781,7 @@ struct lws_context *mosq_websockets_init(struct mosquitto__listener *listener, c
 struct libwebsocket_context *mosq_websockets_init(struct mosquitto__listener *listener, const struct mosquitto__config *conf);
 #  endif
 #endif
+bool context_want_write(struct mosquitto *context);
 void do_disconnect(struct mosquitto_db *db, struct mosquitto *context, int reason);
 
 /* ============================================================

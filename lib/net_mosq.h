@@ -61,20 +61,25 @@ int net__socket_close(struct mosquitto_db *db, struct mosquitto *mosq);
 #else
 int net__socket_close(struct mosquitto *mosq);
 #endif
-int net__try_connect(const char *host, uint16_t port, mosq_sock_t *sock, const char *bind_address, bool blocking);
-int net__try_connect_step1(struct mosquitto *mosq, const char *host);
-int net__try_connect_step2(struct mosquitto *mosq, uint16_t port, mosq_sock_t *sock);
+int net__try_connect(struct mosquitto *mosq, const char *host, uint16_t port, mosq_sock_t *sock, const char *bind_address, bool blocking, bool disable_tls);
+int net__socket_connect_step1(struct mosquitto *mosq, void ** adns_p, struct addrinfo **ainfo_p, const char *host, uint16_t port, bool blocking);
+int net__socket_connect_step2(struct mosquitto *mosq, mosq_sock_t *sock, const char *host, struct addrinfo *host_ainfo, const char * bind_address, bool blocking, bool disable_tls);
 int net__socket_connect_step3(struct mosquitto *mosq, const char *host);
+
+int net__socket_nonblock_connected(struct mosquitto *mosq, mosq_sock_t sock);
 int net__socket_nonblock(mosq_sock_t *sock);
 int net__socketpair(mosq_sock_t *sp1, mosq_sock_t *sp2);
+
+int net__adns_start(void **adns_p, const char *host, const char *service);
+int net__adns_check(void **adns_p, struct addrinfo **ainfo);
+void net__adns_cancel(void **adns_p);
+void net__adns_free(void **adns_p);
 
 ssize_t net__read(struct mosquitto *mosq, void *buf, size_t count);
 ssize_t net__write(struct mosquitto *mosq, void *buf, size_t count);
 
 #ifdef WITH_TLS
 void net__print_ssl_error(struct mosquitto *mosq);
-int net__socket_apply_tls(struct mosquitto *mosq);
-int net__socket_connect_tls(struct mosquitto *mosq);
 int mosquitto__verify_ocsp_status_cb(SSL * ssl, void *arg);
 UI_METHOD *net__get_ui_method(void);
 #define ENGINE_FINISH(e) if(e) ENGINE_finish(e)

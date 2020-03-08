@@ -102,13 +102,22 @@ int mosquitto__check_keepalive(struct mosquitto *mosq)
 #ifdef WITH_BROKER
 			net__socket_close(db, mosq);
 #else
-			net__socket_close(mosq);
 			state = mosquitto__get_state(mosq);
 			if(state == mosq_cs_disconnecting){
 				rc = MOSQ_ERR_SUCCESS;
 			}else{
 				rc = MOSQ_ERR_KEEPALIVE;
 			}
+			/* cleanup address info */
+			if(mosq->host_ainfo){
+				if(mosq->free_addrinfo){
+					mosq->free_addrinfo(mosq->host_ainfo);
+				}else{
+					freeaddrinfo(mosq->host_ainfo);
+				}
+				mosq->host_ainfo = NULL;
+			}
+			mosquitto__set_state(mosq, mosq_cs_disconnected);
 			pthread_mutex_lock(&mosq->callback_mutex);
 			if(mosq->on_disconnect){
 				mosq->in_callback = true;

@@ -220,11 +220,7 @@ int packet__write(struct mosquitto *mosq)
 	pthread_mutex_unlock(&mosq->out_packet_mutex);
 
 	state = mosquitto__get_state(mosq);
-#if defined(WITH_TLS) && !defined(WITH_BROKER)
-	if((state == mosq_cs_connect_pending) || mosq->want_connect){
-#else
-	if(state == mosq_cs_connect_pending){
-#endif
+	if((state == mosq_cs_connect_pending) || (state == mosq_cs_ssl_connect_pending)){
 		pthread_mutex_unlock(&mosq->current_out_packet_mutex);
 		return MOSQ_ERR_SUCCESS;
 	}
@@ -329,7 +325,7 @@ int packet__read(struct mosquitto *mosq)
 	}
 
 	state = mosquitto__get_state(mosq);
-	if(state == mosq_cs_connect_pending){
+	if((state == mosq_cs_connect_pending) || (state == mosq_cs_ssl_connect_pending)){
 		return MOSQ_ERR_SUCCESS;
 	}
 
