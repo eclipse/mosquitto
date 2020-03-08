@@ -133,7 +133,7 @@ int retain__queue(struct mosquitto_db *db, struct mosquitto *context, const char
 	return MOSQ_ERR_SUCCESS;
 }
 
-int retain__store(struct mosquitto_db *db, const char *topic, struct mosquitto_msg_store *stored, struct sub__token *tokens)
+int retain__store(struct mosquitto_db *db, const char *topic, struct mosquitto_msg_store *stored, char **split_topics)
 {
 	return MOSQ_ERR_SUCCESS;
 }
