@@ -482,9 +482,9 @@ void net__print_ssl_error(struct mosquitto *mosq)
 int net__socket_connect_tls(struct mosquitto *mosq)
 {
 	int ret, err;
-
+	long res; //changed by Mostafa Imam to be at the top of the function to be able to compile over Integrity compiler
 	ERR_clear_error();
-	long res;
+	
 	if (mosq->tls_ocsp_required) {
 		// Note: OCSP is available in all currently supported OpenSSL versions.
 		if ((res=SSL_set_tlsext_status_type(mosq->ssl, TLSEXT_STATUSTYPE_ocsp)) != 1) {
@@ -535,6 +535,7 @@ static int net__init_ssl_ctx(struct mosquitto *mosq)
 {
 	int ret;
 	ENGINE *engine = NULL;
+	EVP_PKEY *pkey; //changed by Mostafa Imam to be at the top of the function to be able to compile over Integrity compiler
 	uint8_t tls_alpn_wire[256];
 	uint8_t tls_alpn_len;
 
@@ -718,7 +719,7 @@ static int net__init_ssl_ctx(struct mosquitto *mosq)
 						}
 						ui_method = NULL;
 					}
-					EVP_PKEY *pkey = ENGINE_load_private_key(engine, mosq->tls_keyfile, ui_method, NULL);
+					pkey = ENGINE_load_private_key(engine, mosq->tls_keyfile, ui_method, NULL);
 					if(!pkey){
 						log__printf(mosq, MOSQ_LOG_ERR, "Error: Unable to load engine private key file \"%s\".", mosq->tls_keyfile);
 						ENGINE_FINISH(engine);
