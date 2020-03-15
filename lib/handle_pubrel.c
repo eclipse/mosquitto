@@ -102,7 +102,8 @@ int handle__pubrel(struct mosquitto_db *db, struct mosquitto *mosq)
 
 	rc = message__remove(mosq, mid, mosq_md_in, &message, 2);
 	if(rc){
-		return rc;
+		// return rc;
+		/* Apparently this is "normal" behaviour, so we don't need to issue a warning */
 	}else{
 		/* Only pass the message on if we have removed it from the queue - this
 		 * prevents multiple callbacks for the same message. */

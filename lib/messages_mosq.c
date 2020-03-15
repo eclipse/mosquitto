@@ -120,14 +120,35 @@ void mosquitto_message_free_contents(struct mosquitto_message *message)
 int message__queue(struct mosquitto *mosq, struct mosquitto_message_all *message, enum mosquitto_msg_direction dir)
 {
 	/* mosq->*_message_mutex should be locked before entering this function */
+	struct mosquitto_message_all *cur, *tmp;
 	assert(mosq);
 	assert(message);
 	assert(message->msg.qos != 0);
 
 	if(dir == mosq_md_out){
+////////
+
+		DL_FOREACH_SAFE(mosq->msgs_out.inflight, cur, tmp){
+			if((cur->msg.mid == message->msg.mid) && (cur->msg.qos == message->msg.qos)){
+				DL_DELETE(mosq->msgs_out.inflight, cur);
+				mosq->msgs_out.queue_len--;
+				break;
+			}
+		}
+////////
+
 		DL_APPEND(mosq->msgs_out.inflight, message);
 		mosq->msgs_out.queue_len++;
 	}else{
+///////////
+		DL_FOREACH_SAFE(mosq->msgs_in.inflight, cur, tmp){
+			if((cur->msg.mid == message->msg.mid) &&(cur->msg.qos == message->msg.qos)){
+				DL_DELETE(mosq->msgs_in.inflight, cur);
+				mosq->msgs_in.queue_len--;
+				break;
+			}
+		}
+///////////
 		DL_APPEND(mosq->msgs_in.inflight, message);
 		mosq->msgs_in.queue_len++;
 	}
