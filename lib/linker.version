@@ -94,6 +94,7 @@ MOSQ_1.5 {
 
 MOSQ_1.6 {
 	global:
+		mosquitto_connect_bind_async_v5;
 		mosquitto_connect_bind_v5;
 		mosquitto_connect_v5_callback_set;
 		mosquitto_disconnect_v5;
