@@ -36,6 +36,9 @@
 		comment.</para>
 		<para>Configuration lines start with a variable name. The variable
 		value is separated from the name by a single space.</para>
+		<para>All file and directory paths support path expansion. If the path
+		starts with <code>~/</code> it is substituted with the value of the
+		environment variable <code>HOME</code>.</para>
 	</refsect1>
 
 	<refsect1>
