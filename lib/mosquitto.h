@@ -202,7 +202,8 @@ libmosq_EXPORT int mosquitto_lib_version(int *major, int *minor, int *revision);
  * This function is *not* thread safe.
  *
  * Returns:
- * 	MOSQ_ERR_SUCCESS - always
+ * 	MOSQ_ERR_SUCCESS - on success.
+ * 	MOSQ_ERR_UNKNOWN - on Windows, if sockets couldn't be initialized.
  *
  * See Also:
  * 	<mosquitto_lib_cleanup>, <mosquitto_lib_version>
