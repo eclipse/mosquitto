@@ -55,6 +55,10 @@ struct mosquitto_db;
 int net__init(void);
 void net__cleanup(void);
 
+#ifdef WITH_TLS
+void net__init_tls_engine(void);
+#endif
+
 int net__socket_connect(struct mosquitto *mosq, const char *host, uint16_t port, const char *bind_address, bool blocking);
 #ifdef WITH_BROKER
 int net__socket_close(struct mosquitto_db *db, struct mosquitto *mosq);

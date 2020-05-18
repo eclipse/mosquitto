@@ -72,6 +72,9 @@ void net__broker_init(void)
 {
 	spare_sock = socket(AF_INET, SOCK_STREAM, 0);
 	net__init();
+#ifdef WITH_TLS
+	net__init_tls_engine();
+#endif
 }
 
 
