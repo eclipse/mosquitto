@@ -313,7 +313,6 @@ static int json_print(const struct mosquitto_message *message, const mosquitto_p
 	snprintf(&buf[strlen("2020-05-06T21:48:00.")], 9, "%06d", ns/1000);
 	buf[strlen("2020-05-06T21:48:00.000000")] = 'Z';
 
-	tmp = cJSON_CreateStringReference(buf);
 	printf("{\"tst\":\"%s\",\"topic\":\"%s\",\"qos\":%d,\"retain\":%d,\"payloadlen\":%d,", buf, message->topic, message->qos, message->retain, message->payloadlen);
 	if(message->qos > 0){
 		printf("\"mid\":%d,", message->mid);
