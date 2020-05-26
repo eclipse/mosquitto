@@ -762,7 +762,7 @@ int db__message_reconnect_reset_outgoing(struct mosquitto_db *db, struct mosquit
 		if(msg->qos > 0){
 			context->msgs_out.msg_count12++;
 			context->msgs_out.msg_bytes12 += msg->store->payloadlen;
-			util__decrement_receive_quota(context);
+			util__decrement_send_quota(context);
 		}
 
 		switch(msg->qos){
