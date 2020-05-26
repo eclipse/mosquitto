@@ -1030,6 +1030,7 @@ int db__message_write(struct mosquitto_db *db, struct mosquitto *context)
 			if(now > tail->store->message_expiry_time){
 				/* Message is expired, must not send. */
 				db__message_remove(db, &context->msgs_out, tail);
+                util__increment_send_quota(context);
 				continue;
 			}else{
 				expiry_interval = tail->store->message_expiry_time - now;
