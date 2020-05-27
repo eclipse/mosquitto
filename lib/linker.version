@@ -83,6 +83,8 @@ MOSQ_1.5 {
 	global:
 		mosquitto_subscribe_simple;
 		mosquitto_subscribe_callback;
+		mosquitto_publish_single;
+		mosquitto_publish_multiple;
 		mosquitto_message_free_contents;
 		mosquitto_validate_utf8;
 		mosquitto_userdata;

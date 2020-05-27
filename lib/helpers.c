@@ -36,8 +36,14 @@ struct userdata__simple {
 	bool want_retained;
 };
 
+struct userdata__publish_callback {
+	struct mosquitto_message **messages;
+	int msg_count;
+	void *userdata;
+	int rc;
+};
 
-static void on_connect(struct mosquitto *mosq, void *obj, int rc)
+static void on_connect_subscribe(struct mosquitto *mosq, void *obj, int rc)
 {
 	struct userdata__callback *userdata = obj;
 
@@ -46,6 +52,28 @@ static void on_connect(struct mosquitto *mosq, void *obj, int rc)
 	mosquitto_subscribe(mosq, NULL, userdata->topic, userdata->qos);
 }
 
+static void on_connect_publish(struct mosquitto *mosq, void *obj, int rc)
+{
+	struct userdata__publish_callback *userdata = obj;
+	struct mosquitto_message *current_msg = NULL;
+	int result;
+	int i;
+
+	for (i=0; i < userdata->msg_count; i++){
+		current_msg = userdata->messages[i];
+
+		result = mosquitto_publish(
+				mosq, NULL, current_msg->topic,
+				current_msg->payloadlen, current_msg->payload,
+				current_msg->qos, current_msg->retain);
+
+		if(result) {
+			break;
+		}
+	}
+
+	mosquitto_disconnect(mosq);
+}
 
 static void on_message_callback(struct mosquitto *mosq, void *obj, const struct mosquitto_message *message)
 {
@@ -83,6 +111,51 @@ static int on_message_simple(struct mosquitto *mosq, void *obj, const struct mos
 		mosquitto_disconnect(mosq);
 	}
 	return 0;
+}
+
+static int mosquitto__helper_initialise(
+		struct mosquitto * mosq,
+		void *userdata,
+		const char *host,
+		int port,
+		const char *client_id,
+		int keepalive,
+		bool clean_session,
+		const char *username,
+		const char *password,
+		const struct libmosquitto_will *will,
+		const struct libmosquitto_tls *tls)
+{
+	int rc;
+
+	if(will){
+		rc = mosquitto_will_set(mosq, will->topic, will->payloadlen, will->payload, will->qos, will->retain);
+		if(rc){
+			mosquitto_destroy(mosq);
+			return rc;
+		}
+	}
+	if(username){
+		rc = mosquitto_username_pw_set(mosq, username, password);
+		if(rc){
+			mosquitto_destroy(mosq);
+			return rc;
+		}
+	}
+	if(tls){
+		rc = mosquitto_tls_set(mosq, tls->cafile, tls->capath, tls->certfile, tls->keyfile, tls->pw_callback);
+		if(rc){
+			mosquitto_destroy(mosq);
+			return rc;
+		}
+		rc = mosquitto_tls_opts_set(mosq, tls->cert_reqs, tls->tls_version, tls->ciphers);
+		if(rc){
+			mosquitto_destroy(mosq);
+			return rc;
+		}
+	}
+
+	return MOSQ_ERR_SUCCESS;
 }
 
 
@@ -175,34 +248,18 @@ libmosq_EXPORT int mosquitto_subscribe_callback(
 		return MOSQ_ERR_NOMEM;
 	}
 
-	if(will){
-		rc = mosquitto_will_set(mosq, will->topic, will->payloadlen, will->payload, will->qos, will->retain);
-		if(rc){
-			mosquitto_destroy(mosq);
-			return rc;
-		}
-	}
-	if(username){
-		rc = mosquitto_username_pw_set(mosq, username, password);
-		if(rc){
-			mosquitto_destroy(mosq);
-			return rc;
-		}
-	}
-	if(tls){
-		rc = mosquitto_tls_set(mosq, tls->cafile, tls->capath, tls->certfile, tls->keyfile, tls->pw_callback);
-		if(rc){
-			mosquitto_destroy(mosq);
-			return rc;
-		}
-		rc = mosquitto_tls_opts_set(mosq, tls->cert_reqs, tls->tls_version, tls->ciphers);
-		if(rc){
-			mosquitto_destroy(mosq);
-			return rc;
-		}
+	rc = mosquitto__helper_initialise(
+			mosq, &cb_userdata,
+			host, port,
+			client_id, keepalive, clean_session,
+			username, password,
+			will, tls);
+
+	if(rc > 0) {
+		return rc;
 	}
 
-	mosquitto_connect_callback_set(mosq, on_connect);
+	mosquitto_connect_callback_set(mosq, on_connect_subscribe);
 	mosquitto_message_callback_set(mosq, on_message_callback);
 
 	rc = mosquitto_connect(mosq, host, port, keepalive);
@@ -215,3 +272,82 @@ libmosq_EXPORT int mosquitto_subscribe_callback(
 	return rc;
 }
 
+libmosq_EXPORT int mosquitto_publish_multiple(
+		struct mosquitto_message **messages,
+		int message_count,
+		const char *host,
+		int port,
+		const char *client_id,
+		int keepalive,
+		bool clean_session,
+		const char *username,
+		const char *password,
+		const struct libmosquitto_will *will,
+		const struct libmosquitto_tls *tls)
+{
+	struct mosquitto *mosq;
+	struct userdata__publish_callback cb_userdata;
+	int rc;
+
+	mosq = mosquitto_new(client_id, clean_session, &cb_userdata);
+	if(!mosq){
+		return MOSQ_ERR_NOMEM;
+	}
+
+	rc = mosquitto__helper_initialise(
+			mosq, &cb_userdata,
+			host, port,
+			client_id, keepalive, clean_session,
+			username, password,
+			will, tls);
+
+	if(rc > 0) {
+		return rc;
+	}
+
+	cb_userdata.messages = messages;
+	cb_userdata.msg_count = message_count;
+
+	mosquitto_connect_callback_set(mosq, on_connect_publish);
+	
+	rc = mosquitto_connect(mosq, host, port, keepalive);
+	if(rc){
+		mosquitto_destroy(mosq);
+		return rc;
+	}
+	rc = mosquitto_loop_forever(mosq, -1, 1);
+	mosquitto_destroy(mosq);
+
+	return MOSQ_ERR_SUCCESS;
+}
+
+libmosq_EXPORT int mosquitto_publish_single(
+		const char *topic,
+		const void *payload,
+		int payloadlen,
+		int qos,
+		const char *host,
+		int port,
+		const char *client_id,
+		int keepalive,
+		bool clean_session,
+		const char *username,
+		const char *password,
+		const struct libmosquitto_will *will,
+		const struct libmosquitto_tls *tls)
+{
+	struct mosquitto_message message;
+	struct mosquitto_message *messages_ptr;
+	messages_ptr = &message;
+
+	message.topic = (char *)topic;
+	message.qos = qos;
+	message.payload = (void *)payload;
+	message.payloadlen = payloadlen;
+
+	return mosquitto_publish_multiple(
+			&messages_ptr, 1,
+			host, port,
+			client_id, keepalive, clean_session,
+			username, password, will, tls);
+}
