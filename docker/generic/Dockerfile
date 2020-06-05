@@ -6,7 +6,7 @@ RUN test -n "${VERSION}"
 
 RUN apk --no-cache add \
       build-base \
-      libressl-dev \
+      openssl-dev \
       c-ares-dev \
       curl \
       util-linux-dev \
@@ -48,8 +48,7 @@ LABEL maintainer="Jonathan Hanson <jonathan@jonathan-hanson.org>" \
 RUN apk --no-cache add \
       busybox \
       ca-certificates \
-      libcrypto1.0 \
-      libssl1.0 \
+      openssl \
       libuuid \
       libwebsockets \
       musl
