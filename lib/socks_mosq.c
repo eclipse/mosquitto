@@ -27,7 +27,7 @@ Contributors:
 #else
 #  include <arpa/inet.h>
 #endif
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined(__OpenBSD__)
 #  include <sys/socket.h>
 #  include <netinet/in.h>
 #endif
