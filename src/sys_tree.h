@@ -54,10 +54,10 @@ extern unsigned int g_connection_count;
 #define G_MSGS_SENT_INC(A)
 #define G_PUB_MSGS_RECEIVED_INC(A)
 #define G_PUB_MSGS_SENT_INC(A)
-#define G_MSGS_DROPPED_INC(A)
-#define G_CLIENTS_EXPIRED_INC(A)
-#define G_SOCKET_CONNECTIONS_INC(A)
-#define G_CONNECTION_COUNT_INC(A)
+#define G_MSGS_DROPPED_INC()
+#define G_CLIENTS_EXPIRED_INC()
+#define G_SOCKET_CONNECTIONS_INC()
+#define G_CONNECTION_COUNT_INC()
 
 #endif
 
