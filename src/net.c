@@ -588,11 +588,7 @@ int net__socket_listen(struct mosquitto__listener *listener)
 	struct addrinfo *ainfo, *rp;
 	char service[10];
 	int rc;
-#ifndef WIN32
 	int ss_opt = 1;
-#else
-	char ss_opt = 1;
-#endif
 #ifdef SO_BINDTODEVICE
 	struct ifreq ifr;
 #endif
@@ -646,8 +642,14 @@ int net__socket_listen(struct mosquitto__listener *listener)
 		setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &ss_opt, sizeof(ss_opt));
 #endif
 #ifdef IPV6_V6ONLY
-		ss_opt = 1;
-		setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, &ss_opt, sizeof(ss_opt));
+		if(rp->ai_family == AF_INET6){
+#ifndef WIN32
+			ss_opt = 1;
+#else
+			ss_opt = 0;
+#endif
+			setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, &ss_opt, sizeof(ss_opt));
+		}
 #endif
 
 		if(net__socket_nonblock(&sock)){
