@@ -364,6 +364,7 @@ int main(int argc, char *argv[])
 	}
 #endif
 
+	log__printf(NULL, MOSQ_LOG_INFO, "mosquitto version %s running", VERSION);
 #ifdef WITH_SYSTEMD
 	sd_notify(0, "READY=1");
 #endif
