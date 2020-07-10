@@ -33,7 +33,7 @@ void LIB_ERROR(void)
 #ifdef WIN32
 	char *buf;
 	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_STRING,
-			NULL, GetLastError(), LANG_NEUTRAL, &buf, 0, NULL);
+			NULL, GetLastError(), LANG_NEUTRAL, (LPTSTR)&buf, 0, NULL);
 	log__printf(NULL, MOSQ_LOG_ERR, "Load error: %s", buf);
 	LocalFree(buf);
 #else

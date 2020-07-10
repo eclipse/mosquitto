@@ -32,7 +32,7 @@ static void print_error(void)
 	char *buf;
 
 	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
-		NULL, GetLastError(), LANG_NEUTRAL, &buf, 0, NULL);
+		NULL, GetLastError(), LANG_NEUTRAL, (LPTSTR)&buf, 0, NULL);
 
 	fprintf(stderr, "Error: %s\n", buf);
 	LocalFree(buf);
