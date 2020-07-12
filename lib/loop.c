@@ -243,12 +243,16 @@ static int interruptible_sleep(struct mosquitto *mosq, unsigned long reconnect_d
 }
 
 
-int mosquitto_loop_forever(struct mosquitto *mosq, int timeout, int max_packets)
+int mosquitto__loop_forever(struct mosquitto *mosq, int timeout, int max_packets, bool explicit_cancellation_points)
 {
 	int run = 1;
 	int rc;
 	unsigned long reconnect_delay;
 	int state;
+
+#ifndef WIN32
+	UNUSED(explicit_cancellation_points);
+#endif
 
 	if(!mosq) return MOSQ_ERR_INVAL;
 
@@ -256,6 +260,11 @@ int mosquitto_loop_forever(struct mosquitto *mosq, int timeout, int max_packets)
 
 	while(run){
 		do{
+#ifdef WIN32
+			if(explicit_cancellation_points) {
+				pthread_testcancel();
+			}
+#endif
 			rc = mosquitto_loop(mosq, timeout, max_packets);
 		}while(run && rc == MOSQ_ERR_SUCCESS);
 		/* Quit after fatal errors. */
@@ -280,6 +289,11 @@ int mosquitto_loop_forever(struct mosquitto *mosq, int timeout, int max_packets)
 			return rc;
 		}
 		do{
+#ifdef WIN32
+			if(explicit_cancellation_points) {
+				pthread_testcancel();
+			}
+#endif
 			rc = MOSQ_ERR_SUCCESS;
 			state = mosquitto__get_state(mosq);
 			if(state == mosq_cs_disconnecting || state == mosq_cs_disconnected){
@@ -314,6 +328,12 @@ int mosquitto_loop_forever(struct mosquitto *mosq, int timeout, int max_packets)
 		}while(run && rc != MOSQ_ERR_SUCCESS);
 	}
 	return rc;
+}
+
+
+int mosquitto_loop_forever(struct mosquitto *mosq, int timeout, int max_packets)
+{
+	return mosquitto__loop_forever(mosq, timeout, max_packets, false);
 }
 
 

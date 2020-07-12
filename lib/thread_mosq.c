@@ -77,14 +77,19 @@ int mosquitto_loop_stop(struct mosquitto *mosq, bool force)
 }
 
 #ifdef WITH_THREADING
+int mosquitto__loop_forever(struct mosquitto *mosq, int timeout, int max_packets, bool explicit_cancellation_points);
+
 void *mosquitto__thread_main(void *obj)
 {
 	struct mosquitto *mosq = obj;
 	int state;
 #ifndef WIN32
+	bool explicit_cancellation_points = false;
 	struct timespec ts;
 	ts.tv_sec = 0;
 	ts.tv_nsec = 10000000;
+#else
+	bool explicit_cancellation_points = true;
 #endif
 
 	if(!mosq) return NULL;
@@ -104,10 +109,10 @@ void *mosquitto__thread_main(void *obj)
 
 	if(!mosq->keepalive){
 		/* Sleep for a day if keepalive disabled. */
-		mosquitto_loop_forever(mosq, 1000*86400, 1);
+		mosquitto__loop_forever(mosq, 1000*86400, 1, explicit_cancellation_points);
 	}else{
 		/* Sleep for our keepalive value. publish() etc. will wake us up. */
-		mosquitto_loop_forever(mosq, mosq->keepalive*1000, 1);
+		mosquitto__loop_forever(mosq, mosq->keepalive*1000, 1, explicit_cancellation_points);
 	}
 
 	return obj;
