@@ -74,6 +74,17 @@ already be built. Use `make binary` to skip building the man pages, or install
 
 Equivalent options for enabling/disabling features are available when using the CMake build.
 
+### Building mosquitto - Using vcpkg
+
+You can download and install mosquitto using the [vcpkg](https://github.com/Microsoft/vcpkg) dependency manager:
+
+    git clone https://github.com/Microsoft/vcpkg.git
+    cd vcpkg
+    ./bootstrap-vcpkg.sh
+    ./vcpkg integrate install
+    ./vcpkg install mosquitto
+
+The mosquitto port in vcpkg is kept up to date by Microsoft team members and community contributors. If the version is out of date, please [create an issue or pull request](https://github.com/Microsoft/vcpkg) on the vcpkg repository.
 
 ## Credits
 
