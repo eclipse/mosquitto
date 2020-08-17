@@ -20,10 +20,12 @@ Contributors:
 #include <time.h>
 #endif
 
+#if defined(WITH_THREADING)
 #if defined(__linux__) || defined(__NetBSD__)
 #  include <pthread.h>
 #elif defined(__FreeBSD__) || defined(__OpenBSD__)
 #  include <pthread_np.h>
+#endif
 #endif
 
 #include "mosquitto_internal.h"
