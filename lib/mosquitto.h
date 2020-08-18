@@ -2097,43 +2097,6 @@ libmosq_EXPORT void mosquitto_log_callback_set(struct mosquitto *mosq, void (*on
 libmosq_EXPORT int mosquitto_string_option(struct mosquitto *mosq, enum mosq_opt_t option, const char *value);
 
 
-/*
- * Function: mosquitto_reconnect_delay_set
- *
- * Control the behaviour of the client when it has unexpectedly disconnected in
- * <mosquitto_loop_forever> or after <mosquitto_loop_start>. The default
- * behaviour if this function is not used is to repeatedly attempt to reconnect
- * with a delay of 1 second until the connection succeeds.
- *
- * Use reconnect_delay parameter to change the delay between successive
- * reconnection attempts. You may also enable exponential backoff of the time
- * between reconnections by setting reconnect_exponential_backoff to true and
- * set an upper bound on the delay with reconnect_delay_max.
- *
- * Example 1:
- *	delay=2, delay_max=10, exponential_backoff=False
- *	Delays would be: 2, 4, 6, 8, 10, 10, ...
- *
- * Example 2:
- *	delay=3, delay_max=30, exponential_backoff=True
- *	Delays would be: 3, 6, 12, 24, 30, 30, ...
- *
- * Parameters:
- *  mosq -                          a valid mosquitto instance.
- *  reconnect_delay -               the number of seconds to wait between
- *                                  reconnects.
- *  reconnect_delay_max -           the maximum number of seconds to wait
- *                                  between reconnects.
- *  reconnect_exponential_backoff - use exponential backoff between
- *                                  reconnect attempts. Set to true to enable
- *                                  exponential backoff.
- *
- * Returns:
- *	MOSQ_ERR_SUCCESS - on success.
- * 	MOSQ_ERR_INVAL -   if the input parameters were invalid.
- */
-libmosq_EXPORT int mosquitto_reconnect_delay_set(struct mosquitto *mosq, unsigned int reconnect_delay, unsigned int reconnect_delay_max, bool reconnect_exponential_backoff);
-
 
 /* =============================================================================
  *
