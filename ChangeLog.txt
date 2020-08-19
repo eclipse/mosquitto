@@ -156,6 +156,20 @@ Clients:
 - Don't busy loop with `mosquitto_pub -l` on a slow connection.
 
 
+1.5.10 - 2020-08-19
+===================
+
+Security:
+- In some circumstances, Mosquitto could leak memory when handling PUBLISH
+  messages. This is limited to incoming QoS 2 messages, and is related
+  to the combination of the broker having persistence enabled, a clean
+  session=false client, which was connected prior to the broker restarting,
+  then has reconnected and has now sent messages at a sufficiently high rate
+  that the incoming queue at the broker has filled up and hence messages are
+  being dropped. This is more likely to have an effect where
+  max_queued_messages is a small value. This has now been fixed. Closes #1793.
+
+
 1.6.11 - 2020-08-11
 ===================
 
