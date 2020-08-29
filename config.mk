@@ -331,7 +331,7 @@ endif
 ifeq ($(WITH_CJSON),yes)
 	BROKER_CFLAGS:=$(BROKER_CFLAGS) -DWITH_CJSON
 	BROKER_LDADD:=$(BROKER_LDADD) -lcjson
-	CLIENT_CFLAGS:=$(CLIENT_CFLAGS) -DWITH_CJSON
+	CLIENT_CFLAGS:=$(CLIENT_CFLAGS) -DWITH_CJSON -I/usr/include/cjson -I/usr/local/include/cjson
 	CLIENT_LDADD:=$(CLIENT_LDADD) -lcjson
 endif
 
