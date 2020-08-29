@@ -1,0 +1,215 @@
+'\" t
+.\"     Title: mosquitto_bridge
+.\"    Author: [see the "Author" section]
+.\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
+.\"      Date: 11/12/2018
+.\"    Manual: Commands
+.\"    Source: Mosquitto Project
+.\"  Language: English
+.\"
+.TH "MOSQUITTO_BRIDGE" "1" "11/12/2018" "Mosquitto Project" "Commands"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+mosquitto_bridge \- an MQTT client for creating, deleting and knowing bridges dynamically
+.SH "SYNOPSIS"
+.HP \w'\fBmosquitto_bridge\fR\ 'u
+\fBmosquitto_bridge\fR [\-a | \-\-address] [\-c | \-\-connection] [\-d | \-\-del] [\-D | \-\-direction] [\-h | \-\-host] [\-k | \-\-know] [\-l | \-\-local] [\-n | \-\-new] [\-p | \-\-port] [\-P | \-\-pw] [\-q | \-\-qos] [\-r | \-\-remote] [\-R | \-\-remotePort] [\-u | \-\-username]
+.HP \w'\fBmosquitto_bridge\fR\ 'u
+\fBmosquitto_bridge\fR [\fB\-\-help\fR]
+.SH "DESCRIPTION"
+.PP
+\fBmosquitto_bridge\fR
+is a simple MQTT client that will create or delete a bridge dynamically for Mosquitto broker 1\&.4\&.90 or newer without shutdown or SIGHUP signal\&.
+.PP
+\fBmosquitto_bridge\fR
+also allows to know active bridges on a broker
+.SH "OPTIONS"
+.PP
+The options below may be given on the command line\&.
+.PP
+\fB\-a\fR, \fB\-\-address\fR
+.RS 4
+Define bridge address of bridge\&. Necessary only with
+\fB\-n\fR\&.
+.RE
+.PP
+\fB\-c\fR, \fB\-\-connection\fR
+.RS 4
+Define the connection name of the bridge\&.
+.RE
+.PP
+\fB\-d\fR, \fB\-\-del\fR
+.RS 4
+Delete a bridge which name is define by
+\fB\-c\fR\&. Can\*(Aqt be use with
+\fB\-n\fR\&.
+.RE
+.PP
+\fB\-D\fR, \fB\-\-direction\fR
+.RS 4
+Define direction of the bridge [ in | out | both ]\&.
+.RE
+.PP
+\fB\-h\fR, \fB\-\-host\fR
+.RS 4
+Define the network host to connect to the local broker where the bridge will be create/delete or to know active bridges\&. Defaults to localhost\&.
+.RE
+.PP
+\fB\-k\fR, \fB\-\-know\fR
+.RS 4
+Know all bridges which are active in a broker\&. Can only be used with options other than
+\fB\-h\fR
+and
+\fB\-p\fR\&.
+.RE
+.PP
+\fB\-l\fR, \fB\-\-local\fR
+.RS 4
+Define the local prefix for the bridge configuration\&.
+.RE
+.PP
+\fB\-n\fR, \fB\-\-new\fR
+.RS 4
+Define to create a bridge\&.
+.RE
+.PP
+\fB\-p\fR, \fB\-\-port\fR
+.RS 4
+Define the network port to connect to the local broker where the bridge will be create/delete or to know active bridges\&. Defaults to 1883\&.
+.RE
+.PP
+\fB\-P\fR, \fB\-\-pw\fR
+.RS 4
+Provide a password to be used for authenticating with the broker\&. Using this argument without also specifying a username is invalid\&. This requires a broker that supports MQTT v3\&.1\&. See also the
+\fB\-\-username\fR
+option\&.
+.RE
+.PP
+\fB\-q\fR, \fB\-\-qos\fR
+.RS 4
+Specify the quality of service desired for the bridge between local broker and remote broker, from 0, 1 and 2\&. Defaults to 0\&. See
+\fBmqtt\fR(7)
+for more information on QoS\&.
+.RE
+.PP
+\fB\-r\fR, \fB\-\-remote\fR
+.RS 4
+Define the remote prefix for the bridge configuration\&.
+.RE
+.PP
+\fB\-R\fR, \fB\-\-remotePort\fR
+.RS 4
+Define the network port to connect to the remote broker\&. No default value\&.
+.RE
+.PP
+\fB\-u\fR, \fB\-\-username\fR
+.RS 4
+Provide a username to be used for authenticating with the broker\&. This requires a broker that supports MQTT v3\&.1\&. See also the
+\fB\-\-pw\fR
+argument\&.
+.RE
+.SH "EXAMPLES"
+.PP
+Note that these really are examples\&.
+.PP
+Three possiblites are available :
+.PP
+\- Create a new bridge from a local broker to a remote broker whith
+\-n
+and all necessary parameters of a bridge (connection, address, topic)\&.
+.PP
+\- Delete a bridge present on a local bridge with
+\-d
+and bridge connection name\&.
+.PP
+\- Know all bridges which are active on a local broker with
+\-k\&.
+.PP
+Creat a bridge on localhost and default port with another broker on localhost and 1884 port:
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+mosquitto_bridge
+\-c
+testBridge
+\-a
+127\&.0\&.0\&.1
+\-R
+1884
+\-n
+\-t
+\e#
+\-q
+0
+\-l
+local/
+\-r
+remote/
+\-D
+both
+.RE
+.PP
+Delete a bridge on localhost and default port:
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+mosquitto_bridge
+\-c
+testBridge
+\-d
+.RE
+.PP
+Know all active bridges on localhost and default port:
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+mosquitto_bridge
+\-k
+.RE
+.SH "BUGS"
+.PP
+\fBmosquitto\fR
+bug information can be found at
+\m[blue]\fB\%https://github.com/eclipse/mosquitto/issues\fR\m[]
+.SH "SEE ALSO"
+\fBmqtt\fR(7), \fBmosquitto_pub\fR(1), \fBmosquitto_sub\fR(1), \fBmosquitto\fR(8), \fBlibmosquitto\fR(3), \fBmosquitto-tls\fR(7)
+.SH "AUTHOR"
+.PP
+Tifaifai Maupiti
+<tifaifai\&.maupiti@gmail\&.com>

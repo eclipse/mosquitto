@@ -4,17 +4,22 @@ Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
 and Eclipse Distribution License v1.0 which accompany this distribution.
- 
+
 The Eclipse Public License is available at
    http://www.eclipse.org/legal/epl-v10.html
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
- 
+
 Contributors:
    Roger Light - initial implementation and documentation.
 */
 
 #include "config.h"
+
+#ifdef WITH_EPOLL
+#include <sys/epoll.h>
+#define MAX_EVENTS 1000
+#endif
 
 #include <assert.h>
 #include <errno.h>
@@ -46,6 +51,20 @@ Contributors:
 
 static void bridge__backoff_step(struct mosquitto *context);
 static void bridge__backoff_reset(struct mosquitto *context);
+
+// mux_epoll__delete temporaly function in wait (develop branch of Roger Light)
+int mux_epoll__delete(struct mosquitto_db *db, struct mosquitto *context)
+{
+	struct epoll_event ev;
+
+	memset(&ev, 0, sizeof(struct epoll_event));
+	if(context->sock != INVALID_SOCKET){
+		if (epoll_ctl(db->epollfd, EPOLL_CTL_DEL, context->sock, &ev) == -1) {
+				return 1;
+		}
+	}
+	return MOSQ_ERR_SUCCESS;
+}
 
 int bridge__new(struct mosquitto_db *db, struct mosquitto__bridge *bridge)
 {
@@ -116,6 +135,35 @@ int bridge__new(struct mosquitto_db *db, struct mosquitto__bridge *bridge)
 #endif
 }
 
+int bridge__del(struct mosquitto_db *db, int index)
+{
+	struct mosquitto **bridges;
+	int i;
+
+	assert(db);
+
+	bridge__disconnect(db,db->bridges[index]);
+	mux_epoll__delete(db,db->bridges[index]);
+
+	db->bridge_count--;
+
+	for(i=index; i<db->bridge_count; i++){
+		db->bridges[i] = db->bridges[i+1];
+	}
+
+	if(db->bridge_count==0){
+		db->bridges[0] = NULL;
+	}else{
+		bridges = mosquitto__realloc(db->bridges, (db->bridge_count)*sizeof(struct mosquitto *));
+		if(bridges){
+			db->bridges = bridges;
+		}else{
+			return MOSQ_ERR_NOMEM;
+		}
+	}
+	return 0;
+}
+
 #if defined(__GLIBC__) && defined(WITH_ADNS)
 int bridge__connect_step1(struct mosquitto_db *db, struct mosquitto *context)
 {
@@ -124,6 +172,10 @@ int bridge__connect_step1(struct mosquitto_db *db, struct mosquitto *context)
 	int notification_topic_len;
 	uint8_t notification_payload;
 	int i;
+
+	#ifdef WITH_EPOLL
+		struct epoll_event ev;
+	#endif
 
 	if(!context || !context->bridge) return MOSQ_ERR_INVAL;
 
@@ -426,6 +478,41 @@ int bridge__connect(struct mosquitto_db *db, struct mosquitto *context)
 }
 #endif
 
+int bridge__disconnect(struct mosquitto_db *db, struct mosquitto *context)
+{
+	int rc;
+	char *notification_topic;
+	int notification_topic_len;
+	uint8_t notification_payload;
+
+	if(!context || !context->bridge) return MOSQ_ERR_INVAL;
+
+	bridge__packet_cleanup(context);
+
+	db__messages_delete(db, context);
+
+	sub__clean_session(db, context);
+
+	notification_topic_len = strlen(context->bridge->remote_clientid)+strlen("$SYS/broker/connection//state");
+	notification_topic = mosquitto__malloc(sizeof(char)*(notification_topic_len+1));
+	if(!notification_topic) return MOSQ_ERR_NOMEM;
+
+	snprintf(notification_topic, notification_topic_len+1, "$SYS/broker/connection/%s/state", context->bridge->remote_clientid);
+
+	notification_payload = '0';
+	db__messages_easy_queue(db, context, notification_topic, 1, 1, &notification_payload, 1, 0, NULL);
+
+	log__printf(NULL, MOSQ_LOG_NOTICE, "Disconnecting bridge %s (%s:%d)", context->bridge->name, context->bridge->addresses[0].address, context->bridge->addresses[0].port);
+	rc = send__disconnect(context, MQTT_RC_NORMAL_DISCONNECTION, NULL);
+	if(rc<0){
+		log__printf(NULL, MOSQ_LOG_ERR, "Error disconnecting bridge: %s.", gai_strerror(errno));
+		return rc;
+	}
+
+	do_disconnect(db, context, MOSQ_ERR_SUCCESS);
+
+	return rc;
+}
 
 void bridge__packet_cleanup(struct mosquitto *context)
 {

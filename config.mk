@@ -65,7 +65,7 @@ WITH_SYSTEMD:=no
 WITH_SRV:=no
 
 # Build with websockets support on the broker.
-WITH_WEBSOCKETS:=no
+WITH_WEBSOCKETS:=yes
 
 # Use elliptic keys in broker
 WITH_EC:=yes
@@ -80,7 +80,7 @@ WITH_SOCKS:=yes
 WITH_STRIP:=no
 
 # Build static libraries
-WITH_STATIC_LIBRARIES:=no
+WITH_STATIC_LIBRARIES:=yes
 
 # Use this variable to add extra library dependencies when building the clients
 # with the static libmosquitto library. This may be required on some systems
@@ -101,6 +101,9 @@ WITH_BUNDLED_DEPS:=yes
 
 # Build with coverage options
 WITH_COVERAGE:=no
+
+# Build mosquitto_sub / mosquitto_bridge / broker with bridge dynamic with cJSON support
+WITH_CJSON:=yes
 
 # =============================================================================
 # End of user configuration
@@ -150,7 +153,7 @@ BROKER_LDFLAGS:=${LDFLAGS}
 BROKER_LDADD:=
 
 CLIENT_CPPFLAGS:=$(CPPFLAGS) -I.. -I../lib
-CLIENT_CFLAGS:=${CFLAGS} -DVERSION="\"${VERSION}\""
+CLIENT_CFLAGS:=${CFLAGS} -I../src -DVERSION="\"${VERSION}\""
 CLIENT_LDFLAGS:=$(LDFLAGS) -L../lib
 CLIENT_LDADD:=
 
@@ -166,6 +169,7 @@ endif
 
 ifeq ($(UNAME),Linux)
 	BROKER_LDADD:=$(BROKER_LDADD) -lrt
+	BROKER_LIBS:=$(BROKER_LIBS) -lanl
 	BROKER_LDFLAGS:=$(BROKER_LDFLAGS) -Wl,--dynamic-list=linker.syms
 	LIB_LIBADD:=$(LIB_LIBADD) -lrt
 endif
@@ -312,6 +316,7 @@ endif
 
 ifeq ($(WITH_BUNDLED_DEPS),yes)
 	BROKER_CPPFLAGS:=$(BROKER_CPPFLAGS) -Ideps
+	CLIENT_CFLAGS:=$(CLIENT_CFLAGS) -I../src/deps
 endif
 
 ifeq ($(WITH_COVERAGE),yes)
@@ -321,6 +326,13 @@ ifeq ($(WITH_COVERAGE),yes)
 	LIB_LDFLAGS:=$(LIB_LDFLAGS) -coverage
 	CLIENT_CFLAGS:=$(CLIENT_CFLAGS) -coverage
 	CLIENT_LDFLAGS:=$(CLIENT_LDFLAGS) -coverage
+endif
+
+ifeq ($(WITH_CJSON),yes)
+	BROKER_CFLAGS:=$(BROKER_CFLAGS) -DWITH_CJSON
+	BROKER_LDADD:=$(BROKER_LDADD) -lcjson
+	CLIENT_CFLAGS:=$(CLIENT_CFLAGS) -DWITH_CJSON
+	CLIENT_LDADD:=$(CLIENT_LDADD) -lcjson
 endif
 
 BROKER_LDADD:=${BROKER_LDADD} ${LDADD}

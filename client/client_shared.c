@@ -4,12 +4,12 @@ Copyright (c) 2014-2020 Roger Light <roger@atchoo.org>
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
 and Eclipse Distribution License v1.0 which accompany this distribution.
- 
+
 The Eclipse Public License is available at
    http://www.eclipse.org/legal/epl-v10.html
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
- 
+
 Contributors:
    Roger Light - initial implementation and documentation.
 */
@@ -905,7 +905,7 @@ int client_config_line_proc(struct mosq_config *cfg, int pub_or_sub, int argc, c
 			if(cfg->pub_mode != MSGMODE_NONE){
 				fprintf(stderr, "Error: Only one type of message can be sent at once.\n\n");
 				return 1;
-			}else{ 
+			}else{
 				cfg->pub_mode = MSGMODE_STDIN_FILE;
 			}
 #ifdef WITH_SRV
@@ -1487,3 +1487,183 @@ void err_printf(const struct mosq_config *cfg, const char *fmt, ...)
 	va_end(va);
 }
 
+/* Process a tokenised single line from a file or set of real argc/argv */
+int client_config_line_proc_bridge(struct mosq_config *cfg, int argc, char *argv[])
+{
+  int i;
+
+  for(i=1; i<argc; i++){
+    if(!strcmp(argv[i], "-p") || !strcmp(argv[i], "--port")){
+      if(i==argc-1){
+        fprintf(stderr, "Error: -p argument given but no port specified.\n\n");
+        return 1;
+      }else{
+        cfg->port = atoi(argv[i+1]);
+        if(cfg->port<1 || cfg->port>65535){
+          fprintf(stderr, "Error: Invalid port given: %d\n", cfg->port);
+          return 1;
+        }
+      }
+      i++;
+    }else if(!strcmp(argv[i], "-R") || !strcmp(argv[i], "--remotePort")){
+      if(i==argc-1){
+        fprintf(stderr, "Error: -R argument given but no port specified.\n\n");
+        return 1;
+      }else{
+        cfg->bridge.addresses[0].port = atoi(argv[i+1]);
+        if(cfg->bridge.addresses[0].port<1 || cfg->bridge.addresses[0].port>65535){
+          fprintf(stderr, "Error: Invalid portRemote given: %d\n", cfg->bridge.addresses[0].port);
+          return 1;
+        }
+      }
+      i++;
+    }else if(!strcmp(argv[i], "-h") || !strcmp(argv[i], "--host")){
+      if(i==argc-1){
+        fprintf(stderr, "Error: -h argument given but no host specified.\n\n");
+        return 1;
+      }else{
+        cfg->host = strdup(argv[i+1]);
+      }
+      i++;
+    }else if(!strcmp(argv[i], "-a") || !strcmp(argv[i], "--address")){
+      if(i==argc-1){
+        fprintf(stderr, "Error: -a argument given but no address for remote bridge specified.\n\n");
+        return 1;
+      }else{
+				cfg->bridge.addresses[0].address = malloc(strlen(argv[i+1])*sizeof(char));
+				cfg->bridge.addresses[0].address = strdup(argv[i+1]);
+      }
+      i++;
+    }else if(!strcmp(argv[i], "-c") || !strcmp(argv[i], "--connection")){
+      if(i==argc-1){
+        fprintf(stderr, "Error: -c argument given but no connection name for remote bridge specified.\n\n");
+        return 1;
+      }else{
+				cfg->bridge.name = malloc(strlen(argv[i+1])*sizeof(char));
+        cfg->bridge.name = strdup(argv[i+1]);
+      }
+      i++;
+		}else if(!strcmp(argv[i], "-j") || !strcmp(argv[i], "--json")){
+			cfg->bridge_conf_json = CONF_JSON;
+    }else if(!strcmp(argv[i], "-n") || !strcmp(argv[i], "--new")){
+      if(cfg->bridgeType == -1){
+        cfg->bridgeType = BRIDGE_NEW;
+      }
+      else{
+        fprintf(stderr, "Error: -n argument given but -d alredy specified.\n\n");
+        return 1;
+      }
+    }else if(!strcmp(argv[i], "-d") || !strcmp(argv[i], "--del")){
+      if(cfg->bridgeType == -1){
+        cfg->bridgeType = BRIDGE_DEL;
+      }
+      else{
+        fprintf(stderr, "Error: -d argument given but -n alredy specified.\n\n");
+        return 1;
+      }
+    }else if(!strcmp(argv[i], "--help")){
+      return 2;
+    }else if(!strcmp(argv[i], "-t") || !strcmp(argv[i], "--topic")){
+      if(i==argc-1){
+        fprintf(stderr, "Error: -t argument given but no topic specified.\n\n");
+        return 1;
+      }else{
+        cfg->bridge.topics[0].topic = strdup(argv[i+1]);
+      }
+      i++;
+    }else if(!strcmp(argv[i], "-D") || !strcmp(argv[i], "--direction")){
+      if(i==argc-1){
+        fprintf(stderr, "Error: -D argument given but no direction specified.\n\n");
+        return 1;
+      }else{
+        if(!strcasecmp(argv[i+1], "out")){
+          cfg->bridge.topics[0].direction = bd_out;
+        }else if(!strcasecmp(argv[i+1], "in")){
+          cfg->bridge.topics[0].direction = bd_in;
+        }else if(!strcasecmp(argv[i+1], "both")){
+          cfg->bridge.topics[0].direction = bd_both;
+        }else{
+          fprintf(stderr, "Error: Invalid bridge topic direction '%s'.\n\n",argv[i+1]);
+        return 1;
+        }
+      }
+      i++;
+    }else if(!strcmp(argv[i], "-q") || !strcmp(argv[i], "--qos")){
+      if(i==argc-1){
+        fprintf(stderr, "Error: -q argument given but no qos specified.\n\n");
+        return 1;
+      }else{
+        cfg->bridge.topics[0].qos = atoi(argv[i+1]);
+      }
+      i++;
+    }else if(!strcmp(argv[i], "-k") || !strcmp(argv[i], "--know")){
+        cfg->know_bridge_connection = 1;
+    }else if(!strcmp(argv[i], "-l") || !strcmp(argv[i], "--local")){
+      if(i==argc-1){
+        fprintf(stderr, "Error: -l argument given but no local prefix specified.\n\n");
+        return 1;
+      }else{
+        cfg->bridge.topics[0].local_prefix = strdup(argv[i+1]);
+      }
+      i++;
+    }else if(!strcmp(argv[i], "-r") || !strcmp(argv[i], "--remote")){
+      if(i==argc-1){
+        fprintf(stderr, "Error: -r argument given but no remote prefix specified.\n\n");
+        return 1;
+      }else{
+        cfg->bridge.topics[0].remote_prefix = strdup(argv[i+1]);
+      }
+      i++;
+		}else if(!strcmp(argv[i], "-u") || !strcmp(argv[i], "--username")){
+			if(i==argc-1){
+				fprintf(stderr, "Error: -u argument given but no username specified.\n\n");
+				return 1;
+			}else{
+				cfg->username = strdup(argv[i+1]);
+			}
+			i++;
+		}else if(!strcmp(argv[i], "-P") || !strcmp(argv[i], "--pw")){
+			if(i==argc-1){
+				fprintf(stderr, "Error: -P argument given but no password specified.\n\n");
+				return 1;
+			}else{
+				cfg->password = strdup(argv[i+1]);
+			}
+			i++;
+    }else{
+      fprintf(stderr, "Error: Unknown option '%s'.\n",argv[i]);
+      return 1;
+    }
+  }
+
+  return MOSQ_ERR_SUCCESS;
+}
+
+int client_config_load_bridge(struct mosq_config *cfg, int pub_or_sub, int argc, char *argv[])
+{
+  int rc;
+
+  init_config(cfg, pub_or_sub);
+
+  /* Deal with real argc/argv */
+	cfg->bridge_conf_json = 0;
+	cfg->bridgeType = -1;
+	cfg->know_bridge_connection = 0;
+	cfg->bridge.addresses = malloc(sizeof(struct bridge_address));
+	cfg->bridge.topics = malloc(sizeof(struct mosquitto__bridge));
+
+  rc = client_config_line_proc_bridge(cfg, argc, argv);
+  if(rc) return rc;
+
+  if(cfg->bridgeType == -1 && cfg->know_bridge_connection == 0){
+    fprintf(stderr, "Error: No bridge type action given.\n");
+    return 1;
+  }
+
+  /// TODO : Make sure all parameters are OK !
+
+  if(!cfg->host){
+    cfg->host = "localhost";
+  }
+  return MOSQ_ERR_SUCCESS;
+}

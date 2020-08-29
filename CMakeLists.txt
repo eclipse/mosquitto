@@ -14,6 +14,7 @@ cmake_minimum_required(VERSION 2.8)
 set (VERSION 1.6.12)
 
 add_definitions (-DCMAKE -DVERSION=\"${VERSION}\")
+add_definitions (-DWITH_EPOLL)
 
 if (WIN32)
 	add_definitions("-D_CRT_SECURE_NO_WARNINGS")
@@ -29,6 +30,13 @@ option(WITH_TLS_PSK
 	"Include TLS-PSK support (requires WITH_TLS)?" ON)
 option(WITH_EC
 	"Include Elliptic Curve support (requires WITH_TLS)?" ON)
+
+option(WITH_CJSON
+	"Build bridge with json support" ON)
+if (WITH_CJSON)
+	add_definitions("-DWITH_CJSON")
+endif (WITH_CJSON)
+
 if (WITH_TLS)
 	find_package(OpenSSL REQUIRED)
 	add_definitions("-DWITH_TLS")

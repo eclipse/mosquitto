@@ -146,6 +146,7 @@ static void config__init_reload(struct mosquitto_db *db, struct mosquitto__confi
 	config->security_options.allow_zero_length_clientid = true;
 	config->security_options.auto_id_prefix = NULL;
 	config->security_options.auto_id_prefix_len = 0;
+	config->allow_sys_update = false;
 
 	mosquitto__free(config->security_options.password_file);
 	config->security_options.password_file = NULL;
@@ -936,6 +937,8 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 				}else if(!strcmp(token, "allow_zero_length_clientid")){
 					conf__set_cur_security_options(config, cur_listener, &cur_security_options);
 					if(conf__parse_bool(&token, "allow_zero_length_clientid", &cur_security_options->allow_zero_length_clientid, saveptr)) return MOSQ_ERR_INVAL;
+				}else if(!strcmp(token, "allow_sys_update")){
+					if(conf__parse_bool(&token, "allow_sys_update", &config->allow_sys_update, saveptr)) return MOSQ_ERR_INVAL;
 				}else if(!strncmp(token, "auth_opt_", 9)){
 					if(reload) continue; /* Auth plugin not currently valid for reloading. */
 					if(!cur_auth_plugin_config){

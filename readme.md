@@ -41,6 +41,48 @@ Then use `mosquitto_sub` to subscribe to a topic:
 And to publish a message:
 
     mosquitto_pub -t 'test/topic' -m 'hello world'
+## To dynamically create/delete/show a bridge, use:
+
+Set allow_sys_update with true value in mosquitto.conf file.
+
+Create Bridge:
+
+    mosquitto_bridge -p 1883 -c testBridge -a 127.0.0.1 -R 1884 -n -t \# -q 0 -l local/ -r remote/ -D both
+    mosquitto_bridge -p 1883 -c testBridge -a 127.0.0.1 -R 1884 -n -t \# -q 0 -l test/1883/ -r test/1884/ -D both
+
+    with json format:
+    mosquitto_bridge -p 1883 -c testBridge -a 127.0.0.1 -R 1884 -n -j -t \# -q 0 -l test/1883/ -r test/1884/ -D both
+
+    or via publish message to create a bridge:
+
+    mosquitto_pub -h 127.0.0.1 -p 1883 -t '$SYS/broker/bridge/new' -m 'connection testBridge
+    address 127.0.0.1:1884
+    topic # both 0 test/1883/ test/1884/
+    '
+
+    with json format:
+    mosquitto_pub -h 127.0.0.1 -p 1883 -t '$SYS/broker/bridge/new' -m '{"bridges":[{"connection":"testBridge","addresses":[{"address":"127.0.0.1","port":1884}],"topic":"#","direction":"both","qos":0,"local_prefix":"test/1883/","remote_prefix":"test/1884/"}]}'
+
+Delete Bridge:
+
+    mosquitto_bridge -p 1883 -c testBridge -d
+
+    with json format:
+    mosquitto_bridge -p 1883 -c testBridge -d -j
+
+    or via publish message to delete a bridge:
+
+    mosquitto_pub -h 127.0.0.1 -p 1883 -t '$SYS/broker/bridge/del' -m 'connection testBridge'
+
+    with json format:
+    mosquitto_pub -h 127.0.0.1 -p 1883 -t '$SYS/broker/bridge/del' -m '{"connection":"testBridge"}'
+
+    Show all Bridges:
+
+    mosquitto_bridge -p 1883 -k
+
+    with json format:
+    mosquitto_bridge -p 1883 -k -j
 
 ## Documentation
 
@@ -71,6 +113,7 @@ already be built. Use `make binary` to skip building the man pages, or install
 * openssl (libssl-dev on Debian based systems) - disable with `make WITH_TLS=no`
 * xsltproc (xsltproc and docbook-xsl on Debian based systems) - only needed when building from git sources - disable with `make WITH_DOCS=no`
 * uthash / utlist - bundled versions of these headers are provided, disable their use with `make WITH_BUNDLED_DEPS=no`
+* cJSON - for client JSON output support. Disable with `make WITH_CJSON=no` Auto detected with CMake.
 
 Equivalent options for enabling/disabling features are available when using the CMake build.
 

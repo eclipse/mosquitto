@@ -4,12 +4,12 @@ Copyright (c) 2014-2020 Roger Light <roger@atchoo.org>
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
 and Eclipse Distribution License v1.0 which accompany this distribution.
- 
+
 The Eclipse Public License is available at
    http://www.eclipse.org/legal/epl-v10.html
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
- 
+
 Contributors:
    Roger Light - initial implementation and documentation.
 */
@@ -18,6 +18,7 @@ Contributors:
 #define CLIENT_CONFIG_H
 
 #include <stdio.h>
+#include <mosquitto_broker_internal.h>
 
 #ifdef WIN32
 #  include <winsock2.h>
@@ -37,6 +38,11 @@ Contributors:
 #define CLIENT_SUB 2
 #define CLIENT_RR 3
 #define CLIENT_RESPONSE_TOPIC 4
+#define BRIDGE_NEW 5
+#define BRIDGE_DEL 6
+
+#define CONF_NORMAL 0
+#define CONF_JSON 1
 
 struct mosq_config {
 	char *id;
@@ -109,6 +115,10 @@ struct mosq_config {
 	char *socks5_username;
 	char *socks5_password;
 #endif
+	struct mosquitto__bridge bridge;
+	int bridge_conf_json;
+	int bridgeType;
+	int know_bridge_connection;
 	mosquitto_property *connect_props;
 	mosquitto_property *publish_props;
 	mosquitto_property *subscribe_props;
@@ -120,6 +130,7 @@ struct mosq_config {
 };
 
 int client_config_load(struct mosq_config *config, int pub_or_sub, int argc, char *argv[]);
+int client_config_load_bridge(struct mosq_config *config, int pub_or_sub, int argc, char *argv[]);
 void client_config_cleanup(struct mosq_config *cfg);
 int client_opts_set(struct mosquitto *mosq, struct mosq_config *cfg);
 int client_id_generate(struct mosq_config *cfg);
