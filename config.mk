@@ -65,7 +65,7 @@ WITH_SYSTEMD:=no
 WITH_SRV:=no
 
 # Build with websockets support on the broker.
-WITH_WEBSOCKETS:=yes
+WITH_WEBSOCKETS:=no
 
 # Use elliptic keys in broker
 WITH_EC:=yes
@@ -80,7 +80,7 @@ WITH_SOCKS:=yes
 WITH_STRIP:=no
 
 # Build static libraries
-WITH_STATIC_LIBRARIES:=yes
+WITH_STATIC_LIBRARIES:=no
 
 # Use this variable to add extra library dependencies when building the clients
 # with the static libmosquitto library. This may be required on some systems
