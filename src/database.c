@@ -769,7 +769,7 @@ int db__message_reconnect_reset_outgoing(struct mosquitto_db *db, struct mosquit
 		if(msg->qos > 0){
 			context->msgs_out.msg_count12++;
 			context->msgs_out.msg_bytes12 += msg->store->payloadlen;
-			util__decrement_receive_quota(context);
+			util__decrement_send_quota(context);
 		}
 
 		switch(msg->qos){
@@ -1037,6 +1037,7 @@ int db__message_write(struct mosquitto_db *db, struct mosquitto *context)
 			if(now > tail->store->message_expiry_time){
 				/* Message is expired, must not send. */
 				db__message_remove(db, &context->msgs_out, tail);
+                util__increment_send_quota(context);
 				continue;
 			}else{
 				expiry_interval = tail->store->message_expiry_time - now;
