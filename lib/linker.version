@@ -109,6 +109,7 @@ MOSQ_1.6 {
 		mosquitto_property_add_varint;
 		mosquitto_property_check_all;
 		mosquitto_property_check_command;
+		mosquitto_property_copy_all;
 		mosquitto_property_free_all;
 		mosquitto_property_read_binary;
 		mosquitto_property_read_byte;
