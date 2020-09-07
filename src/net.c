@@ -121,6 +121,26 @@ int net__socket_accept(struct mosquitto_db *db, mosq_sock_t listensock)
 	struct request_info wrap_req;
 	char address[1024];
 #endif
+#if defined WITH_UNIX_SOCKETS && defined WITH_UDS_CP
+	char control[CMSG_SPACE(sizeof(int))];
+	struct iovec  iov = { .iov_base = NULL, .iov_len = 0 };
+	struct msghdr msg = { .msg_name = NULL, .msg_namelen = 0, .msg_iov = &iov, .msg_iovlen = 1, .msg_control = control, .msg_controllen = sizeof(control) };
+	struct cmsghdr  *cmsg;
+#endif
+
+	struct mosquitto__listener *listener;
+
+	for(i=0; i<db->config->listener_count; i++){
+		for(j=0; j<db->config->listeners[i].sock_count; j++){
+			if(db->config->listeners[i].socks[j] == listensock){
+				listener = &db->config->listeners[i];
+				break;
+			}
+		}
+	}
+	if(!listener){
+		return -1;
+	}
 
 	new_sock = accept(listensock, NULL, 0);
 	if(new_sock == INVALID_SOCKET){
@@ -148,6 +168,18 @@ int net__socket_accept(struct mosquitto_db *db, mosq_sock_t listensock)
 		}
 		return -1;
 	}
+
+#if defined WITH_UNIX_SOCKETS && defined WITH_UDS_CP
+	if (listener->unix_socket_path != NULL){
+		if (recvmsg(new_sock, &msg, MSG_PEEK) >= 0){
+			cmsg = CMSG_FIRSTHDR(&msg);
+			if (cmsg && cmsg->cmsg_len == CMSG_LEN(sizeof(int)) && cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_RIGHTS){
+				COMPAT_CLOSE(new_sock);
+				new_sock = *((int *) CMSG_DATA(cmsg));
+			}
+		}
+	}
+#endif
 
 	G_SOCKET_CONNECTIONS_INC();
 
@@ -183,19 +215,8 @@ int net__socket_accept(struct mosquitto_db *db, mosq_sock_t listensock)
 		COMPAT_CLOSE(new_sock);
 		return -1;
 	}
-	for(i=0; i<db->config->listener_count; i++){
-		for(j=0; j<db->config->listeners[i].sock_count; j++){
-			if(db->config->listeners[i].socks[j] == listensock){
-				new_context->listener = &db->config->listeners[i];
-				new_context->listener->client_count++;
-				break;
-			}
-		}
-	}
-	if(!new_context->listener){
-		context__cleanup(db, new_context, true);
-		return -1;
-	}
+	new_context->listener = listener;
+	new_context->listener->client_count++;
 
 	if(new_context->listener->max_connections > 0 && new_context->listener->client_count > new_context->listener->max_connections){
 		if(db->config->connection_messages == true){
@@ -207,43 +228,37 @@ int net__socket_accept(struct mosquitto_db *db, mosq_sock_t listensock)
 
 #ifdef WITH_TLS
 	/* TLS init */
-	for(i=0; i<db->config->listener_count; i++){
-		for(j=0; j<db->config->listeners[i].sock_count; j++){
-			if(db->config->listeners[i].socks[j] == listensock){
-				if(db->config->listeners[i].ssl_ctx){
-					new_context->ssl = SSL_new(db->config->listeners[i].ssl_ctx);
-					if(!new_context->ssl){
-						context__cleanup(db, new_context, true);
+	if(listener->ssl_ctx){
+		new_context->ssl = SSL_new(listener->ssl_ctx);
+		if(!new_context->ssl){
+			context__cleanup(db, new_context, true);
 						return -1;
-					}
-					SSL_set_ex_data(new_context->ssl, tls_ex_index_context, new_context);
-					SSL_set_ex_data(new_context->ssl, tls_ex_index_listener, &db->config->listeners[i]);
-					new_context->want_write = true;
-					bio = BIO_new_socket(new_sock, BIO_NOCLOSE);
-					SSL_set_bio(new_context->ssl, bio, bio);
-					ERR_clear_error();
-					rc = SSL_accept(new_context->ssl);
-					if(rc != 1){
-						rc = SSL_get_error(new_context->ssl, rc);
-						if(rc == SSL_ERROR_WANT_READ){
-							/* We always want to read. */
-						}else if(rc == SSL_ERROR_WANT_WRITE){
-							new_context->want_write = true;
-						}else{
-							if(db->config->connection_messages == true){
-								e = ERR_get_error();
-								while(e){
-									log__printf(NULL, MOSQ_LOG_NOTICE,
-											"Client connection from %s failed: %s.",
-											new_context->address, ERR_error_string(e, ebuf));
-									e = ERR_get_error();
-								}
-							}
-							context__cleanup(db, new_context, true);
-							return -1;
-						}
+		}
+		SSL_set_ex_data(new_context->ssl, tls_ex_index_context, new_context);
+		SSL_set_ex_data(new_context->ssl, tls_ex_index_listener, &db->config->listeners[i]);
+		new_context->want_write = true;
+		bio = BIO_new_socket(new_sock, BIO_NOCLOSE);
+		SSL_set_bio(new_context->ssl, bio, bio);
+		ERR_clear_error();
+		rc = SSL_accept(new_context->ssl);
+		if(rc != 1){
+			rc = SSL_get_error(new_context->ssl, rc);
+			if(rc == SSL_ERROR_WANT_READ){
+				/* We always want to read. */
+			}else if(rc == SSL_ERROR_WANT_WRITE){
+				new_context->want_write = true;
+			}else{
+				if(db->config->connection_messages == true){
+					e = ERR_get_error();
+					while(e){
+						log__printf(NULL, MOSQ_LOG_NOTICE,
+								"Client connection from %s failed: %s.",
+								new_context->address, ERR_error_string(e, ebuf));
+						e = ERR_get_error();
 					}
 				}
+				context__cleanup(db, new_context, true);
+				return -1;
 			}
 		}
 	}
