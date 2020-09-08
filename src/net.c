@@ -307,6 +307,11 @@ static unsigned int psk_server_callback(SSL *ssl, const char *identity, unsigned
 }
 #endif
 
+void ssl_keylog_callback_func(const SSL *ssl, const char *line)
+{
+	log__printf(NULL, MOSQ_LOG_INFO, "SSL Keylog: %s", line);
+}
+
 #ifdef WITH_TLS
 int net__tls_server_ctx(struct mosquitto__listener *listener)
 {
@@ -314,6 +319,7 @@ int net__tls_server_ctx(struct mosquitto__listener *listener)
 	int rc;
 	FILE *dhparamfile;
 	DH *dhparam = NULL;
+	struct mosquitto_db *db;
 
 	if(listener->ssl_ctx){
 		SSL_CTX_free(listener->ssl_ctx);
@@ -328,6 +334,12 @@ int net__tls_server_ctx(struct mosquitto__listener *listener)
 	if(!listener->ssl_ctx){
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to create TLS context.");
 		return 1;
+	}
+
+	db = mosquitto__get_db();
+	if(db->config->keylog == true){
+		log__printf(NULL, MOSQ_LOG_INFO, "Enabling SSL keylogging.");
+		SSL_CTX_set_keylog_callback(listener->ssl_ctx, ssl_keylog_callback_func);
 	}
 
 	if(listener->tls_version == NULL){

@@ -239,6 +239,7 @@ void config__init(struct mosquitto_db *db, struct mosquitto__config *config)
 	config__init_reload(db, config);
 
 	config->daemon = false;
+	config->keylog = false;
 	memset(&config->default_listener, 0, sizeof(struct mosquitto__listener));
 	config->default_listener.max_connections = -1;
 	config->default_listener.protocol = mp_mqtt;
@@ -357,10 +358,11 @@ static void print_usage(void)
 {
 	printf("mosquitto version %s\n\n", VERSION);
 	printf("mosquitto is an MQTT v5.0/v3.1.1/v3.1 broker.\n\n");
-	printf("Usage: mosquitto [-c config_file] [-d] [-h] [-p port]\n\n");
+	printf("Usage: mosquitto [-c config_file] [-d] [-h] [-p port] [-k]\n\n");
 	printf(" -c : specify the broker config file.\n");
 	printf(" -d : put the broker into the background after starting.\n");
 	printf(" -h : display this help.\n");
+	printf(" -k : log SSL keys to logfile.\n");
 	printf(" -p : start the broker listening on the specified port.\n");
 	printf("      Not recommended in conjunction with the -c option.\n");
 	printf(" -v : verbose mode - enable all logging types. This overrides\n");
@@ -391,6 +393,8 @@ int config__parse_args(struct mosquitto_db *db, struct mosquitto__config *config
 		}else if(!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")){
 			print_usage();
 			return MOSQ_ERR_INVAL;
+		}else if(!strcmp(argv[i], "-k")){
+			config->keylog = true;
 		}else if(!strcmp(argv[i], "-p") || !strcmp(argv[i], "--port")){
 			if(i<argc-1){
 				port_tmp = atoi(argv[i+1]);

@@ -278,6 +278,7 @@ struct mosquitto__config {
 	char *clientid_prefixes;
 	bool connection_messages;
 	bool daemon;
+	bool keylog;
 	struct mosquitto__listener default_listener;
 	struct mosquitto__listener *listeners;
 	int listener_count;
