@@ -143,6 +143,22 @@ int mosquitto_connect_bind_async(struct mosquitto *mosq, const char *host, int p
 }
 
 
+int mosquitto_connect_bind_async_v5(struct mosquitto *mosq, const char *host, int port, int keepalive, const char *bind_address, const mosquitto_property *properties)
+{
+	int rc;
+
+	if(properties){
+		rc = mosquitto_property_check_all(CMD_CONNECT, properties);
+		if(rc) return rc;
+	}
+
+	rc = mosquitto__connect_init(mosq, host, port, keepalive, bind_address);
+	if(rc) return rc;
+
+	return mosquitto__reconnect(mosq, false, properties);
+}
+
+
 int mosquitto_reconnect_async(struct mosquitto *mosq)
 {
 	return mosquitto__reconnect(mosq, false, NULL);
