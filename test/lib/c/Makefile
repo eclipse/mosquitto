@@ -35,6 +35,9 @@ SRC = \
 	03-publish-c2b-qos2-maximum-qos-1.c \
 	03-publish-b2c-qos1.c \
 	03-publish-b2c-qos2.c \
+	03-publish_bufs-c2b-qos1-disconnect.c \
+	03-publish_bufs-qos0-no-payload.c \
+	03-publish_bufs-qos0.c \
 	03-request-response-1.c \
 	03-request-response-2.c \
 	03-request-response-correlation-1.c \

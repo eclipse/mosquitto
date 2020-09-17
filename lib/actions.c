@@ -34,8 +34,27 @@ int mosquitto_publish(struct mosquitto *mosq, int *mid, const char *topic, int p
 	return mosquitto_publish_v5(mosq, mid, topic, payloadlen, payload, qos, retain, NULL);
 }
 
+int mosquitto_publish_bufs_v5(struct mosquitto *mosq, int *mid, const char *topic, const struct buf *buffers, int buffers_cnt, int qos, bool retain, const mosquitto_property *properties);
+
+int mosquitto_publish_bufs(struct mosquitto *mosq, int *mid, const char *topic, const struct buf *buffers, int buffers_cnt, int qos, bool retain)
+{
+  return mosquitto_publish_bufs_v5(mosq, mid, topic, buffers, buffers_cnt, qos, retain, NULL);
+}
+
 int mosquitto_publish_v5(struct mosquitto *mosq, int *mid, const char *topic, int payloadlen, const void *payload, int qos, bool retain, const mosquitto_property *properties)
 {
+  const struct buf buffer = {payload, (uint32_t) payloadlen};
+  return mosquitto_publish_bufs_v5(mosq, mid, topic, &buffer, 1, qos, retain, properties);
+}
+
+int mosquitto_publish_bufs_v5(struct mosquitto *mosq, int *mid, const char *topic, const struct buf *buffers, int buffers_cnt, int qos, bool retain, const mosquitto_property *properties)
+{
+    int i;
+    int payloadlen = 0;
+    int offset = 0;
+    for(i=0; i<buffers_cnt; i++){
+        payloadlen += (int)buffers[i].len;
+    }
 	struct mosquitto_message_all *message;
 	uint16_t local_mid;
 	const mosquitto_property *p;
@@ -112,7 +131,7 @@ int mosquitto_publish_v5(struct mosquitto *mosq, int *mid, const char *topic, in
 	}
 
 	if(qos == 0){
-		return send__publish(mosq, local_mid, topic, payloadlen, payload, qos, retain, false, outgoing_properties, NULL, 0);
+		return send__publish_bufs(mosq, local_mid, topic, payloadlen, buffers, buffers_cnt, qos, retain, false, outgoing_properties, NULL, 0);
 	}else{
 		if(outgoing_properties){
 			rc = mosquitto_property_copy_all(&properties_copy, outgoing_properties);
@@ -143,7 +162,13 @@ int mosquitto_publish_v5(struct mosquitto *mosq, int *mid, const char *topic, in
 				mosquitto_property_free_all(&properties_copy);
 				return MOSQ_ERR_NOMEM;
 			}
-			memcpy(message->msg.payload, payload, payloadlen*sizeof(uint8_t));
+            i = 0;
+            offset = 0;
+            for(i=0; i<buffers_cnt; i++){
+                int len = (int)buffers[i].len;
+			    memcpy(message->msg.payload + offset, buffers[i].base, len*sizeof(uint8_t));
+                offset += len*sizeof(uint8_t);
+            }
 		}else{
 			message->msg.payloadlen = 0;
 			message->msg.payload = NULL;

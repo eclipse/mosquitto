@@ -107,6 +107,7 @@ class mosqpp_EXPORT DEPRECATED mosquittopp {
 		int DEPRECATED reconnect_async();
 		int DEPRECATED disconnect();
 		int DEPRECATED publish(int *mid, const char *topic, int payloadlen=0, const void *payload=NULL, int qos=0, bool retain=false);
+		int DEPRECATED publish_bufs(int *mid, const char *topic, const struct buf *buffers=NULL, int buffers_cnt=0, int qos=0, bool retain=false);
 		int DEPRECATED subscribe(int *mid, const char *sub, int qos=0);
 		int DEPRECATED unsubscribe(int *mid, const char *sub);
 		void DEPRECATED reconnect_delay_set(unsigned int reconnect_delay, unsigned int reconnect_delay_max, bool reconnect_exponential_backoff);
