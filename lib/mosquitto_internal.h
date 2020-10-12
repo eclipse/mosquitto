@@ -184,6 +184,12 @@ struct will_delay_list {
 	struct will_delay_list *next;
 };
 
+struct mosquitto__hostaddress_list{
+	struct mosquitto__hostaddress_list *next;
+	char *hostname;
+	char *hostaddress;
+};
+
 struct mosquitto_msg_data{
 #ifdef WITH_BROKER
 	struct mosquitto_client_msg *inflight;
@@ -348,6 +354,7 @@ struct mosquitto {
 #ifdef WITH_EPOLL
 	uint32_t events;
 #endif
+	struct mosquitto__hostaddress_list *hostaddress_list;
 };
 
 #define STREMPTY(str) (str[0] == '\0')

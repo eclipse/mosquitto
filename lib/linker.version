@@ -132,6 +132,8 @@ MOSQ_1.6 {
 		mosquitto_unsubscribe_v5_callback_set;
 		mosquitto_void_option;
 		mosquitto_will_set_v5;
+		mosquitto_clear_hostaddresses;
+		mosquitto_add_hostaddress;
 } MOSQ_1.5;
 
 MOSQ_1.7 {

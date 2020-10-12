@@ -708,6 +708,61 @@ libmosq_EXPORT int mosquitto_reconnect_async(struct mosquitto *mosq);
 libmosq_EXPORT int mosquitto_disconnect(struct mosquitto *mosq);
 
 /*
+ * Function: mosquitto_add_hostaddress
+ *
+ * Add pair of hostname and address pair to allow quicker and non blocking
+ * hostname resolvement in all mosquitto connect apis.
+ *
+ * This extends the functionality of all mosquitto connect apis by
+ * allowing to provide a list of hostnames with their resolved address.
+ * Note: This prevents a blocking call of getaddressinfo during connect.
+ *
+ * Parameters:
+ *  mosq -        a valid mosquitto instance.
+ *  hostname -    the hostname
+ *  hostaddress - the ip address of the resolved hostname.
+ *
+ * Returns:
+ *     MOSQ_ERR_SUCCESS - on success.
+ *     MOSQ_ERR_INVAL -   if the input parameters were invalid, which could
+ *                        be any of:
+ *                        * mosq == NULL
+ *                        * hostname == NULL
+ *                        * hostaddress == NULL
+ *     MOSQ_ERR_NOMEM -   out of memory.
+ *
+ * See Also:
+ *     <mosquitto_connect_async>, <mosquitto_connect>, <mosquitto_connect_bind>,
+ * 	   <mosquitto_connect_bind_async>
+ */
+libmosq_EXPORT int mosquitto_add_hostaddress(struct mosquitto *mosq,
+ 	const char *hostname, const char *hostaddress);
+
+/*
+ * Function: mosquitto_clear_hostaddresses
+ *
+ * Clear list of hostname and address pairs used in all mosquitto connect
+ * apis.
+ *
+ * Parameters:
+ *  mosq -        a valid mosquitto instance.
+ *  hostname -    the hostname
+ *  hostaddress - the ip address of the resolved hostname.
+ *
+ * Returns:
+ *     MOSQ_ERR_SUCCESS - on success.
+ *     MOSQ_ERR_INVAL -   if the input parameters were invalid, which could
+ *                        be any of:
+ *                        * mosq == NULL
+ *
+ * See Also:
+ *     <mosquitto_add_hostaddress>,
+ *     <mosquitto_connect_async>, <mosquitto_connect>,
+ *     <mosquitto_connect_bind>,  <mosquitto_connect_bind_async>
+ */
+libmosq_EXPORT int mosquitto_clear_hostaddresses(struct mosquitto *mosq);
+
+/*
  * Function: mosquitto_disconnect_v5
  *
  * Disconnect from the broker, with attached MQTT properties.

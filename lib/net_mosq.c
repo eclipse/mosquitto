@@ -933,14 +933,18 @@ int net__socket_connect_step3(struct mosquitto *mosq, const char *host)
 }
 
 /* Create a socket and connect it to 'ip' on port 'port'.  */
-int net__socket_connect(struct mosquitto *mosq, const char *host, uint16_t port, const char *bind_address, bool blocking)
+int net__socket_connect(struct mosquitto *mosq, const char *host, uint16_t port, const char *bind_address, bool blocking, const char *hostaddress)
 {
 	mosq_sock_t sock = INVALID_SOCKET;
 	int rc, rc2;
 
 	if(!mosq || !host) return MOSQ_ERR_INVAL;
 
-	rc = net__try_connect(host, port, &sock, bind_address, blocking);
+	if (hostaddress)
+		rc = net__try_connect(hostaddress, port, &sock, bind_address,
+			blocking);
+	else
+		rc = net__try_connect(host, port, &sock, bind_address, blocking);
 	if(rc > 0) return rc;
 
 	mosq->sock = sock;
