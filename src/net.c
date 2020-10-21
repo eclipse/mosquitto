@@ -88,7 +88,7 @@ void net__broker_cleanup(void)
 }
 
 
-static void net__print_error(int log, const char *format_str)
+static void net__print_error(unsigned int log, const char *format_str)
 {
 	char *buf;
 
@@ -291,12 +291,12 @@ static unsigned int psk_server_callback(SSL *ssl, const char *identity, unsigned
 	psk_key = mosquitto__calloc(1, max_psk_len*2 + 1);
 	if(!psk_key) return 0;
 
-	if(mosquitto_psk_key_get(db, context, psk_hint, identity, psk_key, max_psk_len*2) != MOSQ_ERR_SUCCESS){
+	if(mosquitto_psk_key_get(db, context, psk_hint, identity, psk_key, (int)max_psk_len*2) != MOSQ_ERR_SUCCESS){
 		mosquitto__free(psk_key);
 		return 0;
 	}
 
-	len = mosquitto__hex2bin(psk_key, psk, max_psk_len);
+	len = mosquitto__hex2bin(psk_key, psk, (int)max_psk_len);
 	if (len < 0){
 		mosquitto__free(psk_key);
 		return 0;
@@ -311,7 +311,7 @@ static unsigned int psk_server_callback(SSL *ssl, const char *identity, unsigned
 	}
 
 	mosquitto__free(psk_key);
-	return len;
+	return (unsigned int)len;
 }
 #endif
 
@@ -383,7 +383,7 @@ int net__tls_server_ctx(struct mosquitto__listener *listener)
 #endif
 
 	snprintf(buf, 256, "mosquitto-%d", listener->port);
-	SSL_CTX_set_session_id_context(listener->ssl_ctx, (unsigned char *)buf, strlen(buf));
+	SSL_CTX_set_session_id_context(listener->ssl_ctx, (unsigned char *)buf, (unsigned int)strlen(buf));
 
 	if(listener->ciphers){
 		rc = SSL_CTX_set_cipher_list(listener->ssl_ctx, listener->ciphers);
@@ -637,7 +637,7 @@ static int net__socket_listen_tcp(struct mosquitto__listener *listener)
 			continue;
 		}
 		listener->sock_count++;
-		listener->socks = mosquitto__realloc(listener->socks, sizeof(mosq_sock_t)*listener->sock_count);
+		listener->socks = mosquitto__realloc(listener->socks, sizeof(mosq_sock_t)*(size_t)listener->sock_count);
 		if(!listener->socks){
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 			freeaddrinfo(ainfo);
@@ -726,7 +726,7 @@ static int net__socket_listen_unix(struct mosquitto__listener *listener)
 		return 1;
 	}
 	listener->sock_count++;
-	listener->socks = mosquitto__realloc(listener->socks, sizeof(mosq_sock_t)*listener->sock_count);
+	listener->socks = mosquitto__realloc(listener->socks, sizeof(mosq_sock_t)*(size_t)listener->sock_count);
 	if(!listener->socks){
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 		return MOSQ_ERR_NOMEM;
@@ -818,7 +818,7 @@ int net__socket_listen(struct mosquitto__listener *listener)
 	}
 }
 
-int net__socket_get_address(mosq_sock_t sock, char *buf, int len)
+int net__socket_get_address(mosq_sock_t sock, char *buf, size_t len)
 {
 	struct sockaddr_storage addr;
 	socklen_t addrlen;
@@ -827,11 +827,11 @@ int net__socket_get_address(mosq_sock_t sock, char *buf, int len)
 	addrlen = sizeof(addr);
 	if(!getpeername(sock, (struct sockaddr *)&addr, &addrlen)){
 		if(addr.ss_family == AF_INET){
-			if(inet_ntop(AF_INET, &((struct sockaddr_in *)&addr)->sin_addr.s_addr, buf, len)){
+			if(inet_ntop(AF_INET, &((struct sockaddr_in *)&addr)->sin_addr.s_addr, buf, (socklen_t)len)){
 				return 0;
 			}
 		}else if(addr.ss_family == AF_INET6){
-			if(inet_ntop(AF_INET6, &((struct sockaddr_in6 *)&addr)->sin6_addr.s6_addr, buf, len)){
+			if(inet_ntop(AF_INET6, &((struct sockaddr_in6 *)&addr)->sin6_addr.s6_addr, buf, (socklen_t)len)){
 				return 0;
 			}
 #ifdef WITH_UNIX_SOCKETS

@@ -139,31 +139,36 @@ ifeq ($(UNAME),SunOS)
 		CFLAGS?=-Wall -ggdb -O2
 	endif
 else
-	CFLAGS?=-Wall -ggdb -O2
+	CFLAGS?=-Wall -ggdb -O2 -Wconversion -Werror
 endif
 
 STATIC_LIB_DEPS:=
 
-LIB_CPPFLAGS=$(CPPFLAGS) -I. -I.. -I../lib
+APP_CPPFLAGS=$(CPPFLAGS) -I. -I../../ -I../../include -I../../src -I../../lib
+APP_CFLAGS=$(CFLAGS)
+
+LIB_CPPFLAGS=$(CPPFLAGS) -I. -I.. -I../include -I../../include
 ifeq ($(WITH_BUNDLED_DEPS),yes)
-	LIB_CPPFLAGS:=$(LIB_CPPFLAGS) -I../src/deps
+	LIB_CPPFLAGS:=$(LIB_CPPFLAGS) -I../deps
 endif
 LIB_CFLAGS:=$(CFLAGS)
 LIB_CXXFLAGS:=$(CXXFLAGS)
 LIB_LDFLAGS:=$(LDFLAGS)
 LIB_LIBADD:=$(LIBADD)
 
-BROKER_CPPFLAGS:=$(LIB_CPPFLAGS)
+BROKER_CPPFLAGS:=$(LIB_CPPFLAGS) -I../lib -I/usr/include/cjson -I/usr/local/include/cjson
 BROKER_CFLAGS:=${CFLAGS} -DVERSION="\"${VERSION}\"" -DWITH_BROKER
 BROKER_LDFLAGS:=${LDFLAGS}
-BROKER_LDADD:=
+BROKER_LDADD:=-lcjson
 
-CLIENT_CPPFLAGS:=$(CPPFLAGS) -I.. -I../lib
+CLIENT_CPPFLAGS:=$(CPPFLAGS) -I.. -I../include
 CLIENT_CFLAGS:=${CFLAGS} -DVERSION="\"${VERSION}\""
 CLIENT_LDFLAGS:=$(LDFLAGS) -L../lib
 CLIENT_LDADD:=
 
 PASSWD_LDADD:=
+
+PLUGIN_CPPFLAGS:=$(CPPFLAGS) -I../.. -I../../include
 
 ifneq ($(or $(findstring $(UNAME),FreeBSD), $(findstring $(UNAME),OpenBSD), $(findstring $(UNAME),NetBSD)),)
 	BROKER_LDADD:=$(BROKER_LDADD) -lm
@@ -215,12 +220,13 @@ ifeq ($(WITH_WRAP),yes)
 endif
 
 ifeq ($(WITH_TLS),yes)
-	BROKER_LDADD:=$(BROKER_LDADD) -lssl -lcrypto
-	LIB_LIBADD:=$(LIB_LIBADD) -lssl -lcrypto
+	APP_CPPFLAGS:=$(APP_CPPFLAGS) -DWITH_TLS
 	BROKER_CPPFLAGS:=$(BROKER_CPPFLAGS) -DWITH_TLS
-	LIB_CPPFLAGS:=$(LIB_CPPFLAGS) -DWITH_TLS
-	PASSWD_LDADD:=$(PASSWD_LDADD) -lcrypto
+	BROKER_LDADD:=$(BROKER_LDADD) -lssl -lcrypto
 	CLIENT_CPPFLAGS:=$(CLIENT_CPPFLAGS) -DWITH_TLS
+	LIB_CPPFLAGS:=$(LIB_CPPFLAGS) -DWITH_TLS
+	LIB_LIBADD:=$(LIB_LIBADD) -lssl -lcrypto
+	PASSWD_LDADD:=$(PASSWD_LDADD) -lcrypto
 	STATIC_LIB_DEPS:=$(STATIC_LIB_DEPS) -lssl -lcrypto
 
 	ifeq ($(WITH_TLS_PSK),yes)
@@ -330,12 +336,14 @@ ifeq ($(WITH_EPOLL),yes)
 endif
 
 ifeq ($(WITH_BUNDLED_DEPS),yes)
-	BROKER_CPPFLAGS:=$(BROKER_CPPFLAGS) -Ideps
+	BROKER_CPPFLAGS:=$(BROKER_CPPFLAGS) -I../deps
 endif
 
 ifeq ($(WITH_COVERAGE),yes)
 	BROKER_CFLAGS:=$(BROKER_CFLAGS) -coverage
 	BROKER_LDFLAGS:=$(BROKER_LDFLAGS) -coverage
+	PLUGIN_CFLAGS:=$(PLUGIN_CFLAGS) -coverage
+	PLUGIN_LDFLAGS:=$(PLUGIN_LDFLAGS) -coverage
 	LIB_CFLAGS:=$(LIB_CFLAGS) -coverage
 	LIB_LDFLAGS:=$(LIB_LDFLAGS) -coverage
 	CLIENT_CFLAGS:=$(CLIENT_CFLAGS) -coverage
@@ -345,6 +353,7 @@ endif
 ifeq ($(WITH_CJSON),yes)
 	CLIENT_CFLAGS:=$(CLIENT_CFLAGS) -DWITH_CJSON -I/usr/include/cjson -I/usr/local/include/cjson
 	CLIENT_LDADD:=$(CLIENT_LDADD) -lcjson
+	CLIENT_STATIC_LDADD:=$(CLIENT_STATIC_LDADD) -lcjson
 endif
 
 BROKER_LDADD:=${BROKER_LDADD} ${LDADD}

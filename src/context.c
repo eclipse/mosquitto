@@ -175,17 +175,17 @@ void context__send_will(struct mosquitto_db *db, struct mosquitto *ctxt)
 
 		if(mosquitto_acl_check(db, ctxt,
 					ctxt->will->msg.topic,
-					ctxt->will->msg.payloadlen,
+					(uint32_t)ctxt->will->msg.payloadlen,
 					ctxt->will->msg.payload,
-					ctxt->will->msg.qos,
+					(uint8_t)ctxt->will->msg.qos,
 					ctxt->will->msg.retain,
 					MOSQ_ACL_WRITE) == MOSQ_ERR_SUCCESS){
 
 			/* Unexpected disconnect, queue the client will. */
 			db__messages_easy_queue(db, ctxt,
 					ctxt->will->msg.topic,
-					ctxt->will->msg.qos,
-					ctxt->will->msg.payloadlen,
+					(uint8_t)ctxt->will->msg.qos,
+					(uint32_t)ctxt->will->msg.payloadlen,
 					ctxt->will->msg.payload,
 					ctxt->will->msg.retain,
 					ctxt->will->expiry_interval,

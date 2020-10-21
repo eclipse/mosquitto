@@ -58,11 +58,11 @@ Contributors:
 
 #include "utlist.h"
 
-static int subs__send(struct mosquitto_db *db, struct mosquitto__subleaf *leaf, const char *topic, int qos, int retain, struct mosquitto_msg_store *stored)
+static int subs__send(struct mosquitto_db *db, struct mosquitto__subleaf *leaf, const char *topic, uint8_t qos, int retain, struct mosquitto_msg_store *stored)
 {
 	bool client_retain;
 	uint16_t mid;
-	int client_qos, msg_qos;
+	uint8_t client_qos, msg_qos;
 	mosquitto_property *properties = NULL;
 	int rc2;
 
@@ -105,7 +105,7 @@ static int subs__send(struct mosquitto_db *db, struct mosquitto__subleaf *leaf, 
 }
 
 
-static int subs__shared_process(struct mosquitto_db *db, struct mosquitto__subhier *hier, const char *topic, int qos, int retain, struct mosquitto_msg_store *stored)
+static int subs__shared_process(struct mosquitto_db *db, struct mosquitto__subhier *hier, const char *topic, uint8_t qos, int retain, struct mosquitto_msg_store *stored)
 {
 	int rc = 0, rc2;
 	struct mosquitto__subshared *shared, *shared_tmp;
@@ -124,7 +124,7 @@ static int subs__shared_process(struct mosquitto_db *db, struct mosquitto__subhi
 	return rc;
 }
 
-static int subs__process(struct mosquitto_db *db, struct mosquitto__subhier *hier, const char *source_id, const char *topic, int qos, int retain, struct mosquitto_msg_store *stored)
+static int subs__process(struct mosquitto_db *db, struct mosquitto__subhier *hier, const char *source_id, const char *topic, uint8_t qos, int retain, struct mosquitto_msg_store *stored)
 {
 	int rc = 0;
 	int rc2;
@@ -152,7 +152,7 @@ static int subs__process(struct mosquitto_db *db, struct mosquitto__subhier *hie
 }
 
 
-static int sub__add_leaf(struct mosquitto *context, int qos, uint32_t identifier, int options, struct mosquitto__subleaf **head, struct mosquitto__subleaf **newleaf)
+static int sub__add_leaf(struct mosquitto *context, uint8_t qos, uint32_t identifier, int options, struct mosquitto__subleaf **head, struct mosquitto__subleaf **newleaf)
 {
 	struct mosquitto__subleaf *leaf;
 
@@ -197,14 +197,14 @@ static void sub__remove_shared_leaf(struct mosquitto__subhier *subhier, struct m
 }
 
 
-static int sub__add_shared(struct mosquitto_db *db, struct mosquitto *context, int qos, uint32_t identifier, int options, struct mosquitto__subhier *subhier, const char *sharename)
+static int sub__add_shared(struct mosquitto_db *db, struct mosquitto *context, uint8_t qos, uint32_t identifier, int options, struct mosquitto__subhier *subhier, const char *sharename)
 {
 	struct mosquitto__subleaf *newleaf;
 	struct mosquitto__subshared *shared = NULL;
 	struct mosquitto__subshared_ref **shared_subs;
 	struct mosquitto__subshared_ref *shared_ref;
 	int i;
-	unsigned int slen;
+	size_t slen;
 	int rc;
 
 	slen = strlen(sharename);
@@ -250,7 +250,7 @@ static int sub__add_shared(struct mosquitto_db *db, struct mosquitto *context, i
 			}
 		}
 		if(i == context->shared_sub_count){
-			shared_subs = mosquitto__realloc(context->shared_subs, sizeof(struct mosquitto__subhier_ref *)*(context->shared_sub_count + 1));
+			shared_subs = mosquitto__realloc(context->shared_subs, sizeof(struct mosquitto__subhier_ref *)*(size_t)(context->shared_sub_count + 1));
 			if(!shared_subs){
 				sub__remove_shared_leaf(subhier, shared, newleaf);
 				return MOSQ_ERR_NOMEM;
@@ -274,7 +274,7 @@ static int sub__add_shared(struct mosquitto_db *db, struct mosquitto *context, i
 }
 
 
-static int sub__add_normal(struct mosquitto_db *db, struct mosquitto *context, int qos, uint32_t identifier, int options, struct mosquitto__subhier *subhier)
+static int sub__add_normal(struct mosquitto_db *db, struct mosquitto *context, uint8_t qos, uint32_t identifier, int options, struct mosquitto__subhier *subhier)
 {
 	struct mosquitto__subleaf *newleaf = NULL;
 	struct mosquitto__subhier **subs;
@@ -294,7 +294,7 @@ static int sub__add_normal(struct mosquitto_db *db, struct mosquitto *context, i
 			}
 		}
 		if(i == context->sub_count){
-			subs = mosquitto__realloc(context->subs, sizeof(struct mosquitto__subhier *)*(context->sub_count + 1));
+			subs = mosquitto__realloc(context->subs, sizeof(struct mosquitto__subhier *)*(size_t)(context->sub_count + 1));
 			if(!subs){
 				DL_DELETE(subhier->subs, newleaf);
 				mosquitto__free(newleaf);
@@ -319,7 +319,7 @@ static int sub__add_normal(struct mosquitto_db *db, struct mosquitto *context, i
 }
 
 
-static int sub__add_context(struct mosquitto_db *db, struct mosquitto *context, int qos, uint32_t identifier, int options, struct mosquitto__subhier *subhier, char *const *const topics, const char *sharename)
+static int sub__add_context(struct mosquitto_db *db, struct mosquitto *context, uint8_t qos, uint32_t identifier, int options, struct mosquitto__subhier *subhier, char *const *const topics, const char *sharename)
 {
 	struct mosquitto__subhier *branch;
 	int topic_index = 0;
@@ -328,10 +328,13 @@ static int sub__add_context(struct mosquitto_db *db, struct mosquitto *context, 
 	/* Find leaf node */
 	while(topics && topics[topic_index] != NULL){
 		topiclen = strlen(topics[topic_index]);
+		if(topiclen > UINT16_MAX){
+			return MOSQ_ERR_INVAL;
+		}
 		HASH_FIND(hh, subhier->children, topics[topic_index], topiclen, branch);
 		if(!branch){
 			/* Not found */
-			branch = sub__add_hier_entry(subhier, &subhier->children, topics[topic_index], topiclen);
+			branch = sub__add_hier_entry(subhier, &subhier->children, topics[topic_index], (uint16_t)topiclen);
 			if(!branch) return MOSQ_ERR_NOMEM;
 		}
 		subhier = branch;
@@ -459,7 +462,7 @@ static int sub__remove_recurse(struct mosquitto_db *db, struct mosquitto *contex
 }
 
 
-static int sub__search(struct mosquitto_db *db, struct mosquitto__subhier *subhier, char **split_topics, const char *source_id, const char *topic, int qos, int retain, struct mosquitto_msg_store *stored)
+static int sub__search(struct mosquitto_db *db, struct mosquitto__subhier *subhier, char **split_topics, const char *source_id, const char *topic, uint8_t qos, int retain, struct mosquitto_msg_store *stored)
 {
 	/* FIXME - need to take into account source_id if the client is a bridge */
 	struct mosquitto__subhier *branch;
@@ -531,7 +534,7 @@ static int sub__search(struct mosquitto_db *db, struct mosquitto__subhier *subhi
 }
 
 
-struct mosquitto__subhier *sub__add_hier_entry(struct mosquitto__subhier *parent, struct mosquitto__subhier **sibling, const char *topic, size_t len)
+struct mosquitto__subhier *sub__add_hier_entry(struct mosquitto__subhier *parent, struct mosquitto__subhier **sibling, const char *topic, uint16_t len)
 {
 	struct mosquitto__subhier *child;
 
@@ -558,7 +561,7 @@ struct mosquitto__subhier *sub__add_hier_entry(struct mosquitto__subhier *parent
 }
 
 
-int sub__add(struct mosquitto_db *db, struct mosquitto *context, const char *sub, int qos, uint32_t identifier, int options, struct mosquitto__subhier **root)
+int sub__add(struct mosquitto_db *db, struct mosquitto *context, const char *sub, uint8_t qos, uint32_t identifier, int options, struct mosquitto__subhier **root)
 {
 	int rc = 0;
 	struct mosquitto__subhier *subhier;
@@ -575,9 +578,12 @@ int sub__add(struct mosquitto_db *db, struct mosquitto *context, const char *sub
 	if(rc) return rc;
 
 	topiclen = strlen(topics[0]);
+	if(topiclen > UINT16_MAX){
+		return MOSQ_ERR_INVAL;
+	}
 	HASH_FIND(hh, *root, topics[0], topiclen, subhier);
 	if(!subhier){
-		subhier = sub__add_hier_entry(NULL, root, topics[0], topiclen);
+		subhier = sub__add_hier_entry(NULL, root, topics[0], (uint16_t)topiclen);
 		if(!subhier){
 			mosquitto__free(local_sub);
 			mosquitto__free(topics);
@@ -620,7 +626,7 @@ int sub__remove(struct mosquitto_db *db, struct mosquitto *context, const char *
 	return rc;
 }
 
-int sub__messages_queue(struct mosquitto_db *db, const char *source_id, const char *topic, int qos, int retain, struct mosquitto_msg_store **stored)
+int sub__messages_queue(struct mosquitto_db *db, const char *source_id, const char *topic, uint8_t qos, int retain, struct mosquitto_msg_store **stored)
 {
 	int rc = MOSQ_ERR_SUCCESS, rc2;
 	struct mosquitto__subhier *subhier;

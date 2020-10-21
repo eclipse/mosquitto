@@ -61,7 +61,7 @@ int mosquitto_lib_init(void)
 		struct timespec tp;
 
 		clock_gettime(CLOCK_MONOTONIC, &tp);
-		srand(tp.tv_nsec);
+		srand((unsigned int)tp.tv_nsec);
 #elif defined(__APPLE__)
 		uint64_t ticks;
 
@@ -159,7 +159,7 @@ int mosquitto_reinitialise(struct mosquitto *mosq, const char *id, bool clean_st
 		if(STREMPTY(id)){
 			return MOSQ_ERR_INVAL;
 		}
-		if(mosquitto_validate_utf8(id, strlen(id))){
+		if(mosquitto_validate_utf8(id, (int)strlen(id))){
 			return MOSQ_ERR_MALFORMED_UTF8;
 		}
 		mosq->id = mosquitto__strdup(id);
@@ -292,6 +292,8 @@ void mosquitto__destroy(struct mosquitto *mosq)
 
 	mosquitto__free(mosq->bind_address);
 	mosq->bind_address = NULL;
+
+	mosquitto_property_free_all(&mosq->connect_properties);
 
 	/* Out packet cleanup */
 	if(mosq->out_packet && !mosq->current_out_packet){
@@ -568,12 +570,12 @@ int mosquitto_string_to_command(const char *str, int *cmd)
 
 int mosquitto_sub_topic_tokenise(const char *subtopic, char ***topics, int *count)
 {
-	int len;
-	int hier_count = 1;
-	int start, stop;
+	size_t len;
+	size_t hier_count = 1;
+	size_t start, stop;
 	int hier;
-	int tlen;
-	int i, j;
+	size_t tlen;
+	size_t i, j;
 
 	if(!subtopic || !topics || !count) return MOSQ_ERR_INVAL;
 
@@ -617,7 +619,7 @@ int mosquitto_sub_topic_tokenise(const char *subtopic, char ***topics, int *coun
 		}
 	}
 
-	*count = hier_count;
+	*count = (int)hier_count;
 
 	return MOSQ_ERR_SUCCESS;
 }

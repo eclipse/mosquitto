@@ -67,7 +67,7 @@ int packet__alloc(struct mosquitto__packet *packet)
 		packet->remaining_count++;
 	}while(remaining_length > 0 && packet->remaining_count < 5);
 	if(packet->remaining_count == 5) return MOSQ_ERR_PAYLOAD_SIZE;
-	packet->packet_length = packet->remaining_length + 1 + packet->remaining_count;
+	packet->packet_length = packet->remaining_length + 1 + (uint8_t)packet->remaining_count;
 #ifdef WITH_WEBSOCKETS
 	packet->payload = mosquitto__malloc(sizeof(uint8_t)*packet->packet_length + LWS_SEND_BUFFER_PRE_PADDING + LWS_SEND_BUFFER_POST_PADDING);
 #else
@@ -79,7 +79,7 @@ int packet__alloc(struct mosquitto__packet *packet)
 	for(i=0; i<packet->remaining_count; i++){
 		packet->payload[i+1] = remaining_bytes[i];
 	}
-	packet->pos = 1 + packet->remaining_count;
+	packet->pos = 1U + (uint8_t)packet->remaining_count;
 
 	return MOSQ_ERR_SUCCESS;
 }
@@ -236,8 +236,8 @@ int packet__write(struct mosquitto *mosq)
 			write_length = net__write(mosq, &(packet->payload[packet->pos]), packet->to_process);
 			if(write_length > 0){
 				G_BYTES_SENT_INC(write_length);
-				packet->to_process -= write_length;
-				packet->pos += write_length;
+				packet->to_process -= (uint32_t)write_length;
+				packet->pos += (uint32_t)write_length;
 			}else{
 #ifdef WIN32
 				errno = WSAGetLastError();
@@ -422,7 +422,7 @@ int packet__read(struct mosquitto *mosq)
 		}while((byte & 128) != 0);
 		/* We have finished reading remaining_length, so make remaining_count
 		 * positive. */
-		mosq->in_packet.remaining_count *= -1;
+		mosq->in_packet.remaining_count = (int8_t)(mosq->in_packet.remaining_count * -1);
 
 #ifdef WITH_BROKER
 		if(db->config->max_packet_size > 0 && mosq->in_packet.remaining_length+1 > db->config->max_packet_size){
@@ -447,8 +447,8 @@ int packet__read(struct mosquitto *mosq)
 		read_length = net__read(mosq, &(mosq->in_packet.payload[mosq->in_packet.pos]), mosq->in_packet.to_process);
 		if(read_length > 0){
 			G_BYTES_RECEIVED_INC(read_length);
-			mosq->in_packet.to_process -= read_length;
-			mosq->in_packet.pos += read_length;
+			mosq->in_packet.to_process -= (uint32_t)read_length;
+			mosq->in_packet.pos += (uint32_t)read_length;
 		}else{
 #ifdef WIN32
 			errno = WSAGetLastError();

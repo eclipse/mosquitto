@@ -854,7 +854,7 @@ int init_persist_read_tests(void)
 
 int main(int argc, char *argv[])
 {
-	int fails;
+	unsigned int fails;
 
     if(CU_initialize_registry() != CUE_SUCCESS){
         printf("Error initializing CUnit registry.\n");

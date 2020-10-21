@@ -95,7 +95,7 @@ error:
     return rc;
 }
 
-int log__printf(struct mosquitto *mosq, int priority, const char *fmt, ...)
+int log__printf(struct mosquitto *mosq, unsigned int priority, const char *fmt, ...)
 {
 	return 0;
 }
@@ -115,7 +115,7 @@ int send__pingreq(struct mosquitto *mosq)
 	return MOSQ_ERR_SUCCESS;
 }
 
-int mosquitto_acl_check(struct mosquitto_db *db, struct mosquitto *context, const char *topic, long payloadlen, void* payload, int qos, bool retain, int access)
+int mosquitto_acl_check(struct mosquitto_db *db, struct mosquitto *context, const char *topic, uint32_t payloadlen, void* payload, uint8_t qos, bool retain, int access)
 {
 	return MOSQ_ERR_SUCCESS;
 }
@@ -126,7 +126,7 @@ int acl__find_acls(struct mosquitto_db *db, struct mosquitto *context)
 }
 
 
-int sub__add(struct mosquitto_db *db, struct mosquitto *context, const char *sub, int qos, uint32_t identifier, int options, struct mosquitto__subhier **root)
+int sub__add(struct mosquitto_db *db, struct mosquitto *context, const char *sub, uint8_t qos, uint32_t identifier, int options, struct mosquitto__subhier **root)
 {
 	last_sub = strdup(sub);
 	last_qos = qos;
@@ -135,7 +135,7 @@ int sub__add(struct mosquitto_db *db, struct mosquitto *context, const char *sub
 	return MOSQ_ERR_SUCCESS;
 }
 
-int db__message_insert(struct mosquitto_db *db, struct mosquitto *context, uint16_t mid, enum mosquitto_msg_direction dir, int qos, bool retain, struct mosquitto_msg_store *stored, mosquitto_property *properties, bool update)
+int db__message_insert(struct mosquitto_db *db, struct mosquitto *context, uint16_t mid, enum mosquitto_msg_direction dir, uint8_t qos, bool retain, struct mosquitto_msg_store *stored, mosquitto_property *properties, bool update)
 {
 	return MOSQ_ERR_SUCCESS;
 }

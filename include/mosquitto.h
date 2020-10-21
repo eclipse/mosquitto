@@ -118,6 +118,7 @@ enum mosq_opt_t {
 	MOSQ_OPT_TLS_OCSP_REQUIRED = 9,
 	MOSQ_OPT_TLS_ALPN = 10,
 	MOSQ_OPT_TCP_NODELAY = 11,
+	MOSQ_OPT_BIND_ADDRESS = 12,
 };
 
 
@@ -1485,6 +1486,9 @@ libmosq_EXPORT int mosquitto_int_option(struct mosquitto *mosq, enum mosq_opt_t 
  *	          services available on a single TLS port, such as both MQTT
  *	          and WebSockets, use this option to configure the ALPN
  *	          option for the connection.
+ *
+ *	MOSQ_OPT_BIND_ADDRESS - Set the hostname or ip address of the local network
+ *	          interface to bind to when connecting.
  */
 libmosq_EXPORT int mosquitto_string_option(struct mosquitto *mosq, enum mosq_opt_t option, const char *value);
 

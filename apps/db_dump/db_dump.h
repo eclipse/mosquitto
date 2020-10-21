@@ -18,9 +18,9 @@ Contributors:
 
 #include <persist.h>
 
-void print__client(struct P_client *chunk, int length);
-void print__client_msg(struct P_client_msg *chunk, int length);
-void print__msg_store(struct P_msg_store *chunk, int length);
-void print__sub(struct P_sub *chunk, int length);
+void print__client(struct P_client *chunk, uint32_t length);
+void print__client_msg(struct P_client_msg *chunk, uint32_t length);
+void print__msg_store(struct P_msg_store *chunk, uint32_t length);
+void print__sub(struct P_sub *chunk, uint32_t length);
 
 #endif

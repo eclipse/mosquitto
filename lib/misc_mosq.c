@@ -168,7 +168,7 @@ char *fgets_extending(char **buf, int *buflen, FILE *stream)
 		/* No EOL char found, so extend buffer */
 		offset = (*buflen)-1;
 		*buflen += 1000;
-		newbuf = realloc(*buf, *buflen);
+		newbuf = realloc(*buf, (size_t)*buflen);
 		if(!newbuf){
 			return NULL;
 		}

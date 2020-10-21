@@ -27,7 +27,7 @@ static int file_read(const char *filename, uint8_t **data, size_t *len)
 	if(!fptr) return 1;
 
 	fseek(fptr, 0, SEEK_END);
-	*len = ftell(fptr);
+	*len = (size_t)ftell(fptr);
 	*data = malloc(*len);
 	if(!(*data)){
 		fclose(fptr);

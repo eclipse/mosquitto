@@ -1,16 +1,20 @@
 include config.mk
 
-DIRS=lib client src
+DIRS=lib apps client plugins src
 DOCDIRS=man
 DISTDIRS=man
 DISTFILES= \
+	apps/ \
 	client/ \
+	deps/ \
 	examples/ \
+	include/ \
 	installer/ \
 	lib/ \
 	logo/ \
 	man/ \
 	misc/ \
+	plugins/ \
 	security/ \
 	service/ \
 	src/ \

@@ -28,6 +28,7 @@ extern "C" {
 #define MOSQ_ACL_READ 0x01
 #define MOSQ_ACL_WRITE 0x02
 #define MOSQ_ACL_SUBSCRIBE 0x04
+#define MOSQ_ACL_UNSUBSCRIBE 0x08
 
 #include <stdbool.h>
 #include <stdint.h>

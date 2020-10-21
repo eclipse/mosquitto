@@ -21,7 +21,7 @@ Contributors:
 
 struct mqtt__string {
 	char *v;
-	int len;
+	uint16_t len;
 };
 
 struct mqtt5__property {
@@ -44,9 +44,9 @@ int property__read_all(int command, struct mosquitto__packet *packet, mosquitto_
 int property__write_all(struct mosquitto__packet *packet, const mosquitto_property *property, bool write_len);
 void property__free(mosquitto_property **property);
 
-int property__get_length(const mosquitto_property *property);
-int property__get_length_all(const mosquitto_property *property);
+unsigned int property__get_length(const mosquitto_property *property);
+unsigned int property__get_length_all(const mosquitto_property *property);
 
-int property__get_remaining_length(const mosquitto_property *props);
+unsigned int property__get_remaining_length(const mosquitto_property *props);
 
 #endif

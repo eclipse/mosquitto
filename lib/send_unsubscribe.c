@@ -35,24 +35,28 @@ Contributors:
 
 int send__unsubscribe(struct mosquitto *mosq, int *mid, int topic_count, char *const *const topic, const mosquitto_property *properties)
 {
-	/* FIXME - only deals with a single topic */
 	struct mosquitto__packet *packet = NULL;
 	uint32_t packetlen;
 	uint16_t local_mid;
 	int rc;
 	int i;
+	size_t tlen;
 
 	assert(mosq);
 	assert(topic);
 
+	packetlen = 2;
+	for(i=0; i<topic_count; i++){
+		tlen = strlen(topic[i]);
+		if(tlen > UINT16_MAX){
+			return MOSQ_ERR_INVAL;
+		}
+		packetlen += 2U+(uint16_t)tlen;
+	}
+
 	packet = mosquitto__calloc(1, sizeof(struct mosquitto__packet));
 	if(!packet) return MOSQ_ERR_NOMEM;
 
-	packetlen = 2;
-
-	for(i=0; i<topic_count; i++){
-		packetlen += 2+strlen(topic[i]);
-	}
 	if(mosq->protocol == mosq_p_mqtt5){
 		packetlen += property__get_remaining_length(properties);
 	}
@@ -77,7 +81,7 @@ int send__unsubscribe(struct mosquitto *mosq, int *mid, int topic_count, char *c
 
 	/* Payload */
 	for(i=0; i<topic_count; i++){
-		packet__write_string(packet, topic[i], strlen(topic[i]));
+		packet__write_string(packet, topic[i], (uint16_t)strlen(topic[i]));
 	}
 
 #ifdef WITH_BROKER

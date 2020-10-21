@@ -36,7 +36,7 @@ Contributors:
 #include "util_mosq.h"
 
 
-int persist__chunk_header_read_v234(FILE *db_fptr, int *chunk, int *length)
+int persist__chunk_header_read_v234(FILE *db_fptr, uint32_t *chunk, uint32_t *length)
 {
 	size_t rlen;
 	uint16_t i16temp;
@@ -68,7 +68,7 @@ error:
 }
 
 
-int persist__chunk_client_read_v234(FILE *db_fptr, struct P_client *chunk, int db_version)
+int persist__chunk_client_read_v234(FILE *db_fptr, struct P_client *chunk, uint32_t db_version)
 {
 	uint16_t i16temp;
 	int rc;
@@ -116,7 +116,7 @@ int persist__chunk_client_msg_read_v234(FILE *db_fptr, struct P_client_msg *chun
 	read_e(db_fptr, &chunk->F.state, sizeof(uint8_t));
 	read_e(db_fptr, &dup, sizeof(uint8_t));
 
-	chunk->F.retain_dup = (retain&0x0F)<<4 | (dup&0x0F);
+	chunk->F.retain_dup = (uint8_t)((retain&0x0F)<<4 | (dup&0x0F));
 
 	return MOSQ_ERR_SUCCESS;
 error:
@@ -127,7 +127,7 @@ error:
 }
 
 
-int persist__chunk_msg_store_read_v234(FILE *db_fptr, struct P_msg_store *chunk, int db_version)
+int persist__chunk_msg_store_read_v234(FILE *db_fptr, struct P_msg_store *chunk, uint32_t db_version)
 {
 	uint32_t i32temp;
 	uint16_t i16temp;

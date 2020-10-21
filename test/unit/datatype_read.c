@@ -5,7 +5,7 @@
 
 static void byte_read_helper(
 		uint8_t *payload,
-		int remaining_length,
+		uint32_t remaining_length,
 		int rc_expected,
 		uint8_t value_expected)
 {
@@ -24,7 +24,7 @@ static void byte_read_helper(
 
 static void uint16_read_helper(
 		uint8_t *payload,
-		int remaining_length,
+		uint32_t remaining_length,
 		int rc_expected,
 		uint16_t value_expected)
 {
@@ -43,7 +43,7 @@ static void uint16_read_helper(
 
 static void uint32_read_helper(
 		uint8_t *payload,
-		int remaining_length,
+		uint32_t remaining_length,
 		int rc_expected,
 		uint32_t value_expected)
 {
@@ -62,14 +62,14 @@ static void uint32_read_helper(
 
 static void varint_read_helper(
 		uint8_t *payload,
-		int remaining_length,
+		uint32_t remaining_length,
 		int rc_expected,
-		int32_t value_expected,
-		int8_t bytes_expected)
+		uint32_t value_expected,
+		uint8_t bytes_expected)
 {
 	struct mosquitto__packet packet;
-	int32_t value = -1;
-	int8_t bytes = -1;
+	uint32_t value = UINT32_MAX;
+	uint8_t bytes = UINT8_MAX;
 	int rc;
 
 	memset(&packet, 0, sizeof(struct mosquitto__packet));
@@ -84,14 +84,14 @@ static void varint_read_helper(
 
 static void binary_read_helper(
 		uint8_t *payload,
-		int remaining_length,
+		uint32_t remaining_length,
 		int rc_expected,
 		const uint8_t *value_expected,
 		int length_expected)
 {
 	struct mosquitto__packet packet;
 	uint8_t *value = NULL;
-	int length = -1;
+	uint16_t length = UINT16_MAX;
 	int rc;
 
 	memset(&packet, 0, sizeof(struct mosquitto__packet));
@@ -112,14 +112,14 @@ static void binary_read_helper(
 
 static void string_read_helper(
 		uint8_t *payload,
-		int remaining_length,
+		uint32_t remaining_length,
 		int rc_expected,
 		const uint8_t *value_expected,
-		int length_expected)
+		uint16_t length_expected)
 {
 	struct mosquitto__packet packet;
 	uint8_t *value = NULL;
-	int length = -1;
+	uint16_t length = UINT16_MAX;
 	int rc;
 
 	memset(&packet, 0, sizeof(struct mosquitto__packet));
@@ -141,7 +141,7 @@ static void string_read_helper(
 
 static void bytes_read_helper(
 		uint8_t *payload,
-		int remaining_length,
+		uint32_t remaining_length,
 		int rc_expected,
 		const uint8_t *value_expected,
 		int count)
@@ -154,7 +154,7 @@ static void bytes_read_helper(
 	memset(&packet, 0, sizeof(struct mosquitto__packet));
 	packet.payload = payload;
 	packet.remaining_length = remaining_length;
-	rc = packet__read_bytes(&packet, value, count);
+	rc = packet__read_bytes(&packet, value, (uint32_t)count);
 	CU_ASSERT_EQUAL(rc, rc_expected);
 	if(rc == MOSQ_ERR_SUCCESS){
 		CU_ASSERT_EQUAL(packet.pos, count);
@@ -367,7 +367,7 @@ static void TEST_uint32_read_success(void)
 static void TEST_varint_read_empty(void)
 {
 	/* Empty packet */
-	varint_read_helper(NULL, 0, MOSQ_ERR_PROTOCOL, -1, -1);
+	varint_read_helper(NULL, 0, MOSQ_ERR_PROTOCOL, UINT32_MAX, UINT8_MAX);
 }
 
 
@@ -383,20 +383,20 @@ static void TEST_varint_read_truncated(void)
 	/* Varint bigger than packet */
 	memset(payload, 0, sizeof(payload));
 	payload[0] = 0x80;
-	varint_read_helper(payload, 1, MOSQ_ERR_PROTOCOL, -1, -1);
+	varint_read_helper(payload, 1, MOSQ_ERR_PROTOCOL, UINT32_MAX, UINT8_MAX);
 
 	/* Varint bigger than packet */
 	memset(payload, 1, sizeof(payload));
 	payload[0] = 0x80;
 	payload[1] = 0x80;
-	varint_read_helper(payload, 2, MOSQ_ERR_PROTOCOL, -1, -1);
+	varint_read_helper(payload, 2, MOSQ_ERR_PROTOCOL, UINT32_MAX, UINT8_MAX);
 
 	/* Varint bigger than packet */
 	memset(payload, 0, sizeof(payload));
 	payload[0] = 0x80;
 	payload[1] = 0x80;
 	payload[2] = 0x80;
-	varint_read_helper(payload, 3, MOSQ_ERR_PROTOCOL, -1, -1);
+	varint_read_helper(payload, 3, MOSQ_ERR_PROTOCOL, UINT32_MAX, UINT8_MAX);
 
 	/* Varint bigger than packet */
 	memset(payload, 0, sizeof(payload));
@@ -404,7 +404,7 @@ static void TEST_varint_read_truncated(void)
 	payload[1] = 0x80;
 	payload[2] = 0x80;
 	payload[3] = 0x80;
-	varint_read_helper(payload, 4, MOSQ_ERR_PROTOCOL, -1, -1);
+	varint_read_helper(payload, 4, MOSQ_ERR_PROTOCOL, UINT32_MAX, UINT8_MAX);
 }
 
 
@@ -486,7 +486,7 @@ static void TEST_varint_read_5_bytes(void)
 	payload[2] = 0x80;
 	payload[3] = 0x80;
 	payload[4] = 0x01;
-	varint_read_helper(payload, 5, MOSQ_ERR_PROTOCOL, -1, -1);
+	varint_read_helper(payload, 5, MOSQ_ERR_PROTOCOL, UINT32_MAX, UINT8_MAX);
 }
 
 
@@ -503,27 +503,27 @@ static void TEST_varint_read_overlong_encoding(void)
 	memset(payload, 0, sizeof(payload));
 	payload[0] = 0x80;
 	payload[1] = 0x00;
-	varint_read_helper(payload, 2, MOSQ_ERR_PROTOCOL, -1, -1);
+	varint_read_helper(payload, 2, MOSQ_ERR_PROTOCOL, UINT32_MAX, UINT8_MAX);
 
 	/* Overlong encoding of 127 (1 byte value encoded as 2 bytes) */
 	memset(payload, 0, sizeof(payload));
 	payload[0] = 0xFF;
 	payload[1] = 0x00;
-	varint_read_helper(payload, 2, MOSQ_ERR_PROTOCOL, -1, -1);
+	varint_read_helper(payload, 2, MOSQ_ERR_PROTOCOL, UINT32_MAX, UINT8_MAX);
 
 	/* Overlong encoding of 128 (2 byte value encoded as 3 bytes) */
 	memset(payload, 0, sizeof(payload));
 	payload[0] = 0x80;
 	payload[1] = 0x81;
 	payload[2] = 0x00;
-	varint_read_helper(payload, 3, MOSQ_ERR_PROTOCOL, -1, -1);
+	varint_read_helper(payload, 3, MOSQ_ERR_PROTOCOL, UINT32_MAX, UINT8_MAX);
 
 	/* Overlong encoding of 16,383 (2 byte value encoded as 3 bytes) */
 	memset(payload, 0, sizeof(payload));
 	payload[0] = 0xFF;
 	payload[1] = 0xFF;
 	payload[2] = 0x00;
-	varint_read_helper(payload, 3, MOSQ_ERR_PROTOCOL, -1, -1);
+	varint_read_helper(payload, 3, MOSQ_ERR_PROTOCOL, UINT32_MAX, UINT8_MAX);
 
 	/* Overlong encoding of 16,384 (3 byte value encoded as 4 bytes) */
 	memset(payload, 0, sizeof(payload));
@@ -531,7 +531,7 @@ static void TEST_varint_read_overlong_encoding(void)
 	payload[1] = 0x80;
 	payload[2] = 0x81;
 	payload[3] = 0x00;
-	varint_read_helper(payload, 4, MOSQ_ERR_PROTOCOL, -1, -1);
+	varint_read_helper(payload, 4, MOSQ_ERR_PROTOCOL, UINT32_MAX, UINT8_MAX);
 
 	/* Overlong encoding of 2,097,151 (3 byte value encoded as 4 bytes) */
 	memset(payload, 0, sizeof(payload));
@@ -539,7 +539,7 @@ static void TEST_varint_read_overlong_encoding(void)
 	payload[1] = 0xFF;
 	payload[2] = 0xFF;
 	payload[3] = 0x00;
-	varint_read_helper(payload, 4, MOSQ_ERR_PROTOCOL, -1, -1);
+	varint_read_helper(payload, 4, MOSQ_ERR_PROTOCOL, UINT32_MAX, UINT8_MAX);
 }
 
 
@@ -554,7 +554,7 @@ static void TEST_varint_read_overlong_encoding(void)
  */
 static void TEST_string_read_empty(void)
 {
-	string_read_helper(NULL, 0, MOSQ_ERR_PROTOCOL, NULL, -1);
+	string_read_helper(NULL, 0, MOSQ_ERR_PROTOCOL, NULL, UINT16_MAX);
 }
 
 /* This tests reading a UTF-8 Encoded String from an incoming packet.
@@ -569,20 +569,20 @@ static void TEST_string_read_truncated(void)
 	/* 1 byte packet */
 	memset(payload, 0, sizeof(payload));
 	payload[0] = 0x02;
-	string_read_helper(payload, 1, MOSQ_ERR_PROTOCOL, NULL, -1);
+	string_read_helper(payload, 1, MOSQ_ERR_PROTOCOL, NULL, UINT16_MAX);
 
 	/* 2 byte packet */
 	memset(payload, 0, sizeof(payload));
 	payload[0] = 0x02;
 	payload[1] = 0x02;
-	string_read_helper(payload, 2, MOSQ_ERR_PROTOCOL, NULL, -1);
+	string_read_helper(payload, 2, MOSQ_ERR_PROTOCOL, NULL, UINT16_MAX);
 
 	/* 3 byte packet */
 	memset(payload, 0, sizeof(payload));
 	payload[0] = 0x00;
 	payload[1] = 0x02;
 	payload[2] = 'a';
-	string_read_helper(payload, 3, MOSQ_ERR_PROTOCOL, NULL, -1);
+	string_read_helper(payload, 3, MOSQ_ERR_PROTOCOL, NULL, UINT16_MAX);
 
 	/* 3 byte packet */
 	memset(payload, 0, sizeof(payload));
@@ -590,7 +590,7 @@ static void TEST_string_read_truncated(void)
 	payload[1] = 0x03;
 	payload[2] = 'a';
 	payload[3] = 'b';
-	string_read_helper(payload, 4, MOSQ_ERR_PROTOCOL, NULL, -1);
+	string_read_helper(payload, 4, MOSQ_ERR_PROTOCOL, NULL, UINT16_MAX);
 }
 
 
@@ -655,7 +655,7 @@ static void TEST_string_read_malformed_string(void)
 	payload[6] = 0xED; /* U+D800 - single UTF-16 surrogate */
 	payload[7] = 0xA0;
 	payload[8] = 0x80;
-	string_read_helper(payload, 9, MOSQ_ERR_MALFORMED_UTF8, NULL, -1);
+	string_read_helper(payload, 9, MOSQ_ERR_MALFORMED_UTF8, NULL, 0);
 }
 
 
@@ -697,7 +697,7 @@ static void TEST_string_read_mqtt_1_5_4_3(void)
  */
 static void TEST_binary_data_read_empty(void)
 {
-	binary_read_helper(NULL, 0, MOSQ_ERR_PROTOCOL, NULL, -1);
+	binary_read_helper(NULL, 0, MOSQ_ERR_PROTOCOL, NULL, UINT16_MAX);
 }
 
 
@@ -713,20 +713,20 @@ static void TEST_binary_data_read_truncated(void)
 	/* 1 byte packet */
 	memset(payload, 0, sizeof(payload));
 	payload[0] = 0x02;
-	binary_read_helper(payload, 1, MOSQ_ERR_PROTOCOL, NULL, -1);
+	binary_read_helper(payload, 1, MOSQ_ERR_PROTOCOL, NULL, UINT16_MAX);
 
 	/* 2 byte packet */
 	memset(payload, 0, sizeof(payload));
 	payload[0] = 0x02;
 	payload[1] = 0x02;
-	binary_read_helper(payload, 2, MOSQ_ERR_PROTOCOL, NULL, -1);
+	binary_read_helper(payload, 2, MOSQ_ERR_PROTOCOL, NULL, UINT16_MAX);
 
 	/* 3 byte packet */
 	memset(payload, 0, sizeof(payload));
 	payload[0] = 0x00;
 	payload[1] = 0x02;
 	payload[2] = 'a';
-	binary_read_helper(payload, 3, MOSQ_ERR_PROTOCOL, NULL, -1);
+	binary_read_helper(payload, 3, MOSQ_ERR_PROTOCOL, NULL, UINT16_MAX);
 
 	/* 3 byte packet */
 	memset(payload, 0, sizeof(payload));
@@ -734,7 +734,7 @@ static void TEST_binary_data_read_truncated(void)
 	payload[1] = 0x03;
 	payload[2] = 'a';
 	payload[3] = 'b';
-	binary_read_helper(payload, 4, MOSQ_ERR_PROTOCOL, NULL, -1);
+	binary_read_helper(payload, 4, MOSQ_ERR_PROTOCOL, NULL, UINT16_MAX);
 }
 
 
@@ -771,10 +771,10 @@ static void TEST_bytes_read_truncated(void)
 static void TEST_bytes_read_success(void)
 {
 	uint8_t payload[20];
-	int i;
+	uint8_t i;
 
 	for(i=0; i<20; i++){
-		payload[i] = i*2;
+		payload[i] = (uint8_t)(i*2);
 	}
 	bytes_read_helper(payload, 20, MOSQ_ERR_SUCCESS, payload, 20);
 }

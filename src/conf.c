@@ -48,9 +48,9 @@ Contributors:
 #include "mqtt_protocol.h"
 
 struct config_recurse {
-	int log_dest;
+	unsigned int log_dest;
 	int log_dest_set;
-	int log_type;
+	unsigned int log_type;
 	int log_type_set;
 	unsigned long max_inflight_bytes;
 	unsigned long max_queued_bytes;
@@ -81,7 +81,7 @@ static void conf__set_cur_security_options(struct mosquitto__config *config, str
 	}
 }
 
-static int conf__attempt_resolve(const char *host, const char *text, int log, const char *msg)
+static int conf__attempt_resolve(const char *host, const char *text, unsigned int log, const char *msg)
 {
 	struct addrinfo gai_hints;
 	struct addrinfo *gai_res;
@@ -393,7 +393,7 @@ int config__parse_args(struct mosquitto_db *db, struct mosquitto__config *config
 		}else if(!strcmp(argv[i], "-p") || !strcmp(argv[i], "--port")){
 			if(i<argc-1){
 				port_tmp = atoi(argv[i+1]);
-				if(port_tmp<1 || port_tmp>65535){
+				if(port_tmp<1 || port_tmp>UINT16_MAX){
 					log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid port specified (%d).", port_tmp);
 					return MOSQ_ERR_INVAL;
 				}else{
@@ -401,7 +401,7 @@ int config__parse_args(struct mosquitto_db *db, struct mosquitto__config *config
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Only %d ports can be specified on the command line.", CMD_PORT_LIMIT);
 						return MOSQ_ERR_INVAL;
 					}
-					config->cmd_port[config->cmd_port_count] = port_tmp;
+					config->cmd_port[config->cmd_port_count] = (uint16_t)port_tmp;
 					config->cmd_port_count++;
 				}
 			}else{
@@ -450,7 +450,7 @@ int config__parse_args(struct mosquitto_db *db, struct mosquitto__config *config
 			){
 
 		config->listener_count++;
-		config->listeners = mosquitto__realloc(config->listeners, sizeof(struct mosquitto__listener)*config->listener_count);
+		config->listeners = mosquitto__realloc(config->listeners, sizeof(struct mosquitto__listener)*(size_t)config->listener_count);
 		if(!config->listeners){
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 			return MOSQ_ERR_NOMEM;
@@ -594,7 +594,7 @@ int config__read(struct mosquitto_db *db, struct mosquitto__config *config, bool
 	struct config_recurse cr;
 	int lineno = 0;
 #ifdef WITH_PERSISTENCE
-	int len;
+	size_t len;
 #endif
 	struct mosquitto__config config_reload;
 	int i;
@@ -734,7 +734,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 	struct mosquitto__listener *cur_listener = &config->default_listener;
 	int i;
 	int lineno_ext = 0;
-	int prefix_len;
+	size_t prefix_len;
 	char **files;
 	int file_count;
 #ifdef WITH_TLS
@@ -771,7 +771,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 							break;
 						}
 						cur_bridge->address_count++;
-						cur_bridge->addresses = mosquitto__realloc(cur_bridge->addresses, sizeof(struct bridge_address)*cur_bridge->address_count);
+						cur_bridge->addresses = mosquitto__realloc(cur_bridge->addresses, sizeof(struct bridge_address)*(size_t)cur_bridge->address_count);
 						if(!cur_bridge->addresses){
 							log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 							return MOSQ_ERR_NOMEM;
@@ -791,11 +791,11 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 
 							/* The remainder of the string */
 							tmp_int = atoi(&tmp_char[1]);
-							if(tmp_int < 1 || tmp_int > 65535){
+							if(tmp_int < 1 || tmp_int > UINT16_MAX){
 								log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid port value (%d).", tmp_int);
 								return MOSQ_ERR_INVAL;
 							}
-							cur_bridge->addresses[i].port = tmp_int;
+							cur_bridge->addresses[i].port = (uint16_t)tmp_int;
 						}else{
 							cur_bridge->addresses[i].port = 1883;
 						}
@@ -854,7 +854,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 					}
 					if(token[0]){
 						cur_auth_plugin_config->option_count++;
-						cur_auth_plugin_config->options = mosquitto__realloc(cur_auth_plugin_config->options, cur_auth_plugin_config->option_count*sizeof(struct mosquitto_auth_opt));
+						cur_auth_plugin_config->options = mosquitto__realloc(cur_auth_plugin_config->options, (size_t)cur_auth_plugin_config->option_count*sizeof(struct mosquitto_auth_opt));
 						if(!cur_auth_plugin_config->options){
 							log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 							mosquitto__free(key);
@@ -874,7 +874,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 				}else if(!strcmp(token, "auth_plugin") || !strcmp(token, "plugin")){
 					if(reload) continue; // Auth plugin not currently valid for reloading.
 					conf__set_cur_security_options(config, cur_listener, &cur_security_options);
-					cur_security_options->auth_plugin_configs = mosquitto__realloc(cur_security_options->auth_plugin_configs, (cur_security_options->auth_plugin_config_count+1)*sizeof(struct mosquitto__auth_plugin_config));
+					cur_security_options->auth_plugin_configs = mosquitto__realloc(cur_security_options->auth_plugin_configs, (size_t)(cur_security_options->auth_plugin_config_count+1)*sizeof(struct mosquitto__auth_plugin_config));
 					if(!cur_security_options->auth_plugin_configs){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 						return MOSQ_ERR_NOMEM;
@@ -898,7 +898,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 					conf__set_cur_security_options(config, cur_listener, &cur_security_options);
 					if(conf__parse_string(&token, "auto_id_prefix", &cur_security_options->auto_id_prefix, saveptr)) return MOSQ_ERR_INVAL;
 					if(cur_security_options->auto_id_prefix){
-						cur_security_options->auto_id_prefix_len = strlen(cur_security_options->auto_id_prefix);
+						cur_security_options->auto_id_prefix_len = (uint16_t)strlen(cur_security_options->auto_id_prefix);
 					}else{
 						cur_security_options->auto_id_prefix_len = 0;
 					}
@@ -1209,7 +1209,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 						}
 
 						config->bridge_count++;
-						config->bridges = mosquitto__realloc(config->bridges, config->bridge_count*sizeof(struct mosquitto__bridge));
+						config->bridges = mosquitto__realloc(config->bridges, (size_t)config->bridge_count*sizeof(struct mosquitto__bridge));
 						if(!config->bridges){
 							log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 							return MOSQ_ERR_NOMEM;
@@ -1318,11 +1318,16 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
 					}
-					if(conf__parse_int(&token, "keepalive_interval", &cur_bridge->keepalive, saveptr)) return MOSQ_ERR_INVAL;
-					if(cur_bridge->keepalive < 5){
-						log__printf(NULL, MOSQ_LOG_NOTICE, "keepalive interval too low, using 5 seconds.");
-						cur_bridge->keepalive = 5;
+					if(conf__parse_int(&token, "keepalive_interval", &tmp_int, saveptr)) return MOSQ_ERR_INVAL;
+					if(tmp_int > UINT16_MAX){
+						log__printf(NULL, MOSQ_LOG_ERR, "Error: Bridge keepalive value too high.");
+						return MOSQ_ERR_INVAL;
 					}
+					if(tmp_int < 5){
+						log__printf(NULL, MOSQ_LOG_NOTICE, "keepalive interval too low, using 5 seconds.");
+						tmp_int = 5;
+					}
+					cur_bridge->keepalive = (uint16_t)tmp_int;
 #else
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Bridge support not available.");
 #endif
@@ -1339,9 +1344,9 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 					if(token){
 						tmp_int = atoi(token);
 #ifdef WITH_UNIX_SOCKETS
-						if(tmp_int < 0 || tmp_int > 65535){
+						if(tmp_int < 0 || tmp_int > UINT16_MAX){
 #else
-						if(tmp_int < 1 || tmp_int > 65535){
+						if(tmp_int < 1 || tmp_int > UINT16_MAX){
 #endif
 							log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid port value (%d).", tmp_int);
 							return MOSQ_ERR_INVAL;
@@ -1388,7 +1393,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 							}
 						}else{
 							config->listener_count++;
-							config->listeners = mosquitto__realloc(config->listeners, sizeof(struct mosquitto__listener)*config->listener_count);
+							config->listeners = mosquitto__realloc(config->listeners, sizeof(struct mosquitto__listener)*(size_t)config->listener_count);
 							if(!config->listeners){
 								log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 								return MOSQ_ERR_NOMEM;
@@ -1398,7 +1403,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 						}
 
 						listener__set_defaults(cur_listener);
-						cur_listener->port = tmp_int;
+						cur_listener->port = (uint16_t)tmp_int;
 
 						mosquitto__free(cur_listener->host);
 						cur_listener->host = NULL;
@@ -1598,41 +1603,41 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: maximum_qos must be between 0 and 2 inclusive.");
 						return MOSQ_ERR_INVAL;
 					}
-					cur_listener->maximum_qos = tmp_int;
+					cur_listener->maximum_qos = (uint8_t)tmp_int;
 				}else if(!strcmp(token, "max_inflight_bytes")){
 					token = strtok_r(NULL, " ", &saveptr);
 					if(token){
-						cr->max_inflight_bytes = atol(token);
+						cr->max_inflight_bytes = (unsigned long)atol(token);
 					}else{
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty max_inflight_bytes value in configuration.");
 					}
 				}else if(!strcmp(token, "max_inflight_messages")){
 					if(conf__parse_int(&token, "max_inflight_messages", &tmp_int, saveptr)) return MOSQ_ERR_INVAL;
-					if(tmp_int < 0 || tmp_int == 65535){
+					if(tmp_int < 0 || tmp_int == UINT16_MAX){
 						tmp_int = 0;
-					}else if(tmp_int > 65535){
+					}else if(tmp_int > UINT16_MAX){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: max_inflight_messages must be <= 65535.");
 						return MOSQ_ERR_INVAL;
 					}
-					config->max_inflight_messages = tmp_int;
+					config->max_inflight_messages = (uint16_t)tmp_int;
 				}else if(!strcmp(token, "max_keepalive")){
 					if(conf__parse_int(&token, "max_keepalive", &tmp_int, saveptr)) return MOSQ_ERR_INVAL;
-					if(tmp_int < 10 || tmp_int > 65535){
+					if(tmp_int < 10 || tmp_int > UINT16_MAX){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid max_keepalive value (%d).", tmp_int);
 						return MOSQ_ERR_INVAL;
 					}
-					config->max_keepalive = tmp_int;
+					config->max_keepalive = (uint16_t)tmp_int;
 				}else if(!strcmp(token, "max_packet_size")){
 					if(conf__parse_int(&token, "max_packet_size", &tmp_int, saveptr)) return MOSQ_ERR_INVAL;
 					if(tmp_int < 20){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid max_packet_size value (%d).", tmp_int);
 						return MOSQ_ERR_INVAL;
 					}
-					config->max_packet_size = tmp_int;
+					config->max_packet_size = (uint32_t)tmp_int;
 				}else if(!strcmp(token, "max_queued_bytes")){
 					token = strtok_r(NULL, " ", &saveptr);
 					if(token){
-						cr->max_queued_bytes = atol(token); /* 63 bits is ok right? */
+						cr->max_queued_bytes = (unsigned long)atol(token); /* 63 bits is ok right? */
 					}else{
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty max_queued_bytes value in configuration.");
 					}
@@ -1651,7 +1656,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid memory_limit value (%ld).", lim);
 						return MOSQ_ERR_INVAL;
 					}
-					memory__set_limit(lim);
+					memory__set_limit((size_t)lim);
 				}else if(!strcmp(token, "message_size_limit")){
 					if(conf__parse_int(&token, "message_size_limit", (int *)&config->message_size_limit, saveptr)) return MOSQ_ERR_INVAL;
 					if(config->message_size_limit > MQTT_MAX_PAYLOAD){
@@ -1777,11 +1782,11 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 						log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Default listener port specified multiple times. Only the latest will be used.");
 					}
 					if(conf__parse_int(&token, "port", &tmp_int, saveptr)) return MOSQ_ERR_INVAL;
-					if(tmp_int < 1 || tmp_int > 65535){
+					if(tmp_int < 1 || tmp_int > UINT16_MAX){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid port value (%d).", tmp_int);
 						return MOSQ_ERR_INVAL;
 					}
-					config->default_listener.port = tmp_int;
+					config->default_listener.port = (uint16_t)tmp_int;
 				}else if(!strcmp(token, "protocol")){
 					token = strtok_r(NULL, " ", &saveptr);
 					if(token){
@@ -1992,7 +1997,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 					}
 					char *topic = NULL;
 					enum mosquitto__bridge_direction direction = bd_out;
-					int qos = 0;
+					uint8_t qos = 0;
 					char *local_prefix = NULL, *remote_prefix = NULL;
 
 					token = strtok_r(NULL, " ", &saveptr);
@@ -2019,7 +2024,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 							if (token[0] == '#'){
 								strtok_r(NULL, "", &saveptr);
 							}
-							qos = atoi(token);
+							qos = (uint8_t)atoi(token);
 							if(qos < 0 || qos > 2){
 								log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge QoS level '%s'.", token);
 								return MOSQ_ERR_INVAL;
@@ -2058,9 +2063,15 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 					if(reload) continue; /* Listeners not valid for reloading. */
 					token = strtok_r(NULL, " ", &saveptr);
 					if(token){
-						cur_listener->max_topic_alias = atoi(token);
+						tmp_int = atoi(token);
+						if(tmp_int < 0 || tmp_int > UINT16_MAX){
+							log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid max_topic_alias value in configuration.");
+							return MOSQ_ERR_INVAL;
+						}
+						cur_listener->max_topic_alias = (uint16_t)tmp_int;
 					}else{
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty max_topic_alias value in configuration.");
+						return MOSQ_ERR_INVAL;
 					}
 				}else if(!strcmp(token, "try_private")){
 #ifdef WITH_BRIDGE
@@ -2147,7 +2158,7 @@ int config__read_file(struct mosquitto__config *config, bool reload, const char 
 	}
 
 	buflen = 1000;
-	buf = mosquitto__malloc(buflen);
+	buf = mosquitto__malloc((size_t)buflen);
 	if(!buf){
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 		fclose(fptr);
@@ -2172,7 +2183,7 @@ static int config__check(struct mosquitto__config *config)
 	int j;
 	struct mosquitto__bridge *bridge1, *bridge2;
 	char hostname[256];
-	int len;
+	size_t len;
 
 	/* Check for bridge duplicate local_clientid, need to generate missing IDs
 	 * first. */
@@ -2291,6 +2302,8 @@ static int conf__parse_ssize_t(char **token, const char *name, ssize_t *value, c
 
 static int conf__parse_string(char **token, const char *name, char **value, char *saveptr)
 {
+	size_t tlen;
+
 	*token = strtok_r(NULL, "", &saveptr);
 	if(*token){
 		if(*value){
@@ -2304,7 +2317,11 @@ static int conf__parse_string(char **token, const char *name, char **value, char
 			return MOSQ_ERR_INVAL;
 		}
 
-		if(mosquitto_validate_utf8(*token, strlen(*token))){
+		tlen = strlen(*token);
+		if(tlen > UINT16_MAX){
+			return MOSQ_ERR_INVAL;
+		}
+		if(mosquitto_validate_utf8(*token, (uint16_t)tlen)){
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Malformed UTF-8 in configuration.");
 			return MOSQ_ERR_INVAL;
 		}

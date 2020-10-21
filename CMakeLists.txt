@@ -112,6 +112,9 @@ if (WITH_BROKER)
 add_subdirectory(src)
 endif (WITH_BROKER)
 
+add_subdirectory(apps)
+add_subdirectory(plugins)
+
 if (DOCUMENTATION)
 	add_subdirectory(man)
 endif (DOCUMENTATION)

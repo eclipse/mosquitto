@@ -15,6 +15,9 @@ vglog*
 c/*.test
 cpp/*.test
 
+apps/db_dump/mosquitto_db_dump
+apps/mosquitto_passwd/mosquitto_passwd
+
 build/
 
 client/mosquitto_pub
@@ -49,9 +52,7 @@ man/mqtt.7
 
 out/
 
-src/db_dump/mosquitto_db_dump
 src/mosquitto
-src/mosquitto_passwd
 
 test/broker/broker.pid
 test/test_client

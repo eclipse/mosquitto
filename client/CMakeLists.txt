@@ -6,7 +6,7 @@ if (WITH_SRV)
 	add_definitions("-DWITH_SRV")
 endif (WITH_SRV)
 
-set( CLIENT_INC ${mosquitto_SOURCE_DIR} ${mosquitto_SOURCE_DIR}/lib
+set( CLIENT_INC ${mosquitto_SOURCE_DIR} ${mosquitto_SOURCE_DIR}/include
             ${STDBOOL_H_PATH} ${STDINT_H_PATH} ${PTHREAD_INCLUDE_DIR}
             ${OPENSSL_INCLUDE_DIR})
 

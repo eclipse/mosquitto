@@ -41,8 +41,8 @@ struct client_data
 {
 	UT_hash_handle hh_id;
 	char *id;
-	int subscriptions;
-	int subscription_size;
+	uint32_t subscriptions;
+	uint32_t subscription_size;
 	int messages;
 	long message_size;
 };
@@ -387,8 +387,8 @@ int main(int argc, char *argv[])
 	int rc = 0;
 	uint32_t crc;
 	uint32_t i32temp;
-	int length;
-	int chunk;
+	uint32_t length;
+	uint32_t chunk;
 	struct mosquitto_db db;
 	char *filename;
 	struct client_data *cc, *cc_tmp;

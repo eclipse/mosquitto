@@ -614,11 +614,17 @@ static int acl__check_single(struct mosquitto__auth_plugin_config *auth_plugin, 
 	}
 
 	if(auth_plugin->plugin.version == 4){
+		if(access == MOSQ_ACL_UNSUBSCRIBE){
+			return MOSQ_ERR_SUCCESS;
+		}
 		return auth_plugin->plugin.acl_check_v4(auth_plugin->plugin.user_data, access, context, msg);
 	}else if(auth_plugin->plugin.version == 3){
+		if(access == MOSQ_ACL_UNSUBSCRIBE){
+			return MOSQ_ERR_SUCCESS;
+		}
 		return auth_plugin->plugin.acl_check_v3(auth_plugin->plugin.user_data, access, context, msg);
 	}else if(auth_plugin->plugin.version == 2){
-		if(access == MOSQ_ACL_SUBSCRIBE){
+		if(access == MOSQ_ACL_SUBSCRIBE || access == MOSQ_ACL_UNSUBSCRIBE){
 			return MOSQ_ERR_SUCCESS;
 		}
 		return auth_plugin->plugin.acl_check_v2(auth_plugin->plugin.user_data, context->id, username, topic, access);
@@ -649,8 +655,7 @@ static int acl__check_dollar(const char *topic, int access)
 		}
 	}else if(!strncmp(topic, "$share", 6)){
 		/* Only allow sub/unsub to shared subscriptions */
-		if(access == MOSQ_ACL_SUBSCRIBE){
-		/* FIXME if(access == MOSQ_ACL_SUBSCRIBE || access == MOSQ_ACL_UNSUBSCRIBE){ */
+		if(access == MOSQ_ACL_SUBSCRIBE || access == MOSQ_ACL_UNSUBSCRIBE){
 			return MOSQ_ERR_SUCCESS;
 		}else{
 			return MOSQ_ERR_ACL_DENIED;
@@ -662,7 +667,7 @@ static int acl__check_dollar(const char *topic, int access)
 }
 
 
-int mosquitto_acl_check(struct mosquitto_db *db, struct mosquitto *context, const char *topic, long payloadlen, void* payload, int qos, bool retain, int access)
+int mosquitto_acl_check(struct mosquitto_db *db, struct mosquitto *context, const char *topic, uint32_t payloadlen, void* payload, uint8_t qos, bool retain, int access)
 {
 	int rc;
 	int i;
@@ -674,21 +679,24 @@ int mosquitto_acl_check(struct mosquitto_db *db, struct mosquitto *context, cons
 	if(!context->id){
 		return MOSQ_ERR_ACL_DENIED;
 	}
+	if(context->bridge){
+		return MOSQ_ERR_SUCCESS;
+	}
 
 	rc = acl__check_dollar(topic, access);
 	if(rc) return rc;
 
-	rc = mosquitto_acl_check_default(db, context, topic, access);
-	if(rc != MOSQ_ERR_PLUGIN_DEFER){
-		return rc;
-	}
-	/* Default check has accepted or deferred at this point.
+	/* 
 	 * If no plugins exist we should accept at this point so set rc to success.
 	 */
 	rc = MOSQ_ERR_SUCCESS;
 
 	if(db->config->per_listener_settings){
-		opts = &context->listener->security_options;
+		if(context->listener){
+			opts = &context->listener->security_options;
+		}else{
+			return MOSQ_ERR_ACL_DENIED;
+		}
 	}else{
 		opts = &db->config->security_options;
 	}
@@ -742,14 +750,10 @@ int mosquitto_unpwd_check(struct mosquitto_db *db, struct mosquitto *context)
 	struct mosquitto__security_options *opts;
 	struct mosquitto_evt_basic_auth event_data;
 	struct mosquitto__callback *cb_base;
+	bool plugin_used = false;
 
-	rc = mosquitto_unpwd_check_default(db, context);
-	if(rc != MOSQ_ERR_PLUGIN_DEFER){
-		return rc;
-	}
-	/* Default check has accepted or deferred at this point.
-	 * If no plugins exist we should accept at this point so set rc to success.
-	 */
+	rc = MOSQ_ERR_PLUGIN_DEFER;
+
 	if(db->config->per_listener_settings){
 		opts = &context->listener->security_options;
 	}else{
@@ -765,6 +769,7 @@ int mosquitto_unpwd_check(struct mosquitto_db *db, struct mosquitto *context)
 		if(rc != MOSQ_ERR_PLUGIN_DEFER){
 			return rc;
 		}
+		plugin_used = true;
 	}
 
 	for(i=0; i<opts->auth_plugin_config_count; i++){
@@ -776,6 +781,7 @@ int mosquitto_unpwd_check(struct mosquitto_db *db, struct mosquitto *context)
 					context,
 					context->username,
 					context->password);
+			plugin_used = true;
 
 		}else if(opts->auth_plugin_configs[i].plugin.version == 3){
 			rc = opts->auth_plugin_configs[i].plugin.unpwd_check_v3(
@@ -783,25 +789,37 @@ int mosquitto_unpwd_check(struct mosquitto_db *db, struct mosquitto *context)
 					context,
 					context->username,
 					context->password);
+			plugin_used = true;
 
 		}else if(opts->auth_plugin_configs[i].plugin.version == 2){
 			rc = opts->auth_plugin_configs[i].plugin.unpwd_check_v2(
 					opts->auth_plugin_configs[i].plugin.user_data,
 					context->username,
 					context->password);
+			plugin_used = true;
 		}
 	}
 	/* If all plugins deferred, this is a denial. If rc == MOSQ_ERR_SUCCESS
 	 * here, then no plugins were configured. Unless we have all deferred, and
 	 * anonymous logins are allowed. */
-	if(rc == MOSQ_ERR_PLUGIN_DEFER){
-		if(context->username == NULL &&
-				((db->config->per_listener_settings && context->listener->security_options.allow_anonymous == true)
-				|| (!db->config->per_listener_settings && db->config->security_options.allow_anonymous == true))){
+	if(plugin_used == false){
+		if((db->config->per_listener_settings && context->listener->security_options.allow_anonymous != false)
+				|| (!db->config->per_listener_settings && db->config->security_options.allow_anonymous != false)){
 
 			return MOSQ_ERR_SUCCESS;
 		}else{
 			return MOSQ_ERR_AUTH;
+		}
+	}else{
+		if(rc == MOSQ_ERR_PLUGIN_DEFER){
+			if(context->username == NULL &&
+					((db->config->per_listener_settings && context->listener->security_options.allow_anonymous != false)
+					|| (!db->config->per_listener_settings && db->config->security_options.allow_anonymous != false))){
+	
+				return MOSQ_ERR_SUCCESS;
+			}else{
+				return MOSQ_ERR_AUTH;
+			}
 		}
 	}
 

@@ -44,7 +44,6 @@ int main(int argc, char *argv[])
 	while(run == -1){
 		rc = mosquitto_loop(mosq, -1, 1);
 	}
-	mosquitto_destroy(mosq);
 
 	mosquitto_destroy(mosq);
 	mosquitto_lib_cleanup();

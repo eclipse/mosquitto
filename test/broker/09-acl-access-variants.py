@@ -14,12 +14,15 @@ def write_config(filename, port, per_listener):
 def write_acl(filename, global_en, user_en, pattern_en):
     with open(filename, 'w') as f:
         if global_en:
-            f.write('topic readwrite topic/global\n')
+            f.write('topic readwrite topic/global/#\n')
+            f.write('topic deny      topic/global/except\n')
         if user_en:
             f.write('user username\n')
-            f.write('topic readwrite topic/username\n')
+            f.write('topic readwrite topic/username/#\n')
+            f.write('topic deny      topic/username/except\n')
         if pattern_en:
-            f.write('pattern readwrite pattern/%u\n')
+            f.write('pattern readwrite pattern/%u/#\n')
+            f.write('pattern deny      pattern/%u/except\n')
 
 
 
@@ -77,12 +80,15 @@ def acl_test(port, per_listener, global_en, user_en, pattern_en):
     if global_en:
         single_test(port, per_listener, username=None,       topic="topic/global", expect_deny=False)
         single_test(port, per_listener, username="username", topic="topic/global", expect_deny=True)
+        single_test(port, per_listener, username=None,       topic="topic/global/except", expect_deny=True)
     if user_en:
         single_test(port, per_listener, username=None,       topic="topic/username", expect_deny=True)
         single_test(port, per_listener, username="username", topic="topic/username", expect_deny=False)
+        single_test(port, per_listener, username="username", topic="topic/username/except", expect_deny=True)
     if pattern_en:
         single_test(port, per_listener, username=None,       topic="pattern/username", expect_deny=True)
         single_test(port, per_listener, username="username", topic="pattern/username", expect_deny=False)
+        single_test(port, per_listener, username="username", topic="pattern/username/except", expect_deny=True)
 
 def do_test(port, per_listener):
     try:

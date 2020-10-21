@@ -40,13 +40,13 @@ Contributors:
 static char nibble_to_hex(uint8_t value)
 {
 	if(value < 0x0A){
-		return '0'+value;
+		return (char)('0'+value);
 	}else{
-		return 'A'+value-0x0A;
+		return (char)(65 /*'A'*/ +value-10);
 	}
 }
 
-static char *client_id_gen(int *idlen, const char *auto_id_prefix, int auto_id_prefix_len)
+static char *client_id_gen(uint16_t *idlen, const char *auto_id_prefix, uint16_t auto_id_prefix_len)
 {
 	char *client_id;
 	uint8_t rnd[16];
@@ -55,9 +55,9 @@ static char *client_id_gen(int *idlen, const char *auto_id_prefix, int auto_id_p
 
 	if(util__random_bytes(rnd, 16)) return NULL;
 
-	*idlen = 36 + auto_id_prefix_len;
+	*idlen = (uint16_t)(auto_id_prefix_len + 36);
 
-	client_id = (char *)mosquitto__calloc((*idlen) + 1, sizeof(char));
+	client_id = (char *)mosquitto__calloc((size_t)(*idlen) + 1, sizeof(char));
 	if(!client_id){
 		return NULL;
 	}
@@ -289,7 +289,8 @@ error:
 static int will__read(struct mosquitto *context, struct mosquitto_message_all **will, uint8_t will_qos, int will_retain)
 {
 	int rc = MOSQ_ERR_SUCCESS;
-	int slen;
+	size_t slen;
+	uint16_t tlen;
 	struct mosquitto_message_all *will_struct = NULL;
 	char *will_topic_mount = NULL;
 	uint16_t payloadlen;
@@ -308,9 +309,9 @@ static int will__read(struct mosquitto *context, struct mosquitto_message_all **
 		mosquitto_property_free_all(&properties);
 		if(rc) goto error_cleanup;
 	}
-	rc = packet__read_string(&context->in_packet, &will_struct->msg.topic, &slen);
+	rc = packet__read_string(&context->in_packet, &will_struct->msg.topic, &tlen);
 	if(rc) goto error_cleanup;
-	if(!slen){
+	if(!tlen){
 		rc = MOSQ_ERR_PROTOCOL;
 		goto error_cleanup;
 	}
@@ -338,13 +339,13 @@ static int will__read(struct mosquitto *context, struct mosquitto_message_all **
 
 	will_struct->msg.payloadlen = payloadlen;
 	if(will_struct->msg.payloadlen > 0){
-		will_struct->msg.payload = mosquitto__malloc(will_struct->msg.payloadlen);
+		will_struct->msg.payload = mosquitto__malloc((size_t)will_struct->msg.payloadlen);
 		if(!will_struct->msg.payload){
 			rc = MOSQ_ERR_NOMEM;
 			goto error_cleanup;
 		}
 
-		rc = packet__read_bytes(&context->in_packet, will_struct->msg.payload, will_struct->msg.payloadlen);
+		rc = packet__read_bytes(&context->in_packet, will_struct->msg.payload, (uint32_t)will_struct->msg.payloadlen);
 		if(rc) goto error_cleanup;
 	}
 
@@ -377,8 +378,7 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 	uint8_t username_flag, password_flag;
 	char *username = NULL, *password = NULL;
 	int rc;
-	int slen;
-	uint16_t slen16;
+	uint16_t slen;
 	mosquitto_property *properties = NULL;
 	void *auth_data = NULL;
 	uint16_t auth_data_len = 0;
@@ -413,11 +413,10 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 	/* Read protocol name as length then bytes rather than with read_string
 	 * because the length is fixed and we can check that. Removes the need
 	 * for another malloc as well. */
-	if(packet__read_uint16(&context->in_packet, &slen16)){
+	if(packet__read_uint16(&context->in_packet, &slen)){
 		rc = 1;
 		goto handle_connect_error;
 	}
-	slen = slen16;
 	if(slen != 4 /* MQTT */ && slen != 6 /* MQIsdp */){
 		rc = MOSQ_ERR_PROTOCOL;
 		goto handle_connect_error;
@@ -756,13 +755,13 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 				X509_NAME_print_ex(subject_bio, X509_get_subject_name(client_cert), 0, XN_FLAG_RFC2253);
 				data_start = NULL;
 				name_length = BIO_get_mem_data(subject_bio, &data_start);
-				subject = mosquitto__malloc(sizeof(char)*name_length+1);
+				subject = mosquitto__malloc(sizeof(char)*(size_t)(name_length+1));
 				if(!subject){
 					BIO_free(subject_bio);
 					rc = MOSQ_ERR_NOMEM;
 					goto handle_connect_error;
 				}
-				memcpy(subject, data_start, name_length);
+				memcpy(subject, data_start, (size_t)name_length);
 				subject[name_length] = '\0';
 				BIO_free(subject_bio);
 				context->username = subject;

@@ -23,7 +23,7 @@ Contributors:
 #include "property_mosq.h"
 #include "util_mosq.h"
 
-int send__connack(struct mosquitto_db *db, struct mosquitto *context, int ack, int reason_code, const mosquitto_property *properties)
+int send__connack(struct mosquitto_db *db, struct mosquitto *context, uint8_t ack, uint8_t reason_code, const mosquitto_property *properties)
 {
 	struct mosquitto__packet *packet = NULL;
 	int rc;

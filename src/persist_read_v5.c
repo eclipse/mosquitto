@@ -38,7 +38,7 @@ Contributors:
 #include "util_mosq.h"
 
 
-int persist__chunk_header_read_v56(FILE *db_fptr, int *chunk, int *length)
+int persist__chunk_header_read_v56(FILE *db_fptr, uint32_t *chunk, uint32_t *length)
 {
 	size_t rlen;
 	struct PF_header header;
@@ -64,7 +64,7 @@ int persist__chunk_cfg_read_v56(FILE *db_fptr, struct PF_cfg *chunk)
 }
 
 
-int persist__chunk_client_read_v56(FILE *db_fptr, struct P_client *chunk, int db_version)
+int persist__chunk_client_read_v56(FILE *db_fptr, struct P_client *chunk, uint32_t db_version)
 {
 	int rc;
 
@@ -115,7 +115,7 @@ int persist__chunk_client_msg_read_v56(FILE *db_fptr, struct P_client_msg *chunk
 	chunk->F.mid = ntohs(chunk->F.mid);
 	chunk->F.id_len = ntohs(chunk->F.id_len);
 
-	length -= (sizeof(struct PF_client_msg) + chunk->F.id_len);
+	length -= (uint32_t)(sizeof(struct PF_client_msg) + chunk->F.id_len);
 
 	rc = persist__read_string_len(db_fptr, &chunk->client_id, chunk->F.id_len);
 	if(rc){
@@ -164,7 +164,7 @@ int persist__chunk_msg_store_read_v56(FILE *db_fptr, struct P_msg_store *chunk, 
 	chunk->F.topic_len = ntohs(chunk->F.topic_len);
 	chunk->F.source_port = ntohs(chunk->F.source_port);
 
-	length -= (sizeof(struct PF_msg_store) + chunk->F.payloadlen + chunk->F.source_id_len + chunk->F.source_username_len + chunk->F.topic_len);
+	length -= (uint32_t)(sizeof(struct PF_msg_store) + chunk->F.payloadlen + chunk->F.source_id_len + chunk->F.source_username_len + chunk->F.topic_len);
 
 	if(chunk->F.source_id_len){
 		rc = persist__read_string_len(db_fptr, &chunk->source.id, chunk->F.source_id_len);

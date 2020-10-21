@@ -69,13 +69,13 @@ struct mosquitto_evt_reload {
 struct mosquitto_evt_acl_check {
 	void *future;
 	struct mosquitto *client;
-	int access;
 	const char *topic;
 	const void *payload;
-	long payloadlen;
-	int qos;
-	bool retain;
 	mosquitto_property *properties;
+	int access;
+	uint32_t payloadlen;
+	uint8_t qos;
+	bool retain;
 	void *future2[4];
 };
 
@@ -118,8 +118,8 @@ struct mosquitto_evt_control {
 	const void *payload;
 	const mosquitto_property *properties;
 	char *reason_string;
-	long payloadlen;
-	int qos;
+	uint32_t payloadlen;
+	uint8_t qos;
 	uint8_t reason_code;
 	bool retain;
 	void *future2[4];
@@ -133,8 +133,8 @@ struct mosquitto_evt_message {
 	void *payload;
 	mosquitto_property *properties;
 	char *reason_string;
-	long payloadlen;
-	int qos;
+	uint32_t payloadlen;
+	uint8_t qos;
 	uint8_t reason_code;
 	bool retain;
 	void *future2[4];
@@ -260,6 +260,9 @@ mosq_EXPORT int mosquitto_client_keepalive(const struct mosquitto *client);
  * NULL will be returned. This function will only ever return a non-NULL value
  * if the `require_certificate` option is set to true.
  *
+ * When you have finished with the x509 pointer, it must be freed using
+ * X509_free().
+ *
  * If TLS is not supported, this function will always return NULL.
  */
 mosq_EXPORT void *mosquitto_client_certificate(const struct mosquitto *client);
@@ -342,7 +345,7 @@ mosq_EXPORT int mosquitto_set_username(struct mosquitto *client, const char *use
  * If with_will == true, then if the client has a Last Will and Testament
  *   defined then this will be sent. If false, the LWT will not be sent.
  */
-int mosquitto_kick_client_by_clientid(const char *clientid, bool with_will);
+mosq_EXPORT int mosquitto_kick_client_by_clientid(const char *clientid, bool with_will);
 
 /* Function: mosquitto_kick_client_by_username
  *

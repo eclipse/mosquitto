@@ -125,7 +125,7 @@ int bridge__new(struct mosquitto_db *db, struct mosquitto__bridge *bridge)
 	new_context->retain_available = bridge->outgoing_retain;
 	new_context->protocol = bridge->protocol_version;
 
-	bridges = mosquitto__realloc(db->bridges, (db->bridge_count+1)*sizeof(struct mosquitto *));
+	bridges = mosquitto__realloc(db->bridges, (size_t)(db->bridge_count+1)*sizeof(struct mosquitto *));
 	if(bridges){
 		db->bridges = bridges;
 		db->bridge_count++;
@@ -325,7 +325,7 @@ int bridge__connect(struct mosquitto_db *db, struct mosquitto *context)
 	int rc, rc2;
 	int i;
 	char *notification_topic;
-	int notification_topic_len;
+	size_t notification_topic_len;
 	uint8_t notification_payload;
 
 	if(!context || !context->bridge) return MOSQ_ERR_INVAL;
@@ -453,7 +453,7 @@ int bridge__on_connect(struct mosquitto_db *db, struct mosquitto *context)
 {
 	int i;
 	char *notification_topic;
-	int notification_topic_len;
+	size_t notification_topic_len;
 	char notification_payload;
 	int sub_opts;
 	bool retain = true;

@@ -190,7 +190,7 @@ static void read_varint_helper(const mosquitto_property *proplist, int identifie
 	CU_ASSERT_EQUAL(value, expected_value);
 }
 
-static void read_binary_helper(const mosquitto_property *proplist, int identifier, void *expected_value, int expected_length)
+static void read_binary_helper(const mosquitto_property *proplist, int identifier, void *expected_value, uint16_t expected_length)
 {
 	const mosquitto_property *prop;
 	void *value = NULL;

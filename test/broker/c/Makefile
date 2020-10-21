@@ -1,6 +1,6 @@
 .PHONY: all test clean reallyclean
 
-CFLAGS=-I../../../lib -I../../../src -Wall -Werror
+CFLAGS=-I../../../include -Wall -Werror
 
 PLUGIN_SRC = \
 	auth_plugin_v4.c \

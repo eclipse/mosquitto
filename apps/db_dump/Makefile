@@ -1,11 +1,13 @@
 include ../../config.mk
 
-CFLAGS_FINAL=${CFLAGS} -I.. -I../../ -I../../lib -I../.. -I../deps -DWITH_BROKER -DWITH_PERSISTENCE
+CFLAGS_FINAL=${CFLAGS} -I../../include -I../../ -I../../lib -I../../src -I../../deps -DWITH_BROKER -DWITH_PERSISTENCE
 
 OBJS = \
 	   db_dump.o \
 	   print.o \
 	   \
+	   memory_mosq.o \
+	   memory_public.o \
 	   packet_datatypes.o \
 	   packet_mosq.o \
 	   persist_read.o \
@@ -25,10 +27,16 @@ all : mosquitto_db_dump
 mosquitto_db_dump : ${OBJS}
 	${CROSS_COMPILE}${CC} $^ -o $@ ${LDFLAGS} ${LIBS}
 
-db_dump.o : db_dump.c db_dump.h ../persist.h
+db_dump.o : db_dump.c db_dump.h ../../src/persist.h
 	${CROSS_COMPILE}${CC} $(CFLAGS_FINAL) -c $< -o $@
 
-print.o : print.c db_dump.h ../persist.h
+print.o : print.c db_dump.h ../../src/persist.h
+	${CROSS_COMPILE}${CC} $(CFLAGS_FINAL) -c $< -o $@
+
+memory_mosq.o : ../../lib/memory_mosq.c ../../lib/memory_mosq.h
+	${CROSS_COMPILE}${CC} $(CFLAGS_FINAL) -c $< -o $@
+
+memory_public.o : ../../src/memory_public.c
 	${CROSS_COMPILE}${CC} $(CFLAGS_FINAL) -c $< -o $@
 
 net_mosq.o : ../../lib/net_mosq.c ../../lib/net_mosq.h
@@ -40,13 +48,13 @@ packet_datatypes.o : ../../lib/packet_datatypes.c ../../lib/packet_mosq.h
 packet_mosq.o : ../../lib/packet_mosq.c ../../lib/packet_mosq.h
 	${CROSS_COMPILE}${CC} $(CFLAGS_FINAL) -c $< -o $@
 
-persist_read.o : ../persist_read.c ../persist.h ../mosquitto_broker_internal.h
+persist_read.o : ../../src/persist_read.c ../../src/persist.h ../../src/mosquitto_broker_internal.h
 	${CROSS_COMPILE}${CC} $(CFLAGS_FINAL) -c $< -o $@
 
-persist_read_v234.o : ../persist_read_v234.c ../persist.h ../mosquitto_broker_internal.h
+persist_read_v234.o : ../../src/persist_read_v234.c ../../src/persist.h ../../src/mosquitto_broker_internal.h
 	${CROSS_COMPILE}${CC} $(CFLAGS_FINAL) -c $< -o $@
 
-persist_read_v5.o : ../persist_read_v5.c ../persist.h ../mosquitto_broker_internal.h
+persist_read_v5.o : ../../src/persist_read_v5.c ../../src/persist.h ../../src/mosquitto_broker_internal.h
 	${CROSS_COMPILE}${CC} $(CFLAGS_FINAL) -c $< -o $@
 
 property_mosq.o : ../../lib/property_mosq.c ../../lib/property_mosq.h
@@ -70,5 +78,11 @@ topic_tok.o : ../../src/topic_tok.c
 utf8_mosq.o : ../../lib/utf8_mosq.c
 	${CROSS_COMPILE}${CC} $(CFLAGS_FINAL) -c $< -o $@
 
+reallyclean: clean
+
 clean :
 	-rm -f *.o mosquitto_db_dump
+
+install:
+
+uninstall:

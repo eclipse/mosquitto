@@ -40,8 +40,8 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 	uint8_t header = context->in_packet.command;
 	int res = 0;
 	struct mosquitto_msg_store *msg, *stored = NULL;
-	int len;
-	int slen;
+	size_t len;
+	uint16_t slen;
 	char *topic_mount;
 	mosquitto_property *properties = NULL;
 	mosquitto_property *p, *p_prev;
@@ -175,13 +175,13 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 		return MOSQ_ERR_TOPIC_ALIAS_INVALID;
 	}else if(topic_alias > 0){
 		if(msg->topic){
-			rc = alias__add(context, msg->topic, topic_alias);
+			rc = alias__add(context, msg->topic, (uint16_t)topic_alias);
 			if(rc){
 				db__msg_store_free(msg);
 				return rc;
 			}
 		}else{
-			rc = alias__find(context, &msg->topic, topic_alias);
+			rc = alias__find(context, &msg->topic, (uint16_t)topic_alias);
 			if(rc){
 				db__msg_store_free(msg);
 				return MOSQ_ERR_TOPIC_ALIAS_INVALID;

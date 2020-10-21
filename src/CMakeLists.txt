@@ -1,6 +1,6 @@
 include_directories(${mosquitto_SOURCE_DIR} ${mosquitto_SOURCE_DIR}/src
-		${mosquitto_SOURCE_DIR}/lib ${OPENSSL_INCLUDE_DIR}
-		${STDBOOL_H_PATH} ${STDINT_H_PATH})
+		${mosquitto_SOURCE_DIR}/include ${mosquitto_SOURCE_DIR}/lib
+		${OPENSSL_INCLUDE_DIR} ${STDBOOL_H_PATH} ${STDINT_H_PATH})
 
 set (MOSQ_SRCS
 	../lib/alias_mosq.c ../lib/alias_mosq.h
@@ -30,13 +30,14 @@ set (MOSQ_SRCS
 	../lib/memory_mosq.c ../lib/memory_mosq.h
 	memory_public.c
 	mosquitto.c
-	mosquitto_broker.h mosquitto_broker_internal.h
+	../include/mosquitto_broker.h mosquitto_broker_internal.h
 	../lib/misc_mosq.c ../lib/misc_mosq.h
 	mux.c mux.h mux_epoll.c mux_poll.c
 	net.c
 	../lib/net_mosq_ocsp.c ../lib/net_mosq.c ../lib/net_mosq.h
 	../lib/packet_datatypes.c
 	../lib/packet_mosq.c ../lib/packet_mosq.h
+	password_mosq.c password_mosq.h
 	persist_read_v234.c persist_read_v5.c persist_read.c
 	persist_write_v5.c persist_write.c
 	persist.h
@@ -72,7 +73,7 @@ set (MOSQ_SRCS
 
 
 if (WITH_BUNDLED_DEPS)
-	include_directories(${mosquitto_SOURCE_DIR} ${mosquitto_SOURCE_DIR}/src/deps)
+	include_directories(${mosquitto_SOURCE_DIR} ${mosquitto_SOURCE_DIR}/deps)
 endif (WITH_BUNDLED_DEPS)
 
 option(INC_BRIDGE_SUPPORT
@@ -203,10 +204,4 @@ if (UNIX)
 endif (UNIX)
 
 install(TARGETS mosquitto RUNTIME DESTINATION "${CMAKE_INSTALL_SBINDIR}")
-install(FILES mosquitto_broker.h mosquitto_plugin.h DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
-
-if (WITH_TLS)
-	add_executable(mosquitto_passwd mosquitto_passwd.c ../lib/misc_mosq.c)
-	target_link_libraries(mosquitto_passwd ${OPENSSL_LIBRARIES})
-	install(TARGETS mosquitto_passwd RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
-endif (WITH_TLS)
+install(FILES ../include/mosquitto_broker.h ../include/mosquitto_plugin.h DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")

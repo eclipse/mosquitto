@@ -2,11 +2,7 @@ include ../config.mk
 
 .PHONY: all install uninstall clean reallyclean
 
-ifeq ($(WITH_TLS),yes)
-all : mosquitto mosquitto_passwd
-else
 all : mosquitto
-endif
 
 OBJS=	mosquitto.o \
 		alias_mosq.o \
@@ -44,6 +40,7 @@ OBJS=	mosquitto.o \
 		net_mosq_ocsp.o \
 		packet_datatypes.o \
 		packet_mosq.o \
+		password_mosq.o \
 		property_broker.o \
 		property_mosq.o \
 		persist_read.o \
@@ -187,6 +184,9 @@ net_mosq_ocsp.o : ../lib/net_mosq_ocsp.c ../lib/net_mosq.h
 net_mosq.o : ../lib/net_mosq.c ../lib/net_mosq.h
 	${CROSS_COMPILE}${CC} $(BROKER_CPPFLAGS) $(BROKER_CFLAGS) -c $< -o $@
 
+password_mosq.o : password_mosq.c password_mosq.h mosquitto_broker_internal.h
+	${CROSS_COMPILE}${CC} $(BROKER_CPPFLAGS) $(BROKER_CFLAGS) -c $< -o $@
+
 persist_read.o : persist_read.c persist.h mosquitto_broker_internal.h
 	${CROSS_COMPILE}${CC} $(BROKER_CPPFLAGS) $(BROKER_CFLAGS) -c $< -o $@
 
@@ -214,10 +214,10 @@ property_broker.o : property_broker.c mosquitto_broker_internal.h
 property_mosq.o : ../lib/property_mosq.c ../lib/property_mosq.h
 	${CROSS_COMPILE}${CC} $(BROKER_CPPFLAGS) $(BROKER_CFLAGS) -c $< -o $@
 
-plugin.o : plugin.c mosquitto_plugin.h mosquitto_broker_internal.h
+plugin.o : plugin.c ../include/mosquitto_plugin.h mosquitto_broker_internal.h
 	${CROSS_COMPILE}${CC} $(BROKER_CPPFLAGS) $(BROKER_CFLAGS) -c $< -o $@
 
-plugin_public.o : plugin_public.c mosquitto_plugin.h mosquitto_broker_internal.h
+plugin_public.o : plugin_public.c ../include/mosquitto_plugin.h mosquitto_broker_internal.h
 	${CROSS_COMPILE}${CC} $(BROKER_CPPFLAGS) $(BROKER_CFLAGS) -c $< -o $@
 
 read_handle.o : read_handle.c mosquitto_broker_internal.h
@@ -304,37 +304,26 @@ will_delay.o : will_delay.c mosquitto_broker_internal.h
 will_mosq.o : ../lib/will_mosq.c ../lib/will_mosq.h
 	${CROSS_COMPILE}${CC} $(BROKER_CPPFLAGS) $(BROKER_CFLAGS) -c $< -o $@
 
-mosquitto_passwd : mosquitto_passwd.o misc_mosq.o
-	${CROSS_COMPILE}${CC} ${LDFLAGS} $^ -o $@ $(PASSWD_LDADD)
-
-mosquitto_passwd.o : mosquitto_passwd.c
-	${CROSS_COMPILE}${CC} -I.. -I../lib $(CPPFLAGS) $(CFLAGS) -c $< -o $@
-
-plugin_defer.so : plugin_defer.c mosquitto_plugin.h mosquitto_broker.h mosquitto_broker_internal.h
+plugin_defer.so : plugin_defer.c ../include/mosquitto_plugin.h ../include/mosquitto_broker.h mosquitto_broker_internal.h
 	${CROSS_COMPILE}${CC} -I. -I../lib -fPIC -shared $< -o $@
 
-plugin_debug.so : plugin_debug.c mosquitto_plugin.h mosquitto_broker.h mosquitto_broker_internal.h
+plugin_debug.so : plugin_debug.c ../include/mosquitto_plugin.../include/h mosquitto_broker.h mosquitto_broker_internal.h
 	${CROSS_COMPILE}${CC} -I. -I../lib -fPIC -shared $< -o $@
 
 install : all
 	$(INSTALL) -d "${DESTDIR}$(prefix)/sbin"
 	$(INSTALL) ${STRIP_OPTS} mosquitto "${DESTDIR}${prefix}/sbin/mosquitto"
 	$(INSTALL) -d "${DESTDIR}$(prefix)/include"
-	$(INSTALL) mosquitto_broker.h "${DESTDIR}${prefix}/include/mosquitto_broker.h"
-	$(INSTALL) mosquitto_plugin.h "${DESTDIR}${prefix}/include/mosquitto_plugin.h"
-ifeq ($(WITH_TLS),yes)
-	$(INSTALL) -d "${DESTDIR}$(prefix)/bin"
-	$(INSTALL) ${STRIP_OPTS} mosquitto_passwd "${DESTDIR}${prefix}/bin/mosquitto_passwd"
-endif
+	$(INSTALL) ../include/mosquitto_broker.h "${DESTDIR}${prefix}/include/mosquitto_broker.h"
+	$(INSTALL) ../include/mosquitto_plugin.h "${DESTDIR}${prefix}/include/mosquitto_plugin.h"
 
 uninstall :
 	-rm -f "${DESTDIR}${prefix}/sbin/mosquitto"
 	-rm -f "${DESTDIR}${prefix}/include/mosquitto_broker.h"
 	-rm -f "${DESTDIR}${prefix}/include/mosquitto_plugin.h"
-	-rm -f "${DESTDIR}${prefix}/bin/mosquitto_passwd"
 
 clean : 
-	-rm -f *.o mosquitto mosquitto_passwd *.gcda *.gcno
+	-rm -f *.o mosquitto *.gcda *.gcno
 
 reallyclean : clean
 	-rm -rf *.orig *.db

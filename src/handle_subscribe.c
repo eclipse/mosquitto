@@ -39,10 +39,11 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 	uint8_t retain_handling = 0;
 	uint8_t *payload = NULL, *tmp_payload;
 	uint32_t payloadlen = 0;
-	int len;
-	int slen;
+	size_t len;
+	uint16_t slen;
 	char *sub_mount;
 	mosquitto_property *properties = NULL;
+	bool allowed;
 
 	if(!context) return MOSQ_ERR_INVAL;
 
@@ -160,21 +161,25 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 			}
 			log__printf(NULL, MOSQ_LOG_DEBUG, "\t%s (QoS %d)", sub, qos);
 
-			if(context->protocol != mosq_p_mqtt31){
-				rc2 = mosquitto_acl_check(db, context, sub, 0, NULL, qos, false, MOSQ_ACL_SUBSCRIBE);
-				switch(rc2){
-					case MOSQ_ERR_SUCCESS:
-						break;
-					case MOSQ_ERR_ACL_DENIED:
+			allowed = true;
+			rc2 = mosquitto_acl_check(db, context, sub, 0, NULL, qos, false, MOSQ_ACL_SUBSCRIBE);
+			switch(rc2){
+				case MOSQ_ERR_SUCCESS:
+					break;
+				case MOSQ_ERR_ACL_DENIED:
+					allowed = false;
+					if(context->protocol == mosq_p_mqtt5){
+						qos = MQTT_RC_NOT_AUTHORIZED;
+					}else if(context->protocol == mosq_p_mqtt311){
 						qos = 0x80;
-						break;
-					default:
-						mosquitto__free(sub);
-						return rc2;
-				}
+					}
+					break;
+				default:
+					mosquitto__free(sub);
+					return rc2;
 			}
 
-			if(qos != 0x80){
+			if(allowed){
 				rc2 = sub__add(db, context, sub, qos, subscription_identifier, subscription_options, &db->subs);
 				if(rc2 > 0){
 					mosquitto__free(sub);

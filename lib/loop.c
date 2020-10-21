@@ -34,7 +34,7 @@ Contributors:
 #define HAVE_PSELECT
 #endif
 
-int mosquitto_loop(struct mosquitto *mosq, int timeout, int max_packets)
+int mosquitto_loop(struct mosquitto *mosq, int timeout_input, int max_packets)
 {
 #ifdef HAVE_PSELECT
 	struct timespec local_timeout;
@@ -50,6 +50,10 @@ int mosquitto_loop(struct mosquitto *mosq, int timeout, int max_packets)
 #ifdef WITH_SRV
 	int state;
 #endif
+	time_t timeout;
+
+	UNUSED(timeout_input);
+
 
 	if(!mosq || max_packets < 1) return MOSQ_ERR_INVAL;
 #ifndef WIN32
@@ -126,7 +130,7 @@ int mosquitto_loop(struct mosquitto *mosq, int timeout, int max_packets)
 
 	local_timeout.tv_sec = timeout/1000;
 #ifdef HAVE_PSELECT
-	local_timeout.tv_nsec = (timeout-local_timeout.tv_sec*1000)*1e6;
+	local_timeout.tv_nsec = (timeout-local_timeout.tv_sec*1000)*1000000;
 #else
 	local_timeout.tv_usec = (timeout-local_timeout.tv_sec*1000)*1000;
 #endif
@@ -191,7 +195,7 @@ int mosquitto_loop(struct mosquitto *mosq, int timeout, int max_packets)
 }
 
 
-static int interruptible_sleep(struct mosquitto *mosq, unsigned long reconnect_delay)
+static int interruptible_sleep(struct mosquitto *mosq, time_t reconnect_delay)
 {
 #ifdef HAVE_PSELECT
 	struct timespec local_timeout;
@@ -307,7 +311,7 @@ int mosquitto_loop_forever(struct mosquitto *mosq, int timeout, int max_packets)
 					mosq->reconnects++;
 				}
 
-				rc = interruptible_sleep(mosq, reconnect_delay);
+				rc = interruptible_sleep(mosq, (time_t)reconnect_delay);
 				if(rc) return rc;
 
 				state = mosquitto__get_state(mosq);

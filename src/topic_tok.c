@@ -61,7 +61,7 @@ int sub__topic_tokenise(const char *subtopic, char **local_sub, char ***topics, 
 	int count;
 	int topic_index = 0;
 	int i;
-	int len;
+	size_t len;
 
 	len = strlen(subtopic);
 	if(len == 0){
@@ -77,7 +77,7 @@ int sub__topic_tokenise(const char *subtopic, char **local_sub, char ***topics, 
 		saveptr = strchr(&saveptr[1], '/');
 		count++;
 	}
-	*topics = mosquitto__calloc(count+3 /* 3=$shared,sharename,NULL */, sizeof(char *));
+	*topics = mosquitto__calloc((size_t)(count+3) /* 3=$shared,sharename,NULL */, sizeof(char *));
 	if((*topics) == NULL){
 		mosquitto__free(*local_sub);
 		return MOSQ_ERR_NOMEM;

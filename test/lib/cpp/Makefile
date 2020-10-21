@@ -1,6 +1,6 @@
 .PHONY: all test 01 02 03 04 08 09 clean reallyclean
 
-CFLAGS=-I../../../lib -I../../../lib/cpp -DDEBUG
+CFLAGS=-I../../../include -I../../../lib/cpp -DDEBUG
 LIBS=../../../lib/libmosquitto.so.1 ../../../lib/cpp/libmosquittopp.so.1
 
 all : 01 02 03 04 08 09

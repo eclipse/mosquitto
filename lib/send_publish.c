@@ -37,7 +37,7 @@ Contributors:
 #include "send_mosq.h"
 
 
-int send__publish(struct mosquitto *mosq, uint16_t mid, const char *topic, uint32_t payloadlen, const void *payload, int qos, bool retain, bool dup, const mosquitto_property *cmsg_props, const mosquitto_property *store_props, uint32_t expiry_interval)
+int send__publish(struct mosquitto *mosq, uint16_t mid, const char *topic, uint32_t payloadlen, const void *payload, uint8_t qos, bool retain, bool dup, const mosquitto_property *cmsg_props, const mosquitto_property *store_props, uint32_t expiry_interval)
 {
 #ifdef WITH_BROKER
 	size_t len;
@@ -132,18 +132,18 @@ int send__publish(struct mosquitto *mosq, uint16_t mid, const char *topic, uint3
 }
 
 
-int send__real_publish(struct mosquitto *mosq, uint16_t mid, const char *topic, uint32_t payloadlen, const void *payload, int qos, bool retain, bool dup, const mosquitto_property *cmsg_props, const mosquitto_property *store_props, uint32_t expiry_interval)
+int send__real_publish(struct mosquitto *mosq, uint16_t mid, const char *topic, uint32_t payloadlen, const void *payload, uint8_t qos, bool retain, bool dup, const mosquitto_property *cmsg_props, const mosquitto_property *store_props, uint32_t expiry_interval)
 {
 	struct mosquitto__packet *packet = NULL;
-	int packetlen;
-	int proplen = 0, varbytes;
+	unsigned int packetlen;
+	unsigned int proplen = 0, varbytes;
 	int rc;
 	mosquitto_property expiry_prop;
 
 	assert(mosq);
 
 	if(topic){
-		packetlen = 2+strlen(topic) + payloadlen;
+		packetlen = 2+(unsigned int)strlen(topic) + payloadlen;
 	}else{
 		packetlen = 2 + payloadlen;
 	}
@@ -184,7 +184,7 @@ int send__real_publish(struct mosquitto *mosq, uint16_t mid, const char *topic, 
 	if(!packet) return MOSQ_ERR_NOMEM;
 
 	packet->mid = mid;
-	packet->command = CMD_PUBLISH | ((dup&0x1)<<3) | (qos<<1) | retain;
+	packet->command = (uint8_t)(CMD_PUBLISH | (uint8_t)((dup&0x1)<<3) | (uint8_t)(qos<<1) | retain);
 	packet->remaining_length = packetlen;
 	rc = packet__alloc(packet);
 	if(rc){
@@ -193,7 +193,7 @@ int send__real_publish(struct mosquitto *mosq, uint16_t mid, const char *topic, 
 	}
 	/* Variable header (topic string) */
 	if(topic){
-		packet__write_string(packet, topic, strlen(topic));
+		packet__write_string(packet, topic, (uint16_t)strlen(topic));
 	}else{
 		packet__write_uint16(packet, 0);
 	}

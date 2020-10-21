@@ -22,6 +22,8 @@ Breaking changes:
   method, or set `allow_anonymous true`. When the broker is run without a
   configured listener, and so binds to the loopback interface, anonymous
   connections are allowed.
+- The `pid_file` option will now always attempt to write a pid file,
+  regardless of whether the `-d` argument is used when running the broker.
 
 Broker:
 - When running as root, if dropping privileges to the "mosquitto" user fails,
@@ -49,6 +51,10 @@ Broker:
 - Add support for PBKDF2-SHA512 password hashing.
 - Enabling certificate based TLS encryption is now through certfile and
   keyfile, not capath or cafile.
+- Added support for controlling UNSUBSCRIBE calls in v5 plugin ACL checks.
+- Document that X509_free() must be called after using
+  mosquitto_client_certificate(). Closes #1842.
+- Add "deny" acl type. Closes #1611.
 
 Client library:
 - Client no longer generates random client ids for v3.1.1 clients, these are
@@ -70,6 +76,10 @@ Client library:
 - Fix send quota being incorrecly reset on reconnect. Closes #1822.
 - Don't use logging until log mutex is initialised. Closes #1819.
 - Fix missing mach/mach_time.h header on OS X. Closes #1831.
+- Add MOSQ_OPT_BIND_ADDRESS to allow setting of a bind address independently
+  of the `mosquitto_connect*()` call.
+- Fix connect properties not being sent when the client automatically
+  reconnects. Closes #1846.
 
 Clients:
 - Add timeout return code (27) for `mosquitto_sub -W <secs>` and

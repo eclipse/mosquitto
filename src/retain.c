@@ -27,7 +27,7 @@ Contributors:
 
 #include "utlist.h"
 
-static struct mosquitto__retainhier *retain__add_hier_entry(struct mosquitto__retainhier *parent, struct mosquitto__retainhier **sibling, const char *topic, size_t len)
+static struct mosquitto__retainhier *retain__add_hier_entry(struct mosquitto__retainhier *parent, struct mosquitto__retainhier **sibling, const char *topic, uint16_t len)
 {
 	struct mosquitto__retainhier *child;
 
@@ -40,14 +40,14 @@ static struct mosquitto__retainhier *retain__add_hier_entry(struct mosquitto__re
 	}
 	child->parent = parent;
 	child->topic_len = len;
-	child->topic = mosquitto__malloc(len+1);
+	child->topic = mosquitto__malloc((size_t)len+1);
 	if(!child->topic){
 		child->topic_len = 0;
 		mosquitto__free(child);
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 		return NULL;
 	}else{
-		strncpy(child->topic, topic, child->topic_len+1);
+		strncpy(child->topic, topic, (size_t)child->topic_len+1);
 	}
 
 	HASH_ADD_KEYPTR(hh, *sibling, child->topic, child->topic_len, child);
@@ -75,7 +75,7 @@ int retain__store(struct mosquitto_db *db, const char *topic, struct mosquitto_m
 	struct mosquitto__retainhier *retainhier;
 	struct mosquitto__retainhier *branch;
 	int i;
-	int slen;
+	size_t slen;
 
 	assert(stored);
 	assert(split_topics);
@@ -87,7 +87,7 @@ int retain__store(struct mosquitto_db *db, const char *topic, struct mosquitto_m
 		slen = strlen(split_topics[i]);
 		HASH_FIND(hh, retainhier->children, split_topics[i], slen, branch);
 		if(branch == NULL){
-			branch = retain__add_hier_entry(retainhier, &retainhier->children, split_topics[i], slen);
+			branch = retain__add_hier_entry(retainhier, &retainhier->children, split_topics[i], (uint16_t)slen);
 			if(branch == NULL){
 				return MOSQ_ERR_NOMEM;
 			}
@@ -122,10 +122,10 @@ int retain__store(struct mosquitto_db *db, const char *topic, struct mosquitto_m
 }
 
 
-static int retain__process(struct mosquitto_db *db, struct mosquitto__retainhier *branch, struct mosquitto *context, int sub_qos, uint32_t subscription_identifier, time_t now)
+static int retain__process(struct mosquitto_db *db, struct mosquitto__retainhier *branch, struct mosquitto *context, uint8_t sub_qos, uint32_t subscription_identifier, time_t now)
 {
 	int rc = 0;
-	int qos;
+	uint8_t qos;
 	uint16_t mid;
 	mosquitto_property *properties = NULL;
 	struct mosquitto_msg_store *retained;
@@ -188,7 +188,7 @@ static int retain__process(struct mosquitto_db *db, struct mosquitto__retainhier
 }
 
 
-static int retain__search(struct mosquitto_db *db, struct mosquitto__retainhier *retainhier, char **split_topics, struct mosquitto *context, const char *sub, int sub_qos, uint32_t subscription_identifier, time_t now, int level)
+static int retain__search(struct mosquitto_db *db, struct mosquitto__retainhier *retainhier, char **split_topics, struct mosquitto *context, const char *sub, uint8_t sub_qos, uint32_t subscription_identifier, time_t now, int level)
 {
 	struct mosquitto__retainhier *branch, *branch_tmp;
 	int flag = 0;
@@ -247,7 +247,7 @@ static int retain__search(struct mosquitto_db *db, struct mosquitto__retainhier 
 }
 
 
-int retain__queue(struct mosquitto_db *db, struct mosquitto *context, const char *sub, int sub_qos, uint32_t subscription_identifier)
+int retain__queue(struct mosquitto_db *db, struct mosquitto *context, const char *sub, uint8_t sub_qos, uint32_t subscription_identifier)
 {
 	struct mosquitto__retainhier *retainhier;
 	char *local_sub;

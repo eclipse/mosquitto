@@ -31,8 +31,8 @@ extern int g_clients_expired;
 extern unsigned int g_socket_connections;
 extern unsigned int g_connection_count;
 
-#define G_BYTES_RECEIVED_INC(A) (g_bytes_received+=(A))
-#define G_BYTES_SENT_INC(A) (g_bytes_sent+=(A))
+#define G_BYTES_RECEIVED_INC(A) (g_bytes_received+=(uint64_t)(A))
+#define G_BYTES_SENT_INC(A) (g_bytes_sent+=(uint64_t)(A))
 #define G_PUB_BYTES_RECEIVED_INC(A) (g_pub_bytes_received+=(A))
 #define G_PUB_BYTES_SENT_INC(A) (g_pub_bytes_sent+=(A))
 #define G_MSGS_RECEIVED_INC(A) (g_msgs_received+=(A))

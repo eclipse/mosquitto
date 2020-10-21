@@ -27,21 +27,21 @@ Contributors:
 
 
 /* Message types */
-#define CMD_CONNECT 0x10
-#define CMD_CONNACK 0x20
-#define CMD_PUBLISH 0x30
-#define CMD_PUBACK 0x40
-#define CMD_PUBREC 0x50
-#define CMD_PUBREL 0x60
-#define CMD_PUBCOMP 0x70
-#define CMD_SUBSCRIBE 0x80
-#define CMD_SUBACK 0x90
-#define CMD_UNSUBSCRIBE 0xA0
-#define CMD_UNSUBACK 0xB0
-#define CMD_PINGREQ 0xC0
-#define CMD_PINGRESP 0xD0
-#define CMD_DISCONNECT 0xE0
-#define CMD_AUTH 0xF0
+#define CMD_CONNECT 0x10U
+#define CMD_CONNACK 0x20U
+#define CMD_PUBLISH 0x30U
+#define CMD_PUBACK 0x40U
+#define CMD_PUBREC 0x50U
+#define CMD_PUBREL 0x60U
+#define CMD_PUBCOMP 0x70U
+#define CMD_SUBSCRIBE 0x80U
+#define CMD_SUBACK 0x90U
+#define CMD_UNSUBSCRIBE 0xA0U
+#define CMD_UNSUBACK 0xB0U
+#define CMD_PINGREQ 0xC0U
+#define CMD_PINGRESP 0xD0U
+#define CMD_DISCONNECT 0xE0U
+#define CMD_AUTH 0xF0U
 
 /* Mosquitto only: for distinguishing CONNECT and WILL properties */
 #define CMD_WILL 0x100

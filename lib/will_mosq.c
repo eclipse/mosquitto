@@ -45,7 +45,7 @@ int will__set(struct mosquitto *mosq, const char *topic, int payloadlen, const v
 	if(payloadlen > 0 && !payload) return MOSQ_ERR_INVAL;
 
 	if(mosquitto_pub_topic_check(topic)) return MOSQ_ERR_INVAL;
-	if(mosquitto_validate_utf8(topic, strlen(topic))) return MOSQ_ERR_MALFORMED_UTF8;
+	if(mosquitto_validate_utf8(topic, (uint16_t)strlen(topic))) return MOSQ_ERR_MALFORMED_UTF8;
 
 	if(properties){
 		if(mosq->protocol != mosq_p_mqtt5){
@@ -79,13 +79,13 @@ int will__set(struct mosquitto *mosq, const char *topic, int payloadlen, const v
 			rc = MOSQ_ERR_INVAL;
 			goto cleanup;
 		}
-		mosq->will->msg.payload = mosquitto__malloc(sizeof(char)*mosq->will->msg.payloadlen);
+		mosq->will->msg.payload = mosquitto__malloc(sizeof(char)*(unsigned int)mosq->will->msg.payloadlen);
 		if(!mosq->will->msg.payload){
 			rc = MOSQ_ERR_NOMEM;
 			goto cleanup;
 		}
 
-		memcpy(mosq->will->msg.payload, payload, payloadlen);
+		memcpy(mosq->will->msg.payload, payload, (unsigned int)payloadlen);
 	}
 	mosq->will->msg.qos = qos;
 	mosq->will->msg.retain = retain;

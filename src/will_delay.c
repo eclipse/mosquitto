@@ -30,7 +30,7 @@ static time_t last_check = 0;
 
 static int will_delay__cmp(struct will_delay_list *i1, struct will_delay_list *i2)
 {
-	return i1->context->will_delay_interval - i2->context->will_delay_interval;
+	return (int)(i1->context->will_delay_interval - i2->context->will_delay_interval);
 }
 
 

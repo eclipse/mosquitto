@@ -62,9 +62,9 @@ static int persist__client_messages_save(struct mosquitto_db *db, FILE *db_fptr,
 
 		chunk.F.store_id = cmsg->store->db_id;
 		chunk.F.mid = cmsg->mid;
-		chunk.F.id_len = strlen(context->id);
+		chunk.F.id_len = (uint16_t)strlen(context->id);
 		chunk.F.qos = cmsg->qos;
-		chunk.F.retain_dup = (cmsg->retain&0x0F)<<4 | (cmsg->dup&0x0F);
+		chunk.F.retain_dup = (uint8_t)((cmsg->retain&0x0F)<<4 | (cmsg->dup&0x0F));
 		chunk.F.direction = cmsg->direction;
 		chunk.F.state = cmsg->state;
 		chunk.client_id = context->id;
@@ -120,21 +120,21 @@ static int persist__message_store_save(struct mosquitto_db *db, FILE *db_fptr)
 		chunk.F.payloadlen = stored->payloadlen;
 		chunk.F.source_mid = stored->source_mid;
 		if(stored->source_id){
-			chunk.F.source_id_len = strlen(stored->source_id);
+			chunk.F.source_id_len = (uint16_t)strlen(stored->source_id);
 			chunk.source.id = stored->source_id;
 		}else{
 			chunk.F.source_id_len = 0;
 			chunk.source.id = NULL;
 		}
 		if(stored->source_username){
-			chunk.F.source_username_len = strlen(stored->source_username);
+			chunk.F.source_username_len = (uint16_t)strlen(stored->source_username);
 			chunk.source.username = stored->source_username;
 		}else{
 			chunk.F.source_username_len = 0;
 			chunk.source.username = NULL;
 		}
 
-		chunk.F.topic_len = strlen(stored->topic);
+		chunk.F.topic_len = (uint16_t)strlen(stored->topic);
 		chunk.topic = stored->topic;
 
 		if(stored->source_listener){
@@ -172,10 +172,10 @@ static int persist__client_save(struct mosquitto_db *db, FILE *db_fptr)
 			chunk.F.session_expiry_time = context->session_expiry_time;
 			chunk.F.session_expiry_interval = context->session_expiry_interval;
 			chunk.F.last_mid = context->last_mid;
-			chunk.F.id_len = strlen(context->id);
+			chunk.F.id_len = (uint16_t)strlen(context->id);
 			chunk.client_id = context->id;
 			if(context->username){
-				chunk.F.username_len = strlen(context->username);
+				chunk.F.username_len = (uint16_t)strlen(context->username);
 				chunk.username = context->username;
 				if(context->listener){
 					chunk.F.listener_port = context->listener->port;
@@ -228,10 +228,10 @@ static int persist__subs_save(struct mosquitto_db *db, FILE *db_fptr, struct mos
 	while(sub){
 		if(sub->context->clean_start == false && sub->context->id){
 			sub_chunk.F.identifier = sub->identifier;
-			sub_chunk.F.id_len = strlen(sub->context->id);
-			sub_chunk.F.topic_len = strlen(thistopic);
+			sub_chunk.F.id_len = (uint16_t)strlen(sub->context->id);
+			sub_chunk.F.topic_len = (uint16_t)strlen(thistopic);
 			sub_chunk.F.qos = (uint8_t)sub->qos;
-			sub_chunk.F.options = sub->no_local<<2 | sub->retain_as_published<<3;
+			sub_chunk.F.options = (uint8_t)(sub->no_local<<2 | sub->retain_as_published<<3);
 			sub_chunk.client_id = sub->context->id;
 			sub_chunk.topic = thistopic;
 
@@ -308,7 +308,7 @@ int persist__backup(struct mosquitto_db *db, bool shutdown)
 	uint32_t crc = 0;
 	char *err;
 	char *outfile = NULL;
-	int len;
+	size_t len;
 	struct PF_cfg cfg_chunk;
 
 	if(db == NULL || db->config == NULL) return MOSQ_ERR_INVAL;

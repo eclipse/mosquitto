@@ -38,7 +38,7 @@ int handle__publish(struct mosquitto *mosq)
 	struct mosquitto_message_all *message;
 	int rc = 0;
 	uint16_t mid;
-	int slen;
+	uint16_t slen;
 	mosquitto_property *properties = NULL;
 	int state;
 
@@ -94,15 +94,15 @@ int handle__publish(struct mosquitto *mosq)
 		if(rc) return rc;
 	}
 
-	message->msg.payloadlen = mosq->in_packet.remaining_length - mosq->in_packet.pos;
+	message->msg.payloadlen = (int)(mosq->in_packet.remaining_length - mosq->in_packet.pos);
 	if(message->msg.payloadlen){
-		message->msg.payload = mosquitto__calloc(message->msg.payloadlen+1, sizeof(uint8_t));
+		message->msg.payload = mosquitto__calloc((size_t)message->msg.payloadlen+1, sizeof(uint8_t));
 		if(!message->msg.payload){
 			message__cleanup(&message);
 			mosquitto_property_free_all(&properties);
 			return MOSQ_ERR_NOMEM;
 		}
-		rc = packet__read_bytes(&mosq->in_packet, message->msg.payload, message->msg.payloadlen);
+		rc = packet__read_bytes(&mosq->in_packet, message->msg.payload, (uint32_t)message->msg.payloadlen);
 		if(rc){
 			message__cleanup(&message);
 			mosquitto_property_free_all(&properties);
@@ -135,7 +135,7 @@ int handle__publish(struct mosquitto *mosq)
 			return MOSQ_ERR_SUCCESS;
 		case 1:
 			util__decrement_receive_quota(mosq);
-			rc = send__puback(mosq, message->msg.mid, 0, NULL);
+			rc = send__puback(mosq, mid, 0, NULL);
 			pthread_mutex_lock(&mosq->callback_mutex);
 			if(mosq->on_message){
 				mosq->in_callback = true;
@@ -154,7 +154,7 @@ int handle__publish(struct mosquitto *mosq)
 		case 2:
 			message->properties = properties;
 			util__decrement_receive_quota(mosq);
-			rc = send__pubrec(mosq, message->msg.mid, 0, NULL);
+			rc = send__pubrec(mosq, mid, 0, NULL);
 			pthread_mutex_lock(&mosq->msgs_in.mutex);
 			message->state = mosq_ms_wait_for_pubrel;
 			message__queue(mosq, message, mosq_md_in);

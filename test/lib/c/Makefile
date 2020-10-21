@@ -1,6 +1,6 @@
 .PHONY: all clean reallyclean
 
-CFLAGS=-I../../../lib -Werror
+CFLAGS=-I../../../include -Werror
 LIBS=../../../lib/libmosquitto.so.1
 
 SRC = \

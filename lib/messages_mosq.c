@@ -69,12 +69,12 @@ int mosquitto_message_copy(struct mosquitto_message *dst, const struct mosquitto
 	dst->qos = src->qos;
 	dst->retain = src->retain;
 	if(src->payloadlen){
-		dst->payload = mosquitto__calloc(src->payloadlen+1, sizeof(uint8_t));
+		dst->payload = mosquitto__calloc((unsigned int)src->payloadlen+1, sizeof(uint8_t));
 		if(!dst->payload){
 			mosquitto__free(dst->topic);
 			return MOSQ_ERR_NOMEM;
 		}
-		memcpy(dst->payload, src->payload, src->payloadlen);
+		memcpy(dst->payload, src->payload, (unsigned int)src->payloadlen);
 		dst->payloadlen = src->payloadlen;
 	}else{
 		dst->payloadlen = 0;
@@ -200,7 +200,7 @@ int message__release_to_inflight(struct mosquitto *mosq, enum mosquitto_msg_dire
 					}else if(cur->msg.qos == 2){
 						cur->state = mosq_ms_wait_for_pubrec;
 					}
-					rc = send__publish(mosq, cur->msg.mid, cur->msg.topic, cur->msg.payloadlen, cur->msg.payload, cur->msg.qos, cur->msg.retain, cur->dup, cur->properties, NULL, 0);
+					rc = send__publish(mosq, (uint16_t)cur->msg.mid, cur->msg.topic, (uint32_t)cur->msg.payloadlen, cur->msg.payload, (uint8_t)cur->msg.qos, cur->msg.retain, cur->dup, cur->properties, NULL, 0);
 					if(rc){
 						return rc;
 					}
@@ -287,18 +287,18 @@ void message__retry_check(struct mosquitto *mosq)
 			case mosq_ms_publish_qos2:
 				msg->timestamp = now;
 				msg->dup = true;
-				send__publish(mosq, msg->msg.mid, msg->msg.topic, msg->msg.payloadlen, msg->msg.payload, msg->msg.qos, msg->msg.retain, msg->dup, msg->properties, NULL, 0);
+				send__publish(mosq, (uint16_t)msg->msg.mid, msg->msg.topic, (uint32_t)msg->msg.payloadlen, msg->msg.payload, (uint8_t)msg->msg.qos, msg->msg.retain, msg->dup, msg->properties, NULL, 0);
 				break;
 			case mosq_ms_wait_for_pubrel:
 				msg->timestamp = now;
 				msg->dup = true;
-				send__pubrec(mosq, msg->msg.mid, 0, NULL);
+				send__pubrec(mosq, (uint16_t)msg->msg.mid, 0, NULL);
 				break;
 			case mosq_ms_resend_pubrel:
 			case mosq_ms_wait_for_pubcomp:
 				msg->timestamp = now;
 				msg->dup = true;
-				send__pubrel(mosq, msg->msg.mid, NULL);
+				send__pubrel(mosq, (uint16_t)msg->msg.mid, NULL);
 				break;
 			default:
 				break;
@@ -340,6 +340,6 @@ int message__out_update(struct mosquitto *mosq, uint16_t mid, enum mosquitto_msg
 
 int mosquitto_max_inflight_messages_set(struct mosquitto *mosq, unsigned int max_inflight_messages)
 {
-	return mosquitto_int_option(mosq, MOSQ_OPT_SEND_MAXIMUM, max_inflight_messages);
+	return mosquitto_int_option(mosq, MOSQ_OPT_SEND_MAXIMUM, (int)max_inflight_messages);
 }
 

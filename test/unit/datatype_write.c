@@ -22,12 +22,12 @@ static void TEST_byte_write(void)
 	packet.packet_length = 256;
 
 	for(i=0; i<256; i++){
-		packet__write_byte(&packet, 255-i);
+		packet__write_byte(&packet, (uint8_t)(255-i));
 	}
 
 	CU_ASSERT_EQUAL(packet.pos, 256);
 	for(i=0; i<256; i++){
-		CU_ASSERT_EQUAL(payload[i], 255-i);
+		CU_ASSERT_EQUAL(payload[i], (uint8_t)(255-i));
 	}
 }
 
@@ -50,13 +50,13 @@ static void TEST_uint16_write(void)
 	packet.packet_length = 650;
 
 	for(i=0; i<325; i++){
-		packet__write_uint16(&packet, 100*i);
+		packet__write_uint16(&packet, (uint16_t)(100*i));
 	}
 
 	CU_ASSERT_EQUAL(packet.pos, 650);
 	payload16 = (uint16_t *)payload;
 	for(i=0; i<325; i++){
-		CU_ASSERT_EQUAL(payload16[i], htons(100*i));
+		CU_ASSERT_EQUAL(payload16[i], htons((uint16_t)(100*i)));
 	}
 }
 
@@ -83,13 +83,13 @@ static void TEST_uint32_write(void)
 	packet.packet_length = 42000;
 
 	for(i=0; i<10500; i++){
-		packet__write_uint32(&packet, 1000*i);
+		packet__write_uint32(&packet, (uint32_t)(1000*i));
 	}
 
 	CU_ASSERT_EQUAL(packet.pos, 42000);
 	payload32 = (uint32_t *)payload;
 	for(i=0; i<10500; i++){
-		CU_ASSERT_EQUAL(payload32[i], htonl(1000*i));
+		CU_ASSERT_EQUAL(payload32[i], htonl((uint32_t)(1000*i)));
 	}
 	free(payload);
 }

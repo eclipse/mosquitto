@@ -107,14 +107,17 @@
 						listed will have access. Topic access is added with
 						lines of the format:</para>
 
-					<para><code>topic [read|write|readwrite] &lt;topic&gt;</code></para>
+					<para><code>topic [read|write|readwrite|deny] &lt;topic&gt;</code></para>
 
-					<para>The access type is controlled using "read", "write" or
-						"readwrite". This parameter is optional (unless
+					<para>The access type is controlled using "read", "write",
+						"readwrite" or "deny". This parameter is optional (unless
 						&lt;topic&gt; includes a space character) - if not
 						given then the access is read/write.  &lt;topic&gt; can
 						contain the + or # wildcards as in
-						subscriptions.</para>
+						subscriptions. The "deny" option can used to explicity
+						deny access to a topic that would otherwise be granted
+						by a broader read/write/readwrite statement. Any "deny"
+						topics are handled before topics that grant read/write access.</para>
 
 					<para>The first set of topics are applied to anonymous
 						clients, assuming <option>allow_anonymous</option> is
@@ -131,7 +134,7 @@
 						substitution within the topic. The form is the same as
 						for the topic keyword, but using pattern as the
 						keyword.</para>
-					<para><code>pattern [read|write|readwrite] &lt;topic&gt;</code></para>
+					<para><code>pattern [read|write|readwrite|deny] &lt;topic&gt;</code></para>
 
 					<para>The patterns available for substition are:</para>
 					<itemizedlist mark="circle">
@@ -860,9 +863,7 @@ log_timestamp_format %Y-%m-%dT%H:%M:%S
 				<listitem>
 					<para>Write a pid file to the file specified. If not given
 						(the default), no pid file will be written. If the pid
-						file cannot be written, mosquitto will exit. This
-						option only has an effect is mosquitto is run in daemon
-						mode.</para>
+						file cannot be written, mosquitto will exit.</para>
 					<para>If mosquitto is being automatically started by an
 						init script it will usually be required to write a pid
 						file. This should then be configured as e.g.
@@ -1972,7 +1973,7 @@ topic clients/total in 0 test/mosquitto/org/ $SYS/broker/
 							remote certificate matches the host/address being
 							connected to. This may cause problems in testing
 							scenarios, so <option>bridge_insecure</option> may
-							be set to <replaceable>false</replaceable> to
+							be set to <replaceable>true</replaceable> to
 							disable the hostname verification.</para>
 						<para>Setting this option to
 							<replaceable>true</replaceable> means that a

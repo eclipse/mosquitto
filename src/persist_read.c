@@ -41,7 +41,7 @@ uint32_t db_version;
 
 const unsigned char magic[15] = {0x00, 0xB5, 0x00, 'm','o','s','q','u','i','t','t','o',' ','d','b'};
 
-static int persist__restore_sub(struct mosquitto_db *db, const char *client_id, const char *sub, int qos, uint32_t identifier, int options);
+static int persist__restore_sub(struct mosquitto_db *db, const char *client_id, const char *sub, uint8_t qos, uint32_t identifier, int options);
 
 static struct mosquitto *persist__find_or_add_context(struct mosquitto_db *db, const char *client_id, uint16_t last_mid)
 {
@@ -76,7 +76,7 @@ int persist__read_string_len(FILE *db_fptr, char **str, uint16_t len)
 	char *s = NULL;
 
 	if(len){
-		s = mosquitto__malloc(len+1);
+		s = mosquitto__malloc(len+1U);
 		if(!s){
 			fclose(db_fptr);
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
@@ -406,7 +406,7 @@ static int persist__sub_chunk_restore(struct mosquitto_db *db, FILE *db_fptr)
 }
 
 
-int persist__chunk_header_read(FILE *db_fptr, int *chunk, int *length)
+int persist__chunk_header_read(FILE *db_fptr, uint32_t *chunk, uint32_t *length)
 {
 	if(db_version == 6 || db_version == 5){
 		return persist__chunk_header_read_v56(db_fptr, chunk, length);
@@ -423,8 +423,8 @@ int persist__restore(struct mosquitto_db *db)
 	int rc = 0;
 	uint32_t crc;
 	uint32_t i32temp;
-	int chunk, length;
-	ssize_t rlen;
+	uint32_t chunk, length;
+	size_t rlen;
 	char *err;
 	struct mosquitto_msg_store_load *load, *load_tmp;
 	struct PF_cfg cfg_chunk;
@@ -540,7 +540,7 @@ error:
 	return 1;
 }
 
-static int persist__restore_sub(struct mosquitto_db *db, const char *client_id, const char *sub, int qos, uint32_t identifier, int options)
+static int persist__restore_sub(struct mosquitto_db *db, const char *client_id, const char *sub, uint8_t qos, uint32_t identifier, int options)
 {
 	struct mosquitto *context;
 

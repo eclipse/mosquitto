@@ -142,7 +142,7 @@ int config__get_dir_files(const char *include_dir, char ***files, int *file_coun
 	char **l_files = NULL;
 	int l_file_count = 0;
 	char **files_tmp;
-	int len;
+	size_t len;
 	int i;
 
 	DIR *dh;
@@ -159,7 +159,7 @@ int config__get_dir_files(const char *include_dir, char ***files, int *file_coun
 				len = strlen(include_dir)+1+strlen(de->d_name)+1;
 
 				l_file_count++;
-				files_tmp = mosquitto__realloc(l_files, l_file_count*sizeof(char *));
+				files_tmp = mosquitto__realloc(l_files, (size_t)l_file_count*sizeof(char *));
 				if(!files_tmp){
 					for(i=0; i<l_file_count-1; i++){
 						mosquitto__free(l_files[i]);
@@ -187,7 +187,7 @@ int config__get_dir_files(const char *include_dir, char ***files, int *file_coun
 	closedir(dh);
 
 	if(l_files){
-		qsort(l_files, l_file_count, sizeof(char *), scmp_p);
+		qsort(l_files, (size_t)l_file_count, sizeof(char *), scmp_p);
 	}
 	*files = l_files;
 	*file_count = l_file_count;

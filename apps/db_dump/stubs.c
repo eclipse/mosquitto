@@ -23,20 +23,9 @@ int handle__packet(struct mosquitto_db *db, struct mosquitto *context)
 	return 0;
 }
 
-int log__printf(struct mosquitto *mosq, int level, const char *fmt, ...)
+int log__printf(struct mosquitto *mosq, unsigned int level, const char *fmt, ...)
 {
 	return 0;
-}
-
-
-void *mosquitto__calloc(size_t nmemb, size_t len)
-{
-	return calloc(nmemb, len);
-}
-
-void mosquitto__free(void *p)
-{
-	free(p);
 }
 
 FILE *mosquitto__fopen(const char *path, const char *mode, bool restrict_read)
@@ -47,16 +36,6 @@ FILE *mosquitto__fopen(const char *path, const char *mode, bool restrict_read)
 enum mosquitto_client_state mosquitto__get_state(struct mosquitto *mosq)
 {
 	return mosq_cs_new;
-}
-
-void *mosquitto__malloc(size_t len)
-{
-	return malloc(len);
-}
-
-char *mosquitto__strdup(const char *s)
-{
-	return strdup(s);
 }
 
 ssize_t net__read(struct mosquitto *mosq, void *buf, size_t count)
@@ -74,12 +53,17 @@ int retain__store(struct mosquitto_db *db, const char *topic, struct mosquitto_m
 	return 0;
 }
 
-int sub__add(struct mosquitto_db *db, struct mosquitto *context, const char *sub, int qos, uint32_t identifier, int options, struct mosquitto__subhier **root)
+int sub__add(struct mosquitto_db *db, struct mosquitto *context, const char *sub, uint8_t qos, uint32_t identifier, int options, struct mosquitto__subhier **root)
 {
 	return 0;
 }
 
-int sub__messages_queue(struct mosquitto_db *db, const char *source_id, const char *topic, int qos, int retain, struct mosquitto_msg_store **stored)
+int sub__messages_queue(struct mosquitto_db *db, const char *source_id, const char *topic, uint8_t qos, int retain, struct mosquitto_msg_store **stored)
+{
+	return 0;
+}
+
+int keepalive__update(struct mosquitto *context)
 {
 	return 0;
 }

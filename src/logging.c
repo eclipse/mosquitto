@@ -51,8 +51,8 @@ HANDLE syslog_h;
 /* Give option of logging timestamp.
  * Logging pid.
  */
-static int log_destinations = MQTT3_LOG_STDERR;
-static int log_priorities = MOSQ_LOG_ERR | MOSQ_LOG_WARNING | MOSQ_LOG_NOTICE | MOSQ_LOG_INFO;
+static unsigned int log_destinations = MQTT3_LOG_STDERR;
+static unsigned int log_priorities = MOSQ_LOG_ERR | MOSQ_LOG_WARNING | MOSQ_LOG_NOTICE | MOSQ_LOG_INFO;
 
 #ifdef WITH_DLT
 static DltContext dltContext;
@@ -180,7 +180,7 @@ int log__close(struct mosquitto__config *config)
 }
 
 #ifdef WITH_DLT
-DltLogLevelType get_dlt_level(int priority)
+DltLogLevelType get_dlt_level(unsigned int priority)
 {
 	switch (priority) {
 		case MOSQ_LOG_ERR:
@@ -201,11 +201,11 @@ DltLogLevelType get_dlt_level(int priority)
 }
 #endif
 
-int log__vprintf(int priority, const char *fmt, va_list va)
+int log__vprintf(unsigned int priority, const char *fmt, va_list va)
 {
 	char *s;
 	char *st;
-	int len;
+	size_t len;
 #ifdef WIN32
 	char *sp;
 #endif
@@ -363,10 +363,10 @@ int log__vprintf(int priority, const char *fmt, va_list va)
 					return MOSQ_ERR_NOMEM;
 				}
 				snprintf(st, len, "%d: %s", (int)now, s);
-				db__messages_easy_queue(&int_db, NULL, topic, 2, strlen(st), st, 0, 20, NULL);
+				db__messages_easy_queue(&int_db, NULL, topic, 2, (uint32_t)strlen(st), st, 0, 20, NULL);
 				mosquitto__free(st);
 			}else{
-				db__messages_easy_queue(&int_db, NULL, topic, 2, strlen(s), s, 0, 20, NULL);
+				db__messages_easy_queue(&int_db, NULL, topic, 2, (uint32_t)strlen(s), s, 0, 20, NULL);
 			}
 		}
 #ifdef WITH_DLT
@@ -380,7 +380,7 @@ int log__vprintf(int priority, const char *fmt, va_list va)
 	return MOSQ_ERR_SUCCESS;
 }
 
-int log__printf(struct mosquitto *mosq, int priority, const char *fmt, ...)
+int log__printf(struct mosquitto *mosq, unsigned int priority, const char *fmt, ...)
 {
 	va_list va;
 	int rc;
@@ -414,7 +414,7 @@ void log__internal(const char *fmt, ...)
 
 int mosquitto_log_vprintf(int level, const char *fmt, va_list va)
 {
-	return log__vprintf(level, fmt, va);
+	return log__vprintf((unsigned int)level, fmt, va);
 }
 
 void mosquitto_log_printf(int level, const char *fmt, ...)
@@ -422,7 +422,7 @@ void mosquitto_log_printf(int level, const char *fmt, ...)
 	va_list va;
 
 	va_start(va, fmt);
-	log__vprintf(level, fmt, va);
+	log__vprintf((unsigned int)level, fmt, va);
 	va_end(va);
 }
 

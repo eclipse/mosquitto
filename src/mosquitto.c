@@ -226,7 +226,7 @@ int listeners__start_single_mqtt(struct mosquitto_db *db, mosq_sock_t **listenso
 		return 1;
 	}
 	(*listensock_count) += listener->sock_count;
-	listensock_new = mosquitto__realloc(*listensock, sizeof(mosq_sock_t)*(*listensock_count));
+	listensock_new = mosquitto__realloc(*listensock, sizeof(mosq_sock_t)*(size_t)(*listensock_count));
 	if(!listensock_new){
 		return 1;
 	}
@@ -247,7 +247,7 @@ int listeners__add_local(struct mosquitto_db *db, mosq_sock_t **listensock, int 
 {
 	struct mosquitto__listener *listeners;
 
-	listeners = mosquitto__realloc(db->config->listeners, (db->config->listener_count+1)*sizeof(struct mosquitto__listener));
+	listeners = mosquitto__realloc(db->config->listeners, (size_t)(db->config->listener_count+1)*sizeof(struct mosquitto__listener));
 	if(listeners == NULL){
 		return MOSQ_ERR_NOMEM;
 	}
@@ -395,7 +395,7 @@ int pid__write(struct mosquitto_db *db)
 {
 	FILE *pid;
 
-	if(db->config->daemon && db->config->pid_file){
+	if(db->config->pid_file){
 		pid = mosquitto__fopen(db->config->pid_file, "wt", false);
 		if(pid){
 			fprintf(pid, "%d", getpid());
@@ -444,7 +444,7 @@ int main(int argc, char *argv[])
 	srand(st.wSecond + st.wMilliseconds);
 #else
 	gettimeofday(&tv, NULL);
-	srand(tv.tv_sec + tv.tv_usec);
+	srand((unsigned int)(tv.tv_sec + tv.tv_usec));
 #endif
 
 #ifdef WIN32

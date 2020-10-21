@@ -53,7 +53,6 @@ int main(int argc, char *argv[])
 		mosquitto_loop(mosq, 50, 1);
 	}
 	mosquitto_loop(mosq, 50, 1);
-	mosquitto_destroy(mosq);
 
 	mosquitto_destroy(mosq);
 	mosquitto_lib_cleanup();

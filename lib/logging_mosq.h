@@ -18,6 +18,6 @@ Contributors:
 
 #include "mosquitto.h"
 
-int log__printf(struct mosquitto *mosq, int priority, const char *fmt, ...);
+int log__printf(struct mosquitto *mosq, unsigned int priority, const char *fmt, ...);
 
 #endif

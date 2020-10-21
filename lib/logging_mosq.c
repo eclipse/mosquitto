@@ -29,7 +29,7 @@ int log__printf(struct mosquitto *mosq, int priority, const char *fmt, ...)
 {
 	va_list va;
 	char *s;
-	int len;
+	size_t len;
 
 	assert(mosq);
 	assert(fmt);

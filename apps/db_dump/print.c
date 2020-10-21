@@ -193,7 +193,7 @@ void print__msg_store(struct P_msg_store *chunk, int length)
 	payload = UHPA_ACCESS(chunk->payload, chunk->F.payloadlen);
 	if(chunk->F.payloadlen < 256){
 		/* Print payloads with UTF-8 data below an arbitrary limit of 256 bytes */
-		if(mosquitto_validate_utf8((char *)payload, chunk->F.payloadlen) == MOSQ_ERR_SUCCESS){
+		if(mosquitto_validate_utf8((char *)payload, (uint16_t)chunk->F.payloadlen) == MOSQ_ERR_SUCCESS){
 			printf("\tPayload: %s\n", payload);
 		}
 	}
@@ -201,10 +201,10 @@ void print__msg_store(struct P_msg_store *chunk, int length)
 }
 
 
-void print__sub(struct P_sub *chunk, int length)
+void print__sub(struct P_sub *chunk, uint32_t length)
 {
 	printf("DB_CHUNK_SUB:\n");
-	printf("\tLength: %d\n", length);
+	printf("\tLength: %u\n", length);
 	printf("\tClient ID: %s\n", chunk->client_id);
 	printf("\tTopic: %s\n", chunk->topic);
 	printf("\tQoS: %d\n", chunk->F.qos);

@@ -77,7 +77,7 @@ int control__register_callback(struct mosquitto_db *db, struct mosquitto__securi
 {
 #ifdef WITH_CONTROL
 	struct mosquitto__callback *cb_found, *cb_new;
-	int topic_len;
+	size_t topic_len;
 
 	if(topic == NULL || cb_func == NULL) return MOSQ_ERR_INVAL;
 	topic_len = strlen(topic);
@@ -114,7 +114,7 @@ int control__unregister_callback(struct mosquitto_db *db, struct mosquitto__secu
 {
 #ifdef WITH_CONTROL
 	struct mosquitto__callback *cb_found;
-	int topic_len;
+	size_t topic_len;
 
 	if(topic == NULL) return MOSQ_ERR_INVAL;
 	topic_len = strlen(topic);

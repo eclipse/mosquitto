@@ -48,6 +48,7 @@ Contributors:
 #include "mosquitto_broker.h"
 #include "mosquitto_plugin.h"
 #include "mosquitto.h"
+#include "password_mosq.h"
 #include "tls_mosq.h"
 #include "uthash.h"
 
@@ -170,11 +171,6 @@ enum mosquitto_msg_origin{
 	mosq_mo_broker = 1
 };
 
-enum mosquitto_pwhash_type{
-	pw_sha512 = 6,
-	pw_sha512_pbkdf2 = 7
-};
-
 struct mosquitto__auth_plugin{
 	void *lib;
 	void *user_data;
@@ -258,8 +254,9 @@ struct mosquitto__security_options {
 	int8_t allow_anonymous;
 	bool allow_zero_length_clientid;
 	char *auto_id_prefix;
-	int auto_id_prefix_len;
+	uint16_t auto_id_prefix_len;
 	struct plugin__callbacks plugin_callbacks;
+	mosquitto_plugin_id_t *pid; /* For registering as a "plugin" */
 };
 
 struct mosquitto__listener {
@@ -323,7 +320,7 @@ struct mosquitto__config {
 	struct mosquitto__listener *listeners;
 	int listener_count;
 	bool local_only;
-	int log_dest;
+	unsigned int log_dest;
 	int log_facility;
 	unsigned int log_type;
 	bool log_timestamp;
@@ -539,17 +536,17 @@ enum mosquitto_bridge_start_type{
 
 struct mosquitto__bridge_topic{
 	char *topic;
-	int qos;
-	enum mosquitto__bridge_direction direction;
 	char *local_prefix;
 	char *remote_prefix;
 	char *local_topic; /* topic prefixed with local_prefix */
 	char *remote_topic; /* topic prefixed with remote_prefix */
+	enum mosquitto__bridge_direction direction;
+	uint8_t qos;
 };
 
 struct bridge_address{
 	char *address;
-	int port;
+	uint16_t port;
 };
 
 struct mosquitto__bridge{
@@ -564,7 +561,7 @@ struct mosquitto__bridge{
 	bool try_private_accepted;
 	bool clean_start;
 	int8_t clean_start_local;
-	int keepalive;
+	uint16_t keepalive;
 	struct mosquitto__bridge_topic *topics;
 	int topic_count;
 	bool topic_remapping;
@@ -645,10 +642,10 @@ int restore_privileges(void);
 /* ============================================================
  * Server send functions
  * ============================================================ */
-int send__connack(struct mosquitto_db *db, struct mosquitto *context, int ack, int reason_code, const mosquitto_property *properties);
+int send__connack(struct mosquitto_db *db, struct mosquitto *context, uint8_t ack, uint8_t reason_code, const mosquitto_property *properties);
 int send__suback(struct mosquitto *context, uint16_t mid, uint32_t payloadlen, const void *payload);
 int send__unsuback(struct mosquitto *context, uint16_t mid, int reason_code_count, uint8_t *reason_codes, const mosquitto_property *properties);
-int send__auth(struct mosquitto_db *db, struct mosquitto *context, int reason_code, const void *auth_data, uint16_t auth_data_len);
+int send__auth(struct mosquitto_db *db, struct mosquitto *context, uint8_t reason_code, const void *auth_data, uint16_t auth_data_len);
 
 /* ============================================================
  * Network functions
@@ -657,7 +654,7 @@ void net__broker_init(void);
 void net__broker_cleanup(void);
 int net__socket_accept(struct mosquitto_db *db, mosq_sock_t listensock);
 int net__socket_listen(struct mosquitto__listener *listener);
-int net__socket_get_address(mosq_sock_t sock, char *buf, int len);
+int net__socket_get_address(mosq_sock_t sock, char *buf, size_t len);
 int net__tls_load_verify(struct mosquitto__listener *listener);
 int net__tls_server_ctx(struct mosquitto__listener *listener);
 
@@ -686,12 +683,12 @@ void db__limits_set(unsigned long inflight_bytes, int queued, unsigned long queu
 /* Return the number of in-flight messages in count. */
 int db__message_count(int *count);
 int db__message_delete_outgoing(struct mosquitto_db *db, struct mosquitto *context, uint16_t mid, enum mosquitto_msg_state expect_state, int qos);
-int db__message_insert(struct mosquitto_db *db, struct mosquitto *context, uint16_t mid, enum mosquitto_msg_direction dir, int qos, bool retain, struct mosquitto_msg_store *stored, mosquitto_property *properties, bool update);
+int db__message_insert(struct mosquitto_db *db, struct mosquitto *context, uint16_t mid, enum mosquitto_msg_direction dir, uint8_t qos, bool retain, struct mosquitto_msg_store *stored, mosquitto_property *properties, bool update);
 int db__message_release_incoming(struct mosquitto_db *db, struct mosquitto *context, uint16_t mid);
 int db__message_update_outgoing(struct mosquitto *context, uint16_t mid, enum mosquitto_msg_state state, int qos);
 void db__message_dequeue_first(struct mosquitto *context, struct mosquitto_msg_data *msg_data);
 int db__messages_delete(struct mosquitto_db *db, struct mosquitto *context, bool force_free);
-int db__messages_easy_queue(struct mosquitto_db *db, struct mosquitto *context, const char *topic, int qos, uint32_t payloadlen, const void *payload, int retain, uint32_t message_expiry_interval, mosquitto_property **properties);
+int db__messages_easy_queue(struct mosquitto_db *db, struct mosquitto *context, const char *topic, uint8_t qos, uint32_t payloadlen, const void *payload, int retain, uint32_t message_expiry_interval, mosquitto_property **properties);
 int db__message_store(struct mosquitto_db *db, const struct mosquitto *source, struct mosquitto_msg_store *stored, uint32_t message_expiry_interval, dbid_t store_id, enum mosquitto_msg_origin origin);
 int db__message_store_find(struct mosquitto *context, uint16_t mid, struct mosquitto_msg_store **stored);
 void db__msg_store_add(struct mosquitto_db *db, struct mosquitto_msg_store *store);
@@ -714,13 +711,12 @@ int db__message_write_queued_in(struct mosquitto_db *db, struct mosquitto *conte
 /* ============================================================
  * Subscription functions
  * ============================================================ */
-int sub__add(struct mosquitto_db *db, struct mosquitto *context, const char *sub, int qos, uint32_t identifier, int options, struct mosquitto__subhier **root);
-struct mosquitto__subhier *sub__add_hier_entry(struct mosquitto__subhier *parent, struct mosquitto__subhier **sibling, const char *topic, size_t len);
+int sub__add(struct mosquitto_db *db, struct mosquitto *context, const char *sub, uint8_t qos, uint32_t identifier, int options, struct mosquitto__subhier **root);
+struct mosquitto__subhier *sub__add_hier_entry(struct mosquitto__subhier *parent, struct mosquitto__subhier **sibling, const char *topic, uint16_t len);
 int sub__remove(struct mosquitto_db *db, struct mosquitto *context, const char *sub, struct mosquitto__subhier *root, uint8_t *reason);
 void sub__tree_print(struct mosquitto__subhier *root, int level);
 int sub__clean_session(struct mosquitto_db *db, struct mosquitto *context);
-int sub__retain_queue(struct mosquitto_db *db, struct mosquitto *context, const char *sub, int sub_qos, uint32_t subscription_identifier);
-int sub__messages_queue(struct mosquitto_db *db, const char *source_id, const char *topic, int qos, int retain, struct mosquitto_msg_store **stored);
+int sub__messages_queue(struct mosquitto_db *db, const char *source_id, const char *topic, uint8_t qos, int retain, struct mosquitto_msg_store **stored);
 int sub__topic_tokenise(const char *subtopic, char **local_sub, char ***topics, const char **sharename);
 void sub__topic_tokens_free(struct sub__token *tokens);
 
@@ -754,7 +750,7 @@ int control__unregister_callback(struct mosquitto_db *db, struct mosquitto__secu
  * ============================================================ */
 int log__init(struct mosquitto__config *config);
 int log__close(struct mosquitto__config *config);
-int log__printf(struct mosquitto *mosq, int level, const char *fmt, ...) __attribute__((format(printf, 3, 4)));
+int log__printf(struct mosquitto *mosq, unsigned int level, const char *fmt, ...) __attribute__((format(printf, 3, 4)));
 void log__internal(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 
 /* ============================================================
@@ -772,7 +768,7 @@ int bridge__on_connect(struct mosquitto_db *db, struct mosquitto *context);
 void bridge__packet_cleanup(struct mosquitto *context);
 void bridge_check(struct mosquitto_db *db);
 int bridge__register_local_connections(struct mosquitto_db *db);
-int bridge__add_topic(struct mosquitto__bridge *bridge, const char *topic, enum mosquitto__bridge_direction direction, int qos, const char *local_prefix, const char *remote_prefix);
+int bridge__add_topic(struct mosquitto__bridge *bridge, const char *topic, enum mosquitto__bridge_direction direction, uint8_t qos, const char *local_prefix, const char *remote_prefix);
 int bridge__remap_topic_in(struct mosquitto *context, char **topic);
 #endif
 
@@ -822,7 +818,7 @@ int property__process_disconnect(struct mosquitto *context, mosquitto_property *
  * ============================================================ */
 int retain__init(struct mosquitto_db *db);
 void retain__clean(struct mosquitto_db *db, struct mosquitto__retainhier **retainhier);
-int retain__queue(struct mosquitto_db *db, struct mosquitto *context, const char *sub, int sub_qos, uint32_t subscription_identifier);
+int retain__queue(struct mosquitto_db *db, struct mosquitto *context, const char *sub, uint8_t sub_qos, uint32_t subscription_identifier);
 int retain__store(struct mosquitto_db *db, const char *topic, struct mosquitto_msg_store *stored, char **split_topics);
 
 /* ============================================================
@@ -835,15 +831,13 @@ int mosquitto_security_module_cleanup(struct mosquitto_db *db);
 int mosquitto_security_init(struct mosquitto_db *db, bool reload);
 int mosquitto_security_apply(struct mosquitto_db *db);
 int mosquitto_security_cleanup(struct mosquitto_db *db, bool reload);
-int mosquitto_acl_check(struct mosquitto_db *db, struct mosquitto *context, const char *topic, long payloadlen, void* payload, int qos, bool retain, int access);
+int mosquitto_acl_check(struct mosquitto_db *db, struct mosquitto *context, const char *topic, uint32_t payloadlen, void* payload, uint8_t qos, bool retain, int access);
 int mosquitto_unpwd_check(struct mosquitto_db *db, struct mosquitto *context);
 int mosquitto_psk_key_get(struct mosquitto_db *db, struct mosquitto *context, const char *hint, const char *identity, char *key, int max_key_len);
 
 int mosquitto_security_init_default(struct mosquitto_db *db, bool reload);
 int mosquitto_security_apply_default(struct mosquitto_db *db);
 int mosquitto_security_cleanup_default(struct mosquitto_db *db, bool reload);
-int mosquitto_acl_check_default(struct mosquitto_db *db, struct mosquitto *context, const char *topic, int access);
-int mosquitto_unpwd_check_default(struct mosquitto_db *db, struct mosquitto *context);
 int mosquitto_psk_key_get_default(struct mosquitto_db *db, struct mosquitto *context, const char *hint, const char *identity, char *key, int max_key_len);
 
 int mosquitto_security_auth_start(struct mosquitto_db *db, struct mosquitto *context, bool reauth, const void *data_in, uint16_t data_in_len, void **data_out, uint16_t *data_out_len);

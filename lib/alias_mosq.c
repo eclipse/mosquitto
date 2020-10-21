@@ -20,7 +20,7 @@ Contributors:
 #include "alias_mosq.h"
 #include "memory_mosq.h"
 
-int alias__add(struct mosquitto *mosq, const char *topic, int alias)
+int alias__add(struct mosquitto *mosq, const char *topic, uint16_t alias)
 {
 	int i;
 	struct mosquitto__alias *aliases;
@@ -39,7 +39,7 @@ int alias__add(struct mosquitto *mosq, const char *topic, int alias)
 	}
 
 	/* New alias */
-	aliases = mosquitto__realloc(mosq->aliases, sizeof(struct mosquitto__alias)*(mosq->alias_count+1));
+	aliases = mosquitto__realloc(mosq->aliases, sizeof(struct mosquitto__alias)*(size_t)(mosq->alias_count+1));
 	if(!aliases) return MOSQ_ERR_NOMEM;
 
 	mosq->aliases = aliases;
@@ -54,7 +54,7 @@ int alias__add(struct mosquitto *mosq, const char *topic, int alias)
 }
 
 
-int alias__find(struct mosquitto *mosq, char **topic, int alias)
+int alias__find(struct mosquitto *mosq, char **topic, uint16_t alias)
 {
 	int i;
 

@@ -215,11 +215,11 @@ int mosquitto_broker_publish_copy(
 		return MOSQ_ERR_INVAL;
 	}
 
-	payload_out = calloc(1, payloadlen+1);
+	payload_out = calloc(1, (size_t)(payloadlen+1));
 	if(payload_out == NULL){
 		return MOSQ_ERR_NOMEM;
 	}
-	memcpy(payload_out, payload, payloadlen);
+	memcpy(payload_out, payload, (size_t)payloadlen);
 
 	return mosquitto_broker_publish(
 			clientid,

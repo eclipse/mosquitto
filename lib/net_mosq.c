@@ -268,9 +268,9 @@ static unsigned int psk_client_callback(SSL *ssl, const char *hint,
 
 	snprintf(identity, max_identity_len, "%s", mosq->tls_psk_identity);
 
-	len = mosquitto__hex2bin(mosq->tls_psk, psk, max_psk_len);
+	len = mosquitto__hex2bin(mosq->tls_psk, psk, (int)max_psk_len);
 	if (len < 0) return 0;
-	return len;
+	return (unsigned int)len;
 }
 #endif
 
@@ -721,7 +721,7 @@ static int net__init_ssl_ctx(struct mosquitto *mosq)
 			tls_alpn_len = (uint8_t) strnlen(mosq->tls_alpn, 254);
 			tls_alpn_wire[0] = tls_alpn_len;  /* first byte is length of string */
 			memcpy(tls_alpn_wire + 1, mosq->tls_alpn, tls_alpn_len);
-			SSL_CTX_set_alpn_protos(mosq->ssl_ctx, tls_alpn_wire, tls_alpn_len + 1);
+			SSL_CTX_set_alpn_protos(mosq->ssl_ctx, tls_alpn_wire, tls_alpn_len + 1U);
 		}
 
 #ifdef SSL_MODE_RELEASE_BUFFERS
@@ -974,7 +974,7 @@ ssize_t net__read(struct mosquitto *mosq, void *buf, size_t count)
 	errno = 0;
 #ifdef WITH_TLS
 	if(mosq->ssl){
-		ret = SSL_read(mosq->ssl, buf, count);
+		ret = SSL_read(mosq->ssl, buf, (int)count);
 		if(ret <= 0){
 			err = SSL_get_error(mosq->ssl, ret);
 			if(err == SSL_ERROR_WANT_READ){
@@ -1022,7 +1022,7 @@ ssize_t net__write(struct mosquitto *mosq, void *buf, size_t count)
 #ifdef WITH_TLS
 	if(mosq->ssl){
 		mosq->want_write = false;
-		ret = SSL_write(mosq->ssl, buf, count);
+		ret = SSL_write(mosq->ssl, buf, (int)count);
 		if(ret < 0){
 			err = SSL_get_error(mosq->ssl, ret);
 			if(err == SSL_ERROR_WANT_READ){

@@ -352,7 +352,7 @@ int db__message_delete_outgoing(struct mosquitto_db *db, struct mosquitto *conte
 	return db__message_write_inflight_out_latest(db, context);
 }
 
-int db__message_insert(struct mosquitto_db *db, struct mosquitto *context, uint16_t mid, enum mosquitto_msg_direction dir, int qos, bool retain, struct mosquitto_msg_store *stored, mosquitto_property *properties, bool update)
+int db__message_insert(struct mosquitto_db *db, struct mosquitto *context, uint16_t mid, enum mosquitto_msg_direction dir, uint8_t qos, bool retain, struct mosquitto_msg_store *stored, mosquitto_property *properties, bool update)
 {
 	struct mosquitto_client_msg *msg;
 	struct mosquitto_msg_data *msg_data;
@@ -508,7 +508,7 @@ int db__message_insert(struct mosquitto_db *db, struct mosquitto *context, uint1
 		 * multiple times for overlapping subscriptions, although this is only the
 		 * case for SUBSCRIPTION with multiple subs in so is a minor concern.
 		 */
-		dest_ids = mosquitto__realloc(stored->dest_ids, sizeof(char *)*(stored->dest_id_count+1));
+		dest_ids = mosquitto__realloc(stored->dest_ids, sizeof(char *)*(size_t)(stored->dest_id_count+1));
 		if(dest_ids){
 			stored->dest_ids = dest_ids;
 			stored->dest_id_count++;
@@ -602,7 +602,7 @@ int db__messages_delete(struct mosquitto_db *db, struct mosquitto *context, bool
 	return MOSQ_ERR_SUCCESS;
 }
 
-int db__messages_easy_queue(struct mosquitto_db *db, struct mosquitto *context, const char *topic, int qos, uint32_t payloadlen, const void *payload, int retain, uint32_t message_expiry_interval, mosquitto_property **properties)
+int db__messages_easy_queue(struct mosquitto_db *db, struct mosquitto *context, const char *topic, uint8_t qos, uint32_t payloadlen, const void *payload, int retain, uint32_t message_expiry_interval, mosquitto_property **properties)
 {
 	struct mosquitto_msg_store *stored;
 	char *source_id;
@@ -1002,7 +1002,7 @@ static int db__message_write_inflight_out_single(struct mosquitto_db *db, struct
 	int retries;
 	int retain;
 	const char *topic;
-	int qos;
+	uint8_t qos;
 	uint32_t payloadlen;
 	const void *payload;
 	time_t now = 0;
@@ -1018,14 +1018,14 @@ static int db__message_write_inflight_out_single(struct mosquitto_db *db, struct
 			db__message_remove(db, &context->msgs_out, msg);
 			return MOSQ_ERR_SUCCESS;
 		}else{
-			expiry_interval = msg->store->message_expiry_time - now;
+			expiry_interval = (uint32_t)(msg->store->message_expiry_time - now);
 		}
 	}
 	mid = msg->mid;
 	retries = msg->dup;
 	retain = msg->retain;
 	topic = msg->store->topic;
-	qos = msg->qos;
+	qos = (uint8_t)msg->qos;
 	payloadlen = msg->store->payloadlen;
 	payload = UHPA_ACCESS_PAYLOAD(msg->store);
 	cmsg_props = msg->properties;

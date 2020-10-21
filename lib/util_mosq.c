@@ -242,7 +242,7 @@ int util__random_bytes(void *bytes, int count)
 		rc = MOSQ_ERR_SUCCESS;
 	}
 #elif defined(HAVE_GETRANDOM)
-	if(getrandom(bytes, count, 0) == count){
+	if(getrandom(bytes, (size_t)count, 0) == count){
 		rc = MOSQ_ERR_SUCCESS;
 	}
 #elif defined(WIN32)

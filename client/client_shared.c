@@ -917,7 +917,7 @@ int client_config_line_proc(struct mosq_config *cfg, int pub_or_sub, int argc, c
 				fprintf(stderr, "Error: --random-filter argument given but no chance specified.\n\n");
 				return 1;
 			}else{
-				cfg->random_filter = 10.0*atof(argv[i+1]);
+				cfg->random_filter = (int)(10.0*atof(argv[i+1]));
 				if(cfg->random_filter > 10000 || cfg->random_filter < 1){
 					fprintf(stderr, "Error: --random-filter chance must be between 0.1-100.0\n\n");
 					return 1;

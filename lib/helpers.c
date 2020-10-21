@@ -112,7 +112,7 @@ libmosq_EXPORT int mosquitto_subscribe_simple(
 
 	*messages = NULL;
 
-	userdata.messages = calloc(sizeof(struct mosquitto_message), msg_count);
+	userdata.messages = calloc(sizeof(struct mosquitto_message), (size_t)msg_count);
 	if(!userdata.messages){
 		return MOSQ_ERR_NOMEM;
 	}

@@ -7,7 +7,7 @@
 
 static void byte_prop_write_helper(
 		int command,
-		int remaining_length,
+		uint32_t remaining_length,
 		int rc_expected,
 		int identifier,
 		uint8_t value_expected)
@@ -51,7 +51,7 @@ static void byte_prop_write_helper(
 
 static void int32_prop_write_helper(
 		int command,
-		int remaining_length,
+		uint32_t remaining_length,
 		int rc_expected,
 		int identifier,
 		uint32_t value_expected)
@@ -95,7 +95,7 @@ static void int32_prop_write_helper(
 
 static void int16_prop_write_helper(
 		int command,
-		int remaining_length,
+		uint32_t remaining_length,
 		int rc_expected,
 		int identifier,
 		uint16_t value_expected)
@@ -138,7 +138,7 @@ static void int16_prop_write_helper(
 
 static void string_prop_write_helper(
 		int command,
-		int remaining_length,
+		uint32_t remaining_length,
 		int rc_expected,
 		int identifier,
 		const char *value_expected)
@@ -155,7 +155,7 @@ static void string_prop_write_helper(
 	CU_ASSERT_PTR_NOT_NULL(property.value.s.v);
 	if(!property.value.s.v) return;
 
-	property.value.s.len = strlen(value_expected);
+	property.value.s.len = (uint16_t)strlen(value_expected);
 
 	memset(&packet, 0, sizeof(struct mosquitto__packet));
 	packet.remaining_length = property__get_length_all(&property)+1;
@@ -188,11 +188,11 @@ static void string_prop_write_helper(
 
 static void binary_prop_write_helper(
 		int command,
-		int remaining_length,
+		uint32_t remaining_length,
 		int rc_expected,
 		int identifier,
 		const uint8_t *value_expected,
-		int len_expected)
+		uint16_t len_expected)
 {
 	mosquitto_property property;
 	struct mosquitto__packet packet;
@@ -238,7 +238,7 @@ static void binary_prop_write_helper(
 }
 
 static void string_pair_prop_write_helper(
-		int remaining_length,
+		uint32_t remaining_length,
 		int rc_expected,
 		int identifier,
 		const char *name_expected,
@@ -256,13 +256,13 @@ static void string_pair_prop_write_helper(
 	property.value.s.v = strdup(value_expected);
 	CU_ASSERT_PTR_NOT_NULL(property.value.s.v);
 	if(!property.value.s.v) return;
-	property.value.s.len = strlen(value_expected);
+	property.value.s.len = (uint16_t)strlen(value_expected);
 
 	property.name.v = strdup(name_expected);
 	CU_ASSERT_PTR_NOT_NULL(property.name.v);
 	if(!property.name.v) return;
 
-	property.name.len = strlen(name_expected);
+	property.name.len = (uint16_t)strlen(name_expected);
 
 	memset(&packet, 0, sizeof(struct mosquitto__packet));
 	packet.remaining_length = property__get_length_all(&property)+1;
@@ -300,7 +300,7 @@ static void string_pair_prop_write_helper(
 }
 
 static void varint_prop_write_helper(
-		int remaining_length,
+		uint32_t remaining_length,
 		int rc_expected,
 		int identifier,
 		uint32_t value_expected)

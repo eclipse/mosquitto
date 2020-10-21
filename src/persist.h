@@ -144,19 +144,19 @@ struct P_retain{
 int persist__read_string_len(FILE *db_fptr, char **str, uint16_t len);
 int persist__read_string(FILE *db_fptr, char **str);
 
-int persist__chunk_header_read(FILE *db_fptr, int *chunk, int *length);
+int persist__chunk_header_read(FILE *db_fptr, uint32_t *chunk, uint32_t *length);
 
-int persist__chunk_header_read_v234(FILE *db_fptr, int *chunk, int *length);
+int persist__chunk_header_read_v234(FILE *db_fptr, uint32_t *chunk, uint32_t *length);
 int persist__chunk_cfg_read_v234(FILE *db_fptr, struct PF_cfg *chunk);
-int persist__chunk_client_read_v234(FILE *db_fptr, struct P_client *chunk, int db_version);
+int persist__chunk_client_read_v234(FILE *db_fptr, struct P_client *chunk, uint32_t db_version);
 int persist__chunk_client_msg_read_v234(FILE *db_fptr, struct P_client_msg *chunk);
-int persist__chunk_msg_store_read_v234(FILE *db_fptr, struct P_msg_store *chunk, int db_version);
+int persist__chunk_msg_store_read_v234(FILE *db_fptr, struct P_msg_store *chunk, uint32_t db_version);
 int persist__chunk_retain_read_v234(FILE *db_fptr, struct P_retain *chunk);
 int persist__chunk_sub_read_v234(FILE *db_fptr, struct P_sub *chunk);
 
-int persist__chunk_header_read_v56(FILE *db_fptr, int *chunk, int *length);
+int persist__chunk_header_read_v56(FILE *db_fptr, uint32_t *chunk, uint32_t *length);
 int persist__chunk_cfg_read_v56(FILE *db_fptr, struct PF_cfg *chunk);
-int persist__chunk_client_read_v56(FILE *db_fptr, struct P_client *chunk, int db_version);
+int persist__chunk_client_read_v56(FILE *db_fptr, struct P_client *chunk, uint32_t db_version);
 int persist__chunk_client_msg_read_v56(FILE *db_fptr, struct P_client_msg *chunk, uint32_t length);
 int persist__chunk_msg_store_read_v56(FILE *db_fptr, struct P_msg_store *chunk, uint32_t length);
 int persist__chunk_retain_read_v56(FILE *db_fptr, struct P_retain *chunk);

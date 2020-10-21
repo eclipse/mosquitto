@@ -313,7 +313,11 @@ static int json_print(const struct mosquitto_message *message, const mosquitto_p
 
 	/* Payload */
 	if(escaped){
-		tmp = cJSON_CreateString(message->payload);
+		if(message->payload){
+			tmp = cJSON_CreateString(message->payload);
+		}else{
+			tmp = cJSON_CreateNull();
+		}
 		if(tmp == NULL){
 			cJSON_Delete(root);
 			return MOSQ_ERR_NOMEM;
@@ -321,10 +325,18 @@ static int json_print(const struct mosquitto_message *message, const mosquitto_p
 		cJSON_AddItemToObject(root, "payload", tmp);
 	}else{
 		return_parse_end = NULL;
-		tmp = cJSON_ParseWithOpts(message->payload, &return_parse_end, true);
-		if(tmp == NULL || return_parse_end != message->payload + message->payloadlen){
-			cJSON_Delete(root);
-			return MOSQ_ERR_INVAL;
+		if(message->payload){
+			tmp = cJSON_ParseWithOpts(message->payload, &return_parse_end, true);
+			if(tmp == NULL || return_parse_end != message->payload + message->payloadlen){
+				cJSON_Delete(root);
+				return MOSQ_ERR_INVAL;
+			}
+		}else{
+			tmp = cJSON_CreateNull();
+			if(tmp == NULL){
+				cJSON_Delete(root);
+				return MOSQ_ERR_INVAL;
+			}
 		}
 		cJSON_AddItemToObject(root, "payload", tmp);
 	}
@@ -462,7 +474,7 @@ static void formatted_print_percent(const struct mosq_config *lcfg, const struct
 
 		case 'E':
 			if(mosquitto_property_read_int32(properties, MQTT_PROP_MESSAGE_EXPIRY_INTERVAL, &i32value, false)){
-				formatted_print_int(i32value, align, pad, field_width);
+				formatted_print_int((int)i32value, align, pad, field_width);
 			}else{
 				formatted_print_blank(pad, field_width);
 			}
@@ -497,7 +509,7 @@ static void formatted_print_percent(const struct mosq_config *lcfg, const struct
 					return;
 				}
 			}
-			if(json_print(message, properties, ti, ns, true, lcfg->pretty) != MOSQ_ERR_SUCCESS){
+			if(json_print(message, properties, ti, (int)ns, true, lcfg->pretty) != MOSQ_ERR_SUCCESS){
 				err_printf(lcfg, "Error: Out of memory.\n");
 				return;
 			}
@@ -510,7 +522,7 @@ static void formatted_print_percent(const struct mosq_config *lcfg, const struct
 					return;
 				}
 			}
-			rc = json_print(message, properties, ti, ns, false, lcfg->pretty);
+			rc = json_print(message, properties, ti, (int)ns, false, lcfg->pretty);
 			if(rc == MOSQ_ERR_NOMEM){
 				err_printf(lcfg, "Error: Out of memory.\n");
 				return;
@@ -573,7 +585,7 @@ static void formatted_print_percent(const struct mosq_config *lcfg, const struct
 
 		case 'S':
 			if(mosquitto_property_read_varint(properties, MQTT_PROP_SUBSCRIPTION_IDENTIFIER, &i32value, false)){
-				formatted_print_int(i32value, align, pad, field_width);
+				formatted_print_int((int)i32value, align, pad, field_width);
 			}else{
 				formatted_print_blank(pad, field_width);
 			}
@@ -608,7 +620,7 @@ static void formatted_print_percent(const struct mosq_config *lcfg, const struct
 
 static void formatted_print(const struct mosq_config *lcfg, const struct mosquitto_message *message, const mosquitto_property *properties)
 {
-	int len;
+	size_t len;
 	int i;
 	struct tm *ti = NULL;
 	long ns;
@@ -747,7 +759,7 @@ void rand_init(void)
 	long ns;
 
 	if(!get_time(&ti, &ns)){
-		srandom(ns);
+		srandom((unsigned int)ns);
 	}
 #endif
 }

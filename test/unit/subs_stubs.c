@@ -20,7 +20,7 @@ struct mosquitto *context__init(struct mosquitto_db *db, mosq_sock_t sock)
 }
 
 
-int db__message_insert(struct mosquitto_db *db, struct mosquitto *context, uint16_t mid, enum mosquitto_msg_direction dir, int qos, bool retain, struct mosquitto_msg_store *stored, mosquitto_property *properties)
+int db__message_insert(struct mosquitto_db *db, struct mosquitto *context, uint16_t mid, enum mosquitto_msg_direction dir, uint8_t qos, bool retain, struct mosquitto_msg_store *stored, mosquitto_property *properties)
 {
 	return MOSQ_ERR_SUCCESS;
 }
@@ -35,7 +35,7 @@ void db__msg_store_ref_inc(struct mosquitto_msg_store *store)
 }
 #endif
 
-int log__printf(struct mosquitto *mosq, int priority, const char *fmt, ...)
+int log__printf(struct mosquitto *mosq, unsigned int priority, const char *fmt, ...)
 {
 	return 0;
 }
@@ -56,7 +56,7 @@ int send__pingreq(struct mosquitto *mosq)
 	return MOSQ_ERR_SUCCESS;
 }
 
-int mosquitto_acl_check(struct mosquitto_db *db, struct mosquitto *context, const char *topic, long payloadlen, void* payload, int qos, bool retain, int access)
+int mosquitto_acl_check(struct mosquitto_db *db, struct mosquitto *context, const char *topic, uint32_tn payloadlen, void* payload, uint8_t qos, bool retain, int access)
 {
 	return MOSQ_ERR_SUCCESS;
 }
@@ -68,7 +68,7 @@ int acl__find_acls(struct mosquitto_db *db, struct mosquitto *context)
 #endif
 
 
-int send__publish(struct mosquitto *mosq, uint16_t mid, const char *topic, uint32_t payloadlen, const void *payload, int qos, bool retain, bool dup, const mosquitto_property *cmsg_props, const mosquitto_property *store_props, uint32_t expiry_interval)
+int send__publish(struct mosquitto *mosq, uint16_t mid, const char *topic, uint32_t payloadlen, const void *payload, uint8_t qos, bool retain, bool dup, const mosquitto_property *cmsg_props, const mosquitto_property *store_props, uint32_t expiry_interval)
 {
 	return MOSQ_ERR_SUCCESS;
 }
@@ -88,7 +88,7 @@ int send__pubrel(struct mosquitto *mosq, uint16_t mid, const mosquitto_property 
 	return MOSQ_ERR_SUCCESS;
 }
 
-int mosquitto_acl_check(struct mosquitto_db *db, struct mosquitto *context, const char *topic, long payloadlen, void* payload, int qos, bool retain, int access)
+int mosquitto_acl_check(struct mosquitto_db *db, struct mosquitto *context, const char *topic, uint32_t payloadlen, void* payload, uint8_t qos, bool retain, int access)
 {
 	return MOSQ_ERR_SUCCESS;
 }
@@ -128,7 +128,7 @@ void retain__clean(struct mosquitto_db *db, struct mosquitto__retainhier **retai
 {
 }
 
-int retain__queue(struct mosquitto_db *db, struct mosquitto *context, const char *sub, int sub_qos, uint32_t subscription_identifier)
+int retain__queue(struct mosquitto_db *db, struct mosquitto *context, const char *sub, uint8_t sub_qos, uint32_t subscription_identifier)
 {
 	return MOSQ_ERR_SUCCESS;
 }
