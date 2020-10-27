@@ -364,6 +364,51 @@ def to_string(packet):
         (cmd, rl) = struct.unpack('!BB', packet)
         return "AUTH, rl="+str(rl)
 
+
+def read_varint(sock, rl):
+    varint = 0
+    multiplier = 1
+    while True:
+        byte = sock.recv(1)
+        byte, = struct.unpack("!B", byte)
+        varint += (byte & 127)*multiplier
+        multiplier *= 128
+        rl -= 1
+        if byte & 128 == 0x00:
+            return (varint, rl)
+
+
+def mqtt_read_string(sock, rl):
+    slen = sock.recv(2)
+    slen, = struct.unpack("!H", slen)
+    payload = sock.recv(slen)
+    payload, = struct.unpack("!%ds" % (slen), payload)
+    rl -= (2 + slen)
+    return (payload, rl)
+
+
+def read_publish(sock, proto_ver=4):
+    cmd, = struct.unpack("!B", sock.recv(1))
+    if cmd & 0xF0 != 0x30:
+        raise ValueError
+
+    qos = (cmd & 0x06) >> 1
+    rl, t = read_varint(sock, 0)
+    topic, rl = mqtt_read_string(sock, rl)
+
+    if qos > 0:
+        sock.recv(2)
+        rl -= 1
+
+    if proto_ver == 5:
+        proplen, rl = read_varint(sock, rl)
+        sock.recv(proplen)
+        rl -= proplen
+
+    payload = sock.recv(rl).decode('utf-8')
+    return payload
+
+
 def gen_connect(client_id, clean_session=True, keepalive=60, username=None, password=None, will_topic=None, will_qos=0, will_retain=False, will_payload=b"", proto_ver=4, connect_reserved=False, properties=b"", will_properties=b"", session_expiry=-1):
     if (proto_ver&0x7F) == 3 or proto_ver == 0:
         remaining_length = 12
@@ -444,12 +489,14 @@ def gen_connect(client_id, clean_session=True, keepalive=60, username=None, pass
             packet = packet + struct.pack("!H"+str(len(password))+"s", len(password), password)
     return packet
 
-def gen_connack(flags=0, rc=0, proto_ver=4, properties=b""):
+def gen_connack(flags=0, rc=0, proto_ver=4, properties=b"", property_helper=True):
     if proto_ver == 5:
-        if properties is not None:
-            properties = mqtt5_props.gen_uint16_prop(mqtt5_props.PROP_TOPIC_ALIAS_MAXIMUM, 10) + properties
-        else:
-            properties = b""
+        if property_helper == True:
+            if properties is not None:
+                properties = mqtt5_props.gen_uint16_prop(mqtt5_props.PROP_TOPIC_ALIAS_MAXIMUM, 10) \
+                    + properties + mqtt5_props.gen_uint16_prop(mqtt5_props.PROP_RECEIVE_MAXIMUM, 20)
+            else:
+                properties = b""
         properties = mqtt5_props.prop_finalise(properties)
 
         packet = struct.pack('!BBBB', 32, 2+len(properties), flags, rc) + properties

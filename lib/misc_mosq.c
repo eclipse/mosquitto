@@ -40,14 +40,14 @@ FILE *mosquitto__fopen(const char *path, const char *mode, bool restrict_read)
 #ifdef WIN32
 	char buf[4096];
 	int rc;
-	rc = ExpandEnvironmentStrings(path, buf, 4096);
+	rc = ExpandEnvironmentStringsA(path, buf, 4096);
 	if(rc == 0 || rc > 4096){
 		return NULL;
 	}else{
 		if (restrict_read) {
 			HANDLE hfile;
 			SECURITY_ATTRIBUTES sec;
-			EXPLICIT_ACCESS ea;
+			EXPLICIT_ACCESS_A ea;
 			PACL pacl = NULL;
 			char username[UNLEN + 1];
 			int ulen = UNLEN;
@@ -68,12 +68,12 @@ FILE *mosquitto__fopen(const char *path, const char *mode, bool restrict_read)
 					return NULL;
 			}
 
-			GetUserName(username, &ulen);
+			GetUserNameA(username, &ulen);
 			if (!InitializeSecurityDescriptor(&sd, SECURITY_DESCRIPTOR_REVISION)) {
 				return NULL;
 			}
-			BuildExplicitAccessWithName(&ea, username, GENERIC_ALL, SET_ACCESS, NO_INHERITANCE);
-			if (SetEntriesInAcl(1, &ea, NULL, &pacl) != ERROR_SUCCESS) {
+			BuildExplicitAccessWithNameA(&ea, username, GENERIC_ALL, SET_ACCESS, NO_INHERITANCE);
+			if (SetEntriesInAclA(1, &ea, NULL, &pacl) != ERROR_SUCCESS) {
 				return NULL;
 			}
 			if (!SetSecurityDescriptorDacl(&sd, TRUE, pacl, FALSE)) {
@@ -85,7 +85,7 @@ FILE *mosquitto__fopen(const char *path, const char *mode, bool restrict_read)
 			sec.bInheritHandle = FALSE;
 			sec.lpSecurityDescriptor = &sd;
 
-			hfile = CreateFile(buf, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ,
+			hfile = CreateFileA(buf, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ,
 				&sec,
 				dwCreationDisposition,
 				FILE_ATTRIBUTE_NORMAL,

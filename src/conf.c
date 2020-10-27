@@ -1036,6 +1036,19 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 #else
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: TLS support not available.");
 #endif
+				}else if(!strcmp(token, "bridge_max_packet_size")){
+#if defined(WITH_BRIDGE)
+					if(reload) continue; // Bridges not valid for reloading.
+					if(!cur_bridge){
+						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
+						return MOSQ_ERR_INVAL;
+					}
+					if(conf__parse_int(&token, "bridge_max_packet_size", &tmp_int, saveptr)) return MOSQ_ERR_INVAL;
+					if(tmp_int < 0) tmp_int = 0;
+					cur_bridge->maximum_packet_size = (uint32_t)tmp_int;
+#else
+					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Bridge support not available.");
+#endif
 				}else if(!strcmp(token, "bridge_outgoing_retain")){
 #if defined(WITH_BRIDGE)
 					if(reload) continue; // Listeners not valid for reloading.

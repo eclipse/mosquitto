@@ -30,3 +30,4 @@ _mosquitto_property_free_all
 _mosquitto_realloc
 _mosquitto_set_username
 _mosquitto_strdup
+_mosquitto_topic_matches_sub

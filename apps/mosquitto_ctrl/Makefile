@@ -1,0 +1,79 @@
+include ../../config.mk
+
+.PHONY: all install uninstall clean reallyclean
+
+ifeq ($(WITH_SHARED_LIBRARIES),yes)
+LIBMOSQ:=../../lib/libmosquitto.so.${SOVERSION}
+else
+LIBMOSQ:=../../lib/libmosquitto.a
+endif
+
+LOCAL_CPPFLAGS:=-I/usr/include/cjson -I/usr/local/include/cjson
+
+OBJS=	mosquitto_ctrl.o \
+		client.o \
+		dynsec.o \
+		dynsec_client.o \
+		dynsec_group.o \
+		dynsec_role.o \
+		memory_mosq.o \
+		memory_public.o \
+		options.o \
+		password_mosq.o
+
+ifeq ($(WITH_TLS),yes)
+ifeq ($(WITH_CJSON),yes)
+TARGET:=mosquitto_ctrl
+endif
+endif
+
+all : $(TARGET)
+
+mosquitto_ctrl : ${OBJS}
+	${CROSS_COMPILE}${CC} ${APP_LDFLAGS} $^ -o $@ $(PASSWD_LDADD) $(LIBMOSQ) -lcjson
+
+mosquitto_ctrl.o : mosquitto_ctrl.c mosquitto_ctrl.h
+	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@
+
+client.o : client.c mosquitto_ctrl.h
+	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@
+
+dynsec.o : dynsec.c mosquitto_ctrl.h
+	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@
+
+dynsec_client.o : dynsec_client.c mosquitto_ctrl.h
+	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@
+
+dynsec_group.o : dynsec_group.c mosquitto_ctrl.h
+	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@
+
+dynsec_role.o : dynsec_role.c mosquitto_ctrl.h
+	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@
+
+memory_mosq.o : ../../lib/memory_mosq.c
+	${CROSS_COMPILE}${CC} $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@
+
+memory_public.o : ../../src/memory_public.c
+	${CROSS_COMPILE}${CC} $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@
+
+options.o : options.c mosquitto_ctrl.h
+	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@
+
+misc_mosq.o : ../../lib/misc_mosq.c ../../lib/misc_mosq.h
+	${CROSS_COMPILE}${CC} $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@
+
+password_mosq.o : ../../src/password_mosq.c ../../src/password_mosq.h
+	${CROSS_COMPILE}${CC} $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@
+
+install : all
+	$(INSTALL) -d "${DESTDIR}$(prefix)/bin"
+	$(INSTALL) ${STRIP_OPTS} mosquitto_ctrl "${DESTDIR}${prefix}/bin/mosquitto_ctrl"
+
+uninstall :
+	-rm -f "${DESTDIR}${prefix}/bin/mosquitto_ctrl"
+
+clean :
+	-rm -f *.o mosquitto_ctrl *.gcda *.gcno
+
+reallyclean : clean
+	-rm -rf *.orig *.db

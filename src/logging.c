@@ -309,8 +309,8 @@ int log__vprintf(unsigned int priority, const char *fmt, va_list va)
 		if(log_timestamp && log_timestamp_format){
 			struct tm *ti = NULL;
 			get_time(&ti);
-			if(strftime(time_buf, 50, log_timestamp_format, ti) == 0){
-				snprintf(time_buf, 50, "Time error");
+			if(strftime(time_buf, sizeof(time_buf), log_timestamp_format, ti) == 0){
+				snprintf(time_buf, sizeof(time_buf), "Time error");
 			}
 		}
 		if(log_destinations & MQTT3_LOG_STDOUT){
@@ -356,13 +356,17 @@ int log__vprintf(unsigned int priority, const char *fmt, va_list va)
 		}
 		if(log_destinations & MQTT3_LOG_TOPIC && priority != MOSQ_LOG_DEBUG && priority != MOSQ_LOG_INTERNAL){
 			if(log_timestamp){
-				len += 30;
+				len += sizeof(time_buf);;
 				st = mosquitto__malloc(len*sizeof(char));
 				if(!st){
 					mosquitto__free(s);
 					return MOSQ_ERR_NOMEM;
 				}
-				snprintf(st, len, "%d: %s", (int)now, s);
+				if(log_timestamp_format){
+					snprintf(st, len, "%s: %s", time_buf, s);
+				}else{
+					snprintf(st, len, "%d: %s", (int)now, s);
+				}
 				db__messages_easy_queue(&int_db, NULL, topic, 2, (uint32_t)strlen(st), st, 0, 20, NULL);
 				mosquitto__free(st);
 			}else{

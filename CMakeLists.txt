@@ -97,6 +97,13 @@ if (WITH_DLT)
 	add_definitions("-DWITH_DLT")
 endif (WITH_DLT)
 
+FIND_PACKAGE(cJSON)
+if (CJSON_FOUND)
+	message(STATUS ${CJSON_FOUND})
+	add_definitions("-DWITH_CJSON")
+endif()
+
+
 # ========================================
 # Include projects
 # ========================================

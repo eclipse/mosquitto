@@ -51,8 +51,15 @@ int send__connack(struct mosquitto_db *db, struct mosquitto *context, uint8_t ac
 				return rc;
 			}
 		}
-		if(db->config->max_packet_size > 0){
+		if(reason_code < 128 && db->config->max_packet_size > 0){
 			rc = mosquitto_property_add_int32(&connack_props, MQTT_PROP_MAXIMUM_PACKET_SIZE, db->config->max_packet_size);
+			if(rc){
+				mosquitto_property_free_all(&connack_props);
+				return rc;
+			}
+		}
+		if(reason_code < 128 && db->config->max_inflight_messages > 0){
+			rc = mosquitto_property_add_int16(&connack_props, MQTT_PROP_RECEIVE_MAXIMUM, db->config->max_inflight_messages);
 			if(rc){
 				mosquitto_property_free_all(&connack_props);
 				return rc;

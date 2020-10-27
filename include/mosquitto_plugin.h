@@ -21,8 +21,11 @@ Contributors:
 extern "C" {
 #endif
 
-#define MOSQ_AUTH_PLUGIN_VERSION 5
+/* The generic plugin interface starts at version 5 */
 #define MOSQ_PLUGIN_VERSION 5
+
+/* The old auth only interface stopped at version 4 */
+#define MOSQ_AUTH_PLUGIN_VERSION 4
 
 #define MOSQ_ACL_NONE 0x00
 #define MOSQ_ACL_READ 0x01
@@ -113,13 +116,18 @@ struct mosquitto_acl_msg {
  * ========================================================================= */
 
 /*
- * Function: mosquitto_auth_plugin_version
+ * Function: mosquitto_plugin_version
  *
- * The broker will call this function immediately after loading the plugin to
- * check it is a supported plugin version. Your code must simply return
- * the plugin interface version you support, i.e. 5.
+ * The broker will attempt to call this function immediately after loading the
+ * plugin to check it is a supported plugin version. Your code must simply
+ * return the plugin interface version you support, i.e. 5.
+ *
+ * The supported_versions array tells you which plugin versions the broker supports.
+ *
+ * If the broker does not support the version that you require, return -1 to
+ * indicate failure.
  */
-int mosquitto_plugin_version(void);
+int mosquitto_plugin_version(int supported_version_count, const int *supported_versions);
 
 /*
  * Function: mosquitto_auth_plugin_init

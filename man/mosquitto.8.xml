@@ -513,6 +513,12 @@
 			</member>
 			<member>
 				<citerefentry>
+					<refentrytitle><link xlink:href="mosquitto_ctrl-1.html">mosquitto_ctrl</link></refentrytitle>
+					<manvolnum>1</manvolnum>
+				</citerefentry>
+			</member>
+			<member>
+				<citerefentry>
 					<refentrytitle><link xlink:href="mosquitto_passwd-1.html">mosquitto_passwd</link></refentrytitle>
 					<manvolnum>1</manvolnum>
 				</citerefentry>

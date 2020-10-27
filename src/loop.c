@@ -229,6 +229,7 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 			}
 		}
 #endif
+		plugin__handle_tick(db);
 	}
 
 	mux__cleanup(db);
@@ -300,11 +301,17 @@ void do_disconnect(struct mosquitto_db *db, struct mosquitto *context, int reaso
 					case MOSQ_ERR_KEEPALIVE:
 						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s has exceeded timeout, disconnecting.", id);
 						break;
+					case MOSQ_ERR_OVERSIZE_PACKET:
+						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s disconnected due to oversize packet.", id);
+						break;
+					case MOSQ_ERR_NOMEM:
+						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s disconnected due to out of memory.", id);
+						break;
 					case MOSQ_ERR_ADMINISTRATIVE_ACTION:
 						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s been disconnected by administrative action.", id);
 						break;
 					default:
-						log__printf(NULL, MOSQ_LOG_NOTICE, "Socket error on client %s, disconnecting.", id);
+						log__printf(NULL, MOSQ_LOG_NOTICE, "Bad socket read/write on client %s, disconnecting.", id);
 						break;
 				}
 			}else{

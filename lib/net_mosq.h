@@ -36,10 +36,12 @@ struct mosquitto_db;
 #ifdef WIN32
 #  define COMPAT_CLOSE(a) closesocket(a)
 #  define COMPAT_ECONNRESET WSAECONNRESET
+#  define COMPAT_EINTR WSAEINTR
 #  define COMPAT_EWOULDBLOCK WSAEWOULDBLOCK
 #else
 #  define COMPAT_CLOSE(a) close(a)
 #  define COMPAT_ECONNRESET ECONNRESET
+#  define COMPAT_EINTR EINTR
 #  define COMPAT_EWOULDBLOCK EWOULDBLOCK
 #endif
 

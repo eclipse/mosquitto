@@ -27,6 +27,7 @@ Contributors:
 #include "utlist.h"
 
 typedef int (*FUNC_auth_plugin_version)(void);
+typedef int (*FUNC_plugin_version)(int, const int *);
 
 static int security__cleanup_single(struct mosquitto__security_options *opts, bool reload);
 
@@ -287,10 +288,13 @@ int security__load_v4(struct mosquitto__auth_plugin *plugin, struct mosquitto_op
 static int security__module_init_single(struct mosquitto__listener *listener, struct mosquitto__security_options *opts)
 {
 	void *lib;
-	int (*plugin_version)(void) = NULL;
+	int (*plugin_version)(int, const int*) = NULL;
+	int (*plugin_auth_version)(void) = NULL;
 	int version;
 	int i;
 	int rc;
+	const int plugin_versions[] = {5, 4, 3, 2};
+	int plugin_version_count = sizeof(plugin_versions)/sizeof(int);
 
 	if(opts->auth_plugin_config_count == 0){
 		return MOSQ_ERR_SUCCESS;
@@ -311,16 +315,17 @@ static int security__module_init_single(struct mosquitto__listener *listener, st
 			}
 
 			opts->auth_plugin_configs[i].plugin.lib = NULL;
-			if(!(plugin_version = (FUNC_auth_plugin_version)LIB_SYM(lib, "mosquitto_plugin_version"))){
-				if(!(plugin_version = (FUNC_auth_plugin_version)LIB_SYM(lib, "mosquitto_auth_plugin_version"))){
-					log__printf(NULL, MOSQ_LOG_ERR,
-							"Error: Unable to load auth plugin function mosquitto_auth_plugin_version() or mosquitto_plugin_version().");
-					LIB_ERROR();
-					LIB_CLOSE(lib);
-					return 1;
-				}
+			if((plugin_version = (FUNC_plugin_version)LIB_SYM(lib, "mosquitto_plugin_version"))){
+				version = plugin_version(plugin_version_count, plugin_versions);
+			}else if((plugin_auth_version = (FUNC_auth_plugin_version)LIB_SYM(lib, "mosquitto_auth_plugin_version"))){
+				version = plugin_auth_version();
+			}else{
+				log__printf(NULL, MOSQ_LOG_ERR,
+						"Error: Unable to load auth plugin function mosquitto_auth_plugin_version() or mosquitto_plugin_version().");
+				LIB_ERROR();
+				LIB_CLOSE(lib);
+				return 1;
 			}
-			version = plugin_version();
 			opts->auth_plugin_configs[i].plugin.version = version;
 			if(version == 5){
 				rc = plugin__load_v5(
@@ -365,8 +370,8 @@ static int security__module_init_single(struct mosquitto__listener *listener, st
 				}
 			}else{
 				log__printf(NULL, MOSQ_LOG_ERR,
-						"Error: Incorrect auth plugin version (got %d, expected %d).",
-						version, MOSQ_AUTH_PLUGIN_VERSION);
+						"Error: Unsupported auth plugin version (got %d, expected %d).",
+						version, MOSQ_PLUGIN_VERSION);
 				LIB_ERROR();
 
 				LIB_CLOSE(lib);

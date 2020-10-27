@@ -139,27 +139,25 @@ ifeq ($(UNAME),SunOS)
 		CFLAGS?=-Wall -ggdb -O2
 	endif
 else
-	CFLAGS?=-Wall -ggdb -O2 -Wconversion -Werror
+	CFLAGS?=-Wall -ggdb -O2
 endif
 
 STATIC_LIB_DEPS:=
 
 APP_CPPFLAGS=$(CPPFLAGS) -I. -I../../ -I../../include -I../../src -I../../lib
-APP_CFLAGS=$(CFLAGS)
+APP_CFLAGS=$(CFLAGS) -DVERSION=\""${VERSION}\""
+APP_LDFLAGS:=$(LDFLAGS)
 
 LIB_CPPFLAGS=$(CPPFLAGS) -I. -I.. -I../include -I../../include
-ifeq ($(WITH_BUNDLED_DEPS),yes)
-	LIB_CPPFLAGS:=$(LIB_CPPFLAGS) -I../deps
-endif
 LIB_CFLAGS:=$(CFLAGS)
 LIB_CXXFLAGS:=$(CXXFLAGS)
 LIB_LDFLAGS:=$(LDFLAGS)
 LIB_LIBADD:=$(LIBADD)
 
-BROKER_CPPFLAGS:=$(LIB_CPPFLAGS) -I../lib -I/usr/include/cjson -I/usr/local/include/cjson
+BROKER_CPPFLAGS:=$(LIB_CPPFLAGS) -I../lib
 BROKER_CFLAGS:=${CFLAGS} -DVERSION="\"${VERSION}\"" -DWITH_BROKER
 BROKER_LDFLAGS:=${LDFLAGS}
-BROKER_LDADD:=-lcjson
+BROKER_LDADD:=
 
 CLIENT_CPPFLAGS:=$(CPPFLAGS) -I.. -I../include
 CLIENT_CFLAGS:=${CFLAGS} -DVERSION="\"${VERSION}\""
@@ -169,6 +167,8 @@ CLIENT_LDADD:=
 PASSWD_LDADD:=
 
 PLUGIN_CPPFLAGS:=$(CPPFLAGS) -I../.. -I../../include
+PLUGIN_CFLAGS:=$(CFLAGS) -fPIC
+PLUGIN_LDFLAGS:=$(LDFLAGS)
 
 ifneq ($(or $(findstring $(UNAME),FreeBSD), $(findstring $(UNAME),OpenBSD), $(findstring $(UNAME),NetBSD)),)
 	BROKER_LDADD:=$(BROKER_LDADD) -lm
@@ -337,6 +337,8 @@ endif
 
 ifeq ($(WITH_BUNDLED_DEPS),yes)
 	BROKER_CPPFLAGS:=$(BROKER_CPPFLAGS) -I../deps
+	LIB_CPPFLAGS:=$(LIB_CPPFLAGS) -I../deps
+	PLUGIN_CPPFLAGS:=$(PLUGIN_CPPFLAGS) -I../../deps
 endif
 
 ifeq ($(WITH_COVERAGE),yes)

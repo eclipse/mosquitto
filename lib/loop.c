@@ -410,18 +410,6 @@ int mosquitto_loop_write(struct mosquitto *mosq, int max_packets)
 	int i;
 	if(max_packets < 1) return MOSQ_ERR_INVAL;
 
-	pthread_mutex_lock(&mosq->msgs_out.mutex);
-	max_packets = mosq->msgs_out.queue_len;
-	pthread_mutex_unlock(&mosq->msgs_out.mutex);
-
-	pthread_mutex_lock(&mosq->msgs_in.mutex);
-	max_packets += mosq->msgs_in.queue_len;
-	pthread_mutex_unlock(&mosq->msgs_in.mutex);
-
-	if(max_packets < 1) max_packets = 1;
-	/* Queue len here tells us how many messages are awaiting processing and
-	 * have QoS > 0. We should try to deal with that many in this loop in order
-	 * to keep up. */
 	for(i=0; i<max_packets; i++){
 		rc = packet__write(mosq);
 		if(rc || errno == EAGAIN || errno == COMPAT_EWOULDBLOCK){

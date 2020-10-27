@@ -33,7 +33,7 @@ static int acl__cleanup(struct mosquitto_db *db, bool reload);
 static int unpwd__cleanup(struct mosquitto__unpwd **unpwd, bool reload);
 static int psk__file_parse(struct mosquitto_db *db, struct mosquitto__unpwd **psk_id, const char *psk_file);
 #ifdef WITH_TLS
-static int pw__digest(const char *password, const unsigned char *salt, unsigned int salt_len, unsigned char *hash, unsigned int *hash_len, enum mosquitto_pwhash_type hashtype);
+static int pw__digest(const char *password, const unsigned char *salt, unsigned int salt_len, unsigned char *hash, unsigned int *hash_len, enum mosquitto_pwhash_type hashtype, int iterations);
 #endif
 static int mosquitto_unpwd_check_default(int event, void *event_data, void *userdata);
 static int mosquitto_acl_check_default(int event, void *event_data, void *userdata);
@@ -816,9 +816,7 @@ static int pwfile__parse(const char *file, struct mosquitto__unpwd **root)
 }
 
 
-#ifdef WITH_TLS
-
-static void unpwd__free_item(struct mosquitto__unpwd **unpwd, struct mosquitto__unpwd *item)
+void unpwd__free_item(struct mosquitto__unpwd **unpwd, struct mosquitto__unpwd *item)
 {
 	mosquitto__free(item->username);
 	mosquitto__free(item->password);
@@ -828,6 +826,7 @@ static void unpwd__free_item(struct mosquitto__unpwd **unpwd, struct mosquitto__
 }
 
 
+#ifdef WITH_TLS
 static int unpwd__decode_passwords(struct mosquitto__unpwd **unpwd)
 {
 	struct mosquitto__unpwd *u, *tmp;
@@ -841,46 +840,64 @@ static int unpwd__decode_passwords(struct mosquitto__unpwd **unpwd)
 
 	HASH_ITER(hh, *unpwd, u, tmp){
 		/* Need to decode password into hashed data + salt. */
-		if(u->password){
-			token = strtok(u->password, "$");
+		if(u->password == NULL){
+			log__printf(NULL, MOSQ_LOG_ERR, "Error: Missing password hash for user %s, removing entry.", u->username);
+			unpwd__free_item(unpwd, u);
+			continue;
+		}
+
+		token = strtok(u->password, "$");
+		if(token == NULL){
+			log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid password hash for user %s, removing entry.", u->username);
+			unpwd__free_item(unpwd, u);
+			continue;
+		}
+
+		if(!strcmp(token, "6")){
+			hashtype = pw_sha512;
+		}else if(!strcmp(token, "7")){
+			hashtype = pw_sha512_pbkdf2;
+		}else{
+			log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid password hash type for user %s, removing entry.", u->username);
+			unpwd__free_item(unpwd, u);
+			continue;
+		}
+
+		if(hashtype == pw_sha512_pbkdf2){
+			token = strtok(NULL, "$");
+			if(token == NULL){
+				log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid password hash for user %s, removing entry.", u->username);
+				unpwd__free_item(unpwd, u);
+				continue;
+			}
+			u->iterations = atoi(token);
+			if(u->iterations < 1){
+				log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid hash iterations for user %s, removing entry.", u->username);
+				unpwd__free_item(unpwd, u);
+				continue;
+			}
+		}
+
+		token = strtok(NULL, "$");
+		if(token == NULL){
+			log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid password hash for user %s, removing entry.", u->username);
+			unpwd__free_item(unpwd, u);
+			continue;
+		}
+		rc = base64__decode(token, &salt, &salt_len);
+		if(rc == MOSQ_ERR_SUCCESS && salt_len == 12){
+			u->salt = salt;
+			u->salt_len = salt_len;
+			token = strtok(NULL, "$");
 			if(token){
-				if(!strcmp(token, "6")){
-					hashtype = pw_sha512;
-				}else if(!strcmp(token, "7")){
-					hashtype = pw_sha512_pbkdf2;
+				rc = base64__decode(token, &password, &password_len);
+				if(rc == MOSQ_ERR_SUCCESS && password_len == 64){
+					mosquitto__free(u->password);
+					u->password = (char *)password;
+					u->password_len = password_len;
+					u->hashtype = hashtype;
 				}else{
-					log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid password hash type for user %s, removing entry.", u->username);
-					unpwd__free_item(unpwd, u);
-					continue;
-				}
-				token = strtok(NULL, "$");
-				if(token){
-					rc = base64__decode(token, &salt, &salt_len);
-					if(rc == MOSQ_ERR_SUCCESS && salt_len == 12){
-						u->salt = salt;
-						u->salt_len = salt_len;
-						token = strtok(NULL, "$");
-						if(token){
-							rc = base64__decode(token, &password, &password_len);
-							if(rc == MOSQ_ERR_SUCCESS && password_len == 64){
-								mosquitto__free(u->password);
-								u->password = (char *)password;
-								u->password_len = password_len;
-								u->hashtype = hashtype;
-							}else{
-								log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to decode password for user %s, removing entry.", u->username);
-								unpwd__free_item(unpwd, u);
-							}
-						}else{
-							log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid password hash for user %s, removing entry.", u->username);
-							unpwd__free_item(unpwd, u);
-						}
-					}else{
-						log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to decode password salt for user %s, removing entry.", u->username);
-						unpwd__free_item(unpwd, u);
-					}
-				}else{
-					log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid password hash for user %s, removing entry.", u->username);
+					log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to decode password for user %s, removing entry.", u->username);
 					unpwd__free_item(unpwd, u);
 				}
 			}else{
@@ -888,7 +905,7 @@ static int unpwd__decode_passwords(struct mosquitto__unpwd **unpwd)
 				unpwd__free_item(unpwd, u);
 			}
 		}else{
-			log__printf(NULL, MOSQ_LOG_ERR, "Error: Missing password hash for user %s, removing entry.", u->username);
+			log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to decode password salt for user %s, removing entry.", u->username);
 			unpwd__free_item(unpwd, u);
 		}
 	}
@@ -992,7 +1009,7 @@ static int mosquitto_unpwd_check_default(int event, void *event_data, void *user
 		if(u->password){
 			if(ed->client->password){
 #ifdef WITH_TLS
-				rc = pw__digest(ed->client->password, u->salt, u->salt_len, hash, &hash_len, u->hashtype);
+				rc = pw__digest(ed->client->password, u->salt, u->salt_len, hash, &hash_len, u->hashtype, u->iterations);
 				if(rc == MOSQ_ERR_SUCCESS){
 					if(hash_len == u->password_len && !mosquitto__memcmp_const(u->password, hash, hash_len)){
 						return MOSQ_ERR_SUCCESS;
@@ -1293,7 +1310,7 @@ int mosquitto_psk_key_get_default(struct mosquitto_db *db, struct mosquitto *con
 }
 
 #ifdef WITH_TLS
-int pw__digest(const char *password, const unsigned char *salt, unsigned int salt_len, unsigned char *hash, unsigned int *hash_len, enum mosquitto_pwhash_type hashtype)
+int pw__digest(const char *password, const unsigned char *salt, unsigned int salt_len, unsigned char *hash, unsigned int *hash_len, enum mosquitto_pwhash_type hashtype, int iterations)
 {
 	const EVP_MD *digest;
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
@@ -1329,7 +1346,7 @@ int pw__digest(const char *password, const unsigned char *salt, unsigned int sal
 	}else{
 		*hash_len = EVP_MAX_MD_SIZE;
 		PKCS5_PBKDF2_HMAC(password, (int)strlen(password),
-			salt, (int)salt_len, 20000,
+			salt, (int)salt_len, iterations,
 			digest, (int)(*hash_len), hash);
 	}
 

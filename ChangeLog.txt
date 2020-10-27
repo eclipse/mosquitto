@@ -55,6 +55,10 @@ Broker:
 - Document that X509_free() must be called after using
   mosquitto_client_certificate(). Closes #1842.
 - Add "deny" acl type. Closes #1611.
+- The broker now sends the receive-maximum property for MQTT v5 CONNACKs.
+- mosquitto_password now forbids the : character. Closes #1833.
+- Fix `log_timestamp_format` not applying to `log_dest topic`. Closes #1862.
+- Add the `bridge_max_packet_size` option. Closes #265.
 
 Client library:
 - Client no longer generates random client ids for v3.1.1 clients, these are
@@ -203,7 +207,6 @@ Clients:
 Build:
 - Various fixes for building with <C99 support. Closes #1622.
 - Fix use of sed on BSD. Closes #1614.
->>>>>>> fixes
 
 
 1.6.9 - 20200227

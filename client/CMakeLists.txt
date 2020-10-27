@@ -1,5 +1,3 @@
-FIND_PACKAGE(cJSON)
-
 set(shared_src client_shared.c client_shared.h client_props.c)
 
 if (WITH_SRV)
@@ -13,10 +11,8 @@ set( CLIENT_INC ${mosquitto_SOURCE_DIR} ${mosquitto_SOURCE_DIR}/include
 set( CLIENT_DIR ${mosquitto_BINARY_DIR}/lib)
 
 if (CJSON_FOUND)
-	message(STATUS ${CJSON_FOUND})
 	set( CLIENT_DIR "${CLIENT_DIR} ${CJSON_DIR}" )
 	set( CLIENT_INC "${CLIENT_INC};${CJSON_INCLUDE_DIRS}" )
-	add_definitions("-DWITH_CJSON")
 endif()
 
 include_directories(${CLIENT_INC})

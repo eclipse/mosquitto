@@ -52,9 +52,16 @@ static int callback_message(int event, void *event_data, void *userdata)
 	return mosquitto_property_add_string_pair(&ed->properties, MQTT_PROP_USER_PROPERTY, "timestamp", time_buf);
 }
 
-int mosquitto_plugin_version(void)
+int mosquitto_plugin_version(int supported_version_count, const int *supported_versions)
 {
-	return 5;
+	int i;
+
+	for(i=0; i<supported_version_count; i++){
+		if(supported_versions[i] == 5){
+			return 5;
+		}
+	}
+	return -1;
 }
 
 int mosquitto_plugin_init(mosquitto_plugin_id_t *identifier, void **user_data, struct mosquitto_opt *opts, int opt_count)

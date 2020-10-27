@@ -27,7 +27,7 @@ Contributors:
 #include <string.h>
 
 #include "mosquitto.h"
-#include "memory_mosq.h"
+#include "mosquitto_broker.h"
 #include "password_mosq.h"
 
 #ifdef WIN32
@@ -55,10 +55,8 @@ Contributors:
 #define MAX_BUFFER_LEN 65536
 #define SALT_LEN 12
 
-#include "misc_mosq.h"
-
 #ifdef WITH_TLS
-int base64_encode(unsigned char *in, unsigned int in_len, char **encoded)
+int base64__encode(unsigned char *in, unsigned int in_len, char **encoded)
 {
 	BIO *bmem, *b64;
 	BUF_MEM *bptr;
@@ -112,7 +110,7 @@ int base64__decode(char *in, unsigned char **decoded, unsigned int *decoded_len)
 		BIO_free_all(b64);
 		return 1;
 	}
-	*decoded = mosquitto__calloc(slen, 1);
+	*decoded = mosquitto_calloc(slen, 1);
 	if(!(*decoded)){
 		BIO_free_all(b64);
 		return 1;
@@ -121,7 +119,7 @@ int base64__decode(char *in, unsigned char **decoded, unsigned int *decoded_len)
 	BIO_free_all(b64);
 
 	if(len <= 0){
-		mosquitto__free(*decoded);
+		mosquitto_free(*decoded);
 		*decoded = NULL;
 		*decoded_len = 0;
 		return 1;
@@ -133,22 +131,29 @@ int base64__decode(char *in, unsigned char **decoded, unsigned int *decoded_len)
 
 
 
-int pw__hash(const char *password, struct mosquitto_pw *pw, bool new_salt)
+int pw__hash(const char *password, struct mosquitto_pw *pw, bool new_password, int new_iterations)
 {
 	int rc;
 	unsigned int hash_len;
 	const EVP_MD *digest;
+	int iterations;
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
 	EVP_MD_CTX context;
 #else
 	EVP_MD_CTX *context;
 #endif
 
-	if(new_salt){
+	if(new_password){
 		rc = RAND_bytes(pw->salt, sizeof(pw->salt));
 		if(!rc){
 			return MOSQ_ERR_UNKNOWN;
 		}
+		iterations = new_iterations;
+	}else{
+		iterations = pw->iterations;
+	}
+	if(iterations < 1){
+		return MOSQ_ERR_INVAL;
 	}
 
 	digest = EVP_get_digestbyname("sha512");
@@ -173,9 +178,10 @@ int pw__hash(const char *password, struct mosquitto_pw *pw, bool new_salt)
 		EVP_MD_CTX_free(context);
 #endif
 	}else{
+		pw->iterations = iterations;
 		hash_len = sizeof(pw->password_hash);
 		PKCS5_PBKDF2_HMAC(password, (int)strlen(password),
-			pw->salt, sizeof(pw->salt), 20000,
+			pw->salt, sizeof(pw->salt), iterations,
 			digest, (int)hash_len, pw->password_hash);
 	}
 

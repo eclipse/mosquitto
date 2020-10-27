@@ -474,14 +474,16 @@ D.conf
 						named output.</para>
 					<para><option>syslog</option> uses the userspace syslog
 						facility which usually ends up in /var/log/messages or
-						similar and topic logs to the broker topic
+						similar.</para>
+					<para><option>topic</option> logs to the broker topic
 						'$SYS/broker/log/&lt;severity&gt;', where severity is
-						one of D, E, W, N, I, M which are debug, error,
+						one of E, W, N, I, M which are error,
 						warning, notice, information and message. Message type
 						severity is used by the subscribe and unsubscribe
 						log_type options and publishes log messages at
 						$SYS/broker/log/M/subscribe and
-						$SYS/broker/log/M/unsubscribe.</para>
+						$SYS/broker/log/M/unsubscribe. Debug messages are never
+						logged on topics.</para>
 					<para>The <option>file</option> destination requires an
 						additional parameter which is the file to be logged to,
 						e.g. "log_dest file /var/log/mosquitto.log". The file
@@ -1517,6 +1519,20 @@ openssl dhparam -out dhparam.pem 2048</programlisting>
 						<replaceable>false</replaceable> will disable sending
 						the unsubscribe request. Defaults to
 						<replaceable>true</replaceable>.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>bridge_max_packet_size</option> <replaceable>value</replaceable></term>
+				<listitem>
+					<para>
+						If you wish to restrict the size of messages sent to a
+						remote bridge, use this option. This sets the maximum
+						number of bytes for the total message, including headers
+						and payload. Note that MQTT v5 brokers may provide their
+						own maximum-packet-size property. In this case, the
+						smaller of the two limits will be used. Set to 0 for
+						"unlimited".
+					</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>

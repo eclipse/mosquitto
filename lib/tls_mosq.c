@@ -14,9 +14,9 @@ Contributors:
    Roger Light - initial implementation and documentation.
 */
 
-#ifdef WITH_TLS
-
 #include "config.h"
+
+#ifdef WITH_TLS
 
 #ifdef WIN32
 #  include <winsock2.h>

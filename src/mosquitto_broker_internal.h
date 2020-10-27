@@ -230,11 +230,12 @@ struct plugin__callbacks{
 	struct mosquitto__callback *reload;
 	struct mosquitto__callback *acl_check;
 	struct mosquitto__callback *basic_auth;
-	struct mosquitto__callback *psk_key;
 	struct mosquitto__callback *ext_auth_start;
 	struct mosquitto__callback *ext_auth_continue;
 	struct mosquitto__callback *control;
 	struct mosquitto__callback *message;
+	struct mosquitto__callback *tick;
+	struct mosquitto__callback *psk_key;
 };
 
 struct mosquitto__security_options {
@@ -446,14 +447,17 @@ struct mosquitto_client_msg{
 	bool dup;
 };
 
+
 struct mosquitto__unpwd{
 	UT_hash_handle hh;
 	char *username;
 	char *password;
+	char *clientid;
 #ifdef WITH_TLS
 	unsigned char *salt;
 	unsigned int password_len;
 	unsigned int salt_len;
+	int iterations;
 #endif
 	enum mosquitto_pwhash_type hashtype;
 };
@@ -582,6 +586,7 @@ struct mosquitto__bridge{
 	int backoff_base;
 	int backoff_cap;
 	int threshold;
+	uint32_t maximum_packet_size;
 	bool lazy_reconnect;
 	bool attempt_unsubscribe;
 	bool initial_notification_done;
@@ -796,6 +801,7 @@ void listener__set_defaults(struct mosquitto__listener *listener);
 int plugin__load_v5(struct mosquitto__listener *listener, struct mosquitto__auth_plugin *plugin, struct mosquitto_opt *auth_options, int auth_option_count, void *lib);
 int plugin__handle_message(struct mosquitto_db *db, struct mosquitto *context, struct mosquitto_msg_store *stored);
 void LIB_ERROR(void);
+void plugin__handle_tick(struct mosquitto_db *db);
 
 /* ============================================================
  * Property related functions
@@ -842,6 +848,8 @@ int mosquitto_psk_key_get_default(struct mosquitto_db *db, struct mosquitto *con
 
 int mosquitto_security_auth_start(struct mosquitto_db *db, struct mosquitto *context, bool reauth, const void *data_in, uint16_t data_in_len, void **data_out, uint16_t *data_out_len);
 int mosquitto_security_auth_continue(struct mosquitto_db *db, struct mosquitto *context, const void *data_in, uint16_t data_len, void **data_out, uint16_t *data_out_len);
+
+void unpwd__free_item(struct mosquitto__unpwd **unpwd, struct mosquitto__unpwd *item);
 
 /* ============================================================
  * Session expiry

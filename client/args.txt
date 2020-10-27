@@ -27,7 +27,7 @@ m - PUB,RR         (message input)
 N - RR,SUB         (no end of line)
 n - PUB,RR         (null message)
 O
-o
+o - CTRL           (options file)
 P - PUB,RR,SUB     (password)
 p - PUB,RR,SUB     (port)
 Q

@@ -254,6 +254,8 @@ int packet__write(struct mosquitto *mosq)
 					switch(errno){
 						case COMPAT_ECONNRESET:
 							return MOSQ_ERR_CONN_LOST;
+						case COMPAT_EINTR:
+							return MOSQ_ERR_SUCCESS;
 						default:
 							return MOSQ_ERR_ERRNO;
 					}
@@ -371,6 +373,8 @@ int packet__read(struct mosquitto *mosq)
 				switch(errno){
 					case COMPAT_ECONNRESET:
 						return MOSQ_ERR_CONN_LOST;
+					case COMPAT_EINTR:
+						return MOSQ_ERR_SUCCESS;
 					default:
 						return MOSQ_ERR_ERRNO;
 				}
@@ -414,6 +418,8 @@ int packet__read(struct mosquitto *mosq)
 					switch(errno){
 						case COMPAT_ECONNRESET:
 							return MOSQ_ERR_CONN_LOST;
+						case COMPAT_EINTR:
+							return MOSQ_ERR_SUCCESS;
 						default:
 							return MOSQ_ERR_ERRNO;
 					}
@@ -426,7 +432,6 @@ int packet__read(struct mosquitto *mosq)
 
 #ifdef WITH_BROKER
 		if(db->config->max_packet_size > 0 && mosq->in_packet.remaining_length+1 > db->config->max_packet_size){
-			log__printf(NULL, MOSQ_LOG_INFO, "Client %s sent too large packet %d, disconnecting.", mosq->id, mosq->in_packet.remaining_length+1);
 			if(mosq->protocol == mosq_p_mqtt5){
 				send__disconnect(mosq, MQTT_RC_PACKET_TOO_LARGE, NULL);
 			}
@@ -473,6 +478,8 @@ int packet__read(struct mosquitto *mosq)
 				switch(errno){
 					case COMPAT_ECONNRESET:
 						return MOSQ_ERR_CONN_LOST;
+					case COMPAT_EINTR:
+						return MOSQ_ERR_SUCCESS;
 					default:
 						return MOSQ_ERR_ERRNO;
 				}

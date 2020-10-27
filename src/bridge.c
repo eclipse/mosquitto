@@ -162,6 +162,7 @@ int bridge__connect_step1(struct mosquitto_db *db, struct mosquitto *context)
 	context->in_packet.payload = NULL;
 	context->ping_t = 0;
 	context->bridge->lazy_reconnect = false;
+	context->maximum_packet_size = context->bridge->maximum_packet_size;
 	bridge__packet_cleanup(context);
 	db__message_reconnect_reset(db, context);
 
@@ -339,6 +340,7 @@ int bridge__connect(struct mosquitto_db *db, struct mosquitto *context)
 	context->in_packet.payload = NULL;
 	context->ping_t = 0;
 	context->bridge->lazy_reconnect = false;
+	context->maximum_packet_size = context->bridge->maximum_packet_size;
 	bridge__packet_cleanup(context);
 	db__message_reconnect_reset(db, context);
 

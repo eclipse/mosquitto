@@ -23,6 +23,7 @@ Contributors:
 #  include <ws2tcpip.h>
 #elif __QNX__
 #  include <sys/socket.h>
+#  include <arpa/inet.h>
 #  include <netinet/in.h>
 #else
 #  include <arpa/inet.h>

@@ -4,6 +4,7 @@ include ../../config.mk
 
 OBJS=	mosquitto_passwd.o \
 		memory_mosq.o \
+		memory_public.o \
 		misc_mosq.o \
 		password_mosq.o
 
@@ -20,6 +21,9 @@ mosquitto_passwd.o : mosquitto_passwd.c
 	${CROSS_COMPILE}${CC} $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@
 
 memory_mosq.o : ../../lib/memory_mosq.c
+	${CROSS_COMPILE}${CC} $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@
+
+memory_public.o : ../../src/memory_public.c
 	${CROSS_COMPILE}${CC} $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@
 
 misc_mosq.o : ../../lib/misc_mosq.c ../../lib/misc_mosq.h

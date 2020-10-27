@@ -32,6 +32,7 @@ int handle__connack(struct mosquitto_db *db, struct mosquitto *context)
 	uint8_t connect_acknowledge;
 	uint8_t reason_code;
 	mosquitto_property *properties = NULL;
+	uint32_t maximum_packet_size;
 
 	if(!context){
 		return MOSQ_ERR_INVAL;
@@ -55,6 +56,15 @@ int handle__connack(struct mosquitto_db *db, struct mosquitto *context)
 		}
 		rc = property__read_all(CMD_CONNACK, &context->in_packet, &properties);
 		if(rc) return rc;
+
+		if(mosquitto_property_read_int32(properties, MQTT_PROP_MAXIMUM_PACKET_SIZE,
+					&maximum_packet_size, false)){
+
+			if(context->maximum_packet_size == 0 || context->maximum_packet_size > maximum_packet_size){
+				context->maximum_packet_size = maximum_packet_size;
+			}
+		}
+
 		mosquitto_property_free_all(&properties);
 	}
 	mosquitto_property_free_all(&properties); /* FIXME - TEMPORARY UNTIL PROPERTIES PROCESSED */

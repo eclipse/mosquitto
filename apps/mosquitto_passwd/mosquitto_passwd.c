@@ -57,6 +57,7 @@ struct cb_helper {
 	const char *line;
 	const char *username;
 	const char *password;
+	int iterations;
 	bool found;
 };
 
@@ -117,7 +118,7 @@ void print_usage(void)
 	printf("\nSee https://mosquitto.org/ for more information.\n\n");
 }
 
-int output_new_password(FILE *fptr, const char *username, const char *password)
+int output_new_password(FILE *fptr, const char *username, const char *password, int iterations)
 {
 	int rc;
 	char *salt64 = NULL, *hash64 = NULL;
@@ -127,19 +128,19 @@ int output_new_password(FILE *fptr, const char *username, const char *password)
 
 	pw.hashtype = hashtype;
 
-	if(pw__hash(password, &pw, true)){
+	if(pw__hash(password, &pw, true, iterations)){
 		fprintf(stderr, "Error: Unable to hash password.\n");
 		return 1;
 	}
 
-	rc = base64_encode(pw.salt, sizeof(pw.salt), &salt64);
+	rc = base64__encode(pw.salt, sizeof(pw.salt), &salt64);
 	if(rc){
 		free(salt64);
 		fprintf(stderr, "Error: Unable to encode salt.\n");
 		return 1;
 	}
 
-	rc = base64_encode(pw.password_hash, sizeof(pw.password_hash), &hash64);
+	rc = base64__encode(pw.password_hash, sizeof(pw.password_hash), &hash64);
 	if(rc){
 		free(salt64);
 		free(hash64);
@@ -147,7 +148,11 @@ int output_new_password(FILE *fptr, const char *username, const char *password)
 		return 1;
 	}
 
-	fprintf(fptr, "%s:$%d$%s$%s\n", username, hashtype, salt64, hash64);
+	if(pw.hashtype == pw_sha512_pbkdf2){
+		fprintf(fptr, "%s:$%d$%d$%s$%s\n", username, hashtype, iterations, salt64, hash64);
+	}else{
+		fprintf(fptr, "%s:$%d$%s$%s\n", username, hashtype, salt64, hash64);
+	}
 	free(salt64);
 	free(hash64);
 
@@ -261,7 +266,7 @@ int delete_pwuser(FILE *fptr, FILE *ftmp, const char *username)
  * ====================================================================== */
 static int update_file_cb(FILE *fptr, FILE *ftmp, const char *username, const char *password, const char *line, struct cb_helper *helper)
 {
-	return output_new_password(ftmp, username, password);
+	return output_new_password(ftmp, username, password, helper->iterations);
 }
 
 int update_file(FILE *fptr, FILE *ftmp)
@@ -283,12 +288,12 @@ static int update_pwuser_cb(FILE *fptr, FILE *ftmp, const char *username, const 
 	}else{
 		/* Write out a new line for our matching username */
 		helper->found = true;
-		rc = output_new_password(ftmp, username, helper->password);
+		rc = output_new_password(ftmp, username, helper->password, helper->iterations);
 	}
 	return rc;
 }
 
-int update_pwuser(FILE *fptr, FILE *ftmp, const char *username, const char *password)
+int update_pwuser(FILE *fptr, FILE *ftmp, const char *username, const char *password, int iterations)
 {
 	struct cb_helper helper;
 	int rc;
@@ -296,12 +301,13 @@ int update_pwuser(FILE *fptr, FILE *ftmp, const char *username, const char *pass
 	memset(&helper, 0, sizeof(helper));
 	helper.username = username;
 	helper.password = password;
+	helper.iterations = iterations;
 	rc = pwfile_iterate(fptr, ftmp, update_pwuser_cb, &helper);
 
 	if(helper.found){
 		return rc;
 	}else{
-		return output_new_password(ftmp, username, password);
+		return output_new_password(ftmp, username, password, iterations);
 	}
 }
 
@@ -466,6 +472,7 @@ int main(int argc, char *argv[])
 	bool do_update_file = false;
 	char *backup_file;
 	int idx;
+	int iterations = PW_DEFAULT_ITERATIONS;
 
 	signal(SIGINT, handle_sigint);
 	signal(SIGTERM, handle_sigint);
@@ -505,6 +512,17 @@ int main(int argc, char *argv[])
 			create_new = true;
 		}else if(!strcmp(argv[idx], "-D")){
 			delete_user = true;
+		}else if(!strcmp(argv[idx], "-I")){
+			if(idx+1 == argc){
+				fprintf(stderr, "Error: -I argument given but not enough other arguments.\n");
+				return 1;
+			}
+			iterations = atoi(argv[idx+1]);
+			idx++;
+			if(iterations < 1){
+				fprintf(stderr, "Error: Number of iterations must be > 0.\n");
+				return 1;
+			}
 		}else if(!strcmp(argv[idx], "-U")){
 			do_update_file = true;
 		}else{
@@ -584,6 +602,10 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	if(strchr(username, ':')){
+		fprintf(stderr, "Error: Username must not contain the ':' character.\n");
+		return 1;
+	}
 #ifdef WIN32
 	password_file = _fullpath(NULL, password_file_tmp, 0);
 	if(!password_file){
@@ -622,7 +644,7 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 		free(password_file);
-		rc = output_new_password(fptr, username, password_cmd);
+		rc = output_new_password(fptr, username, password_cmd, iterations);
 		fclose(fptr);
 		return rc;
 	}else{
@@ -663,7 +685,7 @@ int main(int argc, char *argv[])
 		}else{
 			if(batch_mode){
 				/* Update password for individual user */
-				rc = update_pwuser(fptr, ftmp, username, password_cmd);
+				rc = update_pwuser(fptr, ftmp, username, password_cmd, iterations);
 			}else{
 				rc = get_password(password, MAX_BUFFER_LEN);
 				if(rc){
@@ -674,7 +696,7 @@ int main(int argc, char *argv[])
 					return rc;
 				}
 				/* Update password for individual user */
-				rc = update_pwuser(fptr, ftmp, username, password);
+				rc = update_pwuser(fptr, ftmp, username, password, iterations);
 			}
 		}
 		if(rc){

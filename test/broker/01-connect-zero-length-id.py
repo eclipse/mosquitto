@@ -41,7 +41,7 @@ def do_test(per_listener, proto_ver, clean_start, allow_zero, client_port, expec
             # Remove the "xxxx" part - this means the front part of the packet
             # is correct (so remaining length etc. is correct), but we don't
             # need to match against the random id.
-            connack_packet = connack_packet[:-36]
+            connack_packet = connack_packet[:-39]
 
     broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port1, use_conf=True)
 

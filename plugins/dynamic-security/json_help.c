@@ -18,8 +18,9 @@ Contributors:
 
 #include <cJSON.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
-#include "mosquitto_broker_internal.h"
+#include "mosquitto.h"
 
 
 int json_get_bool(cJSON *json, const char *name, bool *value, bool optional, bool default_value)
@@ -30,7 +31,7 @@ int json_get_bool(cJSON *json, const char *name, bool *value, bool optional, boo
 		*value = default_value;
 	}
 
-	jtmp = cJSON_GetObjectItemCaseSensitive(json, name);
+	jtmp = cJSON_GetObjectItem(json, name);
 	if(jtmp){
 		if(cJSON_IsBool(jtmp) == false){
 			return MOSQ_ERR_INVAL;
@@ -53,7 +54,7 @@ int json_get_int(cJSON *json, const char *name, int *value, bool optional, int d
 		*value = default_value;
 	}
 
-	jtmp = cJSON_GetObjectItemCaseSensitive(json, name);
+	jtmp = cJSON_GetObjectItem(json, name);
 	if(jtmp){
 		if(cJSON_IsNumber(jtmp) == false){
 			return MOSQ_ERR_INVAL;
@@ -74,7 +75,7 @@ int json_get_string(cJSON *json, const char *name, char **value, bool optional)
 
 	*value = NULL;
 
-	jtmp = cJSON_GetObjectItemCaseSensitive(json, name);
+	jtmp = cJSON_GetObjectItem(json, name);
 	if(jtmp){
 		if(cJSON_IsString(jtmp) == false){
 			return MOSQ_ERR_INVAL;

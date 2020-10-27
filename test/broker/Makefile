@@ -220,4 +220,9 @@ endif
 	./13-malformed-unsubscribe-v5.py
 
 14 :
-	#./14-plugin-register-control.py
+	#./14-dynsec-client.py
+	#./14-dynsec-group.py
+	#./14-dynsec-role.py
+	#./14-dynsec-modify-client.py
+	#./14-dynsec-modify-group.py
+	#./14-dynsec-modify-role.py

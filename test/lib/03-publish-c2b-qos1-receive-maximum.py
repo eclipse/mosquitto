@@ -12,7 +12,7 @@ keepalive = 60
 connect_packet = mosq_test.gen_connect("publish-qos1-test", keepalive=keepalive, proto_ver=5)
 
 props = mqtt5_props.gen_uint16_prop(mqtt5_props.PROP_RECEIVE_MAXIMUM, 3)
-connack_packet = mosq_test.gen_connack(rc=0, proto_ver=5, properties=props)
+connack_packet = mosq_test.gen_connack(rc=0, proto_ver=5, properties=props, property_helper=False)
 
 disconnect_packet = mosq_test.gen_disconnect(proto_ver=5)
 

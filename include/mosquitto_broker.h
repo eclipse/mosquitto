@@ -55,6 +55,7 @@ enum mosquitto_plugin_event {
 	MOSQ_EVT_CONTROL = 6,
 	MOSQ_EVT_MESSAGE = 7,
 	MOSQ_EVT_PSK_KEY = 8,
+	MOSQ_EVT_TICK = 9,
 };
 
 /* Data for the MOSQ_EVT_RELOAD event */
@@ -137,6 +138,17 @@ struct mosquitto_evt_message {
 	uint8_t qos;
 	uint8_t reason_code;
 	bool retain;
+	void *future2[4];
+};
+
+
+/* Data for the MOSQ_EVT_TICK event */
+struct mosquitto_evt_tick {
+	void *future;
+	long now_ns;
+	long next_ns;
+	int now_s;
+	int next_s;
 	void *future2[4];
 };
 

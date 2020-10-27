@@ -278,6 +278,8 @@ int listeners__start_local_only(struct mosquitto_db *db, mosq_sock_t **listensoc
 	int listensock_index = 0;
 	int rc;
 
+	log__printf(NULL, MOSQ_LOG_WARNING, "Starting in local only mode. Connections will only be possible from clients running on this machine.");
+	log__printf(NULL, MOSQ_LOG_WARNING, "Create a configuration file which defines a listener to allow remote access.");
 	if(db->config->cmd_port_count == 0){
 		rc = listeners__add_local(db, listensock, listensock_count, &listensock_index, "127.0.0.1", 1883);
 		if(rc == MOSQ_ERR_NOMEM) return MOSQ_ERR_NOMEM;
