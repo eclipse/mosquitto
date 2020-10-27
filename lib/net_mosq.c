@@ -377,6 +377,8 @@ int net__try_connect(const char *host, uint16_t port, mosq_sock_t *sock, const c
 	uint32_t val = 1;
 #endif
 
+	ainfo_bind = NULL;
+
 	*sock = INVALID_SOCKET;
 	memset(&hints, 0, sizeof(struct addrinfo));
 	hints.ai_family = AF_UNSPEC;
