@@ -109,7 +109,7 @@ static int dynsec_control_callback(int event, void *event_data, void *userdata)
 	return MOSQ_ERR_SUCCESS;
 }
 
-int dynsec__process_default_acl_access(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data)
+int dynsec__process_set_default_acl_access(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data)
 {
 	cJSON *j_actions, *j_action, *j_acltype, *j_allow;
 	bool allow;
@@ -142,6 +142,113 @@ int dynsec__process_default_acl_access(cJSON *j_responses, struct mosquitto *con
 
 	dynsec__config_save();
 	dynsec__command_reply(j_responses, context, "setDefaultACLAccess", NULL, correlation_data);
+	return MOSQ_ERR_SUCCESS;
+}
+
+
+int dynsec__process_get_default_acl_access(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data)
+{
+	cJSON *tree, *jtmp, *j_data, *j_acls, *j_acl;
+
+	tree = cJSON_CreateObject();
+	if(tree == NULL){
+		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
+		return MOSQ_ERR_NOMEM;
+	}
+
+	jtmp = cJSON_CreateString("getDefaultACLAccess");
+	if(jtmp == NULL){
+		cJSON_Delete(tree);
+		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
+		return MOSQ_ERR_NOMEM;
+	}
+	cJSON_AddItemToObject(tree, "command", jtmp);
+
+	j_data = cJSON_CreateObject();
+	if(j_data == NULL){
+		cJSON_Delete(tree);
+		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
+		return MOSQ_ERR_NOMEM;
+	}
+	cJSON_AddItemToObject(tree, "data", j_data);
+
+	j_acls = cJSON_AddArrayToObject(j_data, "acls");
+	if(j_acls == NULL){
+		cJSON_Delete(tree);
+		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
+		return MOSQ_ERR_NOMEM;
+	}
+
+	/* publishClientSend */
+	j_acl = cJSON_CreateObject();
+	if(j_acl == NULL){
+		cJSON_Delete(tree);
+		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
+		return MOSQ_ERR_NOMEM;
+	}
+	if(cJSON_AddStringToObject(j_acl, "acltype", ACL_TYPE_PUB_C_SEND) == NULL
+			|| cJSON_AddBoolToObject(j_acl, "allow", default_access.publish_c_send) == NULL
+			){
+
+		cJSON_Delete(tree);
+		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
+		return MOSQ_ERR_NOMEM;
+	}
+	cJSON_AddItemToArray(j_acls, j_acl);
+
+	/* publishClientReceive */
+	j_acl = cJSON_CreateObject();
+	if(j_acl == NULL){
+		cJSON_Delete(tree);
+		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
+		return MOSQ_ERR_NOMEM;
+	}
+	if(cJSON_AddStringToObject(j_acl, "acltype", ACL_TYPE_PUB_C_RECV) == NULL
+			|| cJSON_AddBoolToObject(j_acl, "allow", default_access.publish_c_recv) == NULL
+			){
+
+		cJSON_Delete(tree);
+		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
+		return MOSQ_ERR_NOMEM;
+	}
+	cJSON_AddItemToArray(j_acls, j_acl);
+
+	/* subscribe */
+	j_acl = cJSON_CreateObject();
+	if(j_acl == NULL){
+		cJSON_Delete(tree);
+		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
+		return MOSQ_ERR_NOMEM;
+	}
+	if(cJSON_AddStringToObject(j_acl, "acltype", ACL_TYPE_SUB_GENERIC) == NULL
+			|| cJSON_AddBoolToObject(j_acl, "allow", default_access.subscribe) == NULL
+			){
+
+		cJSON_Delete(tree);
+		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
+		return MOSQ_ERR_NOMEM;
+	}
+	cJSON_AddItemToArray(j_acls, j_acl);
+
+	/* unsubscribe */
+	j_acl = cJSON_CreateObject();
+	if(j_acl == NULL){
+		cJSON_Delete(tree);
+		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
+		return MOSQ_ERR_NOMEM;
+	}
+	if(cJSON_AddStringToObject(j_acl, "acltype", ACL_TYPE_UNSUB_GENERIC) == NULL
+			|| cJSON_AddBoolToObject(j_acl, "allow", default_access.unsubscribe) == NULL
+			){
+
+		cJSON_Delete(tree);
+		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
+		return MOSQ_ERR_NOMEM;
+	}
+	cJSON_AddItemToArray(j_acls, j_acl);
+
+	cJSON_AddItemToArray(j_responses, tree);
+
 	return MOSQ_ERR_SUCCESS;
 }
 
@@ -408,7 +515,9 @@ int dynsec__handle_control(cJSON *j_responses, struct mosquitto *context, cJSON 
 
 				/* Plugin */
 				if(!strcasecmp(command, "setDefaultACLAccess")){
-					rc = dynsec__process_default_acl_access(j_responses, context, aiter, correlation_data);
+					rc = dynsec__process_set_default_acl_access(j_responses, context, aiter, correlation_data);
+				}else if(!strcasecmp(command, "getDefaultACLAccess")){
+					rc = dynsec__process_get_default_acl_access(j_responses, context, aiter, correlation_data);
 
 				/* Clients */
 				}else if(!strcasecmp(command, "createClient")){
@@ -427,6 +536,10 @@ int dynsec__handle_control(cJSON *j_responses, struct mosquitto *context, cJSON 
 					rc = dynsec_clients__process_add_role(j_responses, context, aiter, correlation_data);
 				}else if(!strcasecmp(command, "removeClientRole")){
 					rc = dynsec_clients__process_remove_role(j_responses, context, aiter, correlation_data);
+				}else if(!strcasecmp(command, "enableClient")){
+					rc = dynsec_clients__process_enable(j_responses, context, aiter, correlation_data);
+				}else if(!strcasecmp(command, "disableClient")){
+					rc = dynsec_clients__process_disable(j_responses, context, aiter, correlation_data);
 
 				/* Groups */
 				}else if(!strcasecmp(command, "addGroupClient")){
@@ -449,6 +562,8 @@ int dynsec__handle_control(cJSON *j_responses, struct mosquitto *context, cJSON 
 					rc = dynsec_groups__process_remove_role(j_responses, context, aiter, correlation_data);
 				}else if(!strcasecmp(command, "setAnonymousGroup")){
 					rc = dynsec_groups__process_set_anonymous_group(j_responses, context, aiter, correlation_data);
+				}else if(!strcasecmp(command, "getAnonymousGroup")){
+					rc = dynsec_groups__process_get_anonymous_group(j_responses, context, aiter, correlation_data);
 
 				/* Roles */
 				}else if(!strcasecmp(command, "createRole")){

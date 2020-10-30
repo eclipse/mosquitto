@@ -3,6 +3,7 @@ include ../../config.mk
 .PHONY: all install uninstall clean reallyclean
 
 OBJS=	mosquitto_passwd.o \
+		get_password.o \
 		memory_mosq.o \
 		memory_public.o \
 		misc_mosq.o \
@@ -18,6 +19,9 @@ mosquitto_passwd : ${OBJS}
 	${CROSS_COMPILE}${CC} ${APP_LDFLAGS} $^ -o $@ $(PASSWD_LDADD)
 
 mosquitto_passwd.o : mosquitto_passwd.c
+	${CROSS_COMPILE}${CC} $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@
+
+get_password.o : get_password.c
 	${CROSS_COMPILE}${CC} $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@
 
 memory_mosq.o : ../../lib/memory_mosq.c

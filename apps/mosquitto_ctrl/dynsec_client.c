@@ -20,14 +20,29 @@ Contributors:
 
 #include "mosquitto.h"
 #include "mosquitto_ctrl.h"
+#include "get_password.h"
 #include "password_mosq.h"
 
 int dynsec_client__create(int argc, char *argv[], cJSON *j_command)
 {
 	char *username = NULL, *password = NULL;
+	char prompt[200], verify_prompt[200];
+	char password_buf[200];
+	int rc;
 
 	if(argc == 1){
 		username = argv[0];
+
+		printf("Enter new password for %s. Press return for no password (user will be unable to login).\n", username);
+		snprintf(prompt, sizeof(prompt), "New password for %s: ", username);
+		snprintf(verify_prompt, sizeof(verify_prompt), "Reenter password for %s: ", username);
+		rc = get_password(prompt, verify_prompt, true, password_buf, sizeof(password_buf));
+		if(rc == 0){
+			password = password_buf;
+		}else{
+			password = NULL;
+			printf("\n");
+		}
 	}else if(argc == 2){
 		username = argv[0];
 		password = argv[1];
@@ -66,13 +81,46 @@ int dynsec_client__delete(int argc, char *argv[], cJSON *j_command)
 	}
 }
 
+int dynsec_client__enable_disable(int argc, char *argv[], cJSON *j_command, const char *command)
+{
+	char *username = NULL;
+
+	if(argc == 1){
+		username = argv[0];
+	}else{
+		return MOSQ_ERR_INVAL;
+	}
+
+	if(cJSON_AddStringToObject(j_command, "command", command) == NULL
+			|| cJSON_AddStringToObject(j_command, "username", username) == NULL
+			){
+
+		return MOSQ_ERR_NOMEM;
+	}else{
+		return MOSQ_ERR_SUCCESS;
+	}
+}
+
 int dynsec_client__set_password(int argc, char *argv[], cJSON *j_command)
 {
 	char *username = NULL, *password = NULL;
+	char prompt[200], verify_prompt[200];
+	char password_buf[200];
+	int rc;
 
 	if(argc == 2){
 		username = argv[0];
 		password = argv[1];
+	}else if(argc == 1){
+		username = argv[0];
+
+		snprintf(prompt, sizeof(prompt), "New password for %s: ", username);
+		snprintf(verify_prompt, sizeof(verify_prompt), "Reenter password for %s: ", username);
+		rc = get_password(prompt, verify_prompt, false, password_buf, sizeof(password_buf));
+		if(rc){
+			return MOSQ_ERR_INVAL;
+		}
+		password = password_buf;
 	}else{
 		return MOSQ_ERR_INVAL;
 	}

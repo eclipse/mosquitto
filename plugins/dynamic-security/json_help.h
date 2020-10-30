@@ -23,4 +23,7 @@ int json_get_int(cJSON *json, const char *name, int *value, bool optional, int d
 int json_get_string(cJSON *json, const char *name, char **value, bool optional);
 double json_get_as_number(const cJSON *json);
 
+cJSON *cJSON_AddIntToObject(cJSON * const object, const char * const name, int number);
+cJSON *cJSON_CreateInt(int num);
+
 #endif

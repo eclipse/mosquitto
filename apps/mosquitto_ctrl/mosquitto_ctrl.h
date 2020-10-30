@@ -87,6 +87,7 @@ int dynsec__main(int argc, char *argv[], struct mosq_ctrl *ctrl);
 int dynsec_client__add_remove_role(int argc, char *argv[], cJSON *j_command, const char *command);
 int dynsec_client__create(int argc, char *argv[], cJSON *j_command);
 int dynsec_client__delete(int argc, char *argv[], cJSON *j_command);
+int dynsec_client__enable_disable(int argc, char *argv[], cJSON *j_command, const char *command);
 int dynsec_client__get(int argc, char *argv[], cJSON *j_command);
 int dynsec_client__list_all(int argc, char *argv[], cJSON *j_command);
 int dynsec_client__set_password(int argc, char *argv[], cJSON *j_command);
@@ -98,6 +99,7 @@ int dynsec_group__delete(int argc, char *argv[], cJSON *j_command);
 int dynsec_group__get(int argc, char *argv[], cJSON *j_command);
 int dynsec_group__list_all(int argc, char *argv[], cJSON *j_command);
 int dynsec_group__set_anonymous(int argc, char *argv[], cJSON *j_command);
+int dynsec_group__get_anonymous(int argc, char *argv[], cJSON *j_command);
 
 int dynsec_role__create(int argc, char *argv[], cJSON *j_command);
 int dynsec_role__delete(int argc, char *argv[], cJSON *j_command);

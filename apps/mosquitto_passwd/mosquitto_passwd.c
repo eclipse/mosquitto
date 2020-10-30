@@ -24,6 +24,7 @@ Contributors:
 #include <stdlib.h>
 #include <string.h>
 
+#include "get_password.h"
 #include "password_mosq.h"
 
 #ifdef WIN32
@@ -312,91 +313,6 @@ int update_pwuser(FILE *fptr, FILE *ftmp, const char *username, const char *pass
 }
 
 
-int gets_quiet(char *s, int len)
-{
-#ifdef WIN32
-	HANDLE h;
-	DWORD con_orig, con_quiet = 0;
-	DWORD read_len = 0;
-
-	memset(s, 0, len);
-	h  = GetStdHandle(STD_INPUT_HANDLE);
-	GetConsoleMode(h, &con_orig);
-	con_quiet = con_orig;
-	con_quiet &= ~ENABLE_ECHO_INPUT;
-	con_quiet |= ENABLE_LINE_INPUT;
-	SetConsoleMode(h, con_quiet);
-	if(!ReadConsole(h, s, len, &read_len, NULL)){
-		SetConsoleMode(h, con_orig);
-		return 1;
-	}
-	while(s[strlen(s)-1] == 10 || s[strlen(s)-1] == 13){
-		s[strlen(s)-1] = 0;
-	}
-	if(strlen(s) == 0){
-		return 1;
-	}
-	SetConsoleMode(h, con_orig);
-
-	return 0;
-#else
-	struct termios ts_quiet, ts_orig;
-	char *rs;
-
-	memset(s, 0, (size_t)len);
-	tcgetattr(0, &ts_orig);
-	ts_quiet = ts_orig;
-	ts_quiet.c_lflag &= (unsigned int)(~(ECHO | ICANON));
-	tcsetattr(0, TCSANOW, &ts_quiet);
-
-	rs = fgets(s, len, stdin);
-	tcsetattr(0, TCSANOW, &ts_orig);
-
-	if(!rs){
-		return 1;
-	}else{
-		while(s[strlen(s)-1] == 10 || s[strlen(s)-1] == 13){
-			s[strlen(s)-1] = 0;
-		}
-		if(strlen(s) == 0){
-			return 1;
-		}
-	}
-	return 0;
-#endif
-}
-
-int get_password(char *password, size_t len)
-{
-	char pw1[MAX_BUFFER_LEN], pw2[MAX_BUFFER_LEN];
-	size_t minLen;
-	minLen = len < MAX_BUFFER_LEN ? len : MAX_BUFFER_LEN;
-
-	printf("Password: ");
-	fflush(stdout);
-	if(gets_quiet(pw1, (int)minLen)){
-		fprintf(stderr, "Error: Empty password.\n");
-		return 1;
-	}
-	printf("\n");
-
-	printf("Reenter password: ");
-	fflush(stdout);
-	if(gets_quiet(pw2, (int)minLen)){
-		fprintf(stderr, "Error: Empty password.\n");
-		return 1;
-	}
-	printf("\n");
-
-	if(strcmp(pw1, pw2)){
-		fprintf(stderr, "Error: Passwords do not match.\n");
-		return 1;
-	}
-
-	strncpy(password, pw1, minLen);
-	return 0;
-}
-
 int copy_contents(FILE *src, FILE *dest)
 {
 	char buf[MAX_BUFFER_LEN];
@@ -442,15 +358,10 @@ int create_backup(const char *backup_file, FILE *fptr)
 	rewind(fptr);
 	return 0;
 }
+
 void handle_sigint(int signal)
 {
-#ifndef WIN32
-	struct termios ts;
-
-	tcgetattr(0, &ts);
-	ts.c_lflag |= ECHO | ICANON;
-	tcsetattr(0, TCSANOW, &ts);
-#endif
+	get_password__reset_term();
 
 	UNUSED(signal);
 
@@ -630,7 +541,7 @@ int main(int argc, char *argv[])
 
 	if(create_new){
 		if(batch_mode == false){
-			rc = get_password(password, MAX_BUFFER_LEN);
+			rc = get_password("Password: ", "Reenter password: ", false, password, MAX_BUFFER_LEN);
 			if(rc){
 				free(password_file);
 				return rc;
@@ -687,7 +598,7 @@ int main(int argc, char *argv[])
 				/* Update password for individual user */
 				rc = update_pwuser(fptr, ftmp, username, password_cmd, iterations);
 			}else{
-				rc = get_password(password, MAX_BUFFER_LEN);
+				rc = get_password("Password: ", "Reenter password: ", false, password, MAX_BUFFER_LEN);
 				if(rc){
 					fclose(fptr);
 					fclose(ftmp);

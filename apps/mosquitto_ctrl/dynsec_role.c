@@ -174,8 +174,10 @@ int dynsec_role__remove_acl(int argc, char *argv[], cJSON *j_command)
 
 	if(strcasecmp(acltype, "publishClientSend")
 			&& strcasecmp(acltype, "publishClientReceive")
-			&& strcasecmp(acltype, "subscribe")
-			&& strcasecmp(acltype, "unsubscribe")){
+			&& strcasecmp(acltype, "subscribeLiteral")
+			&& strcasecmp(acltype, "subscribePattern")
+			&& strcasecmp(acltype, "unsubscribeLiteral")
+			&& strcasecmp(acltype, "unsubscribePattern")){
 
 		return MOSQ_ERR_INVAL;
 	}

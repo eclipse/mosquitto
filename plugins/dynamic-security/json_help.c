@@ -19,6 +19,7 @@ Contributors:
 #include <cJSON.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "mosquitto.h"
 
@@ -104,4 +105,12 @@ double json_get_as_number(const cJSON *json)
 	}else{
 		return 0.0;
 	}
+}
+
+cJSON *cJSON_AddIntToObject(cJSON * const object, const char * const name, int number)
+{
+	char buf[30];
+
+	snprintf(buf, sizeof(buf), "%d", number);
+	return cJSON_AddRawToObject(object, name, buf);
 }

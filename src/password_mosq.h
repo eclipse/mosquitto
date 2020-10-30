@@ -31,6 +31,7 @@ struct mosquitto_pw{
 	unsigned char salt[SALT_LEN];
 	int iterations;
 	enum mosquitto_pwhash_type hashtype;
+	bool valid;
 };
 
 int pw__hash(const char *password, struct mosquitto_pw *pw, bool new_password, int new_iterations);

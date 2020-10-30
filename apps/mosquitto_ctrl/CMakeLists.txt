@@ -3,7 +3,7 @@ if (WITH_TLS AND CJSON_FOUND)
 	include_directories(${mosquitto_SOURCE_DIR} ${mosquitto_SOURCE_DIR}/include
 			${mosquitto_SOURCE_DIR}/lib ${mosquitto_SOURCE_DIR}/src
 			${OPENSSL_INCLUDE_DIR} ${STDBOOL_H_PATH} ${STDINT_H_PATH}
-			${CJSON_INCLUDE_DIRS})
+			${CJSON_INCLUDE_DIRS}) ${mosquitto_SOURCE_DIR}/apps/mosquitto_passwd
 
 	add_executable(mosquitto_ctrl
 		mosquitto_ctrl.c mosquitto_ctrl.h
@@ -12,6 +12,7 @@ if (WITH_TLS AND CJSON_FOUND)
 		dynsec_client.c
 		dynsec_group.c
 		dynsec_role.c
+		../mosquitto_passwd/get_password.c ../mosquitto_passwd/get_password.h
 		../../lib/memory_mosq.c ../../lib/memory_mosq.h
 		../../src/memory_public.c
 		options.c

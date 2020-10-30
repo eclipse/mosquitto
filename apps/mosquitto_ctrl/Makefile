@@ -8,7 +8,7 @@ else
 LIBMOSQ:=../../lib/libmosquitto.a
 endif
 
-LOCAL_CPPFLAGS:=-I/usr/include/cjson -I/usr/local/include/cjson
+LOCAL_CPPFLAGS:=-I/usr/include/cjson -I/usr/local/include/cjson -I../mosquitto_passwd
 
 OBJS=	mosquitto_ctrl.o \
 		client.o \
@@ -16,6 +16,7 @@ OBJS=	mosquitto_ctrl.o \
 		dynsec_client.o \
 		dynsec_group.o \
 		dynsec_role.o \
+		get_password.o \
 		memory_mosq.o \
 		memory_public.o \
 		options.o \
@@ -48,6 +49,9 @@ dynsec_group.o : dynsec_group.c mosquitto_ctrl.h
 	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@
 
 dynsec_role.o : dynsec_role.c mosquitto_ctrl.h
+	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@
+
+get_password.o : ../mosquitto_passwd/get_password.c ../mosquitto_passwd/get_password.h
 	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@
 
 memory_mosq.o : ../../lib/memory_mosq.c

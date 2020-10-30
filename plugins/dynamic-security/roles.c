@@ -150,7 +150,6 @@ cJSON *dynsec_rolelists__all_to_json(struct dynsec__rolelist *base_rolelist)
 {
 	struct dynsec__rolelist *rolelist, *rolelist_tmp;
 	cJSON *j_roles, *j_role;
-	char buf[30];
 
 	j_roles = cJSON_CreateArray();
 	if(j_roles == NULL) return NULL;
@@ -163,11 +162,8 @@ cJSON *dynsec_rolelists__all_to_json(struct dynsec__rolelist *base_rolelist)
 		}
 		cJSON_AddItemToArray(j_roles, j_role);
 
-		if(rolelist->priority != -1){
-			snprintf(buf, sizeof(buf), "%d", rolelist->priority);
-		}
 		if(cJSON_AddStringToObject(j_role, "rolename", rolelist->role->rolename) == NULL
-				|| (rolelist->priority != -1 && cJSON_AddRawToObject(j_role, "priority", buf) == NULL)
+				|| (rolelist->priority != -1 && cJSON_AddIntToObject(j_role, "priority", rolelist->priority) == NULL)
 				){
 
 			cJSON_Delete(j_roles);
@@ -253,7 +249,7 @@ static int add_single_acl_to_json(cJSON *j_array, const char *acl_type, struct d
 
 		if(cJSON_AddStringToObject(j_acl, "acltype", acl_type) == NULL
 				|| cJSON_AddStringToObject(j_acl, "topic", iter->topic) == NULL
-				|| cJSON_AddNumberToObject(j_acl, "priority", iter->priority) == NULL
+				|| cJSON_AddIntToObject(j_acl, "priority", iter->priority) == NULL
 				|| cJSON_AddBoolToObject(j_acl, "allow", iter->allow) == NULL
 				){
 
@@ -594,7 +590,6 @@ int dynsec_roles__process_list(cJSON *j_responses, struct mosquitto *context, cJ
 	struct dynsec__role *role, *role_tmp;
 	cJSON *tree, *j_roles, *j_role, *jtmp, *j_data;
 	int i, count, offset;
-	char buf[30];
 
 	json_get_bool(command, "verbose", &verbose, true, false);
 	json_get_int(command, "count", &count, true, -1);
@@ -622,8 +617,7 @@ int dynsec_roles__process_list(cJSON *j_responses, struct mosquitto *context, cJ
 	}
 	cJSON_AddItemToObject(tree, "data", j_data);
 
-	snprintf(buf, sizeof(buf), "%d", HASH_CNT(hh, local_roles));
-	cJSON_AddRawToObject(j_data, "totalCount", buf);
+	cJSON_AddIntToObject(j_data, "totalCount", HASH_CNT(hh, local_roles));
 
 	j_roles = cJSON_CreateArray();
 	if(j_roles == NULL){
