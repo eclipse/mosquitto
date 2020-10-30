@@ -34,7 +34,7 @@ Contributors:
 #define HAVE_PSELECT
 #endif
 
-int mosquitto_loop(struct mosquitto *mosq, int timeout_input, int max_packets)
+int mosquitto_loop(struct mosquitto *mosq, int timeout, int max_packets)
 {
 #ifdef HAVE_PSELECT
 	struct timespec local_timeout;
@@ -50,10 +50,6 @@ int mosquitto_loop(struct mosquitto *mosq, int timeout_input, int max_packets)
 #ifdef WITH_SRV
 	int state;
 #endif
-	time_t timeout;
-
-	UNUSED(timeout_input);
-
 
 	if(!mosq || max_packets < 1) return MOSQ_ERR_INVAL;
 #ifndef WIN32
