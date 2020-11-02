@@ -262,8 +262,8 @@ int pub_stdin_line_loop(struct mosquitto *mosq)
 					rc = my_publish(mosq, &mid_sent, cfg.topic, buf_len_actual-1, line_buf, cfg.qos, cfg.retain);
 					pos = 0;
 					if(rc){
-						err_printf(&cfg, "Error: Publish returned %d, disconnecting.\n", rc);
-						mosquitto_disconnect_v5(mosq, MQTT_RC_DISCONNECT_WITH_WILL_MSG, cfg.disconnect_props);
+						err_printf(&cfg, "Error: Publish returned %d.\n", rc);
+						if(cfg.qos>0) return rc;
 					}
 					break;
 				}else{
@@ -281,8 +281,8 @@ int pub_stdin_line_loop(struct mosquitto *mosq)
 			if(pos != 0){
 				rc = my_publish(mosq, &mid_sent, cfg.topic, buf_len_actual, line_buf, cfg.qos, cfg.retain);
 				if(rc){
-					err_printf(&cfg, "Error: Publish returned %d, disconnecting.\n", rc);
-					mosquitto_disconnect_v5(mosq, MQTT_RC_DISCONNECT_WITH_WILL_MSG, cfg.disconnect_props);
+					err_printf(&cfg, "Error: Publish returned %d.\n", rc);
+					if(cfg.qos>0) return rc;
 				}
 			}
 			if(feof(stdin)){
