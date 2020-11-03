@@ -49,6 +49,14 @@ static struct dynsec__client *local_clients = NULL;
  * #
  * ################################################################ */
 
+int dynsec_clientlist__cmp(void *a, void *b)
+{
+	struct dynsec__clientlist *clientlist_a = a;
+	struct dynsec__clientlist *clientlist_b = b;
+
+	return strcmp(clientlist_a->username, clientlist_b->username);
+}
+
 static int client_cmp(void *a, void *b)
 {
 	struct dynsec__client *client_a = a;
@@ -243,7 +251,7 @@ int dynsec_clients__config_load(cJSON *tree)
 						if(jtmp && cJSON_IsString(jtmp)){
 							json_get_int(j_role, "priority", &priority, true, -1);
 							role = dynsec_roles__find(jtmp->valuestring);
-							dynsec_rolelists__add_role(&client->rolelist, role, priority);
+							dynsec_rolelists__client_add_role(client, role, priority);
 						}
 					}
 				}
@@ -562,6 +570,23 @@ int dynsec_clients__process_set_password(cJSON *j_responses, struct mosquitto *c
 }
 
 
+static void client__add_new_roles(struct dynsec__client *client, struct dynsec__rolelist *base_rolelist)
+{
+	struct dynsec__rolelist *rolelist, *rolelist_tmp;
+
+	HASH_ITER(hh, base_rolelist, rolelist, rolelist_tmp){
+		dynsec_rolelists__client_add_role(client, rolelist->role, rolelist->priority);
+	}
+}
+
+static void client__remove_all_roles(struct dynsec__client *client)
+{
+	struct dynsec__rolelist *rolelist, *rolelist_tmp;
+
+	HASH_ITER(hh, client->rolelist, rolelist, rolelist_tmp){
+		dynsec_rolelists__client_remove_role(client, rolelist->role);
+	}
+}
 
 int dynsec_clients__process_modify(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data)
 {
@@ -607,8 +632,9 @@ int dynsec_clients__process_modify(cJSON *j_responses, struct mosquitto *context
 
 	rc = dynsec_rolelists__load_from_json(command, &rolelist);
 	if(rc == MOSQ_ERR_SUCCESS){
-		dynsec_rolelists__free_all(&client->rolelist);
-		client->rolelist = rolelist;
+		client__remove_all_roles(client);
+		client__add_new_roles(client, rolelist);
+		dynsec_rolelists__free_all(&rolelist);
 	}else if(rc == MOSQ_ERR_NOT_FOUND){
 		dynsec__command_reply(j_responses, context, "modifyClient", "Role not found", correlation_data);
 		dynsec_rolelists__free_all(&rolelist);
@@ -848,16 +874,6 @@ int dynsec_clients__process_list(cJSON *j_responses, struct mosquitto *context, 
 }
 
 
-void dynsec_clients__remove_role_from_all(const struct dynsec__role *role)
-{
-	struct dynsec__client *client, *client_tmp;
-
-	HASH_ITER(hh, local_clients, client, client_tmp){
-		dynsec_rolelists__remove_role(&client->rolelist, role);
-	}
-}
-
-
 int dynsec_clients__process_add_role(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data)
 {
 	char *username, *role_name;
@@ -888,7 +904,7 @@ int dynsec_clients__process_add_role(cJSON *j_responses, struct mosquitto *conte
 		return MOSQ_ERR_SUCCESS;
 	}
 
-	dynsec_rolelists__add_role(&client->rolelist, role, priority);
+	dynsec_rolelists__client_add_role(client, role, priority);
 	dynsec__config_save();
 	dynsec__command_reply(j_responses, context, "addClientRole", NULL, correlation_data);
 
@@ -927,7 +943,7 @@ int dynsec_clients__process_remove_role(cJSON *j_responses, struct mosquitto *co
 		return MOSQ_ERR_SUCCESS;
 	}
 
-	dynsec_rolelists__remove_role(&client->rolelist, role);
+	dynsec_rolelists__client_remove_role(client, role);
 	dynsec__config_save();
 	dynsec__command_reply(j_responses, context, "removeClientRole", NULL, correlation_data);
 
