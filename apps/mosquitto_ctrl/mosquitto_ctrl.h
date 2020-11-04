@@ -68,9 +68,12 @@ struct mosq_ctrl {
 	struct mosq_config cfg;
 	char *request_topic;
 	char *response_topic;
-	cJSON *j_tree;
+	char *payload;
 	void (*payload_callback)(struct mosq_ctrl *, long , const void *);
+	void *userdata;
 };
+
+typedef int (*FUNC_ctrl_main)(int argc, char *argv[], struct mosq_ctrl *ctrl);
 
 void init_config(struct mosq_config *cfg);
 int ctrl_config_parse(struct mosq_config *cfg, int *argc, char **argv[]);
@@ -87,6 +90,7 @@ int dynsec__main(int argc, char *argv[], struct mosq_ctrl *ctrl);
 int dynsec_client__add_remove_role(int argc, char *argv[], cJSON *j_command, const char *command);
 int dynsec_client__create(int argc, char *argv[], cJSON *j_command);
 int dynsec_client__delete(int argc, char *argv[], cJSON *j_command);
+int dynsec_client__enable_disable(int argc, char *argv[], cJSON *j_command, const char *command);
 int dynsec_client__get(int argc, char *argv[], cJSON *j_command);
 int dynsec_client__list_all(int argc, char *argv[], cJSON *j_command);
 int dynsec_client__set_password(int argc, char *argv[], cJSON *j_command);
@@ -98,6 +102,7 @@ int dynsec_group__delete(int argc, char *argv[], cJSON *j_command);
 int dynsec_group__get(int argc, char *argv[], cJSON *j_command);
 int dynsec_group__list_all(int argc, char *argv[], cJSON *j_command);
 int dynsec_group__set_anonymous(int argc, char *argv[], cJSON *j_command);
+int dynsec_group__get_anonymous(int argc, char *argv[], cJSON *j_command);
 
 int dynsec_role__create(int argc, char *argv[], cJSON *j_command);
 int dynsec_role__delete(int argc, char *argv[], cJSON *j_command);
@@ -105,5 +110,9 @@ int dynsec_role__get(int argc, char *argv[], cJSON *j_command);
 int dynsec_role__list_all(int argc, char *argv[], cJSON *j_command);
 int dynsec_role__add_acl(int argc, char *argv[], cJSON *j_command);
 int dynsec_role__remove_acl(int argc, char *argv[], cJSON *j_command);
+
+/* Functions to implement as an external module: */
+void ctrl_help(void);
+int ctrl_main(int argc, char *argv[], struct mosq_ctrl *ctrl);
 
 #endif

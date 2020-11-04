@@ -277,9 +277,8 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 				|| db__ready_for_queue(context, msg->qos, &context->msgs_in)){
 
 			dup = 0;
-			if(db__message_store(db, context, msg, message_expiry_interval, 0, mosq_mo_client)){
-				return 1;
-			}
+			rc = db__message_store(db, context, msg, message_expiry_interval, 0, mosq_mo_client);
+			if(rc) return rc;
 		}else{
 			/* Client isn't allowed any more incoming messages, so fail early */
 			reason_code = MQTT_RC_QUOTA_EXCEEDED;

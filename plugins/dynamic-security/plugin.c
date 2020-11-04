@@ -26,6 +26,7 @@ Contributors:
 #include "mosquitto.h"
 #include "mosquitto_broker.h"
 #include "mosquitto_plugin.h"
+#include "mqtt_protocol.h"
 
 #include "dynamic_security.h"
 
@@ -56,13 +57,19 @@ void dynsec__command_reply(cJSON *j_responses, struct mosquitto *context, const 
 static void send_response(cJSON *tree)
 {
 	char *payload;
+	size_t payload_len;
 
 	payload = cJSON_PrintUnformatted(tree);
 	cJSON_Delete(tree);
 	if(payload == NULL) return;
 
+	payload_len = strlen(payload);
+	if(payload_len > MQTT_MAX_PAYLOAD){
+		free(payload);
+		return;
+	}
 	mosquitto_broker_publish(NULL, "$CONTROL/dynamic-security/v1/response",
-			strlen(payload), payload, 0, 0, NULL);
+			(int)payload_len, payload, 0, 0, NULL);
 }
 
 
@@ -109,7 +116,7 @@ static int dynsec_control_callback(int event, void *event_data, void *userdata)
 	return MOSQ_ERR_SUCCESS;
 }
 
-int dynsec__process_default_acl_access(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data)
+int dynsec__process_set_default_acl_access(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data)
 {
 	cJSON *j_actions, *j_action, *j_acltype, *j_allow;
 	bool allow;
@@ -128,13 +135,13 @@ int dynsec__process_default_acl_access(cJSON *j_responses, struct mosquitto *con
 
 			allow = cJSON_IsTrue(j_allow);
 
-			if(!strcasecmp(j_acltype->valuestring, "publishClientToBroker")){
-				default_access.publish_c2b = allow;
-			}else if(!strcasecmp(j_acltype->valuestring, "publishBrokerToClient")){
-				default_access.publish_b2c = allow;
-			}else if(!strcasecmp(j_acltype->valuestring, "subscribe")){
+			if(!strcasecmp(j_acltype->valuestring, ACL_TYPE_PUB_C_SEND)){
+				default_access.publish_c_send = allow;
+			}else if(!strcasecmp(j_acltype->valuestring, ACL_TYPE_PUB_C_RECV)){
+				default_access.publish_c_recv = allow;
+			}else if(!strcasecmp(j_acltype->valuestring, ACL_TYPE_SUB_GENERIC)){
 				default_access.subscribe = allow;
-			}else if(!strcasecmp(j_acltype->valuestring, "unsubscribe")){
+			}else if(!strcasecmp(j_acltype->valuestring, ACL_TYPE_UNSUB_GENERIC)){
 				default_access.unsubscribe = allow;
 			}
 		}
@@ -142,6 +149,113 @@ int dynsec__process_default_acl_access(cJSON *j_responses, struct mosquitto *con
 
 	dynsec__config_save();
 	dynsec__command_reply(j_responses, context, "setDefaultACLAccess", NULL, correlation_data);
+	return MOSQ_ERR_SUCCESS;
+}
+
+
+int dynsec__process_get_default_acl_access(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data)
+{
+	cJSON *tree, *jtmp, *j_data, *j_acls, *j_acl;
+
+	tree = cJSON_CreateObject();
+	if(tree == NULL){
+		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
+		return MOSQ_ERR_NOMEM;
+	}
+
+	jtmp = cJSON_CreateString("getDefaultACLAccess");
+	if(jtmp == NULL){
+		cJSON_Delete(tree);
+		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
+		return MOSQ_ERR_NOMEM;
+	}
+	cJSON_AddItemToObject(tree, "command", jtmp);
+
+	j_data = cJSON_CreateObject();
+	if(j_data == NULL){
+		cJSON_Delete(tree);
+		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
+		return MOSQ_ERR_NOMEM;
+	}
+	cJSON_AddItemToObject(tree, "data", j_data);
+
+	j_acls = cJSON_AddArrayToObject(j_data, "acls");
+	if(j_acls == NULL){
+		cJSON_Delete(tree);
+		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
+		return MOSQ_ERR_NOMEM;
+	}
+
+	/* publishClientSend */
+	j_acl = cJSON_CreateObject();
+	if(j_acl == NULL){
+		cJSON_Delete(tree);
+		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
+		return MOSQ_ERR_NOMEM;
+	}
+	if(cJSON_AddStringToObject(j_acl, "acltype", ACL_TYPE_PUB_C_SEND) == NULL
+			|| cJSON_AddBoolToObject(j_acl, "allow", default_access.publish_c_send) == NULL
+			){
+
+		cJSON_Delete(tree);
+		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
+		return MOSQ_ERR_NOMEM;
+	}
+	cJSON_AddItemToArray(j_acls, j_acl);
+
+	/* publishClientReceive */
+	j_acl = cJSON_CreateObject();
+	if(j_acl == NULL){
+		cJSON_Delete(tree);
+		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
+		return MOSQ_ERR_NOMEM;
+	}
+	if(cJSON_AddStringToObject(j_acl, "acltype", ACL_TYPE_PUB_C_RECV) == NULL
+			|| cJSON_AddBoolToObject(j_acl, "allow", default_access.publish_c_recv) == NULL
+			){
+
+		cJSON_Delete(tree);
+		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
+		return MOSQ_ERR_NOMEM;
+	}
+	cJSON_AddItemToArray(j_acls, j_acl);
+
+	/* subscribe */
+	j_acl = cJSON_CreateObject();
+	if(j_acl == NULL){
+		cJSON_Delete(tree);
+		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
+		return MOSQ_ERR_NOMEM;
+	}
+	if(cJSON_AddStringToObject(j_acl, "acltype", ACL_TYPE_SUB_GENERIC) == NULL
+			|| cJSON_AddBoolToObject(j_acl, "allow", default_access.subscribe) == NULL
+			){
+
+		cJSON_Delete(tree);
+		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
+		return MOSQ_ERR_NOMEM;
+	}
+	cJSON_AddItemToArray(j_acls, j_acl);
+
+	/* unsubscribe */
+	j_acl = cJSON_CreateObject();
+	if(j_acl == NULL){
+		cJSON_Delete(tree);
+		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
+		return MOSQ_ERR_NOMEM;
+	}
+	if(cJSON_AddStringToObject(j_acl, "acltype", ACL_TYPE_UNSUB_GENERIC) == NULL
+			|| cJSON_AddBoolToObject(j_acl, "allow", default_access.unsubscribe) == NULL
+			){
+
+		cJSON_Delete(tree);
+		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
+		return MOSQ_ERR_NOMEM;
+	}
+	cJSON_AddItemToArray(j_acls, j_acl);
+
+	cJSON_AddItemToArray(j_responses, tree);
+
 	return MOSQ_ERR_SUCCESS;
 }
 
@@ -164,28 +278,28 @@ static int dynsec__general_config_load(cJSON *tree)
 
 	j_default_access = cJSON_GetObjectItem(tree, "defaultACLAccess");
 	if(j_default_access && cJSON_IsObject(j_default_access)){
-		jtmp = cJSON_GetObjectItem(j_default_access, "publishClientToBroker");
+		jtmp = cJSON_GetObjectItem(j_default_access, ACL_TYPE_PUB_C_SEND);
 		if(jtmp && cJSON_IsBool(jtmp)){
-			default_access.publish_c2b = cJSON_IsTrue(jtmp);
+			default_access.publish_c_send = cJSON_IsTrue(jtmp);
 		}else{
-			default_access.publish_c2b = false;
+			default_access.publish_c_send = false;
 		}
 
-		jtmp = cJSON_GetObjectItem(j_default_access, "publishBrokerToClient");
+		jtmp = cJSON_GetObjectItem(j_default_access, ACL_TYPE_PUB_C_RECV);
 		if(jtmp && cJSON_IsBool(jtmp)){
-			default_access.publish_b2c = cJSON_IsTrue(jtmp);
+			default_access.publish_c_recv = cJSON_IsTrue(jtmp);
 		}else{
-			default_access.publish_b2c = false;
+			default_access.publish_c_recv = false;
 		}
 
-		jtmp = cJSON_GetObjectItem(j_default_access, "subscribe");
+		jtmp = cJSON_GetObjectItem(j_default_access, ACL_TYPE_SUB_GENERIC);
 		if(jtmp && cJSON_IsBool(jtmp)){
 			default_access.subscribe = cJSON_IsTrue(jtmp);
 		}else{
 			default_access.subscribe = false;
 		}
 
-		jtmp = cJSON_GetObjectItem(j_default_access, "unsubscribe");
+		jtmp = cJSON_GetObjectItem(j_default_access, ACL_TYPE_UNSUB_GENERIC);
 		if(jtmp && cJSON_IsBool(jtmp)){
 			default_access.unsubscribe = cJSON_IsTrue(jtmp);
 		}else{
@@ -205,10 +319,10 @@ static int dynsec__general_config_save(cJSON *tree)
 	}
 	cJSON_AddItemToObject(tree, "defaultACLAccess", j_default_access);
 
-	if(cJSON_AddBoolToObject(j_default_access, "publishClientToBroker", default_access.publish_c2b) == NULL
-			|| cJSON_AddBoolToObject(j_default_access, "publishBrokerToClient", default_access.publish_b2c) == NULL
-			|| cJSON_AddBoolToObject(j_default_access, "subscribe", default_access.subscribe) == NULL
-			|| cJSON_AddBoolToObject(j_default_access, "unsubscribe", default_access.unsubscribe) == NULL
+	if(cJSON_AddBoolToObject(j_default_access, ACL_TYPE_PUB_C_SEND, default_access.publish_c_send) == NULL
+			|| cJSON_AddBoolToObject(j_default_access, ACL_TYPE_PUB_C_RECV, default_access.publish_c_recv) == NULL
+			|| cJSON_AddBoolToObject(j_default_access, ACL_TYPE_SUB_GENERIC, default_access.subscribe) == NULL
+			|| cJSON_AddBoolToObject(j_default_access, ACL_TYPE_UNSUB_GENERIC, default_access.unsubscribe) == NULL
 			){
 
 		return 1;
@@ -220,7 +334,7 @@ static int dynsec__general_config_save(cJSON *tree)
 static int dynsec__config_load(void)
 {
 	FILE *fptr;
-	long flen;
+	size_t flen;
 	char *json_str;
 	cJSON *tree;
 
@@ -231,7 +345,7 @@ static int dynsec__config_load(void)
 	}
 
 	fseek(fptr, 0, SEEK_END);
-	flen = ftell(fptr);
+	flen = (size_t)ftell(fptr);
 	fseek(fptr, 0, SEEK_SET);
 	json_str = mosquitto_calloc(flen+1, sizeof(char));
 	if(json_str == NULL){
@@ -278,10 +392,10 @@ static int dynsec__config_load(void)
 void dynsec__config_save(void)
 {
 	cJSON *tree;
-	int file_path_len;
+	size_t file_path_len;
 	char *file_path;
 	FILE *fptr;
-	int json_str_len;
+	size_t json_str_len;
 	char *json_str;
 
 	tree = cJSON_CreateObject();
@@ -408,7 +522,9 @@ int dynsec__handle_control(cJSON *j_responses, struct mosquitto *context, cJSON 
 
 				/* Plugin */
 				if(!strcasecmp(command, "setDefaultACLAccess")){
-					rc = dynsec__process_default_acl_access(j_responses, context, aiter, correlation_data);
+					rc = dynsec__process_set_default_acl_access(j_responses, context, aiter, correlation_data);
+				}else if(!strcasecmp(command, "getDefaultACLAccess")){
+					rc = dynsec__process_get_default_acl_access(j_responses, context, aiter, correlation_data);
 
 				/* Clients */
 				}else if(!strcasecmp(command, "createClient")){
@@ -427,6 +543,10 @@ int dynsec__handle_control(cJSON *j_responses, struct mosquitto *context, cJSON 
 					rc = dynsec_clients__process_add_role(j_responses, context, aiter, correlation_data);
 				}else if(!strcasecmp(command, "removeClientRole")){
 					rc = dynsec_clients__process_remove_role(j_responses, context, aiter, correlation_data);
+				}else if(!strcasecmp(command, "enableClient")){
+					rc = dynsec_clients__process_enable(j_responses, context, aiter, correlation_data);
+				}else if(!strcasecmp(command, "disableClient")){
+					rc = dynsec_clients__process_disable(j_responses, context, aiter, correlation_data);
 
 				/* Groups */
 				}else if(!strcasecmp(command, "addGroupClient")){
@@ -449,6 +569,8 @@ int dynsec__handle_control(cJSON *j_responses, struct mosquitto *context, cJSON 
 					rc = dynsec_groups__process_remove_role(j_responses, context, aiter, correlation_data);
 				}else if(!strcasecmp(command, "setAnonymousGroup")){
 					rc = dynsec_groups__process_set_anonymous_group(j_responses, context, aiter, correlation_data);
+				}else if(!strcasecmp(command, "getAnonymousGroup")){
+					rc = dynsec_groups__process_get_anonymous_group(j_responses, context, aiter, correlation_data);
 
 				/* Roles */
 				}else if(!strcasecmp(command, "createRole")){

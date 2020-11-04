@@ -31,14 +31,14 @@ typedef int (*MOSQ_FUNC_acl_check)(struct mosquitto_evt_acl_check *, struct dyns
  * #
  * ################################################################ */
 
-static int acl_check_publish_b2c(struct mosquitto_evt_acl_check *ed, struct dynsec__rolelist *base_rolelist)
+static int acl_check_publish_c_recv(struct mosquitto_evt_acl_check *ed, struct dynsec__rolelist *base_rolelist)
 {
 	struct dynsec__rolelist *rolelist, *rolelist_tmp;
 	struct dynsec__acl *acl, *acl_tmp;
 	bool result;
 
 	HASH_ITER(hh, base_rolelist, rolelist, rolelist_tmp){
-		HASH_ITER(hh, rolelist->role->acls.publish_b2c, acl, acl_tmp){
+		HASH_ITER(hh, rolelist->role->acls.publish_c_recv, acl, acl_tmp){
 			mosquitto_topic_matches_sub(acl->topic, ed->topic, &result);
 			if(result){
 				if(acl->allow){
@@ -59,14 +59,14 @@ static int acl_check_publish_b2c(struct mosquitto_evt_acl_check *ed, struct dyns
  * #
  * ################################################################ */
 
-static int acl_check_publish_c2b(struct mosquitto_evt_acl_check *ed, struct dynsec__rolelist *base_rolelist)
+static int acl_check_publish_c_send(struct mosquitto_evt_acl_check *ed, struct dynsec__rolelist *base_rolelist)
 {
 	struct dynsec__rolelist *rolelist, *rolelist_tmp;
 	struct dynsec__acl *acl, *acl_tmp;
 	bool result;
 
 	HASH_ITER(hh, base_rolelist, rolelist, rolelist_tmp){
-		HASH_ITER(hh, rolelist->role->acls.publish_c2b, acl, acl_tmp){
+		HASH_ITER(hh, rolelist->role->acls.publish_c_send, acl, acl_tmp){
 			mosquitto_topic_matches_sub(acl->topic, ed->topic, &result);
 			if(result){
 				if(acl->allow){
@@ -91,7 +91,7 @@ static int acl_check_subscribe(struct mosquitto_evt_acl_check *ed, struct dynsec
 {
 	struct dynsec__rolelist *rolelist, *rolelist_tmp;
 	struct dynsec__acl *acl, *acl_tmp;
-	int len;
+	size_t len;
 
 	len = strlen(ed->topic);
 
@@ -128,7 +128,7 @@ static int acl_check_unsubscribe(struct mosquitto_evt_acl_check *ed, struct dyns
 {
 	struct dynsec__rolelist *rolelist, *rolelist_tmp;
 	struct dynsec__acl *acl, *acl_tmp;
-	int len;
+	size_t len;
 
 	len = strlen(ed->topic);
 
@@ -236,10 +236,10 @@ int dynsec__acl_check_callback(int event, void *event_data, void *userdata)
 			return acl_check(event_data, acl_check_unsubscribe, default_access.unsubscribe);
 			break;
 		case MOSQ_ACL_WRITE: /* Client to broker */
-			return acl_check(event_data, acl_check_publish_c2b, default_access.publish_c2b);
+			return acl_check(event_data, acl_check_publish_c_send, default_access.publish_c_send);
 			break;
 		case MOSQ_ACL_READ:
-			return acl_check(event_data, acl_check_publish_b2c, default_access.publish_b2c);
+			return acl_check(event_data, acl_check_publish_c_recv, default_access.publish_c_recv);
 			break;
 		default:
 			return MOSQ_ERR_PLUGIN_DEFER;

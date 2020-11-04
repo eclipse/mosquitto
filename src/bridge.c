@@ -685,7 +685,8 @@ void bridge_check(struct mosquitto_db *db)
 				if(context->bridge->primary_retry_sock == INVALID_SOCKET){
 					rc = net__try_connect(context->bridge->addresses[0].address,
 							context->bridge->addresses[0].port,
-							&context->bridge->primary_retry_sock, NULL, false);
+							&context->bridge->primary_retry_sock,
+							context->bridge->bind_address, false);
 
 					if(rc == 0){
 						COMPAT_CLOSE(context->bridge->primary_retry_sock);

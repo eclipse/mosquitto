@@ -30,11 +30,11 @@ Contributors:
 #include "tls_mosq.h"
 #include "util_mosq.h"
 
-#if !defined(WIN32) && !defined(__SYMBIAN32__)
+#if !defined(WIN32) && !defined(__SYMBIAN32__) && !defined(__QNX__)
 #define HAVE_PSELECT
 #endif
 
-int mosquitto_loop(struct mosquitto *mosq, int timeout_input, int max_packets)
+int mosquitto_loop(struct mosquitto *mosq, int timeout, int max_packets)
 {
 #ifdef HAVE_PSELECT
 	struct timespec local_timeout;
@@ -50,10 +50,7 @@ int mosquitto_loop(struct mosquitto *mosq, int timeout_input, int max_packets)
 #ifdef WITH_SRV
 	int state;
 #endif
-	time_t timeout;
-
-	UNUSED(timeout_input);
-
+	time_t timeout_ms;
 
 	if(!mosq || max_packets < 1) return MOSQ_ERR_INVAL;
 #ifndef WIN32
@@ -113,26 +110,27 @@ int mosquitto_loop(struct mosquitto *mosq, int timeout_input, int max_packets)
 		}
 	}
 
-	if(timeout < 0){
-		timeout = 1000;
+	timeout_ms = timeout;
+	if(timeout_ms < 0){
+		timeout_ms = 1000;
 	}
 
 	now = mosquitto_time();
-	if(mosq->next_msg_out && now + timeout/1000 > mosq->next_msg_out){
-		timeout = (mosq->next_msg_out - now)*1000;
+	if(mosq->next_msg_out && now + timeout_ms/1000 > mosq->next_msg_out){
+		timeout_ms = (mosq->next_msg_out - now)*1000;
 	}
 
-	if(timeout < 0){
+	if(timeout_ms < 0){
 		/* There has been a delay somewhere which means we should have already
 		 * sent a message. */
-		timeout = 0;
+		timeout_ms = 0;
 	}
 
-	local_timeout.tv_sec = timeout/1000;
+	local_timeout.tv_sec = timeout_ms/1000;
 #ifdef HAVE_PSELECT
-	local_timeout.tv_nsec = (timeout-local_timeout.tv_sec*1000)*1000000;
+	local_timeout.tv_nsec = (timeout_ms-local_timeout.tv_sec*1000)*1000000;
 #else
-	local_timeout.tv_usec = (timeout-local_timeout.tv_sec*1000)*1000;
+	local_timeout.tv_usec = (timeout_ms-local_timeout.tv_sec*1000)*1000;
 #endif
 
 #ifdef HAVE_PSELECT

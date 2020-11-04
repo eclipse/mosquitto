@@ -100,14 +100,10 @@ def packet_matches(name, recvd, expected):
             print("Received: "+to_string(recvd))
         except struct.error:
             print("Received (not decoded, len=%d): %s" % (len(recvd), recvd))
-            for i in range(0, len(recvd)):
-                print('%c'%(recvd[i]),)
         try:
             print("Expected: "+to_string(expected))
         except struct.error:
             print("Expected (not decoded, len=%d): %s" % (len(expected), expected))
-            for i in range(0, len(expected)):
-                print('%c'%(expected[i]),)
 
         return False
     else:

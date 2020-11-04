@@ -10,7 +10,7 @@ static int handle_publish(int event, void *event_data, void *user_data);
 static mosquitto_plugin_id_t *plg_id;
 
 
-int mosquitto_plugin_version(void)
+int mosquitto_plugin_version(int supported_version_count, const int *supported_versions)
 {
 	return 5;
 }

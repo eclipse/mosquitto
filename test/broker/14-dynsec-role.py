@@ -42,7 +42,7 @@ create_group_response = {'responses':[{"command":"createGroup","correlationData"
 
 create_role_command = { "commands": [{'command': 'createRole', 'correlationData': '3',
     "roleName": "basic", "acls":[
-    {"aclType":"publishClientToBroker", "topic": "out/#", "priority":3, "allow": True}], "textName":"name", "textDescription":"desc"
+    {"aclType":"publishClientSend", "topic": "out/#", "priority":3, "allow": True}], "textName":"name", "textDescription":"desc"
     }]}
 create_role_response = {'responses': [{'command': 'createRole', 'correlationData': '3'}]}
 
@@ -61,7 +61,7 @@ list_roles_verbose_command1 = { "commands": [{
 }
 list_roles_verbose_response1 = {'responses': [{'command': 'listRoles', 'data':
     {'totalCount':1, 'roles': [{'roleName': 'basic', "textName": "name", "textDescription": "desc",
-    'acls': [{'aclType':'publishClientToBroker', 'topic': 'out/#', 'priority': 3, 'allow': True}]
+    'acls': [{'aclType':'publishClientSend', 'topic': 'out/#', 'priority': 3, 'allow': True}]
     }]}, 'correlationData': '21'}]}
 
 add_acl_command = {"commands": [{'command': "addRoleACL", "roleName":"basic", "aclType":"subscribeLiteral",
@@ -73,14 +73,14 @@ list_roles_verbose_command2 = { "commands": [{
 }
 list_roles_verbose_response2 = {'responses': [{'command': 'listRoles', 'data': {'totalCount':1, 'roles':
     [{'roleName': 'basic', 'textName': 'name', 'textDescription': 'desc', 'acls':
-    [{'aclType':'publishClientToBroker', 'topic': 'out/#', 'priority': 3, 'allow': True},
+    [{'aclType':'publishClientSend', 'topic': 'out/#', 'priority': 3, 'allow': True},
     {'aclType':'subscribeLiteral', 'topic': 'basic/out', 'priority': 1, 'allow': True}],
     }]}, 'correlationData': '22'}]}
 
 get_role_command = {"commands": [{'command': "getRole", "roleName":"basic"}]}
 get_role_response = {'responses': [{'command': 'getRole', 'data': {'role':
     {'roleName': 'basic', 'textName': 'name', 'textDescription': 'desc', 'acls':
-    [{'aclType':'publishClientToBroker', 'topic': 'out/#', 'priority': 3, 'allow': True},
+    [{'aclType':'publishClientSend', 'topic': 'out/#', 'priority': 3, 'allow': True},
     {'aclType':'subscribeLiteral', 'topic': 'basic/out', 'priority': 1, 'allow': True}],
     }}}]}
 
@@ -126,7 +126,7 @@ suback_packet = mosq_test.gen_suback(mid, 1)
 try:
     os.mkdir(str(port))
     with open("%d/dynamic-security.json" % port, 'w') as f:
-        f.write('{"defaultACLAction": {"publishClientToBroker":"allow", "publishBrokerToClient":"allow", "subscribe":"allow", "unsubscribe":"allow"}}')
+        f.write('{"defaultACLAction": {"publishClientSend":"allow", "publishClientReceive":"allow", "subscribe":"allow", "unsubscribe":"allow"}}')
 except FileExistsError:
     try:
         os.remove(f"{port}/dynamic-security.json")

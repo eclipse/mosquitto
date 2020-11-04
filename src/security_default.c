@@ -453,7 +453,7 @@ static int mosquitto_acl_check_default(int event, void *event_data, void *userda
 			len = tlen + (size_t)acl_root->ccount*(clen-2);
 		}
 		local_acl = mosquitto__malloc(len+1);
-		if(!local_acl) return 1; /* FIXME */
+		if(!local_acl) return MOSQ_ERR_NOMEM;
 		s = local_acl;
 		for(i=0; i<tlen; i++){
 			if(i<tlen-1 && acl_root->topic[i] == '%'){
@@ -516,14 +516,14 @@ static int aclfile__parse(struct mosquitto_db *db, struct mosquitto__security_op
 	buf = mosquitto__malloc((size_t)buflen);
 	if(buf == NULL){
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
-		return 1;
+		return MOSQ_ERR_NOMEM;
 	}
 
 	aclfptr = mosquitto__fopen(security_opts->acl_file, "rt", false);
 	if(!aclfptr){
 		mosquitto__free(buf);
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to open acl_file \"%s\".", security_opts->acl_file);
-		return 1;
+		return MOSQ_ERR_UNKNOWN;
 	}
 
 	/* topic [read|write] <topic>
@@ -743,14 +743,14 @@ static int pwfile__parse(const char *file, struct mosquitto__unpwd **root)
 	buf = mosquitto__malloc((size_t)buflen);
 	if(buf == NULL){
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
-		return 1;
+		return MOSQ_ERR_NOMEM;
 	}
 	
 	pwfile = mosquitto__fopen(file, "rt", false);
 	if(!pwfile){
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to open pwfile \"%s\".", file);
 		mosquitto__free(buf);
-		return 1;
+		return MOSQ_ERR_UNKNOWN;
 	}
 
 	while(!feof(pwfile)){
@@ -1102,11 +1102,11 @@ int mosquitto_security_apply_default(struct mosquitto_db *db)
 		listener = &db->config->listeners[i];
 		if(listener && listener->ssl_ctx && listener->certfile && listener->keyfile && listener->crlfile && listener->require_certificate){
 			if(net__tls_server_ctx(listener)){
-				return 1;
+				return MOSQ_ERR_TLS;
 			}
 
 			if(net__tls_load_verify(listener)){
-				return 1;
+				return MOSQ_ERR_TLS;
 			}
 		}
 	}

@@ -129,10 +129,12 @@ int dynsec_role__add_acl(int argc, char *argv[], cJSON *j_command)
 		return MOSQ_ERR_INVAL;
 	}
 
-	if(strcasecmp(acltype, "publishClientToBroker")
-			&& strcasecmp(acltype, "publishBrokerToClient")
-			&& strcasecmp(acltype, "subscribe")
-			&& strcasecmp(acltype, "unsubscribe")){
+	if(strcasecmp(acltype, "publishClientSend")
+			&& strcasecmp(acltype, "publishClientReceive")
+			&& strcasecmp(acltype, "subscribeLiteral")
+			&& strcasecmp(acltype, "subscribePattern")
+			&& strcasecmp(acltype, "unsubscribeLiteral")
+			&& strcasecmp(acltype, "unsubscribePattern")){
 
 		return MOSQ_ERR_INVAL;
 	}
@@ -144,7 +146,7 @@ int dynsec_role__add_acl(int argc, char *argv[], cJSON *j_command)
 		return MOSQ_ERR_INVAL;
 	}
 
-	if(cJSON_AddStringToObject(j_command, "command", "addACLToRole") == NULL
+	if(cJSON_AddStringToObject(j_command, "command", "addRoleACL") == NULL
 			|| cJSON_AddStringToObject(j_command, "rolename", rolename) == NULL
 			|| cJSON_AddStringToObject(j_command, "acltype", acltype) == NULL
 			|| cJSON_AddStringToObject(j_command, "topic", topic) == NULL
@@ -170,15 +172,17 @@ int dynsec_role__remove_acl(int argc, char *argv[], cJSON *j_command)
 		return MOSQ_ERR_INVAL;
 	}
 
-	if(strcasecmp(acltype, "publishClientToBroker")
-			&& strcasecmp(acltype, "publishBrokerToClient")
-			&& strcasecmp(acltype, "subscribe")
-			&& strcasecmp(acltype, "unsubscribe")){
+	if(strcasecmp(acltype, "publishClientSend")
+			&& strcasecmp(acltype, "publishClientReceive")
+			&& strcasecmp(acltype, "subscribeLiteral")
+			&& strcasecmp(acltype, "subscribePattern")
+			&& strcasecmp(acltype, "unsubscribeLiteral")
+			&& strcasecmp(acltype, "unsubscribePattern")){
 
 		return MOSQ_ERR_INVAL;
 	}
 
-	if(cJSON_AddStringToObject(j_command, "command", "removeACLFromRole") == NULL
+	if(cJSON_AddStringToObject(j_command, "command", "removeRoleACL") == NULL
 			|| cJSON_AddStringToObject(j_command, "rolename", rolename) == NULL
 			|| cJSON_AddStringToObject(j_command, "acltype", acltype) == NULL
 			|| cJSON_AddStringToObject(j_command, "topic", topic) == NULL

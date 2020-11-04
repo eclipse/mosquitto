@@ -35,6 +35,7 @@ Contributors:
 #include <mosquitto.h>
 #include <mqtt_protocol.h>
 #include "mosquitto_ctrl.h"
+#include "get_password.h"
 
 #ifdef WITH_SOCKS
 static int mosquitto__parse_socks_url(struct mosq_config *cfg, char *url);
@@ -558,11 +559,28 @@ int client_config_load(struct mosq_config *cfg)
 
 int client_opts_set(struct mosquitto *mosq, struct mosq_config *cfg)
 {
-#if defined(WITH_TLS) || defined(WITH_SOCKS)
 	int rc;
-#endif
+	char prompt[1000];
+	char password[1000];
 
 	mosquitto_int_option(mosq, MOSQ_OPT_PROTOCOL_VERSION, cfg->protocol_version);
+
+	if(cfg->username && cfg->password == NULL){
+		/* Ask for password */
+		snprintf(prompt, sizeof(prompt), "Password for %s: ", cfg->username);
+		rc = get_password(prompt, NULL, false, password, sizeof(password));
+		if(rc){
+			fprintf(stderr, "Error getting password.\n");
+			mosquitto_lib_cleanup();
+			return 1;
+		}
+		cfg->password = strdup(password);
+		if(cfg->password == NULL){
+			fprintf(stderr, "Error: Out of memory.\n");
+			mosquitto_lib_cleanup();
+			return 1;
+		}
+	}
 
 	if((cfg->username || cfg->password) && mosquitto_username_pw_set(mosq, cfg->username, cfg->password)){
 		fprintf(stderr, "Error: Problem setting username and/or password.\n");

@@ -17,7 +17,7 @@ int control_callback(int event, void *event_data, void *userdata)
 }
 
 
-int mosquitto_plugin_version(void)
+int mosquitto_plugin_version(int supported_version_count, const int *supported_versions)
 {
 	return MOSQ_PLUGIN_VERSION;
 }

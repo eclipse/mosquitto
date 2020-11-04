@@ -296,7 +296,7 @@ void do_disconnect(struct mosquitto_db *db, struct mosquitto *context, int reaso
 						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s closed its connection.", id);
 						break;
 					case MOSQ_ERR_AUTH:
-						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s disconnected, no longer authorised.", id);
+						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s disconnected, not authorised.", id);
 						break;
 					case MOSQ_ERR_KEEPALIVE:
 						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s has exceeded timeout, disconnecting.", id);

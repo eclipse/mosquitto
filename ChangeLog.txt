@@ -24,6 +24,8 @@ Breaking changes:
   connections are allowed.
 - The `pid_file` option will now always attempt to write a pid file,
   regardless of whether the `-d` argument is used when running the broker.
+- The `tls_version` option now defines the *minimum* TLS protocol version to
+  be used, rather than the exact version. Closes #1258.
 
 Broker:
 - When running as root, if dropping privileges to the "mosquitto" user fails,
@@ -59,6 +61,8 @@ Broker:
 - mosquitto_password now forbids the : character. Closes #1833.
 - Fix `log_timestamp_format` not applying to `log_dest topic`. Closes #1862.
 - Add the `bridge_max_packet_size` option. Closes #265.
+- Add the `bridge_bind_address` option. Closes #1311.
+- Fix crash on Windows if loading a plugin fails. Closes #1866.
 
 Client library:
 - Client no longer generates random client ids for v3.1.1 clients, these are

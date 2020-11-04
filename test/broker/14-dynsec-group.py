@@ -84,7 +84,7 @@ suback_packet = mosq_test.gen_suback(mid, 1)
 try:
     os.mkdir(str(port))
     with open("%d/dynamic-security.json" % port, 'w') as f:
-        f.write('{"defaultACLAction": {"publishClientToBroker":"allow", "publishBrokerToClient":"allow", "subscribe":"allow", "unsubscribe":"allow"}}')
+        f.write('{"defaultACLAction": {"publishClientSend":"allow", "publishClientReceive":"allow", "subscribe":"allow", "unsubscribe":"allow"}}')
 except FileExistsError:
     try:
         os.remove(f"{port}/dynamic-security.json")

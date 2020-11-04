@@ -92,7 +92,48 @@ int dynsec_rolelists__remove_role(struct dynsec__rolelist **base_rolelist, const
 }
 
 
-int dynsec_rolelists__add_role(struct dynsec__rolelist **base_rolelist, struct dynsec__role *role, int priority)
+int dynsec_rolelists__client_remove_role(struct dynsec__client *client, struct dynsec__role *role)
+{
+	int rc;
+	struct dynsec__clientlist *found_clientlist;
+
+	rc = dynsec_rolelists__remove_role(&client->rolelist, role);
+	if(rc) return rc;
+
+	HASH_FIND(hh, role->clientlist, client->username, strlen(client->username), found_clientlist);
+	if(found_clientlist){
+		HASH_DELETE(hh, role->clientlist, found_clientlist);
+		mosquitto_free(found_clientlist->username);
+		mosquitto_free(found_clientlist);
+		return MOSQ_ERR_SUCCESS;
+	}else{
+		return MOSQ_ERR_NOT_FOUND;
+	}
+}
+
+
+int dynsec_rolelists__group_remove_role(struct dynsec__group *group, struct dynsec__role *role)
+{
+	int rc;
+	struct dynsec__grouplist *found_grouplist;
+
+	rc = dynsec_rolelists__remove_role(&group->rolelist, role);
+	if(rc) return rc;
+
+	/* Remove group from role grouplist. */
+	HASH_FIND(hh, role->grouplist, group->groupname, strlen(group->groupname), found_grouplist);
+	if(found_grouplist){
+		HASH_DELETE(hh, role->grouplist, found_grouplist);
+		mosquitto_free(found_grouplist->groupname);
+		mosquitto_free(found_grouplist);
+		return MOSQ_ERR_SUCCESS;
+	}else{
+		return MOSQ_ERR_NOT_FOUND;
+	}
+}
+
+
+static int dynsec_rolelists__add_role(struct dynsec__rolelist **base_rolelist, struct dynsec__role *role, int priority)
 {
 	struct dynsec__rolelist *rolelist;
 
@@ -115,6 +156,76 @@ int dynsec_rolelists__add_role(struct dynsec__rolelist **base_rolelist, struct d
 		HASH_ADD_KEYPTR_INORDER(hh, *base_rolelist, role->rolename, strlen(role->rolename), rolelist, rolelist_cmp);
 		return MOSQ_ERR_SUCCESS;
 	}
+}
+
+
+int dynsec_rolelists__client_add_role(struct dynsec__client *client, struct dynsec__role *role, int priority)
+{
+	struct dynsec__rolelist *rolelist;
+	struct dynsec__clientlist *clientlist;
+	int rc;
+
+	rc = dynsec_rolelists__add_role(&client->rolelist, role, priority);
+	printf("AR %d\n", rc);
+	if(rc) return rc;
+
+	HASH_FIND(hh, client->rolelist, role->rolename, strlen(role->rolename), rolelist);
+	if(rolelist == NULL){
+		/* This should never happen because the above add_role succeeded. */
+		return MOSQ_ERR_UNKNOWN;
+	}
+
+	/* Add client to role clientlist */
+	clientlist = mosquitto_calloc(1, sizeof(struct dynsec__clientlist));
+	if(clientlist == NULL){
+		dynsec_rolelists__remove_role(&client->rolelist, role);
+		return MOSQ_ERR_NOMEM;
+	}
+	clientlist->client = client;
+	clientlist->username = mosquitto_strdup(client->username);
+	if(clientlist->username == NULL){
+		dynsec_rolelists__remove_role(&client->rolelist, role);
+		mosquitto_free(clientlist);
+		return MOSQ_ERR_NOMEM;
+	}
+
+	HASH_ADD_KEYPTR_INORDER(hh, role->clientlist, client->username, strlen(client->username), clientlist, dynsec_clientlist__cmp);
+	printf("ok %d\n", rc);
+	return MOSQ_ERR_SUCCESS;
+}
+
+
+int dynsec_rolelists__group_add_role(struct dynsec__group *group, struct dynsec__role *role, int priority)
+{
+	struct dynsec__rolelist *rolelist;
+	struct dynsec__grouplist *grouplist;
+	int rc;
+
+	rc = dynsec_rolelists__add_role(&group->rolelist, role, priority);
+	if(rc) return rc;
+
+	HASH_FIND(hh, group->rolelist, role->rolename, strlen(role->rolename), rolelist);
+	if(rolelist == NULL){
+		/* This should never happen because the above add_role succeeded. */
+		return MOSQ_ERR_UNKNOWN;
+	}
+
+	/* Add group to role grouplist */
+	grouplist = mosquitto_calloc(1, sizeof(struct dynsec__grouplist));
+	if(grouplist == NULL){
+		dynsec_rolelists__remove_role(&group->rolelist, role);
+		return MOSQ_ERR_NOMEM;
+	}
+	grouplist->group = group;
+	grouplist->groupname = mosquitto_strdup(group->groupname);
+	if(grouplist->groupname == NULL){
+		dynsec_rolelists__remove_role(&group->rolelist, role);
+		mosquitto_free(grouplist);
+		return MOSQ_ERR_NOMEM;
+	}
+
+	HASH_ADD_KEYPTR_INORDER(hh, role->grouplist, group->groupname, strlen(group->groupname), grouplist, dynsec_grouplist__cmp);
+	return MOSQ_ERR_SUCCESS;
 }
 
 
@@ -150,7 +261,6 @@ cJSON *dynsec_rolelists__all_to_json(struct dynsec__rolelist *base_rolelist)
 {
 	struct dynsec__rolelist *rolelist, *rolelist_tmp;
 	cJSON *j_roles, *j_role;
-	char buf[30];
 
 	j_roles = cJSON_CreateArray();
 	if(j_roles == NULL) return NULL;
@@ -163,11 +273,8 @@ cJSON *dynsec_rolelists__all_to_json(struct dynsec__rolelist *base_rolelist)
 		}
 		cJSON_AddItemToArray(j_roles, j_role);
 
-		if(rolelist->priority != -1){
-			snprintf(buf, sizeof(buf), "%d", rolelist->priority);
-		}
 		if(cJSON_AddStringToObject(j_role, "rolename", rolelist->role->rolename) == NULL
-				|| (rolelist->priority != -1 && cJSON_AddRawToObject(j_role, "priority", buf) == NULL)
+				|| (rolelist->priority != -1 && cJSON_AddIntToObject(j_role, "priority", rolelist->priority) == NULL)
 				){
 
 			cJSON_Delete(j_roles);
@@ -202,8 +309,8 @@ static void role__free_item(struct dynsec__role *role, bool remove_from_hash)
 	mosquitto_free(role->text_name);
 	mosquitto_free(role->text_description);
 	mosquitto_free(role->rolename);
-	role__free_all_acls(&role->acls.publish_c2b);
-	role__free_all_acls(&role->acls.publish_b2c);
+	role__free_all_acls(&role->acls.publish_c_send);
+	role__free_all_acls(&role->acls.publish_c_recv);
 	role__free_all_acls(&role->acls.subscribe_literal);
 	role__free_all_acls(&role->acls.subscribe_pattern);
 	role__free_all_acls(&role->acls.unsubscribe_literal);
@@ -232,6 +339,21 @@ void dynsec_roles__cleanup(void)
 }
 
 
+static void role__kick_all(struct dynsec__role *role)
+{
+	struct dynsec__grouplist *grouplist, *grouplist_tmp;
+
+	dynsec_clientlist__kick_all(role->clientlist);
+
+	HASH_ITER(hh, role->grouplist, grouplist, grouplist_tmp){
+		if(grouplist->group == dynsec_anonymous_group){
+			mosquitto_kick_client_by_username(NULL, false);
+		}
+		dynsec_clientlist__kick_all(grouplist->group->clientlist);
+	}
+}
+
+
 /* ################################################################
  * #
  * # Config file load and save
@@ -253,7 +375,7 @@ static int add_single_acl_to_json(cJSON *j_array, const char *acl_type, struct d
 
 		if(cJSON_AddStringToObject(j_acl, "acltype", acl_type) == NULL
 				|| cJSON_AddStringToObject(j_acl, "topic", iter->topic) == NULL
-				|| cJSON_AddNumberToObject(j_acl, "priority", iter->priority) == NULL
+				|| cJSON_AddIntToObject(j_acl, "priority", iter->priority) == NULL
 				|| cJSON_AddBoolToObject(j_acl, "allow", iter->allow) == NULL
 				){
 
@@ -273,12 +395,12 @@ static int add_acls_to_json(cJSON *j_role, struct dynsec__role *role)
 		return 1;
 	}
 
-	if(add_single_acl_to_json(j_acls, "publishClientToBroker", role->acls.publish_c2b) != MOSQ_ERR_SUCCESS
-			|| add_single_acl_to_json(j_acls, "publishBrokerToClient", role->acls.publish_b2c) != MOSQ_ERR_SUCCESS
-			|| add_single_acl_to_json(j_acls, "subscribeLiteral", role->acls.subscribe_literal) != MOSQ_ERR_SUCCESS
-			|| add_single_acl_to_json(j_acls, "subscribePattern", role->acls.subscribe_pattern) != MOSQ_ERR_SUCCESS
-			|| add_single_acl_to_json(j_acls, "unsubscribeLiteral", role->acls.unsubscribe_literal) != MOSQ_ERR_SUCCESS
-			|| add_single_acl_to_json(j_acls, "unsubscribePattern", role->acls.unsubscribe_pattern) != MOSQ_ERR_SUCCESS
+	if(add_single_acl_to_json(j_acls, ACL_TYPE_PUB_C_SEND, role->acls.publish_c_send) != MOSQ_ERR_SUCCESS
+			|| add_single_acl_to_json(j_acls, ACL_TYPE_PUB_C_RECV, role->acls.publish_c_recv) != MOSQ_ERR_SUCCESS
+			|| add_single_acl_to_json(j_acls, ACL_TYPE_SUB_LITERAL, role->acls.subscribe_literal) != MOSQ_ERR_SUCCESS
+			|| add_single_acl_to_json(j_acls, ACL_TYPE_SUB_PATTERN, role->acls.subscribe_pattern) != MOSQ_ERR_SUCCESS
+			|| add_single_acl_to_json(j_acls, ACL_TYPE_UNSUB_LITERAL, role->acls.unsubscribe_literal) != MOSQ_ERR_SUCCESS
+			|| add_single_acl_to_json(j_acls, ACL_TYPE_UNSUB_PATTERN, role->acls.unsubscribe_pattern) != MOSQ_ERR_SUCCESS
 			){
 
 		return 1;
@@ -419,12 +541,12 @@ int dynsec_roles__config_load(cJSON *tree)
 			/* ACLs */
 			j_acls = cJSON_GetObjectItem(j_role, "acls");
 			if(j_acls && cJSON_IsArray(j_acls)){
-				if(dynsec_roles__acl_load(j_acls, "publishClientToBroker", &role->acls.publish_c2b) != 0
-						|| dynsec_roles__acl_load(j_acls, "publishBrokerToClient", &role->acls.publish_b2c) != 0
-						|| dynsec_roles__acl_load(j_acls, "subscribeLiteral", &role->acls.subscribe_literal) != 0
-						|| dynsec_roles__acl_load(j_acls, "subscribePattern", &role->acls.subscribe_pattern) != 0
-						|| dynsec_roles__acl_load(j_acls, "unsubscribeLiteral", &role->acls.unsubscribe_literal) != 0
-						|| dynsec_roles__acl_load(j_acls, "unsubscribePattern", &role->acls.unsubscribe_pattern) != 0
+				if(dynsec_roles__acl_load(j_acls, ACL_TYPE_PUB_C_SEND, &role->acls.publish_c_send) != 0
+						|| dynsec_roles__acl_load(j_acls, ACL_TYPE_PUB_C_RECV, &role->acls.publish_c_recv) != 0
+						|| dynsec_roles__acl_load(j_acls, ACL_TYPE_SUB_LITERAL, &role->acls.subscribe_literal) != 0
+						|| dynsec_roles__acl_load(j_acls, ACL_TYPE_SUB_PATTERN, &role->acls.subscribe_pattern) != 0
+						|| dynsec_roles__acl_load(j_acls, ACL_TYPE_UNSUB_LITERAL, &role->acls.unsubscribe_literal) != 0
+						|| dynsec_roles__acl_load(j_acls, ACL_TYPE_UNSUB_PATTERN, &role->acls.unsubscribe_pattern) != 0
 						){
 
 					// FIXME log
@@ -503,12 +625,12 @@ int dynsec_roles__process_create(cJSON *j_responses, struct mosquitto *context, 
 	/* ACLs */
 	j_acls = cJSON_GetObjectItem(command, "acls");
 	if(j_acls && cJSON_IsArray(j_acls)){
-		if(dynsec_roles__acl_load(j_acls, "publishClientToBroker", &role->acls.publish_c2b) != 0
-				|| dynsec_roles__acl_load(j_acls, "publishBrokerToClient", &role->acls.publish_b2c) != 0
-				|| dynsec_roles__acl_load(j_acls, "subscribeLiteral", &role->acls.subscribe_literal) != 0
-				|| dynsec_roles__acl_load(j_acls, "subscribePattern", &role->acls.subscribe_pattern) != 0
-				|| dynsec_roles__acl_load(j_acls, "unsubscribeLiteral", &role->acls.unsubscribe_literal) != 0
-				|| dynsec_roles__acl_load(j_acls, "unsubscribePattern", &role->acls.unsubscribe_pattern) != 0
+		if(dynsec_roles__acl_load(j_acls, ACL_TYPE_PUB_C_SEND, &role->acls.publish_c_send) != 0
+				|| dynsec_roles__acl_load(j_acls, ACL_TYPE_PUB_C_RECV, &role->acls.publish_c_recv) != 0
+				|| dynsec_roles__acl_load(j_acls, ACL_TYPE_SUB_LITERAL, &role->acls.subscribe_literal) != 0
+				|| dynsec_roles__acl_load(j_acls, ACL_TYPE_SUB_PATTERN, &role->acls.subscribe_pattern) != 0
+				|| dynsec_roles__acl_load(j_acls, ACL_TYPE_UNSUB_LITERAL, &role->acls.unsubscribe_literal) != 0
+				|| dynsec_roles__acl_load(j_acls, ACL_TYPE_UNSUB_PATTERN, &role->acls.unsubscribe_pattern) != 0
 				){
 
 			dynsec__command_reply(j_responses, context, "createRole", "Internal error", correlation_data);
@@ -532,6 +654,31 @@ error:
 }
 
 
+static void role__remove_all_clients(struct dynsec__role *role)
+{
+	struct dynsec__clientlist *clientlist, *clientlist_tmp;
+
+	HASH_ITER(hh, role->clientlist, clientlist, clientlist_tmp){
+		mosquitto_kick_client_by_username(clientlist->username, false);
+
+		dynsec_rolelists__client_remove_role(clientlist->client, role);
+	}
+}
+
+static void role__remove_all_groups(struct dynsec__role *role)
+{
+	struct dynsec__grouplist *grouplist, *grouplist_tmp;
+
+	HASH_ITER(hh, role->grouplist, grouplist, grouplist_tmp){
+		if(grouplist->group == dynsec_anonymous_group){
+			mosquitto_kick_client_by_username(NULL, false);
+		}
+		dynsec_clientlist__kick_all(grouplist->group->clientlist);
+
+		dynsec_rolelists__group_remove_role(grouplist->group, role);
+	}
+}
+
 int dynsec_roles__process_delete(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data)
 {
 	char *rolename;
@@ -544,8 +691,8 @@ int dynsec_roles__process_delete(cJSON *j_responses, struct mosquitto *context, 
 
 	role = dynsec_roles__find(rolename);
 	if(role){
-		dynsec_clients__remove_role_from_all(role);
-		dynsec_groups__remove_role_from_all(role);
+		role__remove_all_clients(role);
+		role__remove_all_groups(role);
 		role__free_item(role, true);
 		dynsec__config_save();
 		dynsec__command_reply(j_responses, context, "deleteRole", NULL, correlation_data);
@@ -594,7 +741,6 @@ int dynsec_roles__process_list(cJSON *j_responses, struct mosquitto *context, cJ
 	struct dynsec__role *role, *role_tmp;
 	cJSON *tree, *j_roles, *j_role, *jtmp, *j_data;
 	int i, count, offset;
-	char buf[30];
 
 	json_get_bool(command, "verbose", &verbose, true, false);
 	json_get_int(command, "count", &count, true, -1);
@@ -622,8 +768,7 @@ int dynsec_roles__process_list(cJSON *j_responses, struct mosquitto *context, cJ
 	}
 	cJSON_AddItemToObject(tree, "data", j_data);
 
-	snprintf(buf, sizeof(buf), "%d", HASH_CNT(hh, local_roles));
-	cJSON_AddRawToObject(j_data, "totalCount", buf);
+	cJSON_AddIntToObject(j_data, "totalCount", (int)HASH_CNT(hh, local_roles));
 
 	j_roles = cJSON_CreateArray();
 	if(j_roles == NULL){
@@ -692,17 +837,17 @@ int dynsec_roles__process_add_acl(cJSON *j_responses, struct mosquitto *context,
 		dynsec__command_reply(j_responses, context, "addRoleACL", "Invalid/missing acltype", correlation_data);
 		return MOSQ_ERR_SUCCESS;
 	}
-	if(!strcasecmp(jtmp->valuestring, "publishClientToBroker")){
-		acllist = &role->acls.publish_c2b;
-	}else if(!strcasecmp(jtmp->valuestring, "publishBrokerToClient")){
-		acllist = &role->acls.publish_b2c;
-	}else if(!strcasecmp(jtmp->valuestring, "subscribeLiteral")){
+	if(!strcasecmp(jtmp->valuestring, ACL_TYPE_PUB_C_SEND)){
+		acllist = &role->acls.publish_c_send;
+	}else if(!strcasecmp(jtmp->valuestring, ACL_TYPE_PUB_C_RECV)){
+		acllist = &role->acls.publish_c_recv;
+	}else if(!strcasecmp(jtmp->valuestring, ACL_TYPE_SUB_LITERAL)){
 		acllist = &role->acls.subscribe_literal;
-	}else if(!strcasecmp(jtmp->valuestring, "subscribePattern")){
+	}else if(!strcasecmp(jtmp->valuestring, ACL_TYPE_SUB_PATTERN)){
 		acllist = &role->acls.subscribe_pattern;
-	}else if(!strcasecmp(jtmp->valuestring, "unsubscribeLiteral")){
+	}else if(!strcasecmp(jtmp->valuestring, ACL_TYPE_UNSUB_LITERAL)){
 		acllist = &role->acls.unsubscribe_literal;
-	}else if(!strcasecmp(jtmp->valuestring, "unsubscribePattern")){
+	}else if(!strcasecmp(jtmp->valuestring, ACL_TYPE_UNSUB_PATTERN)){
 		acllist = &role->acls.unsubscribe_pattern;
 	}else{
 		dynsec__command_reply(j_responses, context, "addRoleACL", "Unknown acltype", correlation_data);
@@ -742,6 +887,8 @@ int dynsec_roles__process_add_acl(cJSON *j_responses, struct mosquitto *context,
 	dynsec__config_save();
 	dynsec__command_reply(j_responses, context, "addRoleACL", NULL, correlation_data);
 
+	role__kick_all(role);
+
 	return MOSQ_ERR_SUCCESS;
 }
 
@@ -769,17 +916,17 @@ int dynsec_roles__process_remove_acl(cJSON *j_responses, struct mosquitto *conte
 		dynsec__command_reply(j_responses, context, "removeRoleACL", "Invalid/missing acltype", correlation_data);
 		return MOSQ_ERR_SUCCESS;
 	}
-	if(!strcasecmp(jtmp->valuestring, "publishClientToBroker")){
-		acllist = &role->acls.publish_c2b;
-	}else if(!strcasecmp(jtmp->valuestring, "publishBrokerToClient")){
-		acllist = &role->acls.publish_b2c;
-	}else if(!strcasecmp(jtmp->valuestring, "subscribeLiteral")){
+	if(!strcasecmp(jtmp->valuestring, ACL_TYPE_PUB_C_SEND)){
+		acllist = &role->acls.publish_c_send;
+	}else if(!strcasecmp(jtmp->valuestring, ACL_TYPE_PUB_C_RECV)){
+		acllist = &role->acls.publish_c_recv;
+	}else if(!strcasecmp(jtmp->valuestring, ACL_TYPE_SUB_LITERAL)){
 		acllist = &role->acls.subscribe_literal;
-	}else if(!strcasecmp(jtmp->valuestring, "subscribePattern")){
+	}else if(!strcasecmp(jtmp->valuestring, ACL_TYPE_SUB_PATTERN)){
 		acllist = &role->acls.subscribe_pattern;
-	}else if(!strcasecmp(jtmp->valuestring, "unsubscribeLiteral")){
+	}else if(!strcasecmp(jtmp->valuestring, ACL_TYPE_UNSUB_LITERAL)){
 		acllist = &role->acls.unsubscribe_literal;
-	}else if(!strcasecmp(jtmp->valuestring, "unsubscribePattern")){
+	}else if(!strcasecmp(jtmp->valuestring, ACL_TYPE_UNSUB_PATTERN)){
 		acllist = &role->acls.unsubscribe_pattern;
 	}else{
 		dynsec__command_reply(j_responses, context, "removeRoleACL", "Unknown acltype", correlation_data);
@@ -796,6 +943,8 @@ int dynsec_roles__process_remove_acl(cJSON *j_responses, struct mosquitto *conte
 		role__free_acl(acllist, acl);
 		dynsec__config_save();
 		dynsec__command_reply(j_responses, context, "removeRoleACL", NULL, correlation_data);
+
+		role__kick_all(role);
 	}else{
 		dynsec__command_reply(j_responses, context, "removeRoleACL", "ACL not found", correlation_data);
 	}
@@ -874,7 +1023,7 @@ int dynsec_roles__process_modify(cJSON *j_responses, struct mosquitto *context, 
 	struct dynsec__role *role;
 	char *str;
 	cJSON *j_acls;
-	struct dynsec__acl *tmp_publish_c2b, *tmp_publish_b2c;
+	struct dynsec__acl *tmp_publish_c_send, *tmp_publish_c_recv;
 	struct dynsec__acl *tmp_subscribe_literal, *tmp_subscribe_pattern;
 	struct dynsec__acl *tmp_unsubscribe_literal, *tmp_unsubscribe_pattern;
 
@@ -911,17 +1060,17 @@ int dynsec_roles__process_modify(cJSON *j_responses, struct mosquitto *context, 
 
 	j_acls = cJSON_GetObjectItem(command, "acls");
 	if(j_acls && cJSON_IsArray(j_acls)){
-		if(dynsec_roles__acl_load(j_acls, "publishClientToBroker", &tmp_publish_c2b) != 0
-				|| dynsec_roles__acl_load(j_acls, "publishBrokerToClient", &tmp_publish_b2c) != 0
-				|| dynsec_roles__acl_load(j_acls, "subscribeLiteral", &tmp_subscribe_literal) != 0
-				|| dynsec_roles__acl_load(j_acls, "subscribePattern", &tmp_subscribe_pattern) != 0
-				|| dynsec_roles__acl_load(j_acls, "unsubscribeLiteral", &tmp_unsubscribe_literal) != 0
-				|| dynsec_roles__acl_load(j_acls, "unsubscribePattern", &tmp_unsubscribe_pattern) != 0
+		if(dynsec_roles__acl_load(j_acls, ACL_TYPE_PUB_C_SEND, &tmp_publish_c_send) != 0
+				|| dynsec_roles__acl_load(j_acls, ACL_TYPE_PUB_C_RECV, &tmp_publish_c_recv) != 0
+				|| dynsec_roles__acl_load(j_acls, ACL_TYPE_SUB_LITERAL, &tmp_subscribe_literal) != 0
+				|| dynsec_roles__acl_load(j_acls, ACL_TYPE_SUB_PATTERN, &tmp_subscribe_pattern) != 0
+				|| dynsec_roles__acl_load(j_acls, ACL_TYPE_UNSUB_LITERAL, &tmp_unsubscribe_literal) != 0
+				|| dynsec_roles__acl_load(j_acls, ACL_TYPE_UNSUB_PATTERN, &tmp_unsubscribe_pattern) != 0
 				){
 
 			/* Free any that were successful */
-			role__free_all_acls(&tmp_publish_c2b);
-			role__free_all_acls(&tmp_publish_b2c);
+			role__free_all_acls(&tmp_publish_c_send);
+			role__free_all_acls(&tmp_publish_c_recv);
 			role__free_all_acls(&tmp_subscribe_literal);
 			role__free_all_acls(&tmp_subscribe_pattern);
 			role__free_all_acls(&tmp_unsubscribe_literal);
@@ -931,15 +1080,15 @@ int dynsec_roles__process_modify(cJSON *j_responses, struct mosquitto *context, 
 			return MOSQ_ERR_NOMEM;
 		}
 
-		role__free_all_acls(&role->acls.publish_c2b);
-		role__free_all_acls(&role->acls.publish_b2c);
+		role__free_all_acls(&role->acls.publish_c_send);
+		role__free_all_acls(&role->acls.publish_c_recv);
 		role__free_all_acls(&role->acls.subscribe_literal);
 		role__free_all_acls(&role->acls.subscribe_pattern);
 		role__free_all_acls(&role->acls.unsubscribe_literal);
 		role__free_all_acls(&role->acls.unsubscribe_pattern);
 
-		role->acls.publish_c2b = tmp_publish_c2b;
-		role->acls.publish_b2c = tmp_publish_b2c;
+		role->acls.publish_c_send = tmp_publish_c_send;
+		role->acls.publish_c_recv = tmp_publish_c_recv;
 		role->acls.subscribe_literal = tmp_subscribe_literal;
 		role->acls.subscribe_pattern = tmp_subscribe_pattern;
 		role->acls.unsubscribe_literal = tmp_unsubscribe_literal;

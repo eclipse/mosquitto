@@ -33,13 +33,14 @@ int handle__connack(struct mosquitto_db *db, struct mosquitto *context)
 	uint8_t reason_code;
 	mosquitto_property *properties = NULL;
 	uint32_t maximum_packet_size;
+	uint8_t retain_available;
 
 	if(!context){
 		return MOSQ_ERR_INVAL;
 	}
 	log__printf(NULL, MOSQ_LOG_DEBUG, "Received CONNACK on connection %s.", context->id);
-	if(packet__read_byte(&context->in_packet, &connect_acknowledge)) return 1;
-	if(packet__read_byte(&context->in_packet, &reason_code)) return 1;
+	if(packet__read_byte(&context->in_packet, &connect_acknowledge)) return MOSQ_ERR_MALFORMED_PACKET;
+	if(packet__read_byte(&context->in_packet, &reason_code)) return MOSQ_ERR_MALFORMED_PACKET;
 
 	if(context->protocol == mosq_p_mqtt5){
 		if(context->in_packet.remaining_length == 2 && reason_code == CONNACK_REFUSED_PROTOCOL_VERSION){
@@ -57,11 +58,22 @@ int handle__connack(struct mosquitto_db *db, struct mosquitto *context)
 		rc = property__read_all(CMD_CONNACK, &context->in_packet, &properties);
 		if(rc) return rc;
 
+		/* maximum-packet-size */
 		if(mosquitto_property_read_int32(properties, MQTT_PROP_MAXIMUM_PACKET_SIZE,
 					&maximum_packet_size, false)){
 
 			if(context->maximum_packet_size == 0 || context->maximum_packet_size > maximum_packet_size){
 				context->maximum_packet_size = maximum_packet_size;
+			}
+		}
+
+		/* retain-available */
+		if(mosquitto_property_read_byte(properties, MQTT_PROP_RETAIN_AVAILABLE,
+					&retain_available, false)){
+
+			/* Only use broker provided value if the local config is set to available==true */
+			if(context->retain_available){
+				context->retain_available = retain_available;
 			}
 		}
 
@@ -87,10 +99,10 @@ int handle__connack(struct mosquitto_db *db, struct mosquitto *context)
 				case MQTT_RC_RETAIN_NOT_SUPPORTED:
 					context->retain_available = 0;
 					log__printf(NULL, MOSQ_LOG_ERR, "Connection Refused: retain not available (will retry)");
-					return 1;
+					return MOSQ_ERR_CONN_LOST;
 				default:
 					log__printf(NULL, MOSQ_LOG_ERR, "Connection Refused: %s", "FIXME"); //mosquitto_reason_string(reason_code));
-					return 1;
+					return MOSQ_ERR_CONN_LOST;
 			}
 		}else{
 			switch(reason_code){
@@ -99,25 +111,25 @@ int handle__connack(struct mosquitto_db *db, struct mosquitto *context)
 						context->bridge->try_private_accepted = false;
 					}
 					log__printf(NULL, MOSQ_LOG_ERR, "Connection Refused: unacceptable protocol version");
-					return 1;
+					return MOSQ_ERR_CONN_LOST;
 				case CONNACK_REFUSED_IDENTIFIER_REJECTED:
 					log__printf(NULL, MOSQ_LOG_ERR, "Connection Refused: identifier rejected");
-					return 1;
+					return MOSQ_ERR_CONN_LOST;
 				case CONNACK_REFUSED_SERVER_UNAVAILABLE:
 					log__printf(NULL, MOSQ_LOG_ERR, "Connection Refused: broker unavailable");
-					return 1;
+					return MOSQ_ERR_CONN_LOST;
 				case CONNACK_REFUSED_BAD_USERNAME_PASSWORD:
 					log__printf(NULL, MOSQ_LOG_ERR, "Connection Refused: broker unavailable");
-					return 1;
+					return MOSQ_ERR_CONN_LOST;
 				case CONNACK_REFUSED_NOT_AUTHORIZED:
 					log__printf(NULL, MOSQ_LOG_ERR, "Connection Refused: not authorised");
-					return 1;
+					return MOSQ_ERR_CONN_LOST;
 				default:
 					log__printf(NULL, MOSQ_LOG_ERR, "Connection Refused: unknown reason");
-					return 1;
+					return MOSQ_ERR_CONN_LOST;
 			}
 		}
 	}
-	return 1;
+	return MOSQ_ERR_CONN_LOST;
 }
 

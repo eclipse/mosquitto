@@ -56,23 +56,15 @@ static void on_publish(struct mosquitto *mosq, void *obj, int mid, int reason_co
 static void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_count, const int *granted_qos, const mosquitto_property *properties)
 {
 	struct mosq_ctrl *ctrl = obj;
-	char *json_str;
 
 	if(qos_count == 1){
 		if(granted_qos[0] < 128){
 			/* Success */
-			json_str = cJSON_PrintUnformatted(ctrl->j_tree);
-			cJSON_Delete(ctrl->j_tree);
-			ctrl->j_tree = NULL;
-			if(json_str == NULL){
-				fprintf(stderr, "Error: Out of memory.\n");
-				run = 0;
-				mosquitto_disconnect_v5(mosq, 0, NULL);
-			}
-			mosquitto_publish(mosq, NULL, ctrl->request_topic, strlen(json_str), json_str, ctrl->cfg.qos, 0);
+			mosquitto_publish(mosq, NULL, ctrl->request_topic, (int)strlen(ctrl->payload), ctrl->payload, ctrl->cfg.qos, 0);
 			free(ctrl->request_topic);
 			ctrl->request_topic = NULL;
-			free(json_str);
+			free(ctrl->payload);
+			ctrl->payload = NULL;
 		}else{
 			if(ctrl->cfg.protocol_version == MQTT_PROTOCOL_V5){
 				fprintf(stderr, "Subscribe error: %s\n", mosquitto_reason_string(granted_qos[0]));

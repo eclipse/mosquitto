@@ -81,7 +81,7 @@ int retain__store(struct mosquitto_db *db, const char *topic, struct mosquitto_m
 	assert(split_topics);
 
 	HASH_FIND(hh, db->retains, split_topics[0], strlen(split_topics[0]), retainhier);
-	if(retainhier == NULL) return 1;
+	if(retainhier == NULL) return MOSQ_ERR_NOT_FOUND;
 
 	for(i=0; split_topics[i] != NULL; i++){
 		slen = strlen(split_topics[i]);

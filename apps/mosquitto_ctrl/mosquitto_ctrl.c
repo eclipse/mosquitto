@@ -22,6 +22,7 @@ Contributors:
 #include <stdlib.h>
 #include <string.h>
 
+#include "lib_load.h"
 #include "mosquitto.h"
 #include "mosquitto_ctrl.h"
 
@@ -47,7 +48,10 @@ void print_usage(void)
 int main(int argc, char *argv[])
 {
 	struct mosq_ctrl ctrl;
-	int rc;
+	int rc = MOSQ_ERR_SUCCESS;
+	FUNC_ctrl_main ctrl_main = NULL;
+	void *lib = NULL;
+	char lib_name[200];
 
 	if(argc == 1){
 		print_usage();
@@ -67,9 +71,25 @@ int main(int argc, char *argv[])
 		print_usage();
 		return 1;
 	}
-
+ 
+	/* In built modules */
 	if(!strcasecmp(argv[0], "dynsec")){
-		rc = dynsec__main(argc-1, &argv[1], &ctrl);
+		ctrl_main = dynsec__main;
+	}else{
+		/* Attempt external module */
+		snprintf(lib_name, sizeof(lib_name), "mosquitto_ctrl_%s.so", argv[0]);
+		lib = LIB_LOAD(lib_name);
+		if(lib){
+			ctrl_main = (FUNC_ctrl_main)LIB_SYM(lib, "ctrl_main");
+			if(ctrl_main == NULL){
+				fprintf(stderr, "Error: Module '%s' not supported.\n", argv[0]);
+				rc = MOSQ_ERR_NOT_SUPPORTED;
+			}
+		}
+	}
+
+	if(ctrl_main){
+		rc = ctrl_main(argc-1, &argv[1], &ctrl);
 		if(rc < 0){
 			/* Usage print */
 			rc = 0;
@@ -80,9 +100,6 @@ int main(int argc, char *argv[])
 		}else{
 			fprintf(stderr, "Error: %s\n", mosquitto_strerror(rc));
 		}
-	}else{
-		fprintf(stderr, "Error: Module '%s' not supported.\n", argv[0]);
-		rc = MOSQ_ERR_NOT_SUPPORTED;
 	}
 
 	client_config_cleanup(&ctrl.cfg);

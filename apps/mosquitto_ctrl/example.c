@@ -1,5 +1,3 @@
-#ifndef JSON_HELP_H
-#define JSON_HELP_H
 /*
 Copyright (c) 2020 Roger Light <roger@atchoo.org>
 
@@ -16,14 +14,25 @@ Contributors:
    Roger Light - initial implementation and documentation.
 */
 #include <cJSON.h>
-#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-int json_get_bool(cJSON *json, const char *name, bool *value, bool optional, bool default_value);
-int json_get_int(cJSON *json, const char *name, int *value, bool optional, int default_value);
-int json_get_string(cJSON *json, const char *name, char **value, bool optional);
-double json_get_as_number(const cJSON *json);
+#include "mosquitto_ctrl.h"
 
-cJSON *cJSON_AddIntToObject(cJSON * const object, const char * const name, int number);
-cJSON *cJSON_CreateInt(int num);
+void ctrl_help(void)
+{
+	printf("\nExample module\n");
+	printf("==============\n");
+	printf("    mosquitto_ctrl example help\n");
+}
 
-#endif
+int ctrl_main(int argc, char *argv[], struct mosq_ctrl *ctrl)
+{
+	if(!strcasecmp(argv[0], "help")){
+		ctrl_help();
+		return -1;
+	}else{
+		return MOSQ_ERR_INVAL;
+	}
+}

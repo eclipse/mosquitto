@@ -203,16 +203,14 @@ DltLogLevelType get_dlt_level(unsigned int priority)
 
 int log__vprintf(unsigned int priority, const char *fmt, va_list va)
 {
-	char *s;
-	char *st;
-	size_t len;
-#ifdef WIN32
-	char *sp;
-#endif
 	const char *topic;
 	int syslog_priority;
 	time_t now = time(NULL);
-	char time_buf[50];
+	char log_line[1000];
+	int log_line_pos;
+#ifdef WIN32
+	char *sp;
+#endif
 	bool log_timestamp = true;
 	char *log_timestamp_format = NULL;
 	FILE *log_fptr = NULL;
@@ -299,86 +297,54 @@ int log__vprintf(unsigned int priority, const char *fmt, va_list va)
 				syslog_priority = EVENTLOG_ERROR_TYPE;
 #endif
 		}
-		len = strlen(fmt) + 500;
-		s = mosquitto__malloc(len*sizeof(char));
-		if(!s) return MOSQ_ERR_NOMEM;
-
-		vsnprintf(s, len, fmt, va);
-		s[len-1] = '\0'; /* Ensure string is null terminated. */
-
-		if(log_timestamp && log_timestamp_format){
-			struct tm *ti = NULL;
-			get_time(&ti);
-			if(strftime(time_buf, sizeof(time_buf), log_timestamp_format, ti) == 0){
-				snprintf(time_buf, sizeof(time_buf), "Time error");
-			}
-		}
-		if(log_destinations & MQTT3_LOG_STDOUT){
-			if(log_timestamp){
-				if(log_timestamp_format){
-					fprintf(stdout, "%s: %s\n", time_buf, s);
-				}else{
-					fprintf(stdout, "%d: %s\n", (int)now, s);
+		if(log_timestamp){
+			if(log_timestamp_format){
+				struct tm *ti = NULL;
+				get_time(&ti);
+				log_line_pos = strftime(log_line, sizeof(log_line), log_timestamp_format, ti);
+				if(log_line_pos == 0){
+					log_line_pos = snprintf(log_line, sizeof(log_line), "Time error");
 				}
 			}else{
-				fprintf(stdout, "%s\n", s);
+				log_line_pos = snprintf(log_line, sizeof(log_line), "%d", (int)now);
 			}
+			if(log_line_pos < sizeof(log_line)-3){
+				log_line[log_line_pos] = ':';
+				log_line[log_line_pos+1] = ' ';
+				log_line[log_line_pos+2] = '\0';
+				log_line_pos += 2;
+			}
+		}else{
+			log_line_pos = 0;
+		}
+		vsnprintf(&log_line[log_line_pos], sizeof(log_line)-log_line_pos, fmt, va);
+		log_line[sizeof(log_line)-1] = '\0'; /* Ensure string is null terminated. */
+
+		if(log_destinations & MQTT3_LOG_STDOUT){
+			fprintf(stdout, "%s\n", log_line);
 		}
 		if(log_destinations & MQTT3_LOG_STDERR){
-			if(log_timestamp){
-				if(log_timestamp_format){
-					fprintf(stderr, "%s: %s\n", time_buf, s);
-				}else{
-					fprintf(stderr, "%d: %s\n", (int)now, s);
-				}
-			}else{
-				fprintf(stderr, "%s\n", s);
-			}
+			fprintf(stderr, "%s\n", log_line);
 		}
 		if(log_destinations & MQTT3_LOG_FILE && log_fptr){
-			if(log_timestamp){
-				if(log_timestamp_format){
-					fprintf(log_fptr, "%s: %s\n", time_buf, s);
-				}else{
-					fprintf(log_fptr, "%d: %s\n", (int)now, s);
-				}
-			}else{
-				fprintf(log_fptr, "%s\n", s);
-			}
+			fprintf(log_fptr, "%s\n", log_line);
 		}
 		if(log_destinations & MQTT3_LOG_SYSLOG){
 #ifndef WIN32
-			syslog(syslog_priority, "%s", s);
+			syslog(syslog_priority, "%s", log_line);
 #else
-			sp = (char *)s;
+			sp = (char *)log_line;
 			ReportEvent(syslog_h, syslog_priority, 0, 0, NULL, 1, 0, &sp, NULL);
 #endif
 		}
 		if(log_destinations & MQTT3_LOG_TOPIC && priority != MOSQ_LOG_DEBUG && priority != MOSQ_LOG_INTERNAL){
-			if(log_timestamp){
-				len += sizeof(time_buf);;
-				st = mosquitto__malloc(len*sizeof(char));
-				if(!st){
-					mosquitto__free(s);
-					return MOSQ_ERR_NOMEM;
-				}
-				if(log_timestamp_format){
-					snprintf(st, len, "%s: %s", time_buf, s);
-				}else{
-					snprintf(st, len, "%d: %s", (int)now, s);
-				}
-				db__messages_easy_queue(&int_db, NULL, topic, 2, (uint32_t)strlen(st), st, 0, 20, NULL);
-				mosquitto__free(st);
-			}else{
-				db__messages_easy_queue(&int_db, NULL, topic, 2, (uint32_t)strlen(s), s, 0, 20, NULL);
-			}
+			db__messages_easy_queue(&int_db, NULL, topic, 2, (uint32_t)strlen(log_line), log_line, 0, 20, NULL);
 		}
 #ifdef WITH_DLT
 		if(log_destinations & MQTT3_LOG_DLT && priority != MOSQ_LOG_INTERNAL){
-			DLT_LOG_STRING(dltContext, get_dlt_level(priority), s);
+			DLT_LOG_STRING(dltContext, get_dlt_level(priority), log_line);
 		}
 #endif
-		mosquitto__free(s);
 	}
 
 	return MOSQ_ERR_SUCCESS;

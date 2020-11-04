@@ -30,13 +30,13 @@ create_role_command = { "commands": [{
     "textName": "Name", "textDescription": "Description",
     "acls":[
         {
-            "aclType": "publishClientToBroker",
+            "aclType": "publishClientSend",
             "allow": True,
             "topic": "topic/#",
             "priority": 8
         },
         {
-            "aclType": "publishClientToBroker",
+            "aclType": "publishClientSend",
             "allow": True,
             "topic": "topic/2/#",
             "priority": 9
@@ -58,13 +58,13 @@ get_role_response1 = {'responses':[{'command': 'getRole', 'data': {'role': {'rol
     'textName': 'Name', 'textDescription': 'Description',
     'acls': [
         {
-            "aclType": "publishClientToBroker",
+            "aclType": "publishClientSend",
             "topic": "topic/2/#",
             "allow": True,
             "priority": 9
         },
         {
-            "aclType": "publishClientToBroker",
+            "aclType": "publishClientSend",
             "topic": "topic/#",
             "allow": True,
             "priority": 8
@@ -77,13 +77,13 @@ get_role_response2 = {'responses':[{'command': 'getRole', 'data': {'role': {'rol
     'textName': 'Modified name', 'textDescription': 'Modified description',
     'acls': [
         {
-            "aclType": "publishClientToBroker",
+            "aclType": "publishClientSend",
             "topic": "topic/2/#",
             "allow": True,
             "priority": 9
         },
         {
-            "aclType": "publishClientToBroker",
+            "aclType": "publishClientSend",
             "topic": "topic/#",
             "allow": True,
             "priority": 8
@@ -102,7 +102,7 @@ suback_packet = mosq_test.gen_suback(mid, 1)
 try:
     os.mkdir(str(port))
     with open("%d/dynamic-security.json" % port, 'w') as f:
-        f.write('{"defaultACLAction": {"publishClientToBroker":"allow", "publishBrokerToClient":"allow", "subscribe":"allow", "unsubscribe":"allow"}}')
+        f.write('{"defaultACLAction": {"publishClientSend":"allow", "publishClientReceive":"allow", "subscribe":"allow", "unsubscribe":"allow"}}')
 except FileExistsError:
     try:
         os.remove(f"{port}/dynamic-security.json")

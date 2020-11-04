@@ -335,7 +335,7 @@ int net__tls_server_ctx(struct mosquitto__listener *listener)
 
 	if(!listener->ssl_ctx){
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to create TLS context.");
-		return 1;
+		return MOSQ_ERR_TLS;
 	}
 
 	if(listener->tls_version == NULL){
@@ -355,7 +355,7 @@ int net__tls_server_ctx(struct mosquitto__listener *listener)
 #endif
 	}else{
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Unsupported tls_version \"%s\".", listener->tls_version);
-		return 1;
+		return MOSQ_ERR_TLS;
 	}
 
 #ifdef SSL_OP_NO_COMPRESSION
@@ -389,20 +389,20 @@ int net__tls_server_ctx(struct mosquitto__listener *listener)
 		rc = SSL_CTX_set_cipher_list(listener->ssl_ctx, listener->ciphers);
 		if(rc == 0){
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to set TLS ciphers. Check cipher list \"%s\".", listener->ciphers);
-			return 1;
+			return MOSQ_ERR_TLS;
 		}
 	}else{
 		rc = SSL_CTX_set_cipher_list(listener->ssl_ctx, "DEFAULT:!aNULL:!eNULL:!LOW:!EXPORT:!SSLv2:@STRENGTH");
 		if(rc == 0){
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to set TLS ciphers. Check cipher list \"%s\".", listener->ciphers);
-			return 1;
+			return MOSQ_ERR_TLS;
 		}
 	}
 	if(listener->dhparamfile){
 		dhparamfile = fopen(listener->dhparamfile, "r");
 		if(!dhparamfile){
 			log__printf(NULL, MOSQ_LOG_ERR, "Error loading dhparamfile \"%s\".", listener->dhparamfile);
-			return 1;
+			return MOSQ_ERR_TLS;
 		}
 		dhparam = PEM_read_DHparams(dhparamfile, NULL, NULL, NULL);
 		fclose(dhparamfile);
@@ -410,7 +410,7 @@ int net__tls_server_ctx(struct mosquitto__listener *listener)
 		if(dhparam == NULL || SSL_CTX_set_tmp_dh(listener->ssl_ctx, dhparam) != 1){
 			log__printf(NULL, MOSQ_LOG_ERR, "Error loading dhparamfile \"%s\".", listener->dhparamfile);
 			net__print_ssl_error(NULL);
-			return 1;
+			return MOSQ_ERR_TLS;
 		}
 	}
 	return MOSQ_ERR_SUCCESS;
@@ -429,7 +429,7 @@ int net__load_crl_file(struct mosquitto__listener *listener)
 	if(!store){
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to obtain TLS store.");
 		net__print_error(MOSQ_LOG_ERR, "Error: %s");
-		return 1;
+		return MOSQ_ERR_TLS;
 	}
 	lookup = X509_STORE_add_lookup(store, X509_LOOKUP_file());
 	rc = X509_load_crl_file(lookup, listener->crlfile, X509_FILETYPE_PEM);
@@ -437,7 +437,7 @@ int net__load_crl_file(struct mosquitto__listener *listener)
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to load certificate revocation file \"%s\". Check crlfile.", listener->crlfile);
 		net__print_error(MOSQ_LOG_ERR, "Error: %s");
 		net__print_ssl_error(NULL);
-		return 1;
+		return MOSQ_ERR_TLS;
 	}
 	X509_STORE_set_flags(store, X509_V_FLAG_CRL_CHECK);
 #endif
@@ -494,13 +494,13 @@ int net__tls_load_verify(struct mosquitto__listener *listener)
 		if(!engine){
 			log__printf(NULL, MOSQ_LOG_ERR, "Error loading %s engine\n", listener->tls_engine);
 			net__print_ssl_error(NULL);
-			return 1;
+			return MOSQ_ERR_TLS;
 		}
 		if(!ENGINE_init(engine)){
 			log__printf(NULL, MOSQ_LOG_ERR, "Failed engine initialisation\n");
 			net__print_ssl_error(NULL);
 			ENGINE_free(engine);
-			return 1;
+			return MOSQ_ERR_TLS;
 		}
 		ENGINE_set_default(engine, ENGINE_METHOD_ALL);
 		ENGINE_free(engine); /* release the structural reference from ENGINE_by_id() */
@@ -519,7 +519,7 @@ int net__tls_load_verify(struct mosquitto__listener *listener)
 #if !defined(OPENSSL_NO_ENGINE)
 		ENGINE_FINISH(engine);
 #endif
-		return 1;
+		return MOSQ_ERR_TLS;
 	}
 	if(listener->tls_engine && listener->tls_keyform == mosq_k_engine){
 #if !defined(OPENSSL_NO_ENGINE)
@@ -529,13 +529,13 @@ int net__tls_load_verify(struct mosquitto__listener *listener)
 				log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to set engine secret mode sha");
 				net__print_ssl_error(NULL);
 				ENGINE_FINISH(engine);
-				return 1;
+				return MOSQ_ERR_TLS;
 			}
 			if(!ENGINE_ctrl_cmd(engine, ENGINE_PIN, 0, listener->tls_engine_kpass_sha1, NULL, 0)){
 				log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to set engine pin");
 				net__print_ssl_error(NULL);
 				ENGINE_FINISH(engine);
-				return 1;
+				return MOSQ_ERR_TLS;
 			}
 			ui_method = NULL;
 		}
@@ -544,13 +544,13 @@ int net__tls_load_verify(struct mosquitto__listener *listener)
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to load engine private key file \"%s\".", listener->keyfile);
 			net__print_ssl_error(NULL);
 			ENGINE_FINISH(engine);
-			return 1;
+			return MOSQ_ERR_TLS;
 		}
 		if(SSL_CTX_use_PrivateKey(listener->ssl_ctx, pkey) <= 0){
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to use engine private key file \"%s\".", listener->keyfile);
 			net__print_ssl_error(NULL);
 			ENGINE_FINISH(engine);
-			return 1;
+			return MOSQ_ERR_TLS;
 		}
 #endif
 	}else{
@@ -561,7 +561,7 @@ int net__tls_load_verify(struct mosquitto__listener *listener)
 #if !defined(OPENSSL_NO_ENGINE)
 			ENGINE_FINISH(engine);
 #endif
-			return 1;
+			return MOSQ_ERR_TLS;
 		}
 	}
 	rc = SSL_CTX_check_private_key(listener->ssl_ctx);
@@ -571,7 +571,7 @@ int net__tls_load_verify(struct mosquitto__listener *listener)
 #if !defined(OPENSSL_NO_ENGINE)
 		ENGINE_FINISH(engine);
 #endif
-		return 1;
+		return MOSQ_ERR_TLS;
 	}
 	/* Load CRLs if they exist. */
 	if(listener->crlfile){

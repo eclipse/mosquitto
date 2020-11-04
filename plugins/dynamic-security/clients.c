@@ -49,6 +49,14 @@ static struct dynsec__client *local_clients = NULL;
  * #
  * ################################################################ */
 
+int dynsec_clientlist__cmp(void *a, void *b)
+{
+	struct dynsec__clientlist *clientlist_a = a;
+	struct dynsec__clientlist *clientlist_b = b;
+
+	return strcmp(clientlist_a->username, clientlist_b->username);
+}
+
 static int client_cmp(void *a, void *b)
 {
 	struct dynsec__client *client_a = a;
@@ -100,10 +108,11 @@ void dynsec_clients__cleanup(void)
 int dynsec_clients__config_load(cJSON *tree)
 {
 	cJSON *j_clients, *j_client, *jtmp, *j_roles, *j_role;
+	cJSON *j_salt, *j_password;
 	struct dynsec__client *client;
 	struct dynsec__role *role;
 	unsigned char *buf;
-	unsigned int buf_len;
+	int buf_len;
 	int priority;
 	int iterations;
 
@@ -138,6 +147,11 @@ int dynsec_clients__config_load(cJSON *tree)
 				continue;
 			}
 
+			jtmp = cJSON_GetObjectItem(j_client, "disabled");
+			if(jtmp && cJSON_IsBool(jtmp)){
+				client->disabled = cJSON_IsTrue(jtmp);
+			}
+
 			/* Hash iterations */
 			jtmp = cJSON_GetObjectItem(j_client, "iterations");
 			if(jtmp == NULL || !cJSON_IsNumber(jtmp)){
@@ -146,7 +160,7 @@ int dynsec_clients__config_load(cJSON *tree)
 				mosquitto_free(client);
 				continue;
 			}
-			iterations = jtmp->valuedouble;
+			iterations = (int)jtmp->valuedouble;
 			if(iterations < 1){
 				// FIXME log
 				mosquitto_free(client->username);
@@ -157,42 +171,37 @@ int dynsec_clients__config_load(cJSON *tree)
 			}
 
 			/* Salt */
-			jtmp = cJSON_GetObjectItem(j_client, "salt");
-			if(jtmp == NULL || !cJSON_IsString(jtmp)){
-				// FIXME log
-				mosquitto_free(client->username);
-				mosquitto_free(client);
-				continue;
-			}
-			if(dynsec_auth__base64_decode(jtmp->valuestring, &buf, &buf_len) != MOSQ_ERR_SUCCESS
-					|| buf_len != sizeof(client->pw.salt)){
+			j_salt = cJSON_GetObjectItem(j_client, "salt");
+			j_password = cJSON_GetObjectItem(j_client, "password");
 
-				// FIXME log
-				mosquitto_free(client->username);
-				mosquitto_free(client);
-				continue;
-			}
-			memcpy(client->pw.salt, buf, buf_len);
-			mosquitto_free(buf);
+			if(j_salt && cJSON_IsString(j_salt) 
+					&& j_password && cJSON_IsString(j_password)){
 
-			/* Password */
-			jtmp = cJSON_GetObjectItem(j_client, "password");
-			if(jtmp == NULL || !cJSON_IsString(jtmp)){
-				// FIXME log
-				mosquitto_free(client->username);
-				mosquitto_free(client);
-				continue;
-			}
-			if(dynsec_auth__base64_decode(jtmp->valuestring, &buf, &buf_len) != MOSQ_ERR_SUCCESS
-					|| buf_len != sizeof(client->pw.password_hash)){
+				if(dynsec_auth__base64_decode(j_salt->valuestring, &buf, &buf_len) != MOSQ_ERR_SUCCESS
+						|| buf_len != sizeof(client->pw.salt)){
 
-				// FIXME log
-				mosquitto_free(client->username);
-				mosquitto_free(client);
-				continue;
+					// FIXME log
+					mosquitto_free(client->username);
+					mosquitto_free(client);
+					continue;
+				}
+				memcpy(client->pw.salt, buf, (size_t)buf_len);
+				mosquitto_free(buf);
+
+				if(dynsec_auth__base64_decode(j_password->valuestring, &buf, &buf_len) != MOSQ_ERR_SUCCESS
+						|| buf_len != sizeof(client->pw.password_hash)){
+
+					// FIXME log
+					mosquitto_free(client->username);
+					mosquitto_free(client);
+					continue;
+				}
+				memcpy(client->pw.password_hash, buf, (size_t)buf_len);
+				mosquitto_free(buf);
+				client->pw.valid = true;
+			}else{
+				client->pw.valid = false;
 			}
-			memcpy(client->pw.password_hash, buf, buf_len);
-			mosquitto_free(buf);
 
 			/* Client id */
 			jtmp = cJSON_GetObjectItem(j_client, "clientid");
@@ -242,7 +251,7 @@ int dynsec_clients__config_load(cJSON *tree)
 						if(jtmp && cJSON_IsString(jtmp)){
 							json_get_int(j_role, "priority", &priority, true, -1);
 							role = dynsec_roles__find(jtmp->valuestring);
-							dynsec_rolelists__add_role(&client->rolelist, role, priority);
+							dynsec_rolelists__client_add_role(client, role, priority);
 						}
 					}
 				}
@@ -262,7 +271,6 @@ static int dynsec__config_add_clients(cJSON *j_clients)
 	struct dynsec__client *client, *client_tmp;
 	cJSON *j_client, *j_roles, *jtmp;
 	char *buf;
-	char s_iterations[10];
 
 	HASH_ITER(hh, local_clients, client, client_tmp){
 		j_client = cJSON_CreateObject();
@@ -273,6 +281,7 @@ static int dynsec__config_add_clients(cJSON *j_clients)
 				|| (client->clientid && cJSON_AddStringToObject(j_client, "clientid", client->clientid) == NULL)
 				|| (client->text_name && cJSON_AddStringToObject(j_client, "textname", client->text_name) == NULL)
 				|| (client->text_description && cJSON_AddStringToObject(j_client, "textdescription", client->text_description) == NULL)
+				|| (client->disabled && cJSON_AddBoolToObject(j_client, "disabled", true) == NULL)
 				){
 
 			return 1;
@@ -284,26 +293,27 @@ static int dynsec__config_add_clients(cJSON *j_clients)
 		}
 		cJSON_AddItemToObject(j_client, "roles", j_roles);
 
-		if(dynsec_auth__base64_encode(client->pw.password_hash, sizeof(client->pw.password_hash), &buf) != MOSQ_ERR_SUCCESS){
-			return 1;
-		}
-		jtmp = cJSON_CreateString(buf);
-		mosquitto_free(buf);
-		if(jtmp == NULL) return 1;
-		cJSON_AddItemToObject(j_client, "password", jtmp);
+		if(client->pw.valid){
+			if(dynsec_auth__base64_encode(client->pw.password_hash, sizeof(client->pw.password_hash), &buf) != MOSQ_ERR_SUCCESS){
+				return 1;
+			}
+			jtmp = cJSON_CreateString(buf);
+			mosquitto_free(buf);
+			if(jtmp == NULL) return 1;
+			cJSON_AddItemToObject(j_client, "password", jtmp);
 
-		if(dynsec_auth__base64_encode(client->pw.salt, sizeof(client->pw.salt), &buf) != MOSQ_ERR_SUCCESS){
-			return 1;
-		}
+			if(dynsec_auth__base64_encode(client->pw.salt, sizeof(client->pw.salt), &buf) != MOSQ_ERR_SUCCESS){
+				return 1;
+			}
 
-		jtmp = cJSON_CreateString(buf);
-		mosquitto_free(buf);
-		if(jtmp == NULL) return 1;
-		cJSON_AddItemToObject(j_client, "salt", jtmp);
+			jtmp = cJSON_CreateString(buf);
+			mosquitto_free(buf);
+			if(jtmp == NULL) return 1;
+			cJSON_AddItemToObject(j_client, "salt", jtmp);
 
-		snprintf(s_iterations, sizeof(s_iterations), "%d", client->pw.iterations);
-		if(cJSON_AddRawToObject(j_client, "iterations", s_iterations) == NULL){
-			return 1;
+			if(cJSON_AddIntToObject(j_client, "iterations", client->pw.iterations) == NULL){
+				return 1;
+			}
 		}
 	}
 
@@ -343,7 +353,7 @@ int dynsec_clients__process_create(cJSON *j_responses, struct mosquitto *context
 		return MOSQ_ERR_INVAL;
 	}
 
-	if(json_get_string(command, "password", &password, false) != MOSQ_ERR_SUCCESS){
+	if(json_get_string(command, "password", &password, true) != MOSQ_ERR_SUCCESS){
 		dynsec__command_reply(j_responses, context, "createClient", "Invalid/missing password", correlation_data);
 		return MOSQ_ERR_INVAL;
 	}
@@ -397,10 +407,13 @@ int dynsec_clients__process_create(cJSON *j_responses, struct mosquitto *context
 		}
 	}
 
-	if(dynsec_auth__pw_hash(client, password, client->pw.password_hash, sizeof(client->pw.password_hash), true)){
-		dynsec__command_reply(j_responses, context, "createClient", "Internal error", correlation_data);
-		client__free_item(client);
-		return MOSQ_ERR_NOMEM;
+	if(password){
+		if(dynsec_auth__pw_hash(client, password, client->pw.password_hash, sizeof(client->pw.password_hash), true)){
+			dynsec__command_reply(j_responses, context, "createClient", "Internal error", correlation_data);
+			client__free_item(client);
+			return MOSQ_ERR_NOMEM;
+		}
+		client->pw.valid = true;
 	}
 	if(clientid){
 		client->clientid = mosquitto_strdup(clientid);
@@ -461,11 +474,64 @@ int dynsec_clients__process_delete(cJSON *j_responses, struct mosquitto *context
 		client__free_item(client);
 		dynsec__config_save();
 		dynsec__command_reply(j_responses, context, "deleteClient", NULL, correlation_data);
+
+		/* Enforce any changes */
+		mosquitto_kick_client_by_username(username, false);
+
 		return MOSQ_ERR_SUCCESS;
 	}else{
 		dynsec__command_reply(j_responses, context, "deleteClient", "Client not found", correlation_data);
 		return MOSQ_ERR_SUCCESS;
 	}
+}
+
+int dynsec_clients__process_disable(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data)
+{
+	char *username;
+	struct dynsec__client *client;
+
+	if(json_get_string(command, "username", &username, false) != MOSQ_ERR_SUCCESS){
+		dynsec__command_reply(j_responses, context, "disableClient", "Invalid/missing username", correlation_data);
+		return MOSQ_ERR_INVAL;
+	}
+
+	client = dynsec_clients__find(username);
+	if(client == NULL){
+		dynsec__command_reply(j_responses, context, "disableClient", "Client not found", correlation_data);
+		return MOSQ_ERR_SUCCESS;
+	}
+
+	client->disabled = true;
+
+	mosquitto_kick_client_by_username(username, false);
+
+	dynsec__config_save();
+	dynsec__command_reply(j_responses, context, "disableClient", NULL, correlation_data);
+	return MOSQ_ERR_SUCCESS;
+}
+
+
+int dynsec_clients__process_enable(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data)
+{
+	char *username;
+	struct dynsec__client *client;
+
+	if(json_get_string(command, "username", &username, false) != MOSQ_ERR_SUCCESS){
+		dynsec__command_reply(j_responses, context, "enableClient", "Invalid/missing username", correlation_data);
+		return MOSQ_ERR_INVAL;
+	}
+
+	client = dynsec_clients__find(username);
+	if(client == NULL){
+		dynsec__command_reply(j_responses, context, "enableClient", "Client not found", correlation_data);
+		return MOSQ_ERR_SUCCESS;
+	}
+
+	client->disabled = false;
+
+	dynsec__config_save();
+	dynsec__command_reply(j_responses, context, "enableClient", NULL, correlation_data);
+	return MOSQ_ERR_SUCCESS;
 }
 
 
@@ -491,10 +557,12 @@ int dynsec_clients__process_set_password(cJSON *j_responses, struct mosquitto *c
 	}
 
 	if(dynsec_auth__pw_hash(client, password, client->pw.password_hash, sizeof(client->pw.password_hash), true) == MOSQ_ERR_SUCCESS){
+		client->pw.valid = true;
 		dynsec__config_save();
 		dynsec__command_reply(j_responses, context, "setClientPassword", NULL, correlation_data);
 		return MOSQ_ERR_SUCCESS;
 	}else{
+		client->pw.valid = false;
 		dynsec__command_reply(j_responses, context, "setClientPassword", "Internal error", correlation_data);
 		// FIXME - this should fail safe without modifying the existing password
 		return MOSQ_ERR_NOMEM;
@@ -502,6 +570,23 @@ int dynsec_clients__process_set_password(cJSON *j_responses, struct mosquitto *c
 }
 
 
+static void client__add_new_roles(struct dynsec__client *client, struct dynsec__rolelist *base_rolelist)
+{
+	struct dynsec__rolelist *rolelist, *rolelist_tmp;
+
+	HASH_ITER(hh, base_rolelist, rolelist, rolelist_tmp){
+		dynsec_rolelists__client_add_role(client, rolelist->role, rolelist->priority);
+	}
+}
+
+static void client__remove_all_roles(struct dynsec__client *client)
+{
+	struct dynsec__rolelist *rolelist, *rolelist_tmp;
+
+	HASH_ITER(hh, client->rolelist, rolelist, rolelist_tmp){
+		dynsec_rolelists__client_remove_role(client, rolelist->role);
+	}
+}
 
 int dynsec_clients__process_modify(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data)
 {
@@ -547,8 +632,9 @@ int dynsec_clients__process_modify(cJSON *j_responses, struct mosquitto *context
 
 	rc = dynsec_rolelists__load_from_json(command, &rolelist);
 	if(rc == MOSQ_ERR_SUCCESS){
-		dynsec_rolelists__free_all(&client->rolelist);
-		client->rolelist = rolelist;
+		client__remove_all_roles(client);
+		client__add_new_roles(client, rolelist);
+		dynsec_rolelists__free_all(&rolelist);
 	}else if(rc == MOSQ_ERR_NOT_FOUND){
 		dynsec__command_reply(j_responses, context, "modifyClient", "Role not found", correlation_data);
 		dynsec_rolelists__free_all(&rolelist);
@@ -578,6 +664,10 @@ int dynsec_clients__process_modify(cJSON *j_responses, struct mosquitto *context
 
 	dynsec__config_save();
 	dynsec__command_reply(j_responses, context, "modifyClient", NULL, correlation_data);
+
+	/* Enforce any changes */
+	mosquitto_kick_client_by_username(username, false);
+
 	return MOSQ_ERR_SUCCESS;
 }
 
@@ -612,7 +702,7 @@ static cJSON *add_client_to_json(struct dynsec__client *client, bool verbose)
 				|| (client->clientid && cJSON_AddStringToObject(j_client, "clientid", client->clientid) == NULL)
 				|| (client->text_name && cJSON_AddStringToObject(j_client, "textname", client->text_name) == NULL)
 				|| (client->text_description && cJSON_AddStringToObject(j_client, "textdescription", client->text_description) == NULL)
-				|| (j_groups = cJSON_AddArrayToObject(j_client, "groups")) == NULL
+				|| (client->disabled && cJSON_AddBoolToObject(j_client, "disabled", client->disabled) == NULL)
 				){
 
 			cJSON_Delete(j_client);
@@ -711,7 +801,6 @@ int dynsec_clients__process_list(cJSON *j_responses, struct mosquitto *context, 
 	struct dynsec__client *client, *client_tmp;
 	cJSON *tree, *j_clients, *j_client, *jtmp, *j_data;
 	int i, count, offset;
-	char buf[30];
 
 	json_get_bool(command, "verbose", &verbose, true, false);
 	json_get_int(command, "count", &count, true, -1);
@@ -739,8 +828,7 @@ int dynsec_clients__process_list(cJSON *j_responses, struct mosquitto *context, 
 	}
 	cJSON_AddItemToObject(tree, "data", j_data);
 
-	snprintf(buf, sizeof(buf), "%d", HASH_CNT(hh, local_clients));
-	cJSON_AddRawToObject(j_data, "totalCount", buf);
+	cJSON_AddIntToObject(j_data, "totalCount", (int)HASH_CNT(hh, local_clients));
 
 	j_clients = cJSON_CreateArray();
 	if(j_clients == NULL){
@@ -786,16 +874,6 @@ int dynsec_clients__process_list(cJSON *j_responses, struct mosquitto *context, 
 }
 
 
-void dynsec_clients__remove_role_from_all(const struct dynsec__role *role)
-{
-	struct dynsec__client *client, *client_tmp;
-
-	HASH_ITER(hh, local_clients, client, client_tmp){
-		dynsec_rolelists__remove_role(&client->rolelist, role);
-	}
-}
-
-
 int dynsec_clients__process_add_role(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data)
 {
 	char *username, *role_name;
@@ -826,9 +904,13 @@ int dynsec_clients__process_add_role(cJSON *j_responses, struct mosquitto *conte
 		return MOSQ_ERR_SUCCESS;
 	}
 
-	dynsec_rolelists__add_role(&client->rolelist, role, priority);
+	dynsec_rolelists__client_add_role(client, role, priority);
 	dynsec__config_save();
 	dynsec__command_reply(j_responses, context, "addClientRole", NULL, correlation_data);
+
+	/* Enforce any changes */
+	mosquitto_kick_client_by_username(username, false);
+
 	return MOSQ_ERR_SUCCESS;
 }
 
@@ -861,8 +943,12 @@ int dynsec_clients__process_remove_role(cJSON *j_responses, struct mosquitto *co
 		return MOSQ_ERR_SUCCESS;
 	}
 
-	dynsec_rolelists__remove_role(&client->rolelist, role);
+	dynsec_rolelists__client_remove_role(client, role);
 	dynsec__config_save();
 	dynsec__command_reply(j_responses, context, "removeClientRole", NULL, correlation_data);
+
+	/* Enforce any changes */
+	mosquitto_kick_client_by_username(username, false);
+
 	return MOSQ_ERR_SUCCESS;
 }

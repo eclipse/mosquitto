@@ -32,10 +32,12 @@ Contributors:
  * #
  * ################################################################ */
 
-int dynsec_auth__base64_encode(unsigned char *in, unsigned int in_len, char **encoded)
+int dynsec_auth__base64_encode(unsigned char *in, int in_len, char **encoded)
 {
 	BIO *bmem, *b64;
 	BUF_MEM *bptr;
+
+	if(in_len < 0) return 1;
 
 	b64 = BIO_new(BIO_f_base64());
 	BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
@@ -60,10 +62,10 @@ int dynsec_auth__base64_encode(unsigned char *in, unsigned int in_len, char **en
 }
 
 
-int dynsec_auth__base64_decode(char *in, unsigned char **decoded, unsigned int *decoded_len)
+int dynsec_auth__base64_decode(char *in, unsigned char **decoded, int *decoded_len)
 {
 	BIO *bmem, *b64;
-	int slen;
+	size_t slen;
 
 	slen = strlen(in);
 
@@ -79,7 +81,7 @@ int dynsec_auth__base64_decode(char *in, unsigned char **decoded, unsigned int *
 		return 1;
 	}
 	b64 = BIO_push(b64, bmem);
-	BIO_write(bmem, in, slen);
+	BIO_write(bmem, in, (int)slen);
 
 	if(BIO_flush(bmem) != 1){
 		BIO_free_all(b64);
@@ -90,7 +92,7 @@ int dynsec_auth__base64_decode(char *in, unsigned char **decoded, unsigned int *
 		BIO_free_all(b64);
 		return 1;
 	}
-	*decoded_len =  BIO_read(b64, *decoded, slen);
+	*decoded_len =  BIO_read(b64, *decoded, (int)slen);
 	BIO_free_all(b64);
 
 	if(*decoded_len <= 0){
@@ -133,7 +135,7 @@ int dynsec_auth__pw_hash(struct dynsec__client *client, const char *password, un
 		return MOSQ_ERR_UNKNOWN;
 	}
 
-	return !PKCS5_PBKDF2_HMAC(password, strlen(password),
+	return !PKCS5_PBKDF2_HMAC(password, (int)strlen(password),
 			client->pw.salt, sizeof(client->pw.salt), iterations,
 			digest, password_hash_len, password_hash);
 }
@@ -172,13 +174,16 @@ int dynsec_auth__basic_auth_callback(int event, void *event_data, void *userdata
 
 	client = dynsec_clients__find(ed->username);
 	if(client){
+		if(client->disabled){
+			return MOSQ_ERR_AUTH;
+		}
 		if(client->clientid){
 			clientid = mosquitto_client_id(ed->client);
 			if(clientid == NULL || strcmp(client->clientid, clientid)){
 				return MOSQ_ERR_AUTH;
 			}
 		}
-		if(dynsec_auth__pw_hash(client, ed->password, password_hash, sizeof(password_hash), false) == MOSQ_ERR_SUCCESS){
+		if(client->pw.valid && dynsec_auth__pw_hash(client, ed->password, password_hash, sizeof(password_hash), false) == MOSQ_ERR_SUCCESS){
 			if(memcmp_const(client->pw.password_hash, password_hash, sizeof(password_hash)) == 0){
 				return MOSQ_ERR_SUCCESS;
 			}else{

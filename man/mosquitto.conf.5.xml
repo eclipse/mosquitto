@@ -1377,13 +1377,15 @@ openssl dhparam -out dhparam.pem 2048</programlisting>
 				<varlistentry>
 					<term><option>tls_version</option> <replaceable>version</replaceable></term>
 					<listitem>
-						<para>Configure the version of the TLS protocol to be
+						<para>Configure the minimum version of the TLS protocol to be
 							used for this listener. Possible values are
 							<replaceable>tlsv1.3</replaceable>,
 							<replaceable>tlsv1.2</replaceable> and
 							<replaceable>tlsv1.1</replaceable>. If left unset,
-							the default of allowing all of TLS v1.3, v1.2 and
-							v1.1 is used.</para>
+							the default of allowing TLS v1.3 and v1.2.</para>
+						<para>In Mosquitto version 1.6.x and earlier, this
+							option set the only TLS protocol version that
+							was allowed, rather than the minimum.</para>
 					</listitem>
 				</varlistentry>
 				<varlistentry>
@@ -1460,13 +1462,15 @@ openssl dhparam -out dhparam.pem 2048</programlisting>
 				<varlistentry>
 					<term><option>tls_version</option> <replaceable>version</replaceable></term>
 					<listitem>
-						<para>Configure the version of the TLS protocol to be
+						<para>Configure the minimum version of the TLS protocol to be
 							used for this listener. Possible values are
 							<replaceable>tlsv1.3</replaceable>,
 							<replaceable>tlsv1.2</replaceable> and
 							<replaceable>tlsv1.1</replaceable>. If left unset,
-							the default of allowing all of TLS v1.3, v1.2 and
-							v1.1 is used.</para>
+							the default of allowing TLS v1.3 and v1.2.</para>
+						<para>In Mosquitto version 1.6.x and earlier, this
+							option set the only TLS protocol version that
+							was allowed, rather than the minimum.</para>
 					</listitem>
 				</varlistentry>
 				<varlistentry>
@@ -1519,6 +1523,17 @@ openssl dhparam -out dhparam.pem 2048</programlisting>
 						<replaceable>false</replaceable> will disable sending
 						the unsubscribe request. Defaults to
 						<replaceable>true</replaceable>.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>bridge_bind_address</option> <replaceable>ip address</replaceable></term>
+				<listitem>
+					<para>
+						If you need to have the bridge connect over a particular
+						network interface, use bridge_bind_address to tell the
+						bridge which local IP address the socket should bind to,
+						e.g. <option>bridge_bind_address 192.168.1.10</option>.
+					</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>

@@ -65,14 +65,14 @@ int plugin__load_v5(struct mosquitto__listener *listener, struct mosquitto__auth
 				"Error: Unable to load plugin function mosquitto_plugin_init().");
 		LIB_ERROR();
 		LIB_CLOSE(lib);
-		return 1;
+		return MOSQ_ERR_UNKNOWN;
 	}
 	if(!(plugin->plugin_cleanup_v5 = (FUNC_plugin_cleanup_v5)LIB_SYM(lib, "mosquitto_plugin_cleanup"))){
 		log__printf(NULL, MOSQ_LOG_ERR,
 				"Error: Unable to load plugin function mosquitto_plugin_cleanup().");
 		LIB_ERROR();
 		LIB_CLOSE(lib);
-		return 1;
+		return MOSQ_ERR_UNKNOWN;
 	}
 
 	pid = mosquitto__calloc(1, sizeof(mosquitto_plugin_id_t));
@@ -168,7 +168,7 @@ void plugin__handle_tick(struct mosquitto_db *db)
 		opts = &db->config->security_options;
 		memset(&event_data, 0, sizeof(event_data));
 
-		DL_FOREACH(opts->plugin_callbacks.message, cb_base){
+		DL_FOREACH(opts->plugin_callbacks.tick, cb_base){
 			cb_base->cb(MOSQ_EVT_TICK, &event_data, cb_base->userdata);
 		}
 	}

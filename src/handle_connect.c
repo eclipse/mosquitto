@@ -414,7 +414,7 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 	 * because the length is fixed and we can check that. Removes the need
 	 * for another malloc as well. */
 	if(packet__read_uint16(&context->in_packet, &slen)){
-		rc = 1;
+		rc = MOSQ_ERR_PROTOCOL;
 		goto handle_connect_error;
 	}
 	if(slen != 4 /* MQTT */ && slen != 6 /* MQIsdp */){
@@ -428,7 +428,7 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 	protocol_name[slen] = '\0';
 
 	if(packet__read_byte(&context->in_packet, &protocol_version)){
-		rc = 1;
+		rc = MOSQ_ERR_PROTOCOL;
 		goto handle_connect_error;
 	}
 	if(!strcmp(protocol_name, PROTOCOL_NAME_v31)){
@@ -478,7 +478,7 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 	}
 
 	if(packet__read_byte(&context->in_packet, &connect_flags)){
-		rc = 1;
+		rc = MOSQ_ERR_PROTOCOL;
 		goto handle_connect_error;
 	}
 	if(context->protocol == mosq_p_mqtt311 || context->protocol == mosq_p_mqtt5){
@@ -512,12 +512,12 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 		if(protocol_version == mosq_p_mqtt5){
 			send__connack(db, context, 0, MQTT_RC_RETAIN_NOT_SUPPORTED, NULL);
 		}
-		rc = 1;
+		rc = MOSQ_ERR_NOT_SUPPORTED;
 		goto handle_connect_error;
 	}
 
 	if(packet__read_uint16(&context->in_packet, &(context->keepalive))){
-		rc = 1;
+		rc = MOSQ_ERR_PROTOCOL;
 		goto handle_connect_error;
 	}
 
@@ -534,7 +534,7 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 	mosquitto_property_free_all(&properties); /* FIXME - TEMPORARY UNTIL PROPERTIES PROCESSED */
 
 	if(packet__read_string(&context->in_packet, &client_id, &slen)){
-		rc = 1;
+		rc = MOSQ_ERR_PROTOCOL;
 		goto handle_connect_error;
 	}
 
@@ -583,7 +583,7 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 			}else{
 				send__connack(db, context, 0, CONNACK_REFUSED_NOT_AUTHORIZED, NULL);
 			}
-			rc = 1;
+			rc = MOSQ_ERR_AUTH;
 			goto handle_connect_error;
 		}
 	}
@@ -665,7 +665,7 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 			}else{
 				send__connack(db, context, 0, CONNACK_REFUSED_BAD_USERNAME_PASSWORD, NULL);
 			}
-			rc = 1;
+			rc = MOSQ_ERR_AUTH;
 			goto handle_connect_error;
 		}
 #ifdef FINAL_WITH_TLS_PSK
@@ -677,7 +677,7 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 				}else{
 					send__connack(db, context, 0, CONNACK_REFUSED_BAD_USERNAME_PASSWORD, NULL);
 				}
-				rc = 1;
+				rc = MOSQ_ERR_AUTH;
 				goto handle_connect_error;
 			}
 		}else{
@@ -689,7 +689,7 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 				}else{
 					send__connack(db, context, 0, CONNACK_REFUSED_BAD_USERNAME_PASSWORD, NULL);
 				}
-				rc = 1;
+				rc = MOSQ_ERR_AUTH;
 				goto handle_connect_error;
 			}
 			name = X509_get_subject_name(client_cert);
@@ -699,7 +699,7 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 				}else{
 					send__connack(db, context, 0, CONNACK_REFUSED_BAD_USERNAME_PASSWORD, NULL);
 				}
-				rc = 1;
+				rc = MOSQ_ERR_AUTH;
 				goto handle_connect_error;
 			}
 			if (context->listener->use_identity_as_username) { /* use_identity_as_username */
@@ -710,7 +710,7 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 					}else{
 						send__connack(db, context, 0, CONNACK_REFUSED_BAD_USERNAME_PASSWORD, NULL);
 					}
-					rc = 1;
+					rc = MOSQ_ERR_AUTH;
 					goto handle_connect_error;
 				}
 				name_entry = X509_NAME_get_entry(name, i);
@@ -722,7 +722,7 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 						}else{
 							send__connack(db, context, 0, CONNACK_REFUSED_BAD_USERNAME_PASSWORD, NULL);
 						}
-						rc = 1;
+						rc = MOSQ_ERR_AUTH;
 						goto handle_connect_error;
 					}
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
@@ -746,7 +746,7 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 						}else{
 							send__connack(db, context, 0, CONNACK_REFUSED_BAD_USERNAME_PASSWORD, NULL);
 						}
-						rc = 1;
+						rc = MOSQ_ERR_AUTH;
 						goto handle_connect_error;
 					}
 				}
@@ -767,7 +767,7 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 				context->username = subject;
 			}
 			if(!context->username){
-				rc = 1;
+				rc = MOSQ_ERR_AUTH;
 				goto handle_connect_error;
 			}
 			X509_free(client_cert);
@@ -800,7 +800,7 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 			}else{
 				send__connack(db, context, 0, CONNACK_REFUSED_NOT_AUTHORIZED, NULL);
 			}
-			rc = 1;
+			rc = MOSQ_ERR_AUTH;
 			goto handle_connect_error;
 		}
 	}
@@ -862,12 +862,11 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 						send__connack(db, context, 0, CONNACK_REFUSED_NOT_AUTHORIZED, NULL);
 					}
 					context__disconnect(db, context);
-					rc = 1;
+					rc = MOSQ_ERR_AUTH;
 					goto handle_connect_error;
 					break;
 				default:
 					context__disconnect(db, context);
-					rc = 1;
 					goto handle_connect_error;
 					break;
 			}

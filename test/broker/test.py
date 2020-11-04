@@ -73,6 +73,7 @@ tests = [
     (1, './03-publish-dollar.py'),
     (1, './03-publish-invalid-utf8.py'),
     (1, './03-publish-long-topic.py'),
+    (1, './03-publish-qos1-max-inflight-expire.py'),
     (1, './03-publish-qos1-max-inflight.py'),
     (1, './03-publish-qos1-no-subscribers-v5.py'),
     (1, './03-publish-qos1-retain-disabled.py'),

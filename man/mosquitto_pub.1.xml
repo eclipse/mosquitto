@@ -454,13 +454,21 @@
 				<term><option>-r</option></term>
 				<term><option>--retain</option></term>
 				<listitem>
-					<para>If retain is given, the message will be retained as a "last known good" value on the broker. See <citerefentry><refentrytitle>mqtt</refentrytitle><manvolnum>7</manvolnum></citerefentry> for more information.</para>
+					<para>
+						If retain is given, the message will be retained as a
+						"last known good" value on the broker. See 
+						<citerefentry><refentrytitle>mqtt</refentrytitle><manvolnum>7</manvolnum></citerefentry>
+						for more information. Note that zero length payloads
+						are never retained. If you send a zero length
+						payload retained message it will clear any retained
+						message on the topic.
+					</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
 				<term><option>--repeat</option></term>
 				<listitem>
-                    <para>If the publish mode is<option>-m</option>,
+					<para>If the publish mode is<option>-m</option>,
 						<option>-f</option>, or <option>-s</option> (i.e. the modes
 						where only a single message is sent), then
 						<option>--repeat</option> can be used to specify that the
@@ -604,8 +612,12 @@
 				<term><option>--will-retain</option></term>
 				<listitem>
 					<para>If given, if the client disconnects unexpectedly the
-					message sent out will be treated as a retained message.
-					This must be used in conjunction with <option>--will-topic</option>.</para>
+						message sent out will be treated as a retained message.
+						This must be used in conjunction with <option>--will-topic</option>.
+						Note that zero length payloads are never retained. If you send a zero length
+						payload retained message it will clear any retained
+						message on the topic.
+					</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
