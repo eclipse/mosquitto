@@ -54,6 +54,8 @@ struct msg_store_chunk
 	uint32_t length;
 };
 
+struct mosquitto_db db;
+
 extern uint32_t db_version;
 static int stats = 0;
 static int client_stats = 0;
@@ -101,7 +103,7 @@ static void free__msg_store(struct P_msg_store *chunk)
 }
 
 
-static int dump__cfg_chunk_process(struct mosquitto_db *db, FILE *db_fd, uint32_t length)
+static int dump__cfg_chunk_process(FILE *db_fd, uint32_t length)
 {
 	struct PF_cfg chunk;
 	int rc;
@@ -137,7 +139,7 @@ static int dump__cfg_chunk_process(struct mosquitto_db *db, FILE *db_fd, uint32_
 }
 
 
-static int dump__client_chunk_process(struct mosquitto_db *db, FILE *db_fd, uint32_t length)
+static int dump__client_chunk_process(FILE *db_fd, uint32_t length)
 {
 	struct P_client chunk;
 	int rc = 0;
@@ -179,7 +181,7 @@ static int dump__client_chunk_process(struct mosquitto_db *db, FILE *db_fd, uint
 }
 
 
-static int dump__client_msg_chunk_process(struct mosquitto_db *db, FILE *db_fd, uint32_t length)
+static int dump__client_msg_chunk_process(FILE *db_fd, uint32_t length)
 {
 	struct P_client_msg chunk;
 	struct client_data *cc;
@@ -221,7 +223,7 @@ static int dump__client_msg_chunk_process(struct mosquitto_db *db, FILE *db_fd, 
 }
 
 
-static int dump__msg_store_chunk_process(struct mosquitto_db *db, FILE *db_fptr, uint32_t length)
+static int dump__msg_store_chunk_process(FILE *db_fptr, uint32_t length)
 {
 	struct P_msg_store chunk;
 	struct mosquitto_msg_store *stored = NULL;
@@ -276,7 +278,7 @@ static int dump__msg_store_chunk_process(struct mosquitto_db *db, FILE *db_fptr,
 	UHPA_MOVE(stored->payload, chunk.payload, chunk.F.payloadlen);
 	stored->properties = chunk.properties;
 
-	rc = db__message_store(db, &chunk.source, stored, message_expiry_interval,
+	rc = db__message_store(&chunk.source, stored, message_expiry_interval,
 			chunk.F.store_id, mosq_mo_client);
 
 	mosquitto__free(chunk.source.id);
@@ -292,7 +294,7 @@ static int dump__msg_store_chunk_process(struct mosquitto_db *db, FILE *db_fptr,
 		load->store = stored;
 		*/
 
-		HASH_ADD(hh, db->msg_store_load, db_id, sizeof(dbid_t), load);
+		HASH_ADD(hh, db.msg_store_load, db_id, sizeof(dbid_t), load);
 	}else{
 		mosquitto__free(load);
 		fclose(db_fptr);
@@ -319,7 +321,7 @@ static int dump__msg_store_chunk_process(struct mosquitto_db *db, FILE *db_fptr,
 }
 
 
-static int dump__retain_chunk_process(struct mosquitto_db *db, FILE *db_fd, uint32_t length)
+static int dump__retain_chunk_process(FILE *db_fd, uint32_t length)
 {
 	struct P_retain chunk;
 	int rc;
@@ -343,7 +345,7 @@ static int dump__retain_chunk_process(struct mosquitto_db *db, FILE *db_fd, uint
 }
 
 
-static int dump__sub_chunk_process(struct mosquitto_db *db, FILE *db_fd, uint32_t length)
+static int dump__sub_chunk_process(FILE *db_fd, uint32_t length)
 {
 	int rc = 0;
 	struct P_sub chunk;
@@ -389,7 +391,6 @@ int main(int argc, char *argv[])
 	uint32_t i32temp;
 	uint32_t length;
 	uint32_t chunk;
-	struct mosquitto_db db;
 	char *filename;
 	struct client_data *cc, *cc_tmp;
 
@@ -430,27 +431,27 @@ int main(int argc, char *argv[])
 		while(persist__chunk_header_read(fd, &chunk, &length) == MOSQ_ERR_SUCCESS){
 			switch(chunk){
 				case DB_CHUNK_CFG:
-					if(dump__cfg_chunk_process(&db, fd, length)) return 1;
+					if(dump__cfg_chunk_process(fd, length)) return 1;
 					break;
 
 				case DB_CHUNK_MSG_STORE:
-					if(dump__msg_store_chunk_process(&db, fd, length)) return 1;
+					if(dump__msg_store_chunk_process(fd, length)) return 1;
 					break;
 
 				case DB_CHUNK_CLIENT_MSG:
-					if(dump__client_msg_chunk_process(&db, fd, length)) return 1;
+					if(dump__client_msg_chunk_process(fd, length)) return 1;
 					break;
 
 				case DB_CHUNK_RETAIN:
-					if(dump__retain_chunk_process(&db, fd, length)) return 1;
+					if(dump__retain_chunk_process(fd, length)) return 1;
 					break;
 
 				case DB_CHUNK_SUB:
-					if(dump__sub_chunk_process(&db, fd, length)) return 1;
+					if(dump__sub_chunk_process(fd, length)) return 1;
 					break;
 
 				case DB_CHUNK_CLIENT:
-					if(dump__client_chunk_process(&db, fd, length)) return 1;
+					if(dump__client_chunk_process(fd, length)) return 1;
 					break;
 
 				default:

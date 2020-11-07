@@ -33,8 +33,6 @@ Contributors:
 #include "misc_mosq.h"
 #include "util_mosq.h"
 
-extern struct mosquitto_db int_db;
-
 #ifdef WIN32
 HANDLE syslog_h;
 #endif
@@ -83,26 +81,9 @@ void dlt_fifo_check(void)
 
 static int get_time(struct tm **ti)
 {
-#if defined(__APPLE__)
-	struct timeval tv;
-#else
-	struct timespec ts;
-#endif
 	time_t s;
 
-#ifdef WIN32
-	s = time(NULL);
-
-#elif defined(__APPLE__)
-	gettimeofday(&tv, NULL);
-	s = tv.tv_sec;
-#else
-	if(clock_gettime(CLOCK_REALTIME, &ts) != 0){
-		fprintf(stderr, "Error obtaining system time.\n");
-		return 1;
-	}
-	s = ts.tv_sec;
-#endif
+	s = db.now_real_s;
 
 	*ti = localtime(&s);
 	if(!(*ti)){
@@ -130,9 +111,6 @@ int log__init(struct mosquitto__config *config)
 	}
 
 	if(log_destinations & MQTT3_LOG_FILE){
-		if(drop_privileges(config, true)){
-			return 1;
-		}
 		config->log_fptr = mosquitto__fopen(config->log_file, "at", true);
 		if(config->log_fptr){
 			setvbuf(config->log_fptr, NULL, _IOLBF, 0);
@@ -141,7 +119,6 @@ int log__init(struct mosquitto__config *config)
 			log_priorities = MOSQ_LOG_ERR;
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to open log file %s for writing.", config->log_file);
 		}
-		restore_privileges();
 	}
 #ifdef WITH_DLT
 	dlt_fifo_check();
@@ -205,9 +182,8 @@ int log__vprintf(unsigned int priority, const char *fmt, va_list va)
 {
 	const char *topic;
 	int syslog_priority;
-	time_t now = time(NULL);
 	char log_line[1000];
-	int log_line_pos;
+	size_t log_line_pos;
 #ifdef WIN32
 	char *sp;
 #endif
@@ -215,10 +191,10 @@ int log__vprintf(unsigned int priority, const char *fmt, va_list va)
 	char *log_timestamp_format = NULL;
 	FILE *log_fptr = NULL;
 
-	if(int_db.config){
-		log_timestamp = int_db.config->log_timestamp;
-		log_timestamp_format = int_db.config->log_timestamp_format;
-		log_fptr = int_db.config->log_fptr;
+	if(db.config){
+		log_timestamp = db.config->log_timestamp;
+		log_timestamp_format = db.config->log_timestamp_format;
+		log_fptr = db.config->log_fptr;
 	}
 
 	if((log_priorities & priority) && log_destinations != MQTT3_LOG_NONE){
@@ -303,10 +279,10 @@ int log__vprintf(unsigned int priority, const char *fmt, va_list va)
 				get_time(&ti);
 				log_line_pos = strftime(log_line, sizeof(log_line), log_timestamp_format, ti);
 				if(log_line_pos == 0){
-					log_line_pos = snprintf(log_line, sizeof(log_line), "Time error");
+					log_line_pos = (size_t)snprintf(log_line, sizeof(log_line), "Time error");
 				}
 			}else{
-				log_line_pos = snprintf(log_line, sizeof(log_line), "%d", (int)now);
+				log_line_pos = (size_t)snprintf(log_line, sizeof(log_line), "%d", (int)db.now_real_s);
 			}
 			if(log_line_pos < sizeof(log_line)-3){
 				log_line[log_line_pos] = ':';
@@ -338,7 +314,7 @@ int log__vprintf(unsigned int priority, const char *fmt, va_list va)
 #endif
 		}
 		if(log_destinations & MQTT3_LOG_TOPIC && priority != MOSQ_LOG_DEBUG && priority != MOSQ_LOG_INTERNAL){
-			db__messages_easy_queue(&int_db, NULL, topic, 2, (uint32_t)strlen(log_line), log_line, 0, 20, NULL);
+			db__messages_easy_queue(NULL, topic, 2, (uint32_t)strlen(log_line), log_line, 0, 20, NULL);
 		}
 #ifdef WITH_DLT
 		if(log_destinations & MQTT3_LOG_DLT && priority != MOSQ_LOG_INTERNAL){

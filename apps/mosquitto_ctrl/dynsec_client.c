@@ -175,7 +175,7 @@ int dynsec_client__add_remove_role(int argc, char *argv[], cJSON *j_command, con
 	if(cJSON_AddStringToObject(j_command, "command", command) == NULL
 			|| cJSON_AddStringToObject(j_command, "username", username) == NULL
 			|| cJSON_AddStringToObject(j_command, "rolename", rolename) == NULL
-			|| (priority != -1 && cJSON_AddNumberToObject(j_command, "priority", priority) == NULL)
+			|| (priority != -1 && cJSON_AddIntToObject(j_command, "priority", priority) == NULL)
 			){
 
 		return MOSQ_ERR_NOMEM;
@@ -200,8 +200,8 @@ int dynsec_client__list_all(int argc, char *argv[], cJSON *j_command)
 	}
 
 	if(cJSON_AddStringToObject(j_command, "command", "listClients") == NULL
-			|| (count > 0 && cJSON_AddNumberToObject(j_command, "count", count) == NULL)
-			|| (offset > 0 && cJSON_AddNumberToObject(j_command, "offset", offset) == NULL)
+			|| (count > 0 && cJSON_AddIntToObject(j_command, "count", count) == NULL)
+			|| (offset > 0 && cJSON_AddIntToObject(j_command, "offset", offset) == NULL)
 			){
 
 		return MOSQ_ERR_NOMEM;

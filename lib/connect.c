@@ -43,7 +43,7 @@ static int mosquitto__connect_init(struct mosquitto *mosq, const char *host, int
 
 	if(!mosq) return MOSQ_ERR_INVAL;
 	if(!host || port < 0 || port > UINT16_MAX) return MOSQ_ERR_INVAL;
-	if(keepalive < 5 || keepalive > UINT16_MAX) return MOSQ_ERR_INVAL;
+	if(keepalive != 0 && (keepalive < 5 || keepalive > UINT16_MAX)) return MOSQ_ERR_INVAL;
 
 	/* Only MQTT v3.1 requires a client id to be sent */
 	if(mosq->id == NULL && (mosq->protocol == mosq_p_mqtt31)){

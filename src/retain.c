@@ -56,21 +56,21 @@ static struct mosquitto__retainhier *retain__add_hier_entry(struct mosquitto__re
 }
 
 
-int retain__init(struct mosquitto_db *db)
+int retain__init(void)
 {
 	struct mosquitto__retainhier *retainhier;
 
-	retainhier = retain__add_hier_entry(NULL, &db->retains, "", strlen(""));
+	retainhier = retain__add_hier_entry(NULL, &db.retains, "", strlen(""));
 	if(!retainhier) return MOSQ_ERR_NOMEM;
 
-	retainhier = retain__add_hier_entry(NULL, &db->retains, "$SYS", strlen("$SYS"));
+	retainhier = retain__add_hier_entry(NULL, &db.retains, "$SYS", strlen("$SYS"));
 	if(!retainhier) return MOSQ_ERR_NOMEM;
 
 	return MOSQ_ERR_SUCCESS;
 }
 
 
-int retain__store(struct mosquitto_db *db, const char *topic, struct mosquitto_msg_store *stored, char **split_topics)
+int retain__store(const char *topic, struct mosquitto_msg_store *stored, char **split_topics)
 {
 	struct mosquitto__retainhier *retainhier;
 	struct mosquitto__retainhier *branch;
@@ -80,7 +80,7 @@ int retain__store(struct mosquitto_db *db, const char *topic, struct mosquitto_m
 	assert(stored);
 	assert(split_topics);
 
-	HASH_FIND(hh, db->retains, split_topics[0], strlen(split_topics[0]), retainhier);
+	HASH_FIND(hh, db.retains, split_topics[0], strlen(split_topics[0]), retainhier);
 	if(retainhier == NULL) return MOSQ_ERR_NOT_FOUND;
 
 	for(i=0; split_topics[i] != NULL; i++){
@@ -99,20 +99,20 @@ int retain__store(struct mosquitto_db *db, const char *topic, struct mosquitto_m
 	if(strncmp(topic, "$SYS", 4)){
 		/* Retained messages count as a persistence change, but only if
 		 * they aren't for $SYS. */
-		db->persistence_changes++;
+		db.persistence_changes++;
 	}
 #endif
 	if(retainhier->retained){
-		db__msg_store_ref_dec(db, &retainhier->retained);
+		db__msg_store_ref_dec(&retainhier->retained);
 #ifdef WITH_SYS_TREE
-		db->retained_count--;
+		db.retained_count--;
 #endif
 	}
 	if(stored->payloadlen){
 		retainhier->retained = stored;
 		db__msg_store_ref_inc(retainhier->retained);
 #ifdef WITH_SYS_TREE
-		db->retained_count++;
+		db.retained_count++;
 #endif
 	}else{
 		retainhier->retained = NULL;
@@ -122,7 +122,7 @@ int retain__store(struct mosquitto_db *db, const char *topic, struct mosquitto_m
 }
 
 
-static int retain__process(struct mosquitto_db *db, struct mosquitto__retainhier *branch, struct mosquitto *context, uint8_t sub_qos, uint32_t subscription_identifier, time_t now)
+static int retain__process(struct mosquitto__retainhier *branch, struct mosquitto *context, uint8_t sub_qos, uint32_t subscription_identifier)
 {
 	int rc = 0;
 	uint8_t qos;
@@ -130,18 +130,18 @@ static int retain__process(struct mosquitto_db *db, struct mosquitto__retainhier
 	mosquitto_property *properties = NULL;
 	struct mosquitto_msg_store *retained;
 
-	if(branch->retained->message_expiry_time > 0 && now >= branch->retained->message_expiry_time){
-		db__msg_store_ref_dec(db, &branch->retained);
+	if(branch->retained->message_expiry_time > 0 && db.now_real_s >= branch->retained->message_expiry_time){
+		db__msg_store_ref_dec(&branch->retained);
 		branch->retained = NULL;
 #ifdef WITH_SYS_TREE
-		db->retained_count--;
+		db.retained_count--;
 #endif
 		return MOSQ_ERR_SUCCESS;
 	}
 
 	retained = branch->retained;
 
-	rc = mosquitto_acl_check(db, context, retained->topic, retained->payloadlen, UHPA_ACCESS(retained->payload, retained->payloadlen),
+	rc = mosquitto_acl_check(context, retained->topic, retained->payloadlen, UHPA_ACCESS(retained->payload, retained->payloadlen),
 			retained->qos, retained->retain, MOSQ_ACL_READ);
 	if(rc == MOSQ_ERR_ACL_DENIED){
 		return MOSQ_ERR_SUCCESS;
@@ -150,7 +150,7 @@ static int retain__process(struct mosquitto_db *db, struct mosquitto__retainhier
 	}
 
 	/* Check for original source access */
-	if(db->config->check_retain_source && retained->origin != mosq_mo_broker && retained->source_id){
+	if(db.config->check_retain_source && retained->origin != mosq_mo_broker && retained->source_id){
 		struct mosquitto retain_ctxt;
 		memset(&retain_ctxt, 0, sizeof(struct mosquitto));
 
@@ -158,10 +158,10 @@ static int retain__process(struct mosquitto_db *db, struct mosquitto__retainhier
 		retain_ctxt.username = retained->source_username;
 		retain_ctxt.listener = retained->source_listener;
 
-		rc = acl__find_acls(db, &retain_ctxt);
+		rc = acl__find_acls(&retain_ctxt);
 		if(rc) return rc;
 
-		rc = mosquitto_acl_check(db, &retain_ctxt, retained->topic, retained->payloadlen, UHPA_ACCESS(retained->payload, retained->payloadlen),
+		rc = mosquitto_acl_check(&retain_ctxt, retained->topic, retained->payloadlen, UHPA_ACCESS(retained->payload, retained->payloadlen),
 				retained->qos, retained->retain, MOSQ_ACL_WRITE);
 		if(rc == MOSQ_ERR_ACL_DENIED){
 			return MOSQ_ERR_SUCCESS;
@@ -170,7 +170,7 @@ static int retain__process(struct mosquitto_db *db, struct mosquitto__retainhier
 		}
 	}
 
-	if (db->config->upgrade_outgoing_qos){
+	if (db.config->upgrade_outgoing_qos){
 		qos = sub_qos;
 	} else {
 		qos = retained->qos;
@@ -184,11 +184,11 @@ static int retain__process(struct mosquitto_db *db, struct mosquitto__retainhier
 	if(subscription_identifier > 0){
 		mosquitto_property_add_varint(&properties, MQTT_PROP_SUBSCRIPTION_IDENTIFIER, subscription_identifier);
 	}
-	return db__message_insert(db, context, mid, mosq_md_out, qos, true, retained, properties, false);
+	return db__message_insert(context, mid, mosq_md_out, qos, true, retained, properties, false);
 }
 
 
-static int retain__search(struct mosquitto_db *db, struct mosquitto__retainhier *retainhier, char **split_topics, struct mosquitto *context, const char *sub, uint8_t sub_qos, uint32_t subscription_identifier, time_t now, int level)
+static int retain__search(struct mosquitto__retainhier *retainhier, char **split_topics, struct mosquitto *context, const char *sub, uint8_t sub_qos, uint32_t subscription_identifier, int level)
 {
 	struct mosquitto__retainhier *branch, *branch_tmp;
 	int flag = 0;
@@ -201,26 +201,26 @@ static int retain__search(struct mosquitto_db *db, struct mosquitto__retainhier 
 			 */
 			flag = -1;
 			if(branch->retained){
-				retain__process(db, branch, context, sub_qos, subscription_identifier, now);
+				retain__process(branch, context, sub_qos, subscription_identifier);
 			}
 			if(branch->children){
-				retain__search(db, branch, split_topics, context, sub, sub_qos, subscription_identifier, now, level+1);
+				retain__search(branch, split_topics, context, sub, sub_qos, subscription_identifier, level+1);
 			}
 		}
 	}else{
 		if(!strcmp(split_topics[0], "+")){
 			HASH_ITER(hh, retainhier->children, branch, branch_tmp){
 				if(split_topics[1] != NULL){
-					if(retain__search(db, branch, &(split_topics[1]), context, sub, sub_qos, subscription_identifier, now, level+1) == -1
+					if(retain__search(branch, &(split_topics[1]), context, sub, sub_qos, subscription_identifier, level+1) == -1
 							|| (split_topics[1] != NULL && !strcmp(split_topics[1], "#") && level>0)){
 
 						if(branch->retained){
-							retain__process(db, branch, context, sub_qos, subscription_identifier, now);
+							retain__process(branch, context, sub_qos, subscription_identifier);
 						}
 					}
 				}else{
 					if(branch->retained){
-						retain__process(db, branch, context, sub_qos, subscription_identifier, now);
+						retain__process(branch, context, sub_qos, subscription_identifier);
 					}
 				}
 			}
@@ -228,16 +228,16 @@ static int retain__search(struct mosquitto_db *db, struct mosquitto__retainhier 
 			HASH_FIND(hh, retainhier->children, split_topics[0], strlen(split_topics[0]), branch);
 			if(branch){
 				if(split_topics[1] != NULL){
-					if(retain__search(db, branch, &(split_topics[1]), context, sub, sub_qos, subscription_identifier, now, level+1) == -1
+					if(retain__search(branch, &(split_topics[1]), context, sub, sub_qos, subscription_identifier, level+1) == -1
 							|| (split_topics[1] != NULL && !strcmp(split_topics[1], "#") && level>0)){
 
 						if(branch->retained){
-							retain__process(db, branch, context, sub_qos, subscription_identifier, now);
+							retain__process(branch, context, sub_qos, subscription_identifier);
 						}
 					}
 				}else{
 					if(branch->retained){
-						retain__process(db, branch, context, sub_qos, subscription_identifier, now);
+						retain__process(branch, context, sub_qos, subscription_identifier);
 					}
 				}
 			}
@@ -247,26 +247,23 @@ static int retain__search(struct mosquitto_db *db, struct mosquitto__retainhier 
 }
 
 
-int retain__queue(struct mosquitto_db *db, struct mosquitto *context, const char *sub, uint8_t sub_qos, uint32_t subscription_identifier)
+int retain__queue(struct mosquitto *context, const char *sub, uint8_t sub_qos, uint32_t subscription_identifier)
 {
 	struct mosquitto__retainhier *retainhier;
 	char *local_sub;
 	char **split_topics;
-	time_t now;
 	int rc;
 
-	assert(db);
 	assert(context);
 	assert(sub);
 
 	rc = sub__topic_tokenise(sub, &local_sub, &split_topics, NULL);
 	if(rc) return rc;
 
-	HASH_FIND(hh, db->retains, split_topics[0], strlen(split_topics[0]), retainhier);
+	HASH_FIND(hh, db.retains, split_topics[0], strlen(split_topics[0]), retainhier);
 
 	if(retainhier){
-		now = time(NULL);
-		retain__search(db, retainhier, split_topics, context, sub, sub_qos, subscription_identifier, now, 0);
+		retain__search(retainhier, split_topics, context, sub, sub_qos, subscription_identifier, 0);
 	}
 	mosquitto__free(local_sub);
 	mosquitto__free(split_topics);
@@ -275,15 +272,15 @@ int retain__queue(struct mosquitto_db *db, struct mosquitto *context, const char
 }
 
 
-void retain__clean(struct mosquitto_db *db, struct mosquitto__retainhier **retainhier)
+void retain__clean(struct mosquitto__retainhier **retainhier)
 {
 	struct mosquitto__retainhier *peer, *retainhier_tmp;
 
 	HASH_ITER(hh, *retainhier, peer, retainhier_tmp){
 		if(peer->retained){
-			db__msg_store_ref_dec(db, &peer->retained);
+			db__msg_store_ref_dec(&peer->retained);
 		}
-		retain__clean(db, &peer->children);
+		retain__clean(&peer->children);
 		mosquitto__free(peer->topic);
 
 		HASH_DELETE(hh, *retainhier, peer);

@@ -46,6 +46,7 @@ man/mosquitto-tls.7
 man/mosquitto.conf.5
 man/libmosquitto.3
 man/mosquitto_ctrl.1
+man/mosquitto_ctrl_dynsec.1
 man/mosquitto_passwd.1
 man/mosquitto_pub.1
 man/mosquitto_rr.1

@@ -36,7 +36,7 @@ Contributors:
 #include "util_mosq.h"
 
 
-int handle__pubrel(struct mosquitto_db *db, struct mosquitto *mosq)
+int handle__pubrel(struct mosquitto *mosq)
 {
 	uint8_t reason_code;
 	uint16_t mid;
@@ -79,7 +79,7 @@ int handle__pubrel(struct mosquitto_db *db, struct mosquitto *mosq)
 	/* Immediately free, we don't do anything with Reason String or User Property at the moment */
 	mosquitto_property_free_all(&properties);
 
-	rc = db__message_release_incoming(db, mosq, mid);
+	rc = db__message_release_incoming(mosq, mid);
 	if(rc == MOSQ_ERR_NOT_FOUND){
 		/* Message not found. Still send a PUBCOMP anyway because this could be
 		 * due to a repeated PUBREL after a client has reconnected. */
@@ -90,8 +90,6 @@ int handle__pubrel(struct mosquitto_db *db, struct mosquitto *mosq)
 	rc = send__pubcomp(mosq, mid, NULL);
 	if(rc) return rc;
 #else
-	UNUSED(db);
-
 	log__printf(mosq, MOSQ_LOG_DEBUG, "Client %s received PUBREL (Mid: %d)", mosq->id, mid);
 
 	rc = send__pubcomp(mosq, mid, NULL);

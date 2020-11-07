@@ -23,7 +23,7 @@ Contributors:
 #include "property_mosq.h"
 #include "util_mosq.h"
 
-int send__connack(struct mosquitto_db *db, struct mosquitto *context, uint8_t ack, uint8_t reason_code, const mosquitto_property *properties)
+int send__connack(struct mosquitto *context, uint8_t ack, uint8_t reason_code, const mosquitto_property *properties)
 {
 	struct mosquitto__packet *packet = NULL;
 	int rc;
@@ -44,22 +44,22 @@ int send__connack(struct mosquitto_db *db, struct mosquitto *context, uint8_t ac
 	remaining_length = 2;
 
 	if(context->protocol == mosq_p_mqtt5){
-		if(reason_code < 128 && db->config->retain_available == false){
+		if(reason_code < 128 && db.config->retain_available == false){
 			rc = mosquitto_property_add_byte(&connack_props, MQTT_PROP_RETAIN_AVAILABLE, 0);
 			if(rc){
 				mosquitto_property_free_all(&connack_props);
 				return rc;
 			}
 		}
-		if(reason_code < 128 && db->config->max_packet_size > 0){
-			rc = mosquitto_property_add_int32(&connack_props, MQTT_PROP_MAXIMUM_PACKET_SIZE, db->config->max_packet_size);
+		if(reason_code < 128 && db.config->max_packet_size > 0){
+			rc = mosquitto_property_add_int32(&connack_props, MQTT_PROP_MAXIMUM_PACKET_SIZE, db.config->max_packet_size);
 			if(rc){
 				mosquitto_property_free_all(&connack_props);
 				return rc;
 			}
 		}
-		if(reason_code < 128 && db->config->max_inflight_messages > 0){
-			rc = mosquitto_property_add_int16(&connack_props, MQTT_PROP_RECEIVE_MAXIMUM, db->config->max_inflight_messages);
+		if(reason_code < 128 && db.config->max_inflight_messages > 0){
+			rc = mosquitto_property_add_int16(&connack_props, MQTT_PROP_RECEIVE_MAXIMUM, db.config->max_inflight_messages);
 			if(rc){
 				mosquitto_property_free_all(&connack_props);
 				return rc;

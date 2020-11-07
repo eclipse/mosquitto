@@ -200,11 +200,7 @@ void net__init_tls(void)
  * Returns 1 on failure (context is NULL)
  * Returns 0 on success.
  */
-#ifdef WITH_BROKER
-int net__socket_close(struct mosquitto_db *db, struct mosquitto *mosq)
-#else
 int net__socket_close(struct mosquitto *mosq)
-#endif
 {
 	int rc = 0;
 
@@ -236,7 +232,7 @@ int net__socket_close(struct mosquitto *mosq)
 	{
 		if(mosq->sock != INVALID_SOCKET){
 #ifdef WITH_BROKER
-			HASH_DELETE(hh_sock, db->contexts_by_sock, mosq);
+			HASH_DELETE(hh_sock, db.contexts_by_sock, mosq);
 #endif
 			rc = COMPAT_CLOSE(mosq->sock);
 			mosq->sock = INVALID_SOCKET;

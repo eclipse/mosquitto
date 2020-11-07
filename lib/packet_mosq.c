@@ -303,20 +303,20 @@ int packet__write(struct mosquitto *mosq)
 		packet__cleanup(packet);
 		mosquitto__free(packet);
 
+#ifdef WITH_BROKER
+		mosq->next_msg_out = db.now_s + mosq->keepalive;
+#else
 		pthread_mutex_lock(&mosq->msgtime_mutex);
 		mosq->next_msg_out = mosquitto_time() + mosq->keepalive;
 		pthread_mutex_unlock(&mosq->msgtime_mutex);
+#endif
 	}
 	pthread_mutex_unlock(&mosq->current_out_packet_mutex);
 	return MOSQ_ERR_SUCCESS;
 }
 
 
-#ifdef WITH_BROKER
-int packet__read(struct mosquitto_db *db, struct mosquitto *mosq)
-#else
 int packet__read(struct mosquitto *mosq)
-#endif
 {
 	uint8_t byte;
 	ssize_t read_length;
@@ -431,7 +431,7 @@ int packet__read(struct mosquitto *mosq)
 		mosq->in_packet.remaining_count = (int8_t)(mosq->in_packet.remaining_count * -1);
 
 #ifdef WITH_BROKER
-		if(db->config->max_packet_size > 0 && mosq->in_packet.remaining_length+1 > db->config->max_packet_size){
+		if(db.config->max_packet_size > 0 && mosq->in_packet.remaining_length+1 > db.config->max_packet_size){
 			if(mosq->protocol == mosq_p_mqtt5){
 				send__disconnect(mosq, MQTT_RC_PACKET_TOO_LARGE, NULL);
 			}
@@ -494,16 +494,18 @@ int packet__read(struct mosquitto *mosq)
 	if(((mosq->in_packet.command)&0xF5) == CMD_PUBLISH){
 		G_PUB_MSGS_RECEIVED_INC(1);
 	}
-	rc = handle__packet(db, mosq);
-#else
-	rc = handle__packet(mosq);
 #endif
+	rc = handle__packet(mosq);
 
 	/* Free data and reset values */
 	packet__cleanup(&mosq->in_packet);
 
+#ifdef WITH_BROKER
+	keepalive__update(mosq);
+#else
 	pthread_mutex_lock(&mosq->msgtime_mutex);
 	mosq->last_msg_in = mosquitto_time();
 	pthread_mutex_unlock(&mosq->msgtime_mutex);
+#endif
 	return rc;
 }

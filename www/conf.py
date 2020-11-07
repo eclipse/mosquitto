@@ -93,6 +93,8 @@ NAVIGATION_LINKS = {
                 ("/man/libmosquitto-3.html", "libmosquitto"),
                 ("/man/mosquitto-8.html", "mosquitto"),
                 ("/man/mosquitto-conf-5.html", "mosquitto.conf"),
+                ("/man/mosquitto_ctrl-1.html", "mosquitto_ctrl"),
+                ("/man/mosquitto_ctrl_dynsec-1.html", "mosquitto_ctrl_dynsec"),
                 ("/man/mosquitto_passwd-1.html", "mosquitto_passwd"),
                 ("/man/mosquitto_pub-1.html", "mosquitto_pub"),
                 ("/man/mosquitto_rr-1.html", "mosquitto_rr"),

@@ -68,9 +68,12 @@ struct mosq_ctrl {
 	struct mosq_config cfg;
 	char *request_topic;
 	char *response_topic;
-	cJSON *j_tree;
+	char *payload;
 	void (*payload_callback)(struct mosq_ctrl *, long , const void *);
+	void *userdata;
 };
+
+typedef int (*FUNC_ctrl_main)(int argc, char *argv[], struct mosq_ctrl *ctrl);
 
 void init_config(struct mosq_config *cfg);
 int ctrl_config_parse(struct mosq_config *cfg, int *argc, char **argv[]);
@@ -80,6 +83,8 @@ void client_config_cleanup(struct mosq_config *cfg);
 int client_request_response(struct mosq_ctrl *ctrl);
 int client_opts_set(struct mosquitto *mosq, struct mosq_config *cfg);
 int client_connect(struct mosquitto *mosq, struct mosq_config *cfg);
+
+cJSON *cJSON_AddIntToObject(cJSON * const object, const char * const name, int number);
 
 void dynsec__print_usage(void);
 int dynsec__main(int argc, char *argv[], struct mosq_ctrl *ctrl);
@@ -107,5 +112,9 @@ int dynsec_role__get(int argc, char *argv[], cJSON *j_command);
 int dynsec_role__list_all(int argc, char *argv[], cJSON *j_command);
 int dynsec_role__add_acl(int argc, char *argv[], cJSON *j_command);
 int dynsec_role__remove_acl(int argc, char *argv[], cJSON *j_command);
+
+/* Functions to implement as an external module: */
+void ctrl_help(void);
+int ctrl_main(int argc, char *argv[], struct mosq_ctrl *ctrl);
 
 #endif

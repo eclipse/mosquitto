@@ -17,46 +17,13 @@ Contributors:
 
 #include "config.h"
 
-#ifndef WIN32
-#  include <unistd.h>
-#  include <grp.h>
-#  include <assert.h>
-#endif
-
-#ifndef WIN32
-#include <pwd.h>
-#else
-#include <process.h>
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#endif
-
-#ifndef WIN32
-#  include <sys/time.h>
-#endif
-
-#include <errno.h>
+#include <stdbool.h>
 #include <signal.h>
-#include <stdio.h>
-#include <string.h>
-#ifdef WITH_SYSTEMD
-#  include <systemd/sd-daemon.h>
-#endif
-#ifdef WITH_WRAP
-#include <tcpd.h>
-#endif
-#ifdef WITH_WEBSOCKETS
-#  include <libwebsockets.h>
-#endif
 
-#include "mosquitto_broker_internal.h"
-#include "memory_mosq.h"
-#include "util_mosq.h"
-
-extern bool flag_reload;
 #ifdef WITH_PERSISTENCE
 extern bool flag_db_backup;
 #endif
+extern bool flag_reload;
 extern bool flag_tree_print;
 extern int run;
 
@@ -144,4 +111,3 @@ DWORD WINAPI SigThreadProc(void* data)
 	return 0;
 }
 #endif
-

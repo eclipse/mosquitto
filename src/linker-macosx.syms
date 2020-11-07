@@ -27,7 +27,10 @@ _mosquitto_property_add_string
 _mosquitto_property_add_string_pair
 _mosquitto_property_add_varint
 _mosquitto_property_free_all
+_mosquitto_pub_topic_check
 _mosquitto_realloc
 _mosquitto_set_username
 _mosquitto_strdup
+_mosquitto_sub_topic_check
 _mosquitto_topic_matches_sub
+_mosquitto_validate_utf8

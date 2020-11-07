@@ -26,6 +26,7 @@ Contributors:
 #include "mosquitto.h"
 #include "mosquitto_broker.h"
 #include "mosquitto_plugin.h"
+#include "mqtt_protocol.h"
 
 #include "dynamic_security.h"
 
@@ -56,13 +57,19 @@ void dynsec__command_reply(cJSON *j_responses, struct mosquitto *context, const 
 static void send_response(cJSON *tree)
 {
 	char *payload;
+	size_t payload_len;
 
 	payload = cJSON_PrintUnformatted(tree);
 	cJSON_Delete(tree);
 	if(payload == NULL) return;
 
+	payload_len = strlen(payload);
+	if(payload_len > MQTT_MAX_PAYLOAD){
+		free(payload);
+		return;
+	}
 	mosquitto_broker_publish(NULL, "$CONTROL/dynamic-security/v1/response",
-			strlen(payload), payload, 0, 0, NULL);
+			(int)payload_len, payload, 0, 0, NULL);
 }
 
 
@@ -327,7 +334,7 @@ static int dynsec__general_config_save(cJSON *tree)
 static int dynsec__config_load(void)
 {
 	FILE *fptr;
-	long flen;
+	size_t flen;
 	char *json_str;
 	cJSON *tree;
 
@@ -338,7 +345,7 @@ static int dynsec__config_load(void)
 	}
 
 	fseek(fptr, 0, SEEK_END);
-	flen = ftell(fptr);
+	flen = (size_t)ftell(fptr);
 	fseek(fptr, 0, SEEK_SET);
 	json_str = mosquitto_calloc(flen+1, sizeof(char));
 	if(json_str == NULL){
@@ -385,10 +392,10 @@ static int dynsec__config_load(void)
 void dynsec__config_save(void)
 {
 	cJSON *tree;
-	int file_path_len;
+	size_t file_path_len;
 	char *file_path;
 	FILE *fptr;
-	int json_str_len;
+	size_t json_str_len;
 	char *json_str;
 
 	tree = cJSON_CreateObject();

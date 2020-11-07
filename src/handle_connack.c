@@ -26,7 +26,7 @@ Contributors:
 #include "send_mosq.h"
 #include "util_mosq.h"
 
-int handle__connack(struct mosquitto_db *db, struct mosquitto *context)
+int handle__connack(struct mosquitto *context)
 {
 	int rc;
 	uint8_t connect_acknowledge;
@@ -84,14 +84,14 @@ int handle__connack(struct mosquitto_db *db, struct mosquitto *context)
 	if(reason_code == MQTT_RC_SUCCESS){
 #ifdef WITH_BRIDGE
 		if(context->bridge){
-			rc = bridge__on_connect(db, context);
+			rc = bridge__on_connect(context);
 			if(rc) return rc;
 		}
 #endif
 		mosquitto__set_state(context, mosq_cs_active);
-		rc = db__message_write_queued_out(db, context);
+		rc = db__message_write_queued_out(context);
 		if(rc) return rc;
-		rc = db__message_write_inflight_out_all(db, context);
+		rc = db__message_write_inflight_out_all(context);
 		return rc;
 	}else{
 		if(context->protocol == mosq_p_mqtt5){

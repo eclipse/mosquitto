@@ -67,6 +67,10 @@ int mosquitto_connect_srv(struct mosquitto *mosq, const char *host, int keepaliv
 	int rc;
 	if(!mosq) return MOSQ_ERR_INVAL;
 
+	if(keepalive < 0 || keepalive > UINT16_MAX){
+		return MOSQ_ERR_INVAL;
+	}
+
 	rc = ares_init(&mosq->achan);
 	if(rc != ARES_SUCCESS){
 		return MOSQ_ERR_UNKNOWN;
@@ -94,7 +98,7 @@ int mosquitto_connect_srv(struct mosquitto *mosq, const char *host, int keepaliv
 
 	mosquitto__set_state(mosq, mosq_cs_connect_srv);
 
-	mosq->keepalive = keepalive;
+	mosq->keepalive = (uint16_t)keepalive;
 
 	return MOSQ_ERR_SUCCESS;
 

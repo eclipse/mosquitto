@@ -76,6 +76,14 @@ void dynsec__print_usage(void)
 	printf("                              |unsubscribeLiteral|unsubscribePattern\n");
 }
 
+cJSON *cJSON_AddIntToObject(cJSON * const object, const char * const name, int number)
+{
+	char buf[30];
+
+	snprintf(buf, sizeof(buf), "%d", number);
+	return cJSON_AddRawToObject(object, name, buf);
+}
+
 /* ################################################################
  * #
  * # Payload callback
@@ -747,7 +755,10 @@ int dynsec_init(int argc, char *argv[])
 
 int dynsec__main(int argc, char *argv[], struct mosq_ctrl *ctrl)
 {
+	int rc = -1;
+	cJSON *j_tree;
 	cJSON *j_commands, *j_command;
+
 	if(!strcasecmp(argv[0], "help")){
 		dynsec__print_usage();
 		return -1;
@@ -763,83 +774,92 @@ int dynsec__main(int argc, char *argv[], struct mosq_ctrl *ctrl)
 	if(ctrl->request_topic == NULL || ctrl->response_topic == NULL){
 		return MOSQ_ERR_NOMEM;
 	}
-	ctrl->j_tree = cJSON_CreateObject();
-	if(ctrl->j_tree == NULL) return MOSQ_ERR_NOMEM;
-	j_commands = cJSON_AddArrayToObject(ctrl->j_tree, "commands");
+	j_tree = cJSON_CreateObject();
+	if(j_tree == NULL) return MOSQ_ERR_NOMEM;
+	j_commands = cJSON_AddArrayToObject(j_tree, "commands");
 	if(j_commands == NULL){
-		cJSON_Delete(ctrl->j_tree);
-		ctrl->j_tree = NULL;
+		cJSON_Delete(j_tree);
+		j_tree = NULL;
 		return MOSQ_ERR_NOMEM;
 	}
 	j_command = cJSON_CreateObject();
 	if(j_command == NULL){
-		cJSON_Delete(ctrl->j_tree);
-		ctrl->j_tree = NULL;
+		cJSON_Delete(j_tree);
+		j_tree = NULL;
 		return MOSQ_ERR_NOMEM;
 	}
 	cJSON_AddItemToArray(j_commands, j_command);
 
 	if(!strcasecmp(argv[0], "setDefaultACLAccess")){
-		return dynsec__set_default_acl_access(argc-1, &argv[1], j_command);
+		rc = dynsec__set_default_acl_access(argc-1, &argv[1], j_command);
 	}else if(!strcasecmp(argv[0], "getDefaultACLAccess")){
-		return dynsec__get_default_acl_access(argc-1, &argv[1], j_command);
+		rc = dynsec__get_default_acl_access(argc-1, &argv[1], j_command);
 
 	}else if(!strcasecmp(argv[0], "createClient")){
-		return dynsec_client__create(argc-1, &argv[1], j_command);
+		rc = dynsec_client__create(argc-1, &argv[1], j_command);
 	}else if(!strcasecmp(argv[0], "deleteClient")){
-		return dynsec_client__delete(argc-1, &argv[1], j_command);
+		rc = dynsec_client__delete(argc-1, &argv[1], j_command);
 	}else if(!strcasecmp(argv[0], "getClient")){
-		return dynsec_client__get(argc-1, &argv[1], j_command);
+		rc = dynsec_client__get(argc-1, &argv[1], j_command);
 	}else if(!strcasecmp(argv[0], "listClients")){
-		return dynsec_client__list_all(argc-1, &argv[1], j_command);
+		rc = dynsec_client__list_all(argc-1, &argv[1], j_command);
 	}else if(!strcasecmp(argv[0], "setClientPassword")){
-		return dynsec_client__set_password(argc-1, &argv[1], j_command);
+		rc = dynsec_client__set_password(argc-1, &argv[1], j_command);
 	}else if(!strcasecmp(argv[0], "addClientRole")){
-		return dynsec_client__add_remove_role(argc-1, &argv[1], j_command, argv[0]);
+		rc = dynsec_client__add_remove_role(argc-1, &argv[1], j_command, argv[0]);
 	}else if(!strcasecmp(argv[0], "removeClientRole")){
-		return dynsec_client__add_remove_role(argc-1, &argv[1], j_command, argv[0]);
+		rc = dynsec_client__add_remove_role(argc-1, &argv[1], j_command, argv[0]);
 	}else if(!strcasecmp(argv[0], "enableClient")){
-		return dynsec_client__enable_disable(argc-1, &argv[1], j_command, argv[0]);
+		rc = dynsec_client__enable_disable(argc-1, &argv[1], j_command, argv[0]);
 	}else if(!strcasecmp(argv[0], "disableClient")){
-		return dynsec_client__enable_disable(argc-1, &argv[1], j_command, argv[0]);
+		rc = dynsec_client__enable_disable(argc-1, &argv[1], j_command, argv[0]);
 
 	}else if(!strcasecmp(argv[0], "createGroup")){
-		return dynsec_group__create(argc-1, &argv[1], j_command);
+		rc = dynsec_group__create(argc-1, &argv[1], j_command);
 	}else if(!strcasecmp(argv[0], "deleteGroup")){
-		return dynsec_group__delete(argc-1, &argv[1], j_command);
+		rc = dynsec_group__delete(argc-1, &argv[1], j_command);
 	}else if(!strcasecmp(argv[0], "getGroup")){
-		return dynsec_group__get(argc-1, &argv[1], j_command);
+		rc = dynsec_group__get(argc-1, &argv[1], j_command);
 	}else if(!strcasecmp(argv[0], "listGroups")){
-		return dynsec_group__list_all(argc-1, &argv[1], j_command);
+		rc = dynsec_group__list_all(argc-1, &argv[1], j_command);
 	}else if(!strcasecmp(argv[0], "addGroupRole")){
-		return dynsec_group__add_remove_role(argc-1, &argv[1], j_command, argv[0]);
+		rc = dynsec_group__add_remove_role(argc-1, &argv[1], j_command, argv[0]);
 	}else if(!strcasecmp(argv[0], "removeGroupRole")){
-		return dynsec_group__add_remove_role(argc-1, &argv[1], j_command, argv[0]);
+		rc = dynsec_group__add_remove_role(argc-1, &argv[1], j_command, argv[0]);
 	}else if(!strcasecmp(argv[0], "addGroupClient")){
-		return dynsec_group__add_remove_client(argc-1, &argv[1], j_command, argv[0]);
+		rc = dynsec_group__add_remove_client(argc-1, &argv[1], j_command, argv[0]);
 	}else if(!strcasecmp(argv[0], "removeGroupClient")){
-		return dynsec_group__add_remove_client(argc-1, &argv[1], j_command, argv[0]);
+		rc = dynsec_group__add_remove_client(argc-1, &argv[1], j_command, argv[0]);
 	}else if(!strcasecmp(argv[0], "setAnonymousGroup")){
-		return dynsec_group__set_anonymous(argc-1, &argv[1], j_command);
+		rc = dynsec_group__set_anonymous(argc-1, &argv[1], j_command);
 	}else if(!strcasecmp(argv[0], "getAnonymousGroup")){
-		return dynsec_group__get_anonymous(argc-1, &argv[1], j_command);
+		rc = dynsec_group__get_anonymous(argc-1, &argv[1], j_command);
 
 	}else if(!strcasecmp(argv[0], "createRole")){
-		return dynsec_role__create(argc-1, &argv[1], j_command);
+		rc = dynsec_role__create(argc-1, &argv[1], j_command);
 	}else if(!strcasecmp(argv[0], "deleteRole")){
-		return dynsec_role__delete(argc-1, &argv[1], j_command);
+		rc = dynsec_role__delete(argc-1, &argv[1], j_command);
 	}else if(!strcasecmp(argv[0], "getRole")){
-		return dynsec_role__get(argc-1, &argv[1], j_command);
+		rc = dynsec_role__get(argc-1, &argv[1], j_command);
 	}else if(!strcasecmp(argv[0], "listRoles")){
-		return dynsec_role__list_all(argc-1, &argv[1], j_command);
+		rc = dynsec_role__list_all(argc-1, &argv[1], j_command);
 	}else if(!strcasecmp(argv[0], "addRoleACL")){
-		return dynsec_role__add_acl(argc-1, &argv[1], j_command);
+		rc = dynsec_role__add_acl(argc-1, &argv[1], j_command);
 	}else if(!strcasecmp(argv[0], "removeRoleACL")){
-		return dynsec_role__remove_acl(argc-1, &argv[1], j_command);
+		rc = dynsec_role__remove_acl(argc-1, &argv[1], j_command);
 
 	}else{
 		fprintf(stderr, "Command '%s' not recognised.\n", argv[0]);
 		return MOSQ_ERR_UNKNOWN;
 	}
-	return 0;
+
+	if(rc == MOSQ_ERR_SUCCESS){
+		ctrl->payload = cJSON_PrintUnformatted(j_tree);
+		cJSON_Delete(j_tree);
+		if(ctrl->payload == NULL){
+			fprintf(stderr, "Error: Out of memory.\n");
+			return MOSQ_ERR_NOMEM;
+		}
+	}
+	return rc;
 }

@@ -689,8 +689,8 @@ int client_config_line_proc(struct mosq_config *cfg, int pub_or_sub, int argc, c
 				return 1;
 			}else{
 				cfg->keepalive = atoi(argv[i+1]);
-				if(cfg->keepalive>65535){
-					fprintf(stderr, "Error: Invalid keepalive given: %d\n", cfg->keepalive);
+				if(cfg->keepalive<5 || cfg->keepalive>UINT16_MAX){
+					fprintf(stderr, "Error: Invalid keepalive given, it must be between 5 and 65535 inclusive.\n\n");
 					return 1;
 				}
 			}

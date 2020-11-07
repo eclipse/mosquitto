@@ -19,20 +19,20 @@ Contributors:
 
 #include "mosquitto_broker_internal.h"
 
-int mux_epoll__init(struct mosquitto_db *db, mosq_sock_t *listensock, int listensock_count);
-int mux_epoll__add_out(struct mosquitto_db *db, struct mosquitto *context);
-int mux_epoll__remove_out(struct mosquitto_db *db, struct mosquitto *context);
-int mux_epoll__add_in(struct mosquitto_db *db, struct mosquitto *context);
-int mux_epoll__delete(struct mosquitto_db *db, struct mosquitto *context);
-int mux_epoll__handle(struct mosquitto_db *db, mosq_sock_t *listensock, int listensock_count);
-int mux_epoll__cleanup(struct mosquitto_db *db);
+int mux_epoll__init(struct mosquitto__listener_sock *listensock, int listensock_count);
+int mux_epoll__add_out(struct mosquitto *context);
+int mux_epoll__remove_out(struct mosquitto *context);
+int mux_epoll__add_in(struct mosquitto *context);
+int mux_epoll__delete(struct mosquitto *context);
+int mux_epoll__handle(struct mosquitto__listener_sock *listensock, int listensock_count);
+int mux_epoll__cleanup(void);
 
-int mux_poll__init(struct mosquitto_db *db, mosq_sock_t *listensock, int listensock_count);
-int mux_poll__add_out(struct mosquitto_db *db, struct mosquitto *context);
-int mux_poll__remove_out(struct mosquitto_db *db, struct mosquitto *context);
-int mux_poll__add_in(struct mosquitto_db *db, struct mosquitto *context);
-int mux_poll__delete(struct mosquitto_db *db, struct mosquitto *context);
-int mux_poll__handle(struct mosquitto_db *db, mosq_sock_t *listensock, int listensock_count);
-int mux_poll__cleanup(struct mosquitto_db *db);
+int mux_poll__init(struct mosquitto__listener_sock *listensock, int listensock_count);
+int mux_poll__add_out(struct mosquitto *context);
+int mux_poll__remove_out(struct mosquitto *context);
+int mux_poll__add_in(struct mosquitto *context);
+int mux_poll__delete(struct mosquitto *context);
+int mux_poll__handle(struct mosquitto__listener_sock *listensock, int listensock_count);
+int mux_poll__cleanup(void);
 
 #endif

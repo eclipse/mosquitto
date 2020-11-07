@@ -54,8 +54,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #define WS_SERV_BUF_SIZE 4096
 #define WS_TX_BUF_SIZE (WS_SERV_BUF_SIZE*2)
 
-extern struct mosquitto_db int_db;
-
 #if defined(LWS_LIBRARY_VERSION_NUMBER)
 static int callback_mqtt(
 #else
@@ -184,11 +182,11 @@ static int callback_mqtt(struct libwebsocket_context *context,
 		void *in,
 		size_t len)
 {
-	struct mosquitto_db *db;
 	struct mosquitto *mosq = NULL;
 	struct mosquitto__packet *packet;
 	size_t txlen;
 	int count;
+	unsigned int ucount;
 	const struct libwebsocket_protocols *p;
 	struct libws_mqtt_data *u = (struct libws_mqtt_data *)user;
 	size_t pos;
@@ -196,11 +194,9 @@ static int callback_mqtt(struct libwebsocket_context *context,
 	int rc;
 	uint8_t byte;
 
-	db = &int_db;
-
 	switch (reason) {
 		case LWS_CALLBACK_ESTABLISHED:
-			mosq = context__init(db, WEBSOCKET_CLIENT);
+			mosq = context__init(WEBSOCKET_CLIENT);
 			if(mosq){
 				p = libwebsockets_get_protocol(wsi);
 				mosq->listener = p->user;
@@ -232,7 +228,7 @@ static int callback_mqtt(struct libwebsocket_context *context,
 				return -1;
 			}
 			if(mosq->listener->max_connections > 0 && mosq->listener->client_count > mosq->listener->max_connections){
-				if(db->config->connection_messages == true){
+				if(db.config->connection_messages == true){
 					log__printf(NULL, MOSQ_LOG_NOTICE, "Client connection from %s denied: max_connections exceeded.", mosq->address);
 				}
 				mosquitto__free(mosq->address);
@@ -241,8 +237,8 @@ static int callback_mqtt(struct libwebsocket_context *context,
 				return -1;
 			}
 			mosq->sock = libwebsocket_get_socket_fd(wsi);
-			HASH_ADD(hh_sock, db->contexts_by_sock, sock, sizeof(mosq->sock), mosq);
-			mux__add_in(db, mosq);
+			HASH_ADD(hh_sock, db.contexts_by_sock, sock, sizeof(mosq->sock), mosq);
+			mux__add_in(mosq);
 			break;
 
 		case LWS_CALLBACK_CLOSED:
@@ -252,16 +248,16 @@ static int callback_mqtt(struct libwebsocket_context *context,
 			mosq = u->mosq;
 			if(mosq){
 				if(mosq->sock != INVALID_SOCKET){
-					HASH_DELETE(hh_sock, db->contexts_by_sock, mosq);
+					HASH_DELETE(hh_sock, db.contexts_by_sock, mosq);
 					mosq->sock = INVALID_SOCKET;
 					mosq->pollfd_index = -1;
-					mux__delete(db, mosq);
+					mux__delete(mosq);
 				}
 				mosq->wsi = NULL;
 #ifdef WITH_TLS
 				mosq->ssl = NULL;
 #endif
-				do_disconnect(db, mosq, MOSQ_ERR_CONN_LOST);
+				do_disconnect(mosq, MOSQ_ERR_CONN_LOST);
 			}
 			break;
 
@@ -274,9 +270,9 @@ static int callback_mqtt(struct libwebsocket_context *context,
 				return -1;
 			}
 
-			rc = db__message_write_inflight_out_latest(db, mosq);
+			rc = db__message_write_inflight_out_latest(mosq);
 			if(rc) return -1;
-			rc = db__message_write_queued_out(db, mosq);
+			rc = db__message_write_queued_out(mosq);
 			if(rc) return -1;
 
 			if(mosq->out_packet && !mosq->current_out_packet){
@@ -315,11 +311,12 @@ static int callback_mqtt(struct libwebsocket_context *context,
 					}
 					return 0;
 				}
+				ucount = (unsigned int)count;
 #ifdef WITH_SYS_TREE
-				g_bytes_sent += count;
+				g_bytes_sent += ucount;
 #endif
-				packet->to_process -= count;
-				packet->pos += count;
+				packet->to_process -= ucount;
+				packet->pos += ucount;
 				if(packet->to_process > 0){
 					if (mosq->state == mosq_cs_disconnect_ws
 							|| mosq->state == mosq_cs_disconnecting
@@ -349,7 +346,7 @@ static int callback_mqtt(struct libwebsocket_context *context,
 				packet__cleanup(packet);
 				mosquitto__free(packet);
 
-				mosq->next_msg_out = mosquitto_time() + mosq->keepalive;
+				mosq->next_msg_out = db.now_s + mosq->keepalive;
 			}
 			if (mosq->state == mosq_cs_disconnect_ws
 					|| mosq->state == mosq_cs_disconnecting
@@ -398,7 +395,7 @@ static int callback_mqtt(struct libwebsocket_context *context,
 						mosq->in_packet.remaining_length += (byte & 127) * mosq->in_packet.remaining_mult;
 						mosq->in_packet.remaining_mult *= 128;
 					}while((byte & 128) != 0);
-					mosq->in_packet.remaining_count *= -1;
+					mosq->in_packet.remaining_count = (int8_t)(mosq->in_packet.remaining_count -1);
 
 					if(mosq->in_packet.remaining_length > 0){
 						mosq->in_packet.payload = mosquitto__malloc(mosq->in_packet.remaining_length*sizeof(uint8_t));
@@ -409,15 +406,15 @@ static int callback_mqtt(struct libwebsocket_context *context,
 					}
 				}
 				if(mosq->in_packet.to_process>0){
-					if(len - pos >= mosq->in_packet.to_process){
+					if((uint32_t)len - pos >= mosq->in_packet.to_process){
 						memcpy(&mosq->in_packet.payload[mosq->in_packet.pos], &buf[pos], mosq->in_packet.to_process);
 						mosq->in_packet.pos += mosq->in_packet.to_process;
 						pos += mosq->in_packet.to_process;
 						mosq->in_packet.to_process = 0;
 					}else{
 						memcpy(&mosq->in_packet.payload[mosq->in_packet.pos], &buf[pos], len-pos);
-						mosq->in_packet.pos += len-pos;
-						mosq->in_packet.to_process -= len-pos;
+						mosq->in_packet.pos += (uint32_t)(len-pos);
+						mosq->in_packet.to_process -= (uint32_t)(len-pos);
 						return 0;
 					}
 				}
@@ -430,7 +427,7 @@ static int callback_mqtt(struct libwebsocket_context *context,
 					G_PUB_MSGS_RECEIVED_INC(1);
 				}
 #endif
-				rc = handle__packet(db, mosq);
+				rc = handle__packet(mosq);
 
 				/* Free data and reset values */
 				packet__cleanup(&mosq->in_packet);
@@ -443,7 +440,7 @@ static int callback_mqtt(struct libwebsocket_context *context,
 					}
 					libwebsocket_callback_on_writable(mosq->ws_context, mosq->wsi);
 				} else if (rc) {
-					do_disconnect(db, mosq, MOSQ_ERR_CONN_LOST);
+					do_disconnect(mosq, MOSQ_ERR_CONN_LOST);
 					return -1;
 				}
 			}
@@ -537,10 +534,10 @@ static int callback_http(struct libwebsocket_context *context,
 	char *http_dir;
 	size_t buflen;
 	size_t wlen;
+	int rc;
 	char *filename_canonical;
 	unsigned char buf[4096];
 	struct stat filestat;
-	struct mosquitto_db *db = &int_db;
 	struct mosquitto *mosq;
 	struct lws_pollargs *pollargs = (struct lws_pollargs *)in;
 
@@ -601,7 +598,7 @@ static int callback_http(struct libwebsocket_context *context,
 				free(filename_canonical);
 
 				/* FIXME - use header functions from lws 2.x */
-				buflen = snprintf((char *)buf, 4096, "HTTP/1.0 302 OK\r\n"
+				buflen = (size_t)snprintf((char *)buf, 4096, "HTTP/1.0 302 OK\r\n"
 												"Location: %s/\r\n\r\n",
 												(char *)in);
 				return libwebsocket_write(wsi, buf, buflen, LWS_WRITE_HTTP);
@@ -618,7 +615,7 @@ static int callback_http(struct libwebsocket_context *context,
 			log__printf(NULL, MOSQ_LOG_DEBUG, "http serving file \"%s\".", filename_canonical);
 			free(filename_canonical);
 			/* FIXME - use header functions from lws 2.x */
-			buflen = snprintf((char *)buf, 4096, "HTTP/1.0 200 OK\r\n"
+			buflen = (size_t)snprintf((char *)buf, 4096, "HTTP/1.0 200 OK\r\n"
 												"Server: mosquitto\r\n"
 												"Content-Length: %u\r\n\r\n",
 												(unsigned int)filestat.st_size);
@@ -652,9 +649,13 @@ static int callback_http(struct libwebsocket_context *context,
 						u->fptr = NULL;
 						return -1;
 					}
-					wlen = libwebsocket_write(wsi, buf, buflen, LWS_WRITE_HTTP);
+					rc = libwebsocket_write(wsi, buf, buflen, LWS_WRITE_HTTP);
+					if(rc < 0){
+						return -1;
+					}
+					wlen = (size_t)rc;
 					if(wlen < buflen){
-						if(fseek(u->fptr, buflen-wlen, SEEK_CUR) < 0){
+						if(fseek(u->fptr, (long)(buflen-wlen), SEEK_CUR) < 0){
 							fclose(u->fptr);
 							u->fptr = NULL;
 							return -1;
@@ -684,13 +685,13 @@ static int callback_http(struct libwebsocket_context *context,
 		case LWS_CALLBACK_ADD_POLL_FD:
 		case LWS_CALLBACK_DEL_POLL_FD:
 		case LWS_CALLBACK_CHANGE_MODE_POLL_FD:
-			HASH_FIND(hh_sock, db->contexts_by_sock, &pollargs->fd, sizeof(pollargs->fd), mosq);
+			HASH_FIND(hh_sock, db.contexts_by_sock, &pollargs->fd, sizeof(pollargs->fd), mosq);
 			if(mosq){
 				if(pollargs->events & POLLOUT){
-					mux__add_out(db, mosq);
+					mux__add_out(mosq);
 					mosq->ws_want_write = true;
 				}else{
-					mux__remove_out(db, mosq);
+					mux__remove_out(mosq);
 				}
 			}
 			break;
@@ -721,7 +722,7 @@ struct libwebsocket_context *mosq_websockets_init(struct mosquitto__listener *li
 {
 	struct lws_context_creation_info info;
 	struct libwebsocket_protocols *p;
-	int protocol_count;
+	size_t protocol_count;
 	int i;
 	struct libws_mqtt_hack *user;
 

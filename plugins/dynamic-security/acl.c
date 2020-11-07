@@ -91,7 +91,7 @@ static int acl_check_subscribe(struct mosquitto_evt_acl_check *ed, struct dynsec
 {
 	struct dynsec__rolelist *rolelist, *rolelist_tmp;
 	struct dynsec__acl *acl, *acl_tmp;
-	int len;
+	size_t len;
 
 	len = strlen(ed->topic);
 
@@ -128,7 +128,7 @@ static int acl_check_unsubscribe(struct mosquitto_evt_acl_check *ed, struct dyns
 {
 	struct dynsec__rolelist *rolelist, *rolelist_tmp;
 	struct dynsec__acl *acl, *acl_tmp;
-	int len;
+	size_t len;
 
 	len = strlen(ed->topic);
 

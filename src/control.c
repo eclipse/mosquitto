@@ -26,7 +26,7 @@ Contributors:
 #ifdef WITH_CONTROL
 /* Process messages coming in on $CONTROL/<feature>. These messages aren't
  * passed on to other clients. */
-int control__process(struct mosquitto_db *db, struct mosquitto *context, struct mosquitto_msg_store *stored)
+int control__process(struct mosquitto *context, struct mosquitto_msg_store *stored)
 {
 	struct mosquitto__callback *cb_found;
 	struct mosquitto_evt_control event_data;
@@ -34,10 +34,10 @@ int control__process(struct mosquitto_db *db, struct mosquitto *context, struct 
 	mosquitto_property *properties = NULL;
 	int rc = MOSQ_ERR_SUCCESS;
 
-	if(db->config->per_listener_settings){
+	if(db.config->per_listener_settings){
 		opts = &context->listener->security_options;
 	}else{
-		opts = &db->config->security_options;
+		opts = &db.config->security_options;
 	}
 	HASH_FIND(hh, opts->plugin_callbacks.control, stored->topic, strlen(stored->topic), cb_found);
 	if(cb_found){
@@ -73,7 +73,7 @@ int control__process(struct mosquitto_db *db, struct mosquitto *context, struct 
 }
 #endif
 
-int control__register_callback(struct mosquitto_db *db, struct mosquitto__security_options *opts, MOSQ_FUNC_generic_callback cb_func, const char *topic, void *userdata)
+int control__register_callback(struct mosquitto__security_options *opts, MOSQ_FUNC_generic_callback cb_func, const char *topic, void *userdata)
 {
 #ifdef WITH_CONTROL
 	struct mosquitto__callback *cb_found, *cb_new;
@@ -110,7 +110,7 @@ int control__register_callback(struct mosquitto_db *db, struct mosquitto__securi
 #endif
 }
 
-int control__unregister_callback(struct mosquitto_db *db, struct mosquitto__security_options *opts, MOSQ_FUNC_generic_callback cb_func, const char *topic)
+int control__unregister_callback(struct mosquitto__security_options *opts, MOSQ_FUNC_generic_callback cb_func, const char *topic)
 {
 #ifdef WITH_CONTROL
 	struct mosquitto__callback *cb_found;

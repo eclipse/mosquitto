@@ -27,12 +27,6 @@ Contributors:
 #	define mosqpp_EXPORT
 #endif
 
-#if defined(__GNUC__) || defined(__clang__)
-#  define DEPRECATED __attribute__ ((deprecated))
-#else
-#  define DEPRECATED
-#endif
-
 #include <cstdlib>
 #include <mosquitto.h>
 #include <time.h>
@@ -40,16 +34,16 @@ Contributors:
 namespace mosqpp {
 
 
-mosqpp_EXPORT const char * DEPRECATED strerror(int mosq_errno);
-mosqpp_EXPORT const char * DEPRECATED connack_string(int connack_code);
-mosqpp_EXPORT int DEPRECATED sub_topic_tokenise(const char *subtopic, char ***topics, int *count);
-mosqpp_EXPORT int DEPRECATED sub_topic_tokens_free(char ***topics, int count);
-mosqpp_EXPORT int DEPRECATED lib_version(int *major, int *minor, int *revision);
-mosqpp_EXPORT int DEPRECATED lib_init();
-mosqpp_EXPORT int DEPRECATED lib_cleanup();
-mosqpp_EXPORT int DEPRECATED topic_matches_sub(const char *sub, const char *topic, bool *result);
-mosqpp_EXPORT int DEPRECATED validate_utf8(const char *str, int len);
-mosqpp_EXPORT int DEPRECATED subscribe_simple(
+mosqpp_EXPORT const char * strerror(int mosq_errno);
+mosqpp_EXPORT const char * connack_string(int connack_code);
+mosqpp_EXPORT int sub_topic_tokenise(const char *subtopic, char ***topics, int *count);
+mosqpp_EXPORT int sub_topic_tokens_free(char ***topics, int count);
+mosqpp_EXPORT int lib_version(int *major, int *minor, int *revision);
+mosqpp_EXPORT int lib_init();
+mosqpp_EXPORT int lib_cleanup();
+mosqpp_EXPORT int topic_matches_sub(const char *sub, const char *topic, bool *result);
+mosqpp_EXPORT int validate_utf8(const char *str, int len);
+mosqpp_EXPORT int subscribe_simple(
 		struct mosquitto_message **messages,
 		int msg_count,
 		bool retained,
@@ -65,7 +59,7 @@ mosqpp_EXPORT int DEPRECATED subscribe_simple(
 		const struct libmosquitto_will *will=NULL,
 		const struct libmosquitto_tls *tls=NULL);
 
-mosqpp_EXPORT int DEPRECATED subscribe_callback(
+mosqpp_EXPORT int subscribe_callback(
 		int (*callback)(struct mosquitto *, void *, const struct mosquitto_message *),
 		void *userdata,
 		const char *topic,
@@ -87,48 +81,48 @@ mosqpp_EXPORT int DEPRECATED subscribe_callback(
  * A mosquitto client class. This is a C++ wrapper class for the mosquitto C
  * library. Please see mosquitto.h for details of the functions.
  */
-class mosqpp_EXPORT DEPRECATED mosquittopp {
+class mosqpp_EXPORT mosquittopp {
 	private:
 		struct mosquitto *m_mosq;
 	public:
-		DEPRECATED mosquittopp(const char *id=NULL, bool clean_session=true);
+		mosquittopp(const char *id=NULL, bool clean_session=true);
 		virtual ~mosquittopp();
 
-		int DEPRECATED reinitialise(const char *id, bool clean_session);
-		int DEPRECATED socket();
-		int DEPRECATED will_set(const char *topic, int payloadlen=0, const void *payload=NULL, int qos=0, bool retain=false);
-		int DEPRECATED will_clear();
-		int DEPRECATED username_pw_set(const char *username, const char *password=NULL);
-		int DEPRECATED connect(const char *host, int port=1883, int keepalive=60);
-		int DEPRECATED connect_async(const char *host, int port=1883, int keepalive=60);
-		int DEPRECATED connect(const char *host, int port, int keepalive, const char *bind_address);
-		int DEPRECATED connect_async(const char *host, int port, int keepalive, const char *bind_address);
-		int DEPRECATED reconnect();
-		int DEPRECATED reconnect_async();
-		int DEPRECATED disconnect();
-		int DEPRECATED publish(int *mid, const char *topic, int payloadlen=0, const void *payload=NULL, int qos=0, bool retain=false);
-		int DEPRECATED subscribe(int *mid, const char *sub, int qos=0);
-		int DEPRECATED unsubscribe(int *mid, const char *sub);
-		void DEPRECATED reconnect_delay_set(unsigned int reconnect_delay, unsigned int reconnect_delay_max, bool reconnect_exponential_backoff);
-		int DEPRECATED max_inflight_messages_set(unsigned int max_inflight_messages);
-		void DEPRECATED message_retry_set(unsigned int message_retry);
-		void DEPRECATED user_data_set(void *userdata);
-		int DEPRECATED tls_set(const char *cafile, const char *capath=NULL, const char *certfile=NULL, const char *keyfile=NULL, int (*pw_callback)(char *buf, int size, int rwflag, void *userdata)=NULL);
-		int DEPRECATED tls_opts_set(int cert_reqs, const char *tls_version=NULL, const char *ciphers=NULL);
-		int DEPRECATED tls_insecure_set(bool value);
-		int DEPRECATED tls_psk_set(const char *psk, const char *identity, const char *ciphers=NULL);
-		int DEPRECATED opts_set(enum mosq_opt_t option, void *value);
+		int reinitialise(const char *id, bool clean_session);
+		int socket();
+		int will_set(const char *topic, int payloadlen=0, const void *payload=NULL, int qos=0, bool retain=false);
+		int will_clear();
+		int username_pw_set(const char *username, const char *password=NULL);
+		int connect(const char *host, int port=1883, int keepalive=60);
+		int connect_async(const char *host, int port=1883, int keepalive=60);
+		int connect(const char *host, int port, int keepalive, const char *bind_address);
+		int connect_async(const char *host, int port, int keepalive, const char *bind_address);
+		int reconnect();
+		int reconnect_async();
+		int disconnect();
+		int publish(int *mid, const char *topic, int payloadlen=0, const void *payload=NULL, int qos=0, bool retain=false);
+		int subscribe(int *mid, const char *sub, int qos=0);
+		int unsubscribe(int *mid, const char *sub);
+		void reconnect_delay_set(unsigned int reconnect_delay, unsigned int reconnect_delay_max, bool reconnect_exponential_backoff);
+		int max_inflight_messages_set(unsigned int max_inflight_messages);
+		void message_retry_set(unsigned int message_retry);
+		void user_data_set(void *userdata);
+		int tls_set(const char *cafile, const char *capath=NULL, const char *certfile=NULL, const char *keyfile=NULL, int (*pw_callback)(char *buf, int size, int rwflag, void *userdata)=NULL);
+		int tls_opts_set(int cert_reqs, const char *tls_version=NULL, const char *ciphers=NULL);
+		int tls_insecure_set(bool value);
+		int tls_psk_set(const char *psk, const char *identity, const char *ciphers=NULL);
+		int opts_set(enum mosq_opt_t option, void *value);
 
-		int DEPRECATED loop(int timeout=-1, int max_packets=1);
-		int DEPRECATED loop_misc();
-		int DEPRECATED loop_read(int max_packets=1);
-		int DEPRECATED loop_write(int max_packets=1);
-		int DEPRECATED loop_forever(int timeout=-1, int max_packets=1);
-		int DEPRECATED loop_start();
-		int DEPRECATED loop_stop(bool force=false);
-		bool DEPRECATED want_write();
-		int DEPRECATED threaded_set(bool threaded=true);
-		int DEPRECATED socks5_set(const char *host, int port=1080, const char *username=NULL, const char *password=NULL);
+		int loop(int timeout=-1, int max_packets=1);
+		int loop_misc();
+		int loop_read(int max_packets=1);
+		int loop_write(int max_packets=1);
+		int loop_forever(int timeout=-1, int max_packets=1);
+		int loop_start();
+		int loop_stop(bool force=false);
+		bool want_write();
+		int threaded_set(bool threaded=true);
+		int socks5_set(const char *host, int port=1080, const char *username=NULL, const char *password=NULL);
 
 		// names in the functions commented to prevent unused parameter warning
 		virtual void on_connect(int /*rc*/) {return;}

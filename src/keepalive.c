@@ -29,24 +29,24 @@ int keepalive__add(struct mosquitto *context)
 }
 
 
-void keepalive__check(struct mosquitto_db *db, time_t now)
+void keepalive__check(void)
 {
 	struct mosquitto *context, *ctxt_tmp;
 
-	if(last_keepalive_check != now){
-		last_keepalive_check = now;
+	if(last_keepalive_check + 5 < db.now_s){
+		last_keepalive_check = db.now_s;
 
 		/* FIXME - this needs replacing with something more efficient */
-		HASH_ITER(hh_sock, db->contexts_by_sock, context, ctxt_tmp){
+		HASH_ITER(hh_sock, db.contexts_by_sock, context, ctxt_tmp){
 			if(context->sock != INVALID_SOCKET){
 				/* Local bridges never time out in this fashion. */
 				if(!(context->keepalive)
 						|| context->bridge
-						|| now - context->last_msg_in <= (time_t)(context->keepalive)*3/2){
+						|| db.now_s - context->last_msg_in <= (time_t)(context->keepalive)*3/2){
 
 				}else{
 					/* Client has exceeded keepalive*1.5 */
-					do_disconnect(db, context, MOSQ_ERR_KEEPALIVE);
+					do_disconnect(context, MOSQ_ERR_KEEPALIVE);
 				}
 			}
 		}
@@ -67,6 +67,6 @@ void keepalive__remove_all(void)
 
 int keepalive__update(struct mosquitto *context)
 {
-	context->last_msg_in = mosquitto_time();
+	context->last_msg_in = db.now_s;
 	return MOSQ_ERR_SUCCESS;
 }

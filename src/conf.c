@@ -117,7 +117,7 @@ static int conf__attempt_resolve(const char *host, const char *text, unsigned in
 }
 
 
-static void config__init_reload(struct mosquitto_db *db, struct mosquitto__config *config)
+static void config__init_reload(struct mosquitto__config *config)
 {
 	int i;
 	/* Set defaults */
@@ -179,7 +179,7 @@ static void config__init_reload(struct mosquitto_db *db, struct mosquitto__confi
 #else
 	config->log_facility = LOG_DAEMON;
 	config->log_dest = MQTT3_LOG_STDERR | MQTT3_LOG_DLT;
-	if(db->verbose){
+	if(db.verbose){
 		config->log_type = UINT_MAX;
 	}else{
 		config->log_type = MOSQ_LOG_ERR | MOSQ_LOG_WARNING | MOSQ_LOG_NOTICE | MOSQ_LOG_INFO;
@@ -234,10 +234,10 @@ static void config__cleanup_plugins(struct mosquitto__config *config)
 }
 
 
-void config__init(struct mosquitto_db *db, struct mosquitto__config *config)
+void config__init(struct mosquitto__config *config)
 {
 	memset(config, 0, sizeof(struct mosquitto__config));
-	config__init_reload(db, config);
+	config__init_reload(config);
 
 	config->daemon = false;
 	memset(&config->default_listener, 0, sizeof(struct mosquitto__listener));
@@ -367,7 +367,7 @@ static void print_usage(void)
 	printf("\nSee https://mosquitto.org/ for more information.\n\n");
 }
 
-int config__parse_args(struct mosquitto_db *db, struct mosquitto__config *config, int argc, char *argv[])
+int config__parse_args(struct mosquitto__config *config, int argc, char *argv[])
 {
 	int i;
 	int port_tmp;
@@ -375,9 +375,9 @@ int config__parse_args(struct mosquitto_db *db, struct mosquitto__config *config
 	for(i=1; i<argc; i++){
 		if(!strcmp(argv[i], "-c") || !strcmp(argv[i], "--config-file")){
 			if(i<argc-1){
-				db->config_file = argv[i+1];
+				db.config_file = argv[i+1];
 
-				if(config__read(db, config, false)){
+				if(config__read(config, false)){
 					return MOSQ_ERR_INVAL;
 				}
 			}else{
@@ -410,7 +410,7 @@ int config__parse_args(struct mosquitto_db *db, struct mosquitto__config *config
 			}
 			i++;
 		}else if(!strcmp(argv[i], "-v") || !strcmp(argv[i], "--verbose")){
-			db->verbose = true;
+			db.verbose = true;
 		}else{
 			fprintf(stderr, "Error: Unknown option '%s'.\n",argv[i]);
 			print_usage();
@@ -516,7 +516,7 @@ int config__parse_args(struct mosquitto_db *db, struct mosquitto__config *config
 			return MOSQ_ERR_NOMEM;
 		}
 	}
-	if(db->verbose){
+	if(db.verbose){
 		config->log_type = UINT_MAX;
 	}
 	return config__check(config);
@@ -588,7 +588,7 @@ void config__copy(struct mosquitto__config *src, struct mosquitto__config *dest)
 }
 
 
-int config__read(struct mosquitto_db *db, struct mosquitto__config *config, bool reload)
+int config__read(struct mosquitto__config *config, bool reload)
 {
 	int rc = MOSQ_ERR_SUCCESS;
 	struct config_recurse cr;
@@ -611,21 +611,21 @@ int config__read(struct mosquitto_db *db, struct mosquitto__config *config, bool
 	cr.max_queued_bytes = 0;
 	cr.max_queued_messages = 100;
 
-	if(!db->config_file) return 0;
+	if(!db.config_file) return 0;
 
 	if(reload){
 		/* Re-initialise appropriate config vars to default for reload. */
-		config__init_reload(db, &config_reload);
+		config__init_reload(&config_reload);
 		config_reload.listeners = config->listeners;
 		config_reload.listener_count = config->listener_count;
 		cur_security_options = NULL;
-		rc = config__read_file(&config_reload, reload, db->config_file, &cr, 0, &lineno);
+		rc = config__read_file(&config_reload, reload, db.config_file, &cr, 0, &lineno);
 	}else{
-		rc = config__read_file(config, reload, db->config_file, &cr, 0, &lineno);
+		rc = config__read_file(config, reload, db.config_file, &cr, 0, &lineno);
 	}
 	if(rc){
 		if(lineno > 0){
-			log__printf(NULL, MOSQ_LOG_ERR, "Error found at %s:%d.", db->config_file, lineno);
+			log__printf(NULL, MOSQ_LOG_ERR, "Error found at %s:%d.", db.config_file, lineno);
 		}
 		return rc;
 	}
@@ -708,7 +708,7 @@ int config__read(struct mosquitto_db *db, struct mosquitto__config *config, bool
 	if(cr.log_dest_set){
 		config->log_dest = cr.log_dest;
 	}
-	if(db->verbose){
+	if(db.verbose){
 		config->log_type = UINT_MAX;
 	}else if(cr.log_type_set){
 		config->log_type = cr.log_type;
@@ -2151,7 +2151,12 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 				}else if(!strcmp(token, "websockets_headers_size")){
 #ifdef WITH_WEBSOCKETS
 #  if defined(LWS_LIBRARY_VERSION_NUMBER) && LWS_LIBRARY_VERSION_NUMBER>=1007000
-					if(conf__parse_int(&token, "websockets_headers_size", &config->websockets_headers_size, saveptr)) return MOSQ_ERR_INVAL;
+					if(conf__parse_int(&token, "websockets_headers_size", &tmp_int, saveptr)) return MOSQ_ERR_INVAL;
+					if(tmp_int < 0 || tmp_int > UINT16_MAX){
+						log__printf(NULL, MOSQ_LOG_WARNING, "Error: Websockets headers size must be between 0 and 65535 inclusive.");
+						return MOSQ_ERR_INVAL;
+					}
+					config->websockets_headers_size = (uint16_t)tmp_int;
 #  else
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Websockets headers size require libwebsocket 1.7+");
 #  endif

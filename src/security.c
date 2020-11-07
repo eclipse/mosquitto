@@ -383,18 +383,18 @@ static int security__module_init_single(struct mosquitto__listener *listener, st
 }
 
 
-int mosquitto_security_module_init(struct mosquitto_db *db)
+int mosquitto_security_module_init(void)
 {
 	int rc = MOSQ_ERR_SUCCESS;
 	int i;
 
-	if(db->config->per_listener_settings){
-		for(i=0; i<db->config->listener_count; i++){
-			rc = security__module_init_single(&db->config->listeners[i], &db->config->listeners[i].security_options);
+	if(db.config->per_listener_settings){
+		for(i=0; i<db.config->listener_count; i++){
+			rc = security__module_init_single(&db.config->listeners[i], &db.config->listeners[i].security_options);
 			if(rc) return rc;
 		}
 	}else{
-		rc = security__module_init_single(NULL, &db->config->security_options);
+		rc = security__module_init_single(NULL, &db.config->security_options);
 	}
 	return rc;
 }
@@ -441,16 +441,16 @@ static void security__module_cleanup_single(struct mosquitto__security_options *
 }
 
 
-int mosquitto_security_module_cleanup(struct mosquitto_db *db)
+int mosquitto_security_module_cleanup(void)
 {
 	int i;
 
-	mosquitto_security_cleanup(db, false);
+	mosquitto_security_cleanup(false);
 
-	security__module_cleanup_single(&db->config->security_options);
+	security__module_cleanup_single(&db.config->security_options);
 
-	for(i=0; i<db->config->listener_count; i++){
-		security__module_cleanup_single(&db->config->listeners[i].security_options);
+	for(i=0; i<db.config->listener_count; i++){
+		security__module_cleanup_single(&db.config->listeners[i].security_options);
 	}
 
 	return MOSQ_ERR_SUCCESS;
@@ -511,21 +511,21 @@ static int security__init_single(struct mosquitto__security_options *opts, bool 
 }
 
 
-int mosquitto_security_init(struct mosquitto_db *db, bool reload)
+int mosquitto_security_init(bool reload)
 {
 	int i;
 	int rc;
 
-	if(db->config->per_listener_settings){
-		for(i=0; i<db->config->listener_count; i++){
-			rc = security__init_single(&db->config->listeners[i].security_options, reload);
+	if(db.config->per_listener_settings){
+		for(i=0; i<db.config->listener_count; i++){
+			rc = security__init_single(&db.config->listeners[i].security_options, reload);
 			if(rc != MOSQ_ERR_SUCCESS) return rc;
 		}
 	}else{
-		rc = security__init_single(&db->config->security_options, reload);
+		rc = security__init_single(&db.config->security_options, reload);
 		if(rc != MOSQ_ERR_SUCCESS) return rc;
 	}
-	return mosquitto_security_init_default(db, reload);
+	return mosquitto_security_init_default(reload);
 }
 
 /* Apply security settings after a reload.
@@ -534,9 +534,9 @@ int mosquitto_security_init(struct mosquitto_db *db, bool reload)
  * - Disconnecting users with invalid passwords
  * - Reapplying ACLs
  */
-int mosquitto_security_apply(struct mosquitto_db *db)
+int mosquitto_security_apply(void)
 {
-	return mosquitto_security_apply_default(db);
+	return mosquitto_security_apply_default();
 }
 
 
@@ -578,23 +578,23 @@ static int security__cleanup_single(struct mosquitto__security_options *opts, bo
 }
 
 
-int mosquitto_security_cleanup(struct mosquitto_db *db, bool reload)
+int mosquitto_security_cleanup(bool reload)
 {
 	int i;
 	int rc;
 
-	rc = security__cleanup_single(&db->config->security_options, reload);
+	rc = security__cleanup_single(&db.config->security_options, reload);
 	if(rc != MOSQ_ERR_SUCCESS) return rc;
 
-	for(i=0; i<db->config->listener_count; i++){
-		rc = security__cleanup_single(&db->config->listeners[i].security_options, reload);
+	for(i=0; i<db.config->listener_count; i++){
+		rc = security__cleanup_single(&db.config->listeners[i].security_options, reload);
 		if(rc != MOSQ_ERR_SUCCESS) return rc;
 	}
-	return mosquitto_security_cleanup_default(db, reload);
+	return mosquitto_security_cleanup_default(reload);
 }
 
 
-/* int mosquitto_acl_check(struct mosquitto_db *db, struct mosquitto *context, const char *topic, int access) */
+/* int mosquitto_acl_check(struct mosquitto *context, const char *topic, int access) */
 static int acl__check_single(struct mosquitto__auth_plugin_config *auth_plugin, struct mosquitto *context, struct mosquitto_acl_msg *msg, int access)
 {
 	const char *username;
@@ -672,7 +672,7 @@ static int acl__check_dollar(const char *topic, int access)
 }
 
 
-int mosquitto_acl_check(struct mosquitto_db *db, struct mosquitto *context, const char *topic, uint32_t payloadlen, void* payload, uint8_t qos, bool retain, int access)
+int mosquitto_acl_check(struct mosquitto *context, const char *topic, uint32_t payloadlen, void* payload, uint8_t qos, bool retain, int access)
 {
 	int rc;
 	int i;
@@ -696,14 +696,14 @@ int mosquitto_acl_check(struct mosquitto_db *db, struct mosquitto *context, cons
 	 */
 	rc = MOSQ_ERR_SUCCESS;
 
-	if(db->config->per_listener_settings){
+	if(db.config->per_listener_settings){
 		if(context->listener){
 			opts = &context->listener->security_options;
 		}else{
 			return MOSQ_ERR_ACL_DENIED;
 		}
 	}else{
-		opts = &db->config->security_options;
+		opts = &db.config->security_options;
 	}
 
 	memset(&msg, 0, sizeof(msg));
@@ -748,7 +748,7 @@ int mosquitto_acl_check(struct mosquitto_db *db, struct mosquitto *context, cons
 	return rc;
 }
 
-int mosquitto_unpwd_check(struct mosquitto_db *db, struct mosquitto *context)
+int mosquitto_unpwd_check(struct mosquitto *context)
 {
 	int rc;
 	int i;
@@ -759,10 +759,10 @@ int mosquitto_unpwd_check(struct mosquitto_db *db, struct mosquitto *context)
 
 	rc = MOSQ_ERR_PLUGIN_DEFER;
 
-	if(db->config->per_listener_settings){
+	if(db.config->per_listener_settings){
 		opts = &context->listener->security_options;
 	}else{
-		opts = &db->config->security_options;
+		opts = &db.config->security_options;
 	}
 
 	DL_FOREACH(opts->plugin_callbacks.basic_auth, cb_base){
@@ -808,8 +808,8 @@ int mosquitto_unpwd_check(struct mosquitto_db *db, struct mosquitto *context)
 	 * here, then no plugins were configured. Unless we have all deferred, and
 	 * anonymous logins are allowed. */
 	if(plugin_used == false){
-		if((db->config->per_listener_settings && context->listener->security_options.allow_anonymous != false)
-				|| (!db->config->per_listener_settings && db->config->security_options.allow_anonymous != false)){
+		if((db.config->per_listener_settings && context->listener->security_options.allow_anonymous != false)
+				|| (!db.config->per_listener_settings && db.config->security_options.allow_anonymous != false)){
 
 			return MOSQ_ERR_SUCCESS;
 		}else{
@@ -818,8 +818,8 @@ int mosquitto_unpwd_check(struct mosquitto_db *db, struct mosquitto *context)
 	}else{
 		if(rc == MOSQ_ERR_PLUGIN_DEFER){
 			if(context->username == NULL &&
-					((db->config->per_listener_settings && context->listener->security_options.allow_anonymous != false)
-					|| (!db->config->per_listener_settings && db->config->security_options.allow_anonymous != false))){
+					((db.config->per_listener_settings && context->listener->security_options.allow_anonymous != false)
+					|| (!db.config->per_listener_settings && db.config->security_options.allow_anonymous != false))){
 	
 				return MOSQ_ERR_SUCCESS;
 			}else{
@@ -831,7 +831,7 @@ int mosquitto_unpwd_check(struct mosquitto_db *db, struct mosquitto *context)
 	return rc;
 }
 
-int mosquitto_psk_key_get(struct mosquitto_db *db, struct mosquitto *context, const char *hint, const char *identity, char *key, int max_key_len)
+int mosquitto_psk_key_get(struct mosquitto *context, const char *hint, const char *identity, char *key, int max_key_len)
 {
 	int rc;
 	int i;
@@ -839,7 +839,7 @@ int mosquitto_psk_key_get(struct mosquitto_db *db, struct mosquitto *context, co
 	struct mosquitto_evt_psk_key event_data;
 	struct mosquitto__callback *cb_base;
 
-	rc = mosquitto_psk_key_get_default(db, context, hint, identity, key, max_key_len);
+	rc = mosquitto_psk_key_get_default(context, hint, identity, key, max_key_len);
 	if(rc != MOSQ_ERR_PLUGIN_DEFER){
 		return rc;
 	}
@@ -848,10 +848,10 @@ int mosquitto_psk_key_get(struct mosquitto_db *db, struct mosquitto *context, co
 	 * If no plugins exist we should accept at this point so set rc to success.
 	 */
 
-	if(db->config->per_listener_settings){
+	if(db.config->per_listener_settings){
 		opts = &context->listener->security_options;
 	}else{
-		opts = &db->config->security_options;
+		opts = &db.config->security_options;
 	}
 
 	DL_FOREACH(opts->plugin_callbacks.psk_key, cb_base){
@@ -912,7 +912,7 @@ int mosquitto_psk_key_get(struct mosquitto_db *db, struct mosquitto *context, co
 }
 
 
-int mosquitto_security_auth_start(struct mosquitto_db *db, struct mosquitto *context, bool reauth, const void *data_in, uint16_t data_in_len, void **data_out, uint16_t *data_out_len)
+int mosquitto_security_auth_start(struct mosquitto *context, bool reauth, const void *data_in, uint16_t data_in_len, void **data_out, uint16_t *data_out_len)
 {
 	int rc = MOSQ_ERR_PLUGIN_DEFER;
 	int i;
@@ -923,10 +923,10 @@ int mosquitto_security_auth_start(struct mosquitto_db *db, struct mosquitto *con
 	if(!context || !context->listener || !context->auth_method) return MOSQ_ERR_INVAL;
 	if(!data_out || !data_out_len) return MOSQ_ERR_INVAL;
 
-	if(db->config->per_listener_settings){
+	if(db.config->per_listener_settings){
 		opts = &context->listener->security_options;
 	}else{
-		opts = &db->config->security_options;
+		opts = &db.config->security_options;
 	}
 
 	DL_FOREACH(opts->plugin_callbacks.ext_auth_start, cb_base){
@@ -971,7 +971,7 @@ int mosquitto_security_auth_start(struct mosquitto_db *db, struct mosquitto *con
 }
 
 
-int mosquitto_security_auth_continue(struct mosquitto_db *db, struct mosquitto *context, const void *data_in, uint16_t data_in_len, void **data_out, uint16_t *data_out_len)
+int mosquitto_security_auth_continue(struct mosquitto *context, const void *data_in, uint16_t data_in_len, void **data_out, uint16_t *data_out_len)
 {
 	int rc = MOSQ_ERR_PLUGIN_DEFER;
 	int i;
@@ -982,10 +982,10 @@ int mosquitto_security_auth_continue(struct mosquitto_db *db, struct mosquitto *
 	if(!context || !context->listener || !context->auth_method) return MOSQ_ERR_INVAL;
 	if(!data_out || !data_out_len) return MOSQ_ERR_INVAL;
 
-	if(db->config->per_listener_settings){
+	if(db.config->per_listener_settings){
 		opts = &context->listener->security_options;
 	}else{
-		opts = &db->config->security_options;
+		opts = &db.config->security_options;
 	}
 
 	DL_FOREACH(opts->plugin_callbacks.ext_auth_continue, cb_base){

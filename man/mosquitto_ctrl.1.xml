@@ -18,12 +18,12 @@
 		<cmdsynopsis>
 			<command>mosquitto_ctrl</command>
 			<arg choice='opt'>connection-options</arg>
-			<arg choice='plain'>module</arg>
+			<arg choice='plain'>module-name</arg>
 			<arg choice='plain'>module-command</arg>
 			<arg choice='opt'>command-options</arg>
 		</cmdsynopsis>
 		<cmdsynopsis>
-			<command>mosquitto_ctrl</command>
+			<command>connection-options:</command>
 			<group choice='req'>
 				<arg choice='plain'>
 					<arg><option>-h</option> <replaceable>hostname</replaceable></arg>
@@ -72,9 +72,7 @@
 		</cmdsynopsis>
 		<cmdsynopsis>
 			<command>mosquitto_ctrl</command>
-			<group choice='plain'>
 				<arg><option>--help</option></arg>
-			</group>
 		</cmdsynopsis>
 	</refsynopsisdiv>
 
@@ -99,20 +97,36 @@
 	</refsect1>
 
 	<refsect1>
-		<title>Dynamic Security Module</title>
-        <para>The dynamic security plugin is an optional authentication and
-        access control plugin for Mosquitto that allows on the fly
-        control of users, groups, and roles. The mosquitto_ctrl
-		<command>dynsec</command> module allows you to interact with
-		a broker using the dynamic security plugin.</para>
-
-		<refsect2>
-			<title>Configuration file initialisation</title>
-			<para></para>
-			<itemizedlist mark="circle">
-				<listitem><para>mosquitto_ctrl dynsec init <literal>filename</literal> <literal>admin-user</literal> admin-password [admin-role]</para></listitem>
-			</itemizedlist>
-		</refsect2>
+		<title>Modules</title>
+		<variablelist>
+			<varlistentry>
+				<term><option>Dynamic security</option></term>
+				<listitem>
+					<para>
+						Authentication, and role based access control with users
+						and groups. Uses the <command>dynsec</command> module name. See:
+						<citerefentry>
+							<refentrytitle><link xlink:href="mosquitto_ctrl_dynsec-1.html">mosquitto_ctrl_dynsec</link></refentrytitle>
+							<manvolnum>1</manvolnum>
+						</citerefentry>
+					</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>External modules</option></term>
+				<listitem>
+					<para><command>mosquitto_ctrl</command> has the ability to load
+						external modules in the form of shared libraries. For example
+						using the module name <option>example</option> will try to load
+						the external module <option>mosquitto_ctrl_example.so</option>
+						or <option>mosquitto_ctrl_example.dll</option>, depending on platform.
+						This allows new functionality to be added to Mosquitto by combining
+						a plugin and mosquitto_ctrl module, without having to recompile any
+						Mosquitto source code.
+					</para>
+				</listitem>
+			</varlistentry>
+		</variablelist>
 	</refsect1>
 
 	<refsect1>

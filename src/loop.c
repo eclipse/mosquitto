@@ -67,7 +67,7 @@ void lws__sul_callback(struct lws_sorted_usec_list *l)
 static struct lws_sorted_usec_list sul;
 #endif
 
-static int single_publish(struct mosquitto_db *db, struct mosquitto *context, struct mosquitto_message_v5 *msg)
+static int single_publish(struct mosquitto *context, struct mosquitto_message_v5 *msg)
 {
 	struct mosquitto_msg_store *stored;
 	uint16_t mid;
@@ -90,31 +90,31 @@ static int single_publish(struct mosquitto_db *db, struct mosquitto *context, st
 		msg->properties = NULL;
 	}
 
-	if(db__message_store(db, context, stored, 0, 0, mosq_mo_broker)) return 1;
+	if(db__message_store(context, stored, 0, 0, mosq_mo_broker)) return 1;
 
 	if(msg->qos){
 		mid = mosquitto__mid_generate(context);
 	}else{
 		mid = 0;
 	}
-	return db__message_insert(db, context, mid, mosq_md_out, (uint8_t)msg->qos, 0, stored, msg->properties, true);
+	return db__message_insert(context, mid, mosq_md_out, (uint8_t)msg->qos, 0, stored, msg->properties, true);
 }
 
 
-void queue_plugin_msgs(struct mosquitto_db *db)
+void queue_plugin_msgs(void)
 {
 	struct mosquitto_message_v5 *msg, *tmp;
 	struct mosquitto *context;
 
-	DL_FOREACH_SAFE(db->plugin_msgs, msg, tmp){
-		DL_DELETE(db->plugin_msgs, msg);
+	DL_FOREACH_SAFE(db.plugin_msgs, msg, tmp){
+		DL_DELETE(db.plugin_msgs, msg);
 		if(msg->clientid){
-			HASH_FIND(hh_id, db->contexts_by_id, msg->clientid, strlen(msg->clientid), context);
+			HASH_FIND(hh_id, db.contexts_by_id, msg->clientid, strlen(msg->clientid), context);
 			if(context){
-				single_publish(db, context, msg);
+				single_publish(context, msg);
 			}
 		}else{
-			db__messages_easy_queue(db, NULL, msg->topic, (uint8_t)msg->qos, (uint32_t)msg->payloadlen, msg->payload, msg->retain, 0, &msg->properties);
+			db__messages_easy_queue(NULL, msg->topic, (uint8_t)msg->qos, (uint32_t)msg->payloadlen, msg->payload, msg->retain, 0, &msg->properties);
 		}
 		mosquitto__free(msg->topic);
 		mosquitto__free(msg->payload);
@@ -125,7 +125,7 @@ void queue_plugin_msgs(struct mosquitto_db *db)
 }
 
 
-int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int listensock_count)
+int mosquitto_main_loop(struct mosquitto__listener_sock *listensock, int listensock_count)
 {
 #ifdef WITH_SYS_TREE
 	time_t start_time = mosquitto_time();
@@ -133,7 +133,6 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 #ifdef WITH_PERSISTENCE
 	time_t last_backup = mosquitto_time();
 #endif
-	time_t now = 0;
 #ifdef WITH_WEBSOCKETS
 	int i;
 #endif
@@ -144,47 +143,48 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 	memset(&sul, 0, sizeof(struct lws_sorted_usec_list));
 #endif
 
-	rc = mux__init(db, listensock, listensock_count);
+	db.now_s = mosquitto_time();
+	db.now_real_s = time(NULL);
+
+	rc = mux__init(listensock, listensock_count);
 	if(rc) return rc;
 
 #ifdef WITH_BRIDGE
-	rc = bridge__register_local_connections(db);
+	rc = bridge__register_local_connections();
 	if(rc) return rc;
 #endif
 
 	while(run){
-		queue_plugin_msgs(db);
-		context__free_disused(db);
+		queue_plugin_msgs();
+		context__free_disused();
 #ifdef WITH_SYS_TREE
-		if(db->config->sys_interval > 0){
-			sys_tree__update(db, db->config->sys_interval, start_time);
+		if(db.config->sys_interval > 0){
+			sys_tree__update(db.config->sys_interval, start_time);
 		}
 #endif
 
-		now = mosquitto_time();
-		keepalive__check(db, now);
+		keepalive__check();
 
 #ifdef WITH_BRIDGE
-		bridge_check(db);
+		bridge_check();
 #endif
 
-		rc = mux__handle(db, listensock, listensock_count);
+		rc = mux__handle(listensock, listensock_count);
 		if(rc) return rc;
 
-		now = time(NULL);
-		session_expiry__check(db, now);
-		will_delay__check(db, now);
+		session_expiry__check();
+		will_delay__check();
 #ifdef WITH_PERSISTENCE
-		if(db->config->persistence && db->config->autosave_interval){
-			if(db->config->autosave_on_changes){
-				if(db->persistence_changes >= db->config->autosave_interval){
-					persist__backup(db, false);
-					db->persistence_changes = 0;
+		if(db.config->persistence && db.config->autosave_interval){
+			if(db.config->autosave_on_changes){
+				if(db.persistence_changes >= db.config->autosave_interval){
+					persist__backup(false);
+					db.persistence_changes = 0;
 				}
 			}else{
-				if(last_backup + db->config->autosave_interval < mosquitto_time()){
-					persist__backup(db, false);
-					last_backup = mosquitto_time();
+				if(last_backup + db.config->autosave_interval < db.now_s){
+					persist__backup(false);
+					last_backup = db.now_s;
 				}
 			}
 		}
@@ -192,52 +192,53 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 
 #ifdef WITH_PERSISTENCE
 		if(flag_db_backup){
-			persist__backup(db, false);
+			persist__backup(false);
 			flag_db_backup = false;
 		}
 #endif
 		if(flag_reload){
 			log__printf(NULL, MOSQ_LOG_INFO, "Reloading config.");
-			config__read(db, db->config, true);
-			mosquitto_security_cleanup(db, true);
-			mosquitto_security_init(db, true);
-			mosquitto_security_apply(db);
-			log__close(db->config);
-			log__init(db->config);
+			config__read(db.config, true);
+			listeners__reload_all_certificates();
+			mosquitto_security_cleanup(true);
+			mosquitto_security_init(true);
+			mosquitto_security_apply();
+			log__close(db.config);
+			log__init(db.config);
 			flag_reload = false;
 		}
 		if(flag_tree_print){
-			sub__tree_print(db->subs, 0);
+			sub__tree_print(db.subs, 0);
 			flag_tree_print = false;
 		}
 #ifdef WITH_WEBSOCKETS
-		for(i=0; i<db->config->listener_count; i++){
+		for(i=0; i<db.config->listener_count; i++){
 			/* Extremely hacky, should be using the lws provided external poll
 			 * interface, but their interface has changed recently and ours
 			 * will soon, so for now websockets clients are second class
 			 * citizens. */
-			if(db->config->listeners[i].ws_context){
+			if(db.config->listeners[i].ws_context){
 #if LWS_LIBRARY_VERSION_NUMBER > 3002000
-				libwebsocket_service(db->config->listeners[i].ws_context, -1);
+				libwebsocket_service(db.config->listeners[i].ws_context, -1);
 #elif LWS_LIBRARY_VERSION_NUMBER == 3002000
-				lws_sul_schedule(db->config->listeners[i].ws_context, 0, &sul, lws__sul_callback, 10);
-				libwebsocket_service(db->config->listeners[i].ws_context, 0);
+				lws_sul_schedule(db.config->listeners[i].ws_context, 0, &sul, lws__sul_callback, 10);
+				libwebsocket_service(db.config->listeners[i].ws_context, 0);
 #else
-				libwebsocket_service(db->config->listeners[i].ws_context, 0);
+				libwebsocket_service(db.config->listeners[i].ws_context, 0);
 #endif
 
 			}
 		}
 #endif
-		plugin__handle_tick(db);
+		plugin__handle_tick();
 	}
 
-	mux__cleanup(db);
+	mux__cleanup();
 
 	return MOSQ_ERR_SUCCESS;
 }
 
-void do_disconnect(struct mosquitto_db *db, struct mosquitto *context, int reason)
+void do_disconnect(struct mosquitto *context, int reason)
 {
 	char *id;
 #ifdef WITH_WEBSOCKETS
@@ -260,8 +261,8 @@ void do_disconnect(struct mosquitto_db *db, struct mosquitto *context, int reaso
 			libwebsocket_callback_on_writable(context->ws_context, context->wsi);
 		}
 		if(context->sock != INVALID_SOCKET){
-			HASH_DELETE(hh_sock, db->contexts_by_sock, context);
-			mux__delete(db, context);
+			HASH_DELETE(hh_sock, db.contexts_by_sock, context);
+			mux__delete(context);
 			context->sock = INVALID_SOCKET;
 		}
 		if(is_duplicate){
@@ -271,12 +272,12 @@ void do_disconnect(struct mosquitto_db *db, struct mosquitto *context, int reaso
 			 * id. Websockets doesn't actually close the connection here,
 			 * unlike for normal clients, which means there is extra time when
 			 * there could be two clients with the same id in the hash. */
-			context__remove_from_by_id(db, context);
+			context__remove_from_by_id(context);
 		}
 	}else
 #endif
 	{
-		if(db->config->connection_messages == true){
+		if(db.config->connection_messages == true){
 			if(context->id){
 				id = context->id;
 			}else{
@@ -322,8 +323,8 @@ void do_disconnect(struct mosquitto_db *db, struct mosquitto *context, int reaso
 				}
 			}
 		}
-		mux__delete(db, context);
-		context__disconnect(db, context);
+		mux__delete(context);
+		context__disconnect(context);
 	}
 }
 

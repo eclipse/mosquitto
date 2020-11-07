@@ -27,7 +27,7 @@ Contributors:
 
 
 
-int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
+int handle__subscribe(struct mosquitto *context)
 {
 	int rc = 0;
 	int rc2;
@@ -162,7 +162,7 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 			log__printf(NULL, MOSQ_LOG_DEBUG, "\t%s (QoS %d)", sub, qos);
 
 			allowed = true;
-			rc2 = mosquitto_acl_check(db, context, sub, 0, NULL, qos, false, MOSQ_ACL_SUBSCRIBE);
+			rc2 = mosquitto_acl_check(context, sub, 0, NULL, qos, false, MOSQ_ACL_SUBSCRIBE);
 			switch(rc2){
 				case MOSQ_ERR_SUCCESS:
 					break;
@@ -180,20 +180,20 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 			}
 
 			if(allowed){
-				rc2 = sub__add(db, context, sub, qos, subscription_identifier, subscription_options, &db->subs);
+				rc2 = sub__add(context, sub, qos, subscription_identifier, subscription_options, &db.subs);
 				if(rc2 > 0){
 					mosquitto__free(sub);
 					return rc2;
 				}
 				if(context->protocol == mosq_p_mqtt311 || context->protocol == mosq_p_mqtt31){
 					if(rc2 == MOSQ_ERR_SUCCESS || rc2 == MOSQ_ERR_SUB_EXISTS){
-						if(retain__queue(db, context, sub, qos, 0)) rc = 1;
+						if(retain__queue(context, sub, qos, 0)) rc = 1;
 					}
 				}else{
 					if((retain_handling == MQTT_SUB_OPT_SEND_RETAIN_ALWAYS)
 							|| (rc2 == MOSQ_ERR_SUCCESS && retain_handling == MQTT_SUB_OPT_SEND_RETAIN_NEW)){
 
-						if(retain__queue(db, context, sub, qos, subscription_identifier)) rc = 1;
+						if(retain__queue(context, sub, qos, subscription_identifier)) rc = 1;
 					}
 				}
 
@@ -224,13 +224,13 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 	mosquitto__free(payload);
 
 #ifdef WITH_PERSISTENCE
-	db->persistence_changes++;
+	db.persistence_changes++;
 #endif
 
 	if(context->current_out_packet == NULL){
-		rc = db__message_write_queued_out(db, context);
+		rc = db__message_write_queued_out(context);
 		if(rc) return rc;
-		rc = db__message_write_inflight_out_latest(db, context);
+		rc = db__message_write_inflight_out_latest(context);
 		if(rc) return rc;
 	}
 
