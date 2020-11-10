@@ -16,6 +16,9 @@ Contributors:
 
 #include "config.h"
 
+/*
+ * this should be set my cmake, not just defined here
+ */
 #define HAVE_PPOLL 1
 
 #include <errno.h>
