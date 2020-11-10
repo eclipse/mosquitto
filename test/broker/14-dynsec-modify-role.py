@@ -2,6 +2,7 @@
 
 from mosq_test_helper import *
 import json
+import shutil
 
 def write_config(filename, port):
     with open(filename, 'w') as f:
@@ -26,17 +27,17 @@ conf_file = os.path.basename(__file__).replace('.py', '.conf')
 write_config(conf_file, port)
 
 create_role_command = { "commands": [{
-    "command": "createRole", "roleName": "role_one",
-    "textName": "Name", "textDescription": "Description",
+    "command": "createRole", "rolename": "role_one",
+    "textname": "Name", "textdescription": "Description",
     "acls":[
         {
-            "aclType": "publishClientSend",
+            "acltype": "publishClientSend",
             "allow": True,
             "topic": "topic/#",
             "priority": 8
         },
         {
-            "aclType": "publishClientSend",
+            "acltype": "publishClientSend",
             "allow": True,
             "topic": "topic/2/#",
             "priority": 9
@@ -46,25 +47,25 @@ create_role_command = { "commands": [{
 create_role_response = {'responses': [{'command': 'createRole', 'correlationData': '2'}]}
 
 modify_role_command = { "commands": [{
-    "command": "modifyRole", "roleName": "role_one",
-    "textName": "Modified name", "textDescription": "Modified description",
+    "command": "modifyRole", "rolename": "role_one",
+    "textname": "Modified name", "textdescription": "Modified description",
     "correlationData": "3" }]
 }
 modify_role_response = {'responses': [{'command': 'modifyRole', 'correlationData': '3'}]}
 
 
-get_role_command1 = { "commands": [{"command": "getRole", "roleName": "role_one"}]}
-get_role_response1 = {'responses':[{'command': 'getRole', 'data': {'role': {'roleName': 'role_one',
-    'textName': 'Name', 'textDescription': 'Description',
+get_role_command1 = { "commands": [{"command": "getRole", "rolename": "role_one"}]}
+get_role_response1 = {'responses':[{'command': 'getRole', 'data': {'role': {'rolename': 'role_one',
+    'textname': 'Name', 'textdescription': 'Description',
     'acls': [
         {
-            "aclType": "publishClientSend",
+            "acltype": "publishClientSend",
             "topic": "topic/2/#",
             "allow": True,
             "priority": 9
         },
         {
-            "aclType": "publishClientSend",
+            "acltype": "publishClientSend",
             "topic": "topic/#",
             "allow": True,
             "priority": 8
@@ -72,18 +73,18 @@ get_role_response1 = {'responses':[{'command': 'getRole', 'data': {'role': {'rol
     ]}}}]}
 
 get_role_command2 = { "commands": [{
-    "command": "getRole", "roleName": "role_one"}]}
-get_role_response2 = {'responses':[{'command': 'getRole', 'data': {'role': {'roleName': 'role_one',
-    'textName': 'Modified name', 'textDescription': 'Modified description',
+    "command": "getRole", "rolename": "role_one"}]}
+get_role_response2 = {'responses':[{'command': 'getRole', 'data': {'role': {'rolename': 'role_one',
+    'textname': 'Modified name', 'textdescription': 'Modified description',
     'acls': [
         {
-            "aclType": "publishClientSend",
+            "acltype": "publishClientSend",
             "topic": "topic/2/#",
             "allow": True,
             "priority": 9
         },
         {
-            "aclType": "publishClientSend",
+            "acltype": "publishClientSend",
             "topic": "topic/#",
             "allow": True,
             "priority": 8
@@ -92,7 +93,7 @@ get_role_response2 = {'responses':[{'command': 'getRole', 'data': {'role': {'rol
 
 rc = 1
 keepalive = 10
-connect_packet = mosq_test.gen_connect("ctrl-test", keepalive=keepalive)
+connect_packet = mosq_test.gen_connect("ctrl-test", keepalive=keepalive, username="admin", password="admin")
 connack_packet = mosq_test.gen_connack(rc=0)
 
 mid = 2
@@ -101,13 +102,9 @@ suback_packet = mosq_test.gen_suback(mid, 1)
 
 try:
     os.mkdir(str(port))
-    with open("%d/dynamic-security.json" % port, 'w') as f:
-        f.write('{"defaultACLAction": {"publishClientSend":"allow", "publishClientReceive":"allow", "subscribe":"allow", "unsubscribe":"allow"}}')
+    shutil.copyfile("dynamic-security-init.json", "%d/dynamic-security.json" % (port))
 except FileExistsError:
-    try:
-        os.remove(f"{port}/dynamic-security.json")
-    except FileNotFoundError:
-        pass
+    pass
 
 broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port)
 

@@ -23,7 +23,7 @@ Contributors:
 #include "property_mosq.h"
 #include "util_mosq.h"
 
-int send__auth(struct mosquitto_db *db, struct mosquitto *context, uint8_t reason_code, const void *auth_data, uint16_t auth_data_len)
+int send__auth(struct mosquitto *context, uint8_t reason_code, const void *auth_data, uint16_t auth_data_len)
 {
 	struct mosquitto__packet *packet = NULL;
 	int rc;

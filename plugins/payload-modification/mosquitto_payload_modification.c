@@ -46,13 +46,13 @@ static int callback_message(int event, void *event_data, void *userdata)
 {
 	struct mosquitto_evt_message *ed = event_data;
 	char *new_payload;
-	int new_payloadlen;
+	uint32_t new_payloadlen;
 
 	/* This simply adds "hello " to the front of every payload. You can of
 	 * course do much more complicated message processing if needed. */
 
 	/* Calculate the length of our new payload */
-	new_payloadlen = ed->payloadlen + strlen("hello ")+1;
+	new_payloadlen = ed->payloadlen + (uint32_t)strlen("hello ")+1;
 
 	/* Allocate some memory - use
 	 * mosquitto_calloc/mosquitto_malloc/mosquitto_strdup when allocating, to
@@ -64,7 +64,7 @@ static int callback_message(int event, void *event_data, void *userdata)
 
 	/* Print "hello " to the payload */
 	snprintf(new_payload, new_payloadlen, "hello ");
-	memcpy(new_payload+strlen("hello "), ed->payload, ed->payloadlen);
+	memcpy(new_payload+(uint32_t)strlen("hello "), ed->payload, ed->payloadlen);
 
 	/* Assign the new payload and payloadlen to the event data structure. You
 	 * must *not* free the original payload, it will be handled by the

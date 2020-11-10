@@ -211,6 +211,10 @@ struct mosquitto_msg_data{
 
 
 struct mosquitto {
+#if defined(WITH_BROKER) && defined(WITH_EPOLL)
+	/* This *must* be the first element in the struct. */
+	int ident;
+#endif
 	mosq_sock_t sock;
 #ifndef WITH_BROKER
 	mosq_sock_t sockpairR, sockpairW;

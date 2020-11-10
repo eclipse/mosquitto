@@ -43,7 +43,7 @@ int will_delay__add(struct mosquitto *context)
 
 	item->context = context;
 	context->will_delay_entry = item;
-	item->context->will_delay_time = time(NULL) + item->context->will_delay_interval;
+	item->context->will_delay_time = db.now_real_s + item->context->will_delay_interval;
 
 	DL_INSERT_INORDER(delay_list, item, will_delay__cmp);
 
@@ -52,7 +52,7 @@ int will_delay__add(struct mosquitto *context)
 
 
 /* Call on broker shutdown only */
-void will_delay__send_all(struct mosquitto_db *db)
+void will_delay__send_all(void)
 {
 	struct will_delay_list *item, *tmp;
 
@@ -60,28 +60,28 @@ void will_delay__send_all(struct mosquitto_db *db)
 		DL_DELETE(delay_list, item);
 		item->context->will_delay_interval = 0;
 		item->context->will_delay_entry = NULL;
-		context__send_will(db, item->context);
+		context__send_will(item->context);
 		mosquitto__free(item);
 	}
 	
 }
 
-void will_delay__check(struct mosquitto_db *db, time_t now)
+void will_delay__check(void)
 {
 	struct will_delay_list *item, *tmp;
 
-	if(now <= last_check) return;
+	if(db.now_real_s <= last_check) return;
 
-	last_check = now;
+	last_check = db.now_real_s;
 
 	DL_FOREACH_SAFE(delay_list, item, tmp){
-		if(item->context->will_delay_time < now){
+		if(item->context->will_delay_time < db.now_real_s){
 			DL_DELETE(delay_list, item);
 			item->context->will_delay_interval = 0;
 			item->context->will_delay_entry = NULL;
-			context__send_will(db, item->context);
+			context__send_will(item->context);
 			if(item->context->session_expiry_interval == 0){
-				context__add_to_disused(db, item->context);
+				context__add_to_disused(item->context);
 			}
 			mosquitto__free(item);
 		}else{

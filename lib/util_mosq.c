@@ -57,21 +57,23 @@ Contributors:
 #include <libwebsockets.h>
 #endif
 
-#ifdef WITH_BROKER
-int mosquitto__check_keepalive(struct mosquitto_db *db, struct mosquitto *mosq)
-#else
 int mosquitto__check_keepalive(struct mosquitto *mosq)
-#endif
 {
 	time_t next_msg_out;
 	time_t last_msg_in;
-	time_t now = mosquitto_time();
+	time_t now;
 #ifndef WITH_BROKER
 	int rc;
 #endif
 	int state;
 
 	assert(mosq);
+#ifdef WITH_BROKER
+	now = db.now_s;
+#else
+	now = mosquitto_time();
+#endif
+
 #if defined(WITH_BROKER) && defined(WITH_BRIDGE)
 	/* Check if a lazy bridge should be timed out due to idle. */
 	if(mosq->bridge && mosq->bridge->start_type == bst_lazy
@@ -79,7 +81,7 @@ int mosquitto__check_keepalive(struct mosquitto *mosq)
 				&& now - mosq->next_msg_out - mosq->keepalive >= mosq->bridge->idle_timeout){
 
 		log__printf(NULL, MOSQ_LOG_NOTICE, "Bridge connection %s has exceeded idle timeout, disconnecting.", mosq->id);
-		net__socket_close(db, mosq);
+		net__socket_close(mosq);
 		return MOSQ_ERR_SUCCESS;
 	}
 #endif
@@ -100,7 +102,7 @@ int mosquitto__check_keepalive(struct mosquitto *mosq)
 			pthread_mutex_unlock(&mosq->msgtime_mutex);
 		}else{
 #ifdef WITH_BROKER
-			net__socket_close(db, mosq);
+			net__socket_close(mosq);
 #else
 			net__socket_close(mosq);
 			state = mosquitto__get_state(mosq);

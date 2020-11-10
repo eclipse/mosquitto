@@ -55,10 +55,16 @@ static int role_cmp(void *a, void *b)
 
 static int rolelist_cmp(void *a, void *b)
 {
+	int prio;
 	struct dynsec__rolelist *rolelist_a = a;
 	struct dynsec__rolelist *rolelist_b = b;
 
-	return rolelist_b->priority - rolelist_a->priority;
+	prio = rolelist_b->priority - rolelist_a->priority;
+	if(prio == 0){
+		return strcmp(rolelist_a->rolename, rolelist_b->rolename);
+	}else{
+		return prio;
+	}
 }
 
 
@@ -577,6 +583,10 @@ int dynsec_roles__process_create(cJSON *j_responses, struct mosquitto *context, 
 		dynsec__command_reply(j_responses, context, "createRole", "Invalid/missing rolename", correlation_data);
 		return MOSQ_ERR_INVAL;
 	}
+	if(mosquitto_validate_utf8(rolename, (int)strlen(rolename)) != MOSQ_ERR_SUCCESS){
+		dynsec__command_reply(j_responses, context, "createRole", "Role name not valid UTF-8", correlation_data);
+		return MOSQ_ERR_INVAL;
+	}
 
 	if(json_get_string(command, "textname", &text_name, true) != MOSQ_ERR_SUCCESS){
 		dynsec__command_reply(j_responses, context, "createRole", "Invalid/missing textname", correlation_data);
@@ -686,6 +696,10 @@ int dynsec_roles__process_delete(cJSON *j_responses, struct mosquitto *context, 
 
 	if(json_get_string(command, "rolename", &rolename, false) != MOSQ_ERR_SUCCESS){
 		dynsec__command_reply(j_responses, context, "deleteRole", "Invalid/missing rolename", correlation_data);
+		return MOSQ_ERR_INVAL;
+	}
+	if(mosquitto_validate_utf8(rolename, (int)strlen(rolename)) != MOSQ_ERR_SUCCESS){
+		dynsec__command_reply(j_responses, context, "deleteRole", "Role name not valid UTF-8", correlation_data);
 		return MOSQ_ERR_INVAL;
 	}
 
@@ -821,11 +835,17 @@ int dynsec_roles__process_add_acl(cJSON *j_responses, struct mosquitto *context,
 	struct dynsec__role *role;
 	cJSON *jtmp;
 	struct dynsec__acl **acllist, *acl;
+	int rc;
 
 	if(json_get_string(command, "rolename", &rolename, false) != MOSQ_ERR_SUCCESS){
 		dynsec__command_reply(j_responses, context, "addRoleACL", "Invalid/missing rolename", correlation_data);
 		return MOSQ_ERR_INVAL;
 	}
+	if(mosquitto_validate_utf8(rolename, (int)strlen(rolename)) != MOSQ_ERR_SUCCESS){
+		dynsec__command_reply(j_responses, context, "addRoleACL", "Role name not valid UTF-8", correlation_data);
+		return MOSQ_ERR_INVAL;
+	}
+
 	role = dynsec_roles__find(rolename);
 	if(role == NULL){
 		dynsec__command_reply(j_responses, context, "addRoleACL", "Role not found", correlation_data);
@@ -856,6 +876,14 @@ int dynsec_roles__process_add_acl(cJSON *j_responses, struct mosquitto *context,
 
 	jtmp = cJSON_GetObjectItem(command, "topic");
 	if(jtmp && cJSON_IsString(jtmp)){
+		rc = mosquitto_sub_topic_check(jtmp->valuestring);
+		if(rc == MOSQ_ERR_INVAL){
+			dynsec__command_reply(j_responses, context, "addRoleACL", "ACL topic not valid UTF-8", correlation_data);
+			return MOSQ_ERR_INVAL;
+		}else if(rc == MOSQ_ERR_MALFORMED_UTF8){
+			dynsec__command_reply(j_responses, context, "addRoleACL", "Invalid ACL topic", correlation_data);
+			return MOSQ_ERR_INVAL;
+		}
 		topic = mosquitto_strdup(jtmp->valuestring);
 		if(topic == NULL){
 			dynsec__command_reply(j_responses, context, "addRoleACL", "Internal error", correlation_data);
@@ -900,11 +928,17 @@ int dynsec_roles__process_remove_acl(cJSON *j_responses, struct mosquitto *conte
 	struct dynsec__acl **acllist, *acl;
 	char *topic;
 	cJSON *jtmp;
+	int rc;
 
 	if(json_get_string(command, "rolename", &rolename, false) != MOSQ_ERR_SUCCESS){
-		dynsec__command_reply(j_responses, context, "createRole", "Invalid/missing rolename", correlation_data);
+		dynsec__command_reply(j_responses, context, "removeRoleACL", "Invalid/missing rolename", correlation_data);
 		return MOSQ_ERR_INVAL;
 	}
+	if(mosquitto_validate_utf8(rolename, (int)strlen(rolename)) != MOSQ_ERR_SUCCESS){
+		dynsec__command_reply(j_responses, context, "removeRoleACL", "Role name not valid UTF-8", correlation_data);
+		return MOSQ_ERR_INVAL;
+	}
+
 	role = dynsec_roles__find(rolename);
 	if(role == NULL){
 		dynsec__command_reply(j_responses, context, "removeRoleACL", "Role not found", correlation_data);
@@ -937,6 +971,14 @@ int dynsec_roles__process_remove_acl(cJSON *j_responses, struct mosquitto *conte
 		dynsec__command_reply(j_responses, context, "removeRoleACL", "Invalid/missing topic", correlation_data);
 		return MOSQ_ERR_SUCCESS;
 	}
+	rc = mosquitto_sub_topic_check(jtmp->valuestring);
+	if(rc == MOSQ_ERR_INVAL){
+		dynsec__command_reply(j_responses, context, "removeRoleACL", "ACL topic not valid UTF-8", correlation_data);
+		return MOSQ_ERR_INVAL;
+	}else if(rc == MOSQ_ERR_MALFORMED_UTF8){
+		dynsec__command_reply(j_responses, context, "removeRoleACL", "Invalid ACL topic", correlation_data);
+		return MOSQ_ERR_INVAL;
+	}
 
 	HASH_FIND(hh, *acllist, topic, strlen(topic), acl);
 	if(acl){
@@ -961,6 +1003,10 @@ int dynsec_roles__process_get(cJSON *j_responses, struct mosquitto *context, cJS
 
 	if(json_get_string(command, "rolename", &rolename, false) != MOSQ_ERR_SUCCESS){
 		dynsec__command_reply(j_responses, context, "getRole", "Invalid/missing rolename", correlation_data);
+		return MOSQ_ERR_INVAL;
+	}
+	if(mosquitto_validate_utf8(rolename, (int)strlen(rolename)) != MOSQ_ERR_SUCCESS){
+		dynsec__command_reply(j_responses, context, "getRole", "Role name not valid UTF-8", correlation_data);
 		return MOSQ_ERR_INVAL;
 	}
 
@@ -1029,6 +1075,10 @@ int dynsec_roles__process_modify(cJSON *j_responses, struct mosquitto *context, 
 
 	if(json_get_string(command, "rolename", &rolename, false) != MOSQ_ERR_SUCCESS){
 		dynsec__command_reply(j_responses, context, "modifyRole", "Invalid/missing rolename", correlation_data);
+		return MOSQ_ERR_INVAL;
+	}
+	if(mosquitto_validate_utf8(rolename, (int)strlen(rolename)) != MOSQ_ERR_SUCCESS){
+		dynsec__command_reply(j_responses, context, "modifyRole", "Role name not valid UTF-8", correlation_data);
 		return MOSQ_ERR_INVAL;
 	}
 

@@ -25,7 +25,7 @@ Contributors:
 #include "packet_mosq.h"
 #include "send_mosq.h"
 
-int handle__unsubscribe(struct mosquitto_db *db, struct mosquitto *context)
+int handle__unsubscribe(struct mosquitto *context)
 {
 	uint16_t mid;
 	char *sub;
@@ -108,7 +108,7 @@ int handle__unsubscribe(struct mosquitto_db *db, struct mosquitto *context)
 
 		/* ACL check */
 		allowed = true;
-		rc = mosquitto_acl_check(db, context, sub, 0, NULL, 0, false, MOSQ_ACL_UNSUBSCRIBE);
+		rc = mosquitto_acl_check(context, sub, 0, NULL, 0, false, MOSQ_ACL_UNSUBSCRIBE);
 		switch(rc){
 			case MOSQ_ERR_SUCCESS:
 				break;
@@ -123,7 +123,7 @@ int handle__unsubscribe(struct mosquitto_db *db, struct mosquitto *context)
 
 		log__printf(NULL, MOSQ_LOG_DEBUG, "\t%s", sub);
 		if(allowed){
-			rc = sub__remove(db, context, sub, db->subs, &reason);
+			rc = sub__remove(context, sub, db.subs, &reason);
 		}
 		log__printf(NULL, MOSQ_LOG_UNSUBSCRIBE, "%s %s", context->id, sub);
 		mosquitto__free(sub);
@@ -145,7 +145,7 @@ int handle__unsubscribe(struct mosquitto_db *db, struct mosquitto *context)
 		}
 	}
 #ifdef WITH_PERSISTENCE
-	db->persistence_changes++;
+	db.persistence_changes++;
 #endif
 
 	log__printf(NULL, MOSQ_LOG_DEBUG, "Sending UNSUBACK to %s", context->id);

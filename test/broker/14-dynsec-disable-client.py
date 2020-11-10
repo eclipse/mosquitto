@@ -35,38 +35,29 @@ add_client_command = { "commands": [{
 add_client_response = {'responses': [{'command': 'createClient', 'correlationData': '2'}]}
 add_client_repeat_response = {'responses':[{"command":"createClient","error":"Client already exists", "correlationData":"2"}]}
 
-list_clients_command = { "commands": [{
-            "command": "listClients", "verbose": False, "correlationData": "10"}]
-}
-list_clients_response = {'responses': [{"command": "listClients", "data":{"totalCount":2, "clients":["admin", "user_one"]},"correlationData":"10"}]}
-
-list_clients_verbose_command = { "commands": [{
-            "command": "listClients", "verbose": True, "correlationData": "20"}]
-}
-list_clients_verbose_response = {'responses':[{"command": "listClients", "data":{"totalCount":2, "clients":[
-    {'username': 'admin', 'textname': 'Dynsec admin user', 'roles': [{'rolename': 'admin'}], 'groups': []},
-    {"username":"user_one", "clientid":"cid", "textname":"Name", "textdescription":"Description",
-        "roles":[], "groups":[]}]}, "correlationData":"20"}]}
-
-
 get_client_command = { "commands": [{
             "command": "getClient", "username": "user_one"}]}
-get_client_response = {'responses':[{'command': 'getClient', 'data': {'client': {'username': 'user_one', 'clientid': 'cid',
-            'textname': 'Name', 'textdescription': 'Description', 'groups': [], 'roles': []}}}]}
+get_client_response1 = {'responses':[{'command': 'getClient', 'data': {'client': {'username': 'user_one', 'clientid': 'cid',
+    'textname': 'Name', 'textdescription': 'Description', 'groups': [], 'roles': []}}}]}
+get_client_response2 = {'responses':[{'command': 'getClient', 'data': {'client': {'username': 'user_one', 'clientid': 'cid',
+    'textname': 'Name', 'textdescription': 'Description', 'disabled':True, 'groups': [], 'roles': []}}}]}
 
-set_client_password_command = {"commands": [{
-    "command": "setClientPassword", "username": "user_one", "password": "password"}]}
-set_client_password_response = {"responses": [{"command":"setClientPassword"}]}
+disable_client_command = { "commands": [{
+            "command": "disableClient", "username": "user_one"}]}
+disable_client_response = {'responses':[{'command': 'disableClient'}]}
 
-delete_client_command = { "commands": [{
-            "command": "deleteClient", "username": "user_one"}]}
-delete_client_response = {'responses':[{'command': 'deleteClient'}]}
-
+enable_client_command = { "commands": [{
+            "command": "enableClient", "username": "user_one"}]}
+enable_client_response = {'responses':[{'command': 'enableClient'}]}
 
 rc = 1
 keepalive = 10
 connect_packet = mosq_test.gen_connect("ctrl-test", keepalive=keepalive, username="admin", password="admin")
 connack_packet = mosq_test.gen_connack(rc=0)
+
+client_connect_packet = mosq_test.gen_connect("cid", keepalive=keepalive, username="user_one", password="password")
+client_connack_packet1 = mosq_test.gen_connack(rc=5)
+client_connack_packet2 = mosq_test.gen_connack(rc=0)
 
 mid = 2
 subscribe_packet = mosq_test.gen_subscribe(mid, "$CONTROL/dynamic-security/#", 1)
@@ -87,37 +78,27 @@ try:
     # Add client
     command_check(sock, add_client_command, add_client_response)
 
-    # List clients non-verbose
-    command_check(sock, list_clients_command, list_clients_response)
-
-    # List clients verbose
-    command_check(sock, list_clients_verbose_command, list_clients_verbose_response)
-
-    # Kill broker and restart, checking whether our changes were saved.
-    broker.terminate()
-    broker.wait()
-    broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port)
-
-    sock = mosq_test.do_client_connect(connect_packet, connack_packet, timeout=5, port=port)
-    mosq_test.do_send_receive(sock, subscribe_packet, suback_packet, "suback")
-
     # Get client
-    command_check(sock, get_client_command, get_client_response)
+    command_check(sock, get_client_command, get_client_response1)
 
-    # List clients non-verbose
-    command_check(sock, list_clients_command, list_clients_response)
+    # Disable client
+    command_check(sock, disable_client_command, disable_client_response)
 
-    # List clients verbose
-    command_check(sock, list_clients_verbose_command, list_clients_verbose_response)
+    # Get client - should be disabled
+    command_check(sock, get_client_command, get_client_response2)
 
-    # Add duplicate client
-    command_check(sock, add_client_command, add_client_repeat_response)
+    # Try to log in - should fail
+    client_sock = mosq_test.do_client_connect(client_connect_packet, client_connack_packet1, timeout=5, port=port)
 
-    # Set client password
-    command_check(sock, set_client_password_command, set_client_password_response)
+    # Enable client
+    command_check(sock, enable_client_command, enable_client_response)
 
-    # Delete client
-    command_check(sock, delete_client_command, delete_client_response)
+    # Get client - should be enabled
+    command_check(sock, get_client_command, get_client_response1)
+
+    # Try to log in - should succeed
+    client_sock = mosq_test.do_client_connect(client_connect_packet, client_connack_packet2, timeout=5, port=port)
+    client_sock.close()
 
     rc = 0
 

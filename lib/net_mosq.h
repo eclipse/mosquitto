@@ -29,10 +29,6 @@ typedef SSIZE_T ssize_t;
 #include "mosquitto_internal.h"
 #include "mosquitto.h"
 
-#ifdef WITH_BROKER
-struct mosquitto_db;
-#endif
-
 #ifdef WIN32
 #  define COMPAT_CLOSE(a) closesocket(a)
 #  define COMPAT_ECONNRESET WSAECONNRESET
@@ -62,11 +58,7 @@ void net__init_tls(void);
 #endif
 
 int net__socket_connect(struct mosquitto *mosq, const char *host, uint16_t port, const char *bind_address, bool blocking, const char *hostaddress);
-#ifdef WITH_BROKER
-int net__socket_close(struct mosquitto_db *db, struct mosquitto *mosq);
-#else
 int net__socket_close(struct mosquitto *mosq);
-#endif
 int net__try_connect(const char *host, uint16_t port, mosq_sock_t *sock, const char *bind_address, bool blocking);
 int net__try_connect_step1(struct mosquitto *mosq, const char *host);
 int net__try_connect_step2(struct mosquitto *mosq, uint16_t port, mosq_sock_t *sock);

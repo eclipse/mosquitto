@@ -12,8 +12,9 @@
 extern char *last_sub;
 extern int last_qos;
 extern uint32_t last_identifier;
+extern struct mosquitto_db db;
 
-struct mosquitto *context__init(struct mosquitto_db *db, mosq_sock_t sock)
+struct mosquitto *context__init(mosq_sock_t sock)
 {
 	struct mosquitto *m;
 
@@ -45,7 +46,7 @@ void db__msg_store_free(struct mosquitto_msg_store *store)
 	mosquitto__free(store);
 }
 
-int db__message_store(struct mosquitto_db *db, const struct mosquitto *source, struct mosquitto_msg_store *stored, uint32_t message_expiry_interval, dbid_t store_id, enum mosquitto_msg_origin origin)
+int db__message_store(const struct mosquitto *source, struct mosquitto_msg_store *stored, uint32_t message_expiry_interval, dbid_t store_id, enum mosquitto_msg_origin origin)
 {
     int rc = MOSQ_ERR_SUCCESS;
 
@@ -78,16 +79,16 @@ int db__message_store(struct mosquitto_db *db, const struct mosquitto *source, s
 
     stored->dest_ids = NULL;
     stored->dest_id_count = 0;
-    db->msg_store_count++;
-    db->msg_store_bytes += stored->payloadlen;
+    db.msg_store_count++;
+    db.msg_store_bytes += stored->payloadlen;
 
     if(!store_id){
-        stored->db_id = ++db->last_db_id;
+        stored->db_id = ++db.last_db_id;
     }else{
         stored->db_id = store_id;
     }
 
-	db->msg_store = stored;
+	db.msg_store = stored;
 
     return MOSQ_ERR_SUCCESS;
 error:
@@ -105,7 +106,7 @@ time_t mosquitto_time(void)
 	return 123;
 }
 
-int net__socket_close(struct mosquitto_db *db, struct mosquitto *mosq)
+int net__socket_close(struct mosquitto *mosq)
 {
 	return MOSQ_ERR_SUCCESS;
 }
@@ -115,18 +116,18 @@ int send__pingreq(struct mosquitto *mosq)
 	return MOSQ_ERR_SUCCESS;
 }
 
-int mosquitto_acl_check(struct mosquitto_db *db, struct mosquitto *context, const char *topic, uint32_t payloadlen, void* payload, uint8_t qos, bool retain, int access)
+int mosquitto_acl_check(struct mosquitto *context, const char *topic, uint32_t payloadlen, void* payload, uint8_t qos, bool retain, int access)
 {
 	return MOSQ_ERR_SUCCESS;
 }
 
-int acl__find_acls(struct mosquitto_db *db, struct mosquitto *context)
+int acl__find_acls(struct mosquitto *context)
 {
 	return MOSQ_ERR_SUCCESS;
 }
 
 
-int sub__add(struct mosquitto_db *db, struct mosquitto *context, const char *sub, uint8_t qos, uint32_t identifier, int options, struct mosquitto__subhier **root)
+int sub__add(struct mosquitto *context, const char *sub, uint8_t qos, uint32_t identifier, int options, struct mosquitto__subhier **root)
 {
 	last_sub = strdup(sub);
 	last_qos = qos;
@@ -135,12 +136,12 @@ int sub__add(struct mosquitto_db *db, struct mosquitto *context, const char *sub
 	return MOSQ_ERR_SUCCESS;
 }
 
-int db__message_insert(struct mosquitto_db *db, struct mosquitto *context, uint16_t mid, enum mosquitto_msg_direction dir, uint8_t qos, bool retain, struct mosquitto_msg_store *stored, mosquitto_property *properties, bool update)
+int db__message_insert(struct mosquitto *context, uint16_t mid, enum mosquitto_msg_direction dir, uint8_t qos, bool retain, struct mosquitto_msg_store *stored, mosquitto_property *properties, bool update)
 {
 	return MOSQ_ERR_SUCCESS;
 }
 
-void db__msg_store_ref_dec(struct mosquitto_db *db, struct mosquitto_msg_store **store)
+void db__msg_store_ref_dec(struct mosquitto_msg_store **store)
 {
 }
 

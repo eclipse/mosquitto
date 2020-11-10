@@ -17,9 +17,10 @@ char *last_sub = NULL;
 int last_qos;
 uint32_t last_identifier;
 
+struct mosquitto_db db;
+
 static void TEST_persistence_disabled(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	int rc;
 
@@ -27,14 +28,13 @@ static void TEST_persistence_disabled(void)
 	memset(&config, 0, sizeof(struct mosquitto__config));
 	db.config = &config;
 
-	rc = persist__restore(&db);
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 }
 
 
 static void TEST_empty_file(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	int rc;
 
@@ -45,14 +45,13 @@ static void TEST_empty_file(void)
 	config.persistence = true;
 
 	config.persistence_filepath = "files/persist_read/empty.test-db";
-	rc = persist__restore(&db);
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 }
 
 
 static void TEST_corrupt_header(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	int rc;
 
@@ -63,17 +62,16 @@ static void TEST_corrupt_header(void)
 	config.persistence = true;
 
 	config.persistence_filepath = "files/persist_read/corrupt-header-short.test-db";
-	rc = persist__restore(&db);
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, 1);
 
 	config.persistence_filepath = "files/persist_read/corrupt-header-long.test-db";
-	rc = persist__restore(&db);
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, 1);
 }
 
 static void TEST_unsupported_version(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	int rc;
 
@@ -84,14 +82,13 @@ static void TEST_unsupported_version(void)
 	config.persistence = true;
 	config.persistence_filepath = "files/persist_read/unsupported-version.test-db";
 
-	rc = persist__restore(&db);
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, 1);
 }
 
 
 static void TEST_v3_config_ok(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	int rc;
 
@@ -102,7 +99,7 @@ static void TEST_v3_config_ok(void)
 	config.persistence = true;
 	config.persistence_filepath = "files/persist_read/v3-cfg.test-db";
 
-	rc = persist__restore(&db);
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 	CU_ASSERT_EQUAL(db.last_db_id, 0x7856341200000000);
 }
@@ -110,7 +107,6 @@ static void TEST_v3_config_ok(void)
 
 static void TEST_v4_config_ok(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	int rc;
 
@@ -121,7 +117,7 @@ static void TEST_v4_config_ok(void)
 	config.persistence = true;
 	config.persistence_filepath = "files/persist_read/v4-cfg.test-db";
 
-	rc = persist__restore(&db);
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 	CU_ASSERT_EQUAL(db.last_db_id, 0x7856341200000000);
 }
@@ -129,7 +125,6 @@ static void TEST_v4_config_ok(void)
 
 static void TEST_v3_config_truncated(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	int rc;
 
@@ -140,7 +135,7 @@ static void TEST_v3_config_truncated(void)
 	config.persistence = true;
 	config.persistence_filepath = "files/persist_read/v3-cfg-truncated.test-db";
 
-	rc = persist__restore(&db);
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, 1);
 	CU_ASSERT_EQUAL(db.last_db_id, 0);
 }
@@ -148,7 +143,6 @@ static void TEST_v3_config_truncated(void)
 
 static void TEST_v3_config_bad_dbid(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	int rc;
 
@@ -159,7 +153,7 @@ static void TEST_v3_config_bad_dbid(void)
 	config.persistence = true;
 	config.persistence_filepath = "files/persist_read/v3-cfg-bad-dbid.test-db";
 
-	rc = persist__restore(&db);
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, 1);
 	CU_ASSERT_EQUAL(db.last_db_id, 0);
 }
@@ -167,7 +161,6 @@ static void TEST_v3_config_bad_dbid(void)
 
 static void TEST_v3_bad_chunk(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	int rc;
 
@@ -178,7 +171,7 @@ static void TEST_v3_bad_chunk(void)
 	config.persistence = true;
 	config.persistence_filepath = "files/persist_read/v3-bad-chunk.test-db";
 
-	rc = persist__restore(&db);
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 	CU_ASSERT_EQUAL(db.last_db_id, 0x17);
 }
@@ -186,7 +179,6 @@ static void TEST_v3_bad_chunk(void)
 
 static void TEST_v3_message_store(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	int rc;
 
@@ -197,7 +189,7 @@ static void TEST_v3_message_store(void)
 	config.persistence = true;
 	config.persistence_filepath = "files/persist_read/v3-message-store.test-db";
 
-	rc = persist__restore(&db);
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 	CU_ASSERT_EQUAL(db.msg_store_count, 1);
 	CU_ASSERT_EQUAL(db.msg_store_bytes, 7);
@@ -222,7 +214,6 @@ static void TEST_v3_message_store(void)
 
 static void TEST_v3_client(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	struct mosquitto *context;
 	int rc;
@@ -234,7 +225,7 @@ static void TEST_v3_client(void)
 	config.persistence = true;
 	config.persistence_filepath = "files/persist_read/v3-client.test-db";
 
-	rc = persist__restore(&db);
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 
 	CU_ASSERT_PTR_NOT_NULL(db.contexts_by_id);
@@ -249,7 +240,6 @@ static void TEST_v3_client(void)
 
 static void TEST_v3_client_message(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	struct mosquitto *context;
 	int rc;
@@ -262,7 +252,7 @@ static void TEST_v3_client_message(void)
 	config.persistence_filepath = "files/persist_read/v3-client-message.test-db";
 	config.max_inflight_messages = 20;
 
-	rc = persist__restore(&db);
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 
 	CU_ASSERT_PTR_NOT_NULL(db.contexts_by_id);
@@ -302,7 +292,6 @@ static void TEST_v3_client_message(void)
 
 static void TEST_v3_retain(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	int rc;
 
@@ -310,11 +299,11 @@ static void TEST_v3_retain(void)
 	memset(&config, 0, sizeof(struct mosquitto__config));
 	db.config = &config;
 
-	retain__init(&db);
+	retain__init();
 	config.persistence = true;
 	config.persistence_filepath = "files/persist_read/v3-retain.test-db";
 
-	rc = persist__restore(&db);
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 	CU_ASSERT_EQUAL(db.msg_store_count, 1);
 	CU_ASSERT_EQUAL(db.msg_store_bytes, 7);
@@ -351,7 +340,6 @@ static void TEST_v3_retain(void)
 
 static void TEST_v3_sub(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	struct mosquitto *context;
 	int rc;
@@ -366,7 +354,7 @@ static void TEST_v3_sub(void)
 	config.persistence = true;
 	config.persistence_filepath = "files/persist_read/v3-sub.test-db";
 
-	rc = persist__restore(&db);
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 
 	CU_ASSERT_PTR_NOT_NULL(db.contexts_by_id);
@@ -384,7 +372,6 @@ static void TEST_v3_sub(void)
 
 static void TEST_v4_message_store(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	int rc;
 
@@ -395,7 +382,7 @@ static void TEST_v4_message_store(void)
 	config.persistence = true;
 	config.persistence_filepath = "files/persist_read/v4-message-store.test-db";
 
-	rc = persist__restore(&db);
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 	CU_ASSERT_EQUAL(db.msg_store_count, 1);
 	CU_ASSERT_EQUAL(db.msg_store_bytes, 7);
@@ -420,7 +407,6 @@ static void TEST_v4_message_store(void)
 
 static void TEST_v6_config_ok(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	int rc;
 
@@ -431,7 +417,7 @@ static void TEST_v6_config_ok(void)
 	config.persistence = true;
 	config.persistence_filepath = "files/persist_read/v6-cfg.test-db";
 
-	rc = persist__restore(&db);
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 	CU_ASSERT_EQUAL(db.last_db_id, 0x7856341200000000);
 }
@@ -439,7 +425,6 @@ static void TEST_v6_config_ok(void)
 
 static void TEST_v5_config_truncated(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	int rc;
 
@@ -450,7 +435,7 @@ static void TEST_v5_config_truncated(void)
 	config.persistence = true;
 	config.persistence_filepath = "files/persist_read/v5-cfg-truncated.test-db";
 
-	rc = persist__restore(&db);
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, 1);
 	CU_ASSERT_EQUAL(db.last_db_id, 0);
 }
@@ -458,7 +443,6 @@ static void TEST_v5_config_truncated(void)
 
 static void TEST_v5_bad_chunk(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	int rc;
 
@@ -469,7 +453,7 @@ static void TEST_v5_bad_chunk(void)
 	config.persistence = true;
 	config.persistence_filepath = "files/persist_read/v5-bad-chunk.test-db";
 
-	rc = persist__restore(&db);
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 	CU_ASSERT_EQUAL(db.last_db_id, 0x17);
 }
@@ -477,7 +461,6 @@ static void TEST_v5_bad_chunk(void)
 
 static void TEST_v6_message_store(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	int rc;
 
@@ -488,7 +471,7 @@ static void TEST_v6_message_store(void)
 	config.persistence = true;
 	config.persistence_filepath = "files/persist_read/v6-message-store.test-db";
 
-	rc = persist__restore(&db);
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 	CU_ASSERT_EQUAL(db.msg_store_count, 1);
 	CU_ASSERT_EQUAL(db.msg_store_bytes, 7);
@@ -512,7 +495,6 @@ static void TEST_v6_message_store(void)
 
 static void TEST_v6_message_store_props(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	struct mosquitto__listener listener;
 	int rc;
@@ -529,7 +511,7 @@ static void TEST_v6_message_store_props(void)
 	config.persistence = true;
 	config.persistence_filepath = "files/persist_read/v6-message-store-props.test-db";
 
-	rc = persist__restore(&db);
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 	CU_ASSERT_EQUAL(db.msg_store_count, 1);
 	CU_ASSERT_EQUAL(db.msg_store_bytes, 7);
@@ -557,7 +539,6 @@ static void TEST_v6_message_store_props(void)
 
 static void TEST_v5_client(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	struct mosquitto *context;
 	int rc;
@@ -569,7 +550,7 @@ static void TEST_v5_client(void)
 	config.persistence = true;
 	config.persistence_filepath = "files/persist_read/v5-client.test-db";
 
-	rc = persist__restore(&db);
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 
 	CU_ASSERT_PTR_NOT_NULL(db.contexts_by_id);
@@ -584,7 +565,6 @@ static void TEST_v5_client(void)
 
 static void TEST_v6_client(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	struct mosquitto *context;
 	struct mosquitto__listener listener;
@@ -602,7 +582,7 @@ static void TEST_v6_client(void)
 	config.persistence = true;
 	config.persistence_filepath = "files/persist_read/v6-client.test-db";
 
-	rc = persist__restore(&db);
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 
 	CU_ASSERT_PTR_NOT_NULL(db.contexts_by_id);
@@ -622,7 +602,6 @@ static void TEST_v6_client(void)
 
 static void TEST_v6_client_message(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	struct mosquitto *context;
 	int rc;
@@ -634,7 +613,7 @@ static void TEST_v6_client_message(void)
 	config.persistence = true;
 	config.persistence_filepath = "files/persist_read/v6-client-message.test-db";
 
-	rc = persist__restore(&db);
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 
 	CU_ASSERT_PTR_NOT_NULL(db.contexts_by_id);
@@ -671,7 +650,6 @@ static void TEST_v6_client_message(void)
 
 static void TEST_v6_client_message_props(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	struct mosquitto *context;
 	int rc;
@@ -683,7 +661,7 @@ static void TEST_v6_client_message_props(void)
 	config.persistence = true;
 	config.persistence_filepath = "files/persist_read/v6-client-message-props.test-db";
 
-	rc = persist__restore(&db);
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 
 	CU_ASSERT_PTR_NOT_NULL(db.contexts_by_id);
@@ -724,7 +702,6 @@ static void TEST_v6_client_message_props(void)
 
 static void TEST_v6_retain(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	int rc;
 
@@ -735,8 +712,8 @@ static void TEST_v6_retain(void)
 	config.persistence = true;
 	config.persistence_filepath = "files/persist_read/v6-retain.test-db";
 
-	retain__init(&db);
-	rc = persist__restore(&db);
+	retain__init();
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 	CU_ASSERT_EQUAL(db.msg_store_count, 1);
 	CU_ASSERT_EQUAL(db.msg_store_bytes, 7);
@@ -770,7 +747,6 @@ static void TEST_v6_retain(void)
 
 static void TEST_v6_sub(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	struct mosquitto *context;
 	int rc;
@@ -785,7 +761,7 @@ static void TEST_v6_sub(void)
 	config.persistence = true;
 	config.persistence_filepath = "files/persist_read/v6-sub.test-db";
 
-	rc = persist__restore(&db);
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 
 	CU_ASSERT_PTR_NOT_NULL(db.contexts_by_id);

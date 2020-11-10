@@ -36,11 +36,7 @@ Contributors:
 #include "util_mosq.h"
 
 
-#ifdef WITH_BROKER
-int handle__pubackcomp(struct mosquitto_db *db, struct mosquitto *mosq, const char *type)
-#else
 int handle__pubackcomp(struct mosquitto *mosq, const char *type)
-#endif
 {
 	uint8_t reason_code = 0;
 	uint16_t mid;
@@ -81,7 +77,7 @@ int handle__pubackcomp(struct mosquitto *mosq, const char *type)
 	/* Immediately free, we don't do anything with Reason String or User Property at the moment */
 	mosquitto_property_free_all(&properties);
 
-	rc = db__message_delete_outgoing(db, mosq, mid, mosq_ms_wait_for_pubcomp, qos);
+	rc = db__message_delete_outgoing(mosq, mid, mosq_ms_wait_for_pubcomp, qos);
 	if(rc == MOSQ_ERR_NOT_FOUND){
 		log__printf(mosq, MOSQ_LOG_WARNING, "Warning: Received %s from %s for an unknown packet identifier %d.", type, mosq->id, mid);
 		return MOSQ_ERR_SUCCESS;

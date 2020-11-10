@@ -17,70 +17,70 @@ Contributors:
 
 #include "mux.h"
 
-int mux__init(struct mosquitto_db *db, mosq_sock_t *listensock, int listensock_count)
+int mux__init(struct mosquitto__listener_sock *listensock, int listensock_count)
 {
 #ifdef WITH_EPOLL
-	return mux_epoll__init(db, listensock, listensock_count);
+	return mux_epoll__init(listensock, listensock_count);
 #else
-	return mux_poll__init(db, listensock, listensock_count);
+	return mux_poll__init(listensock, listensock_count);
 #endif
 }
 
-int mux__add_out(struct mosquitto_db *db, struct mosquitto *context)
+int mux__add_out(struct mosquitto *context)
 {
 #ifdef WITH_EPOLL
-	return mux_epoll__add_out(db, context);
+	return mux_epoll__add_out(context);
 #else
-	return mux_poll__add_out(db, context);
-#endif
-}
-
-
-int mux__remove_out(struct mosquitto_db *db, struct mosquitto *context)
-{
-#ifdef WITH_EPOLL
-	return mux_epoll__remove_out(db, context);
-#else
-	return mux_poll__remove_out(db, context);
+	return mux_poll__add_out(context);
 #endif
 }
 
 
-int mux__add_in(struct mosquitto_db *db, struct mosquitto *context)
+int mux__remove_out(struct mosquitto *context)
 {
 #ifdef WITH_EPOLL
-	return mux_epoll__add_in(db, context);
+	return mux_epoll__remove_out(context);
 #else
-	return mux_poll__add_in(db, context);
+	return mux_poll__remove_out(context);
 #endif
 }
 
 
-int mux__delete(struct mosquitto_db *db, struct mosquitto *context)
+int mux__add_in(struct mosquitto *context)
 {
 #ifdef WITH_EPOLL
-	return mux_epoll__delete(db, context);
+	return mux_epoll__add_in(context);
 #else
-	return mux_poll__delete(db, context);
+	return mux_poll__add_in(context);
 #endif
 }
 
 
-int mux__handle(struct mosquitto_db *db, mosq_sock_t *listensock, int listensock_count)
+int mux__delete(struct mosquitto *context)
 {
 #ifdef WITH_EPOLL
-	return mux_epoll__handle(db, listensock, listensock_count);
+	return mux_epoll__delete(context);
 #else
-	return mux_poll__handle(db, listensock, listensock_count);
+	return mux_poll__delete(context);
 #endif
 }
 
 
-int mux__cleanup(struct mosquitto_db *db)
+int mux__handle(struct mosquitto__listener_sock *listensock, int listensock_count)
 {
 #ifdef WITH_EPOLL
-	return mux_epoll__cleanup(db);
+	return mux_epoll__handle(listensock, listensock_count);
 #else
-	return mux_poll__cleanup(db);
+	return mux_poll__handle(listensock, listensock_count);
+#endif
+}
+
+
+int mux__cleanup(void)
+{
+#ifdef WITH_EPOLL
+	return mux_epoll__cleanup();
+#else
+	return mux_poll__cleanup();
 #endif
 }

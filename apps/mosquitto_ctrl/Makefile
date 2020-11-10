@@ -26,7 +26,15 @@ EXAMPLE_OBJS= example.o
 
 ifeq ($(WITH_TLS),yes)
 ifeq ($(WITH_CJSON),yes)
+
+ifeq ($(WITH_SHARED_LIBRARIES),yes)
 TARGET:=mosquitto_ctrl mosquitto_ctrl_example.so
+else
+ifeq ($(WITH_STATIC_LIBRARIES),yes)
+TARGET:=mosquitto_ctrl mosquitto_ctrl_example.so
+endif
+endif
+
 endif
 endif
 

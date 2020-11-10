@@ -2,6 +2,7 @@
 
 from mosq_test_helper import *
 import json
+import shutil
 
 def write_config(filename, port):
     with open(filename, 'w') as f:
@@ -29,20 +30,20 @@ write_config(conf_file, port)
 create_client_command = { "commands": [{
             "command": "createClient", "username": "user_one",
             "password": "password", "clientid": "cid",
-            "textName": "Name", "textDescription": "Description",
+            "textname": "Name", "textdescription": "Description",
             "correlationData": "2" }]
 }
 create_client_response = {'responses': [{'command': 'createClient', 'correlationData': '2'}]}
 
 create_groups_command = { "commands": [
     {
-        "command": "createGroup", "groupName": "group_one",
-        "textName": "Name", "textDescription": "Description",
+        "command": "createGroup", "groupname": "group_one",
+        "textname": "Name", "textdescription": "Description",
         "correlationData": "12"
     },
     {
-        "command": "createGroup", "groupName": "group_two",
-        "textName": "Name", "textDescription": "Description",
+        "command": "createGroup", "groupname": "group_two",
+        "textname": "Name", "textdescription": "Description",
         "correlationData": "13"
     }
     ]
@@ -54,18 +55,18 @@ create_groups_response = {'responses': [
 
 create_roles_command = { "commands": [
     {
-        "command": "createRole", "roleName": "role_one",
-        "textName": "Name", "textDescription": "Description",
+        "command": "createRole", "rolename": "role_one",
+        "textname": "Name", "textdescription": "Description",
         "acls":[], "correlationData": "21"
     },
     {
-        "command": "createRole", "roleName": "role_two",
-        "textName": "Name", "textDescription": "Description",
+        "command": "createRole", "rolename": "role_two",
+        "textname": "Name", "textdescription": "Description",
         "acls":[], "correlationData": "22"
     },
     {
-        "command": "createRole", "roleName": "role_three",
-        "textName": "Name", "textDescription": "Description",
+        "command": "createRole", "rolename": "role_three",
+        "textname": "Name", "textdescription": "Description",
         "acls":[], "correlationData": "23"
     }
     ]
@@ -78,15 +79,15 @@ create_roles_response = {'responses': [
 
 modify_client_command1 = { "commands": [{
     "command": "modifyClient", "username": "user_one",
-    "textName": "Modified name", "textDescription": "Modified description",
+    "textname": "Modified name", "textdescription": "Modified description",
     "roles":[
-        {'roleName':'role_one', 'priority':2},
-        {'roleName':'role_two'},
-        {'roleName':'role_three', 'priority':10}
+        {'rolename':'role_one', 'priority':2},
+        {'rolename':'role_two'},
+        {'rolename':'role_three', 'priority':10}
     ],
     "groups":[
-        {'groupName':'group_one', 'priority':3},
-        {'groupName':'group_two', 'priority':8}
+        {'groupname':'group_one', 'priority':3},
+        {'groupname':'group_two', 'priority':8}
     ],
     "correlationData": "3" }]
 }
@@ -94,7 +95,7 @@ modify_client_response1 = {'responses': [{'command': 'modifyClient', 'correlatio
 
 modify_client_command2 = { "commands": [{
     "command": "modifyClient", "username": "user_one",
-    "textName": "Modified name", "textDescription": "Modified description",
+    "textname": "Modified name", "textdescription": "Modified description",
     "groups":[],
     "correlationData": "4" }]
 }
@@ -104,41 +105,41 @@ modify_client_response2 = {'responses': [{'command': 'modifyClient', 'correlatio
 get_client_command1 = { "commands": [{
     "command": "getClient", "username": "user_one"}]}
 get_client_response1 = {'responses':[{'command': 'getClient', 'data': {'client': {'username': 'user_one', 'clientid': 'cid',
-    'textName': 'Name', 'textDescription': 'Description',
-    'groups': [],
+    'textname': 'Name', 'textdescription': 'Description',
     'roles': [],
+    'groups': [],
     }}}]}
 
 get_client_command2 = { "commands": [{
     "command": "getClient", "username": "user_one"}]}
 get_client_response2 = {'responses':[{'command': 'getClient', 'data': {'client': {'username': 'user_one', 'clientid': 'cid',
-    'textName': 'Modified name', 'textDescription': 'Modified description',
-    'groups': [
-        {'groupName':'group_two', 'priority':8},
-        {'groupName':'group_one', 'priority':3}
-    ],
+    'textname': 'Modified name', 'textdescription': 'Modified description',
     'roles': [
-        {'roleName':'role_three', 'priority':10},
-        {'roleName':'role_one', 'priority':2},
-        {'roleName':'role_two'}
+        {'rolename':'role_three', 'priority':10},
+        {'rolename':'role_one', 'priority':2},
+        {'rolename':'role_two'}
+    ],
+    'groups': [
+        {'groupname':'group_two', 'priority':8},
+        {'groupname':'group_one', 'priority':3}
     ]}}}]}
 
 get_client_command3 = { "commands": [{
             "command": "getClient", "username": "user_one"}]}
 get_client_response3 = {'responses':[{'command': 'getClient', 'data': {'client': {'username': 'user_one', 'clientid': 'cid',
-    'textName': 'Modified name', 'textDescription': 'Modified description',
+    'textname': 'Modified name', 'textdescription': 'Modified description',
     'groups': [],
     'roles': [
-        {'roleName':'role_three', 'priority':10},
-        {'roleName':'role_one', 'priority':2},
-        {'roleName':'role_two'}
+        {'rolename':'role_three', 'priority':10},
+        {'rolename':'role_one', 'priority':2},
+        {'rolename':'role_two'}
     ]}}}]}
 
 
 
 rc = 1
 keepalive = 10
-connect_packet = mosq_test.gen_connect("ctrl-test", keepalive=keepalive)
+connect_packet = mosq_test.gen_connect("ctrl-test", keepalive=keepalive, username="admin", password="admin")
 connack_packet = mosq_test.gen_connack(rc=0)
 
 mid = 2
@@ -147,13 +148,9 @@ suback_packet = mosq_test.gen_suback(mid, 1)
 
 try:
     os.mkdir(str(port))
-    with open("%d/dynamic-security.json" % port, 'w') as f:
-        f.write('{"defaultACLAction": {"publishClientSend":"allow", "publishClientReceive":"allow", "subscribe":"allow", "unsubscribe":"allow"}}')
+    shutil.copyfile("dynamic-security-init.json", "%d/dynamic-security.json" % (port))
 except FileExistsError:
-    try:
-        os.remove(f"{port}/dynamic-security.json")
-    except FileNotFoundError:
-        pass
+    pass
 
 broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port)
 

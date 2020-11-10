@@ -25,11 +25,7 @@ Contributors:
 #  include "mosquitto_broker_internal.h"
 #endif
 
-#ifdef WITH_BROKER
-int mosquitto__check_keepalive(struct mosquitto_db *db, struct mosquitto *mosq);
-#else
 int mosquitto__check_keepalive(struct mosquitto *mosq);
-#endif
 uint16_t mosquitto__mid_generate(struct mosquitto *mosq);
 
 int mosquitto__set_state(struct mosquitto *mosq, enum mosquitto_client_state state);

@@ -22,6 +22,20 @@ Breaking changes:
   method, or set `allow_anonymous true`. When the broker is run without a
   configured listener, and so binds to the loopback interface, anonymous
   connections are allowed.
+- If Mosquitto is run on as root on a unix like system, it will attempt to
+  drop privileges as soon as the configuration file has been read. This is in
+  contrast to the previous behaviour where elevated privileges were only
+  dropped after listeners had been started (and hence TLS certificates loaded)
+  and logging had been started. The change means that clients will never be
+  able to connect to the broker when it is running as root, unless the user
+  explicitly sets it to run as root, which is not advised. It also means that
+  all locations that the broker needs to access must be available to the
+  unprivileged user. In particular those people using TLS certificates from
+  Lets Encrypt will need to do something to allow Mosquitto to access
+  those certificates. An example deploy renewal hook script to help with this
+  is at `misc/letsencrypt/mosquitto-copy.sh`.
+  The user that Mosquitto will change to are the one provided in the
+  configuration, `mosquitto`, or `nobody`, in order of availability.
 - The `pid_file` option will now always attempt to write a pid file,
   regardless of whether the `-d` argument is used when running the broker.
 - The `tls_version` option now defines the *minimum* TLS protocol version to
@@ -63,6 +77,7 @@ Broker:
 - Add the `bridge_max_packet_size` option. Closes #265.
 - Add the `bridge_bind_address` option. Closes #1311.
 - Fix crash on Windows if loading a plugin fails. Closes #1866.
+- TLS certificates for the server are now reloaded on SIGHUP.
 
 Client library:
 - Client no longer generates random client ids for v3.1.1 clients, these are
@@ -113,6 +128,7 @@ Clients:
 - mosquitto_sub now supports extra format specifiers for field width and
   precision for some parameters.
 - Add `--version` for all clients.
+- Fix description of `-e` and `-t` arguments in mosquitto_rr. Closes #1881.
 
 
 1.6.12 - 2020-08-19

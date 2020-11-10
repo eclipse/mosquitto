@@ -58,12 +58,12 @@ Contributors:
 static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pollfds);
 
 static struct pollfd *pollfds = NULL;
-static int pollfd_max;
+static size_t pollfd_max;
 #ifndef WIN32
 static sigset_t my_sigblock;
 #endif
 
-int mux_poll__init(struct mosquitto_db *db, mosq_sock_t *listensock, int listensock_count)
+int mux_poll__init(struct mosquitto_db *db, struct mosquitto__listener_sock *listensock, int listensock_count)
 {
 	int i;
 	int pollfd_index = 0;
@@ -78,9 +78,9 @@ int mux_poll__init(struct mosquitto_db *db, mosq_sock_t *listensock, int listens
 #endif
 
 #ifdef WIN32
-	pollfd_max = _getmaxstdio();
+	pollfd_max = (size_t)_getmaxstdio();
 #else
-	pollfd_max = sysconf(_SC_OPEN_MAX);
+	pollfd_max = (size_t)sysconf(_SC_OPEN_MAX);
 #endif
 
 	pollfds = mosquitto__malloc(sizeof(struct pollfd)*pollfd_max);
@@ -91,7 +91,7 @@ int mux_poll__init(struct mosquitto_db *db, mosq_sock_t *listensock, int listens
 	memset(pollfds, -1, sizeof(struct pollfd)*pollfd_max);
 
 	for(i=0; i<listensock_count; i++){
-		pollfds[pollfd_index].fd = listensock[i];
+		pollfds[pollfd_index].fd = listensock[i].sock;
 		pollfds[pollfd_index].events = POLLIN;
 		pollfds[pollfd_index].revents = 0;
 		pollfd_index++;
@@ -169,7 +169,7 @@ int mux_poll__delete(struct mosquitto_db *db, struct mosquitto *context)
 
 
 
-int mux_poll__handle(struct mosquitto_db *db, mosq_sock_t *listensock, int listensock_count)
+int mux_poll__handle(struct mosquitto_db *db, struct mosquitto__listener_sock *listensock, int listensock_count)
 {
 	struct mosquitto *context;
 	mosq_sock_t sock;
@@ -186,6 +186,10 @@ int mux_poll__handle(struct mosquitto_db *db, mosq_sock_t *listensock, int liste
 #else
 	fdcount = WSAPoll(pollfds, pollfd_max, 100);
 #endif
+
+	db->now_s = mosquitto_time();
+	db->now_real_s = time(NULL);
+
 	if(fdcount == -1){
 #  ifdef WIN32
 		if(WSAGetLastError() == WSAEINVAL){
@@ -204,7 +208,7 @@ int mux_poll__handle(struct mosquitto_db *db, mosq_sock_t *listensock, int liste
 
 		for(i=0; i<listensock_count; i++){
 			if(pollfds[i].revents & (POLLIN | POLLPRI)){
-				while((sock = net__socket_accept(db, listensock[i])) != -1){
+				while((sock = net__socket_accept(db, &listensock[i])) != -1){
 					context = NULL;
 					HASH_FIND(hh_sock, db->contexts_by_sock, &sock, sizeof(mosq_sock_t), context);
 					if(!context) {

@@ -32,7 +32,7 @@ Contributors:
 #include "util_mosq.h"
 
 
-int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
+int handle__publish(struct mosquitto *context)
 {
 	uint8_t dup;
 	int rc = 0;
@@ -76,7 +76,7 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 	}
 	msg->retain = (header & 0x01);
 
-	if(msg->retain && db->config->retain_available == false){
+	if(msg->retain && db.config->retain_available == false){
 		db__msg_store_free(msg);
 		return MOSQ_ERR_RETAIN_NOT_SUPPORTED;
 	}
@@ -220,7 +220,7 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 	}
 
 	if(msg->payloadlen){
-		if(db->config->message_size_limit && msg->payloadlen > db->config->message_size_limit){
+		if(db.config->message_size_limit && msg->payloadlen > db.config->message_size_limit){
 			log__printf(NULL, MOSQ_LOG_DEBUG, "Dropped too large PUBLISH from %s (d%d, q%d, r%d, m%d, '%s', ... (%ld bytes))", context->id, dup, msg->qos, msg->retain, msg->source_mid, msg->topic, (long)msg->payloadlen);
 			reason_code = MQTT_RC_IMPLEMENTATION_SPECIFIC;
 			goto process_bad_message;
@@ -237,7 +237,7 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 	}
 
 	/* Check for topic access */
-	rc = mosquitto_acl_check(db, context, msg->topic, msg->payloadlen, UHPA_ACCESS(msg->payload, msg->payloadlen), msg->qos, msg->retain, MOSQ_ACL_WRITE);
+	rc = mosquitto_acl_check(context, msg->topic, msg->payloadlen, UHPA_ACCESS(msg->payload, msg->payloadlen), msg->qos, msg->retain, MOSQ_ACL_WRITE);
 	if(rc == MOSQ_ERR_ACL_DENIED){
 		log__printf(NULL, MOSQ_LOG_DEBUG, "Denied PUBLISH from %s (d%d, q%d, r%d, m%d, '%s', ... (%ld bytes))", context->id, dup, msg->qos, msg->retain, msg->source_mid, msg->topic, (long)msg->payloadlen);
 			reason_code = MQTT_RC_NOT_AUTHORIZED;
@@ -251,7 +251,7 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 
 	if(!strncmp(msg->topic, "$CONTROL/", 9)){
 #ifdef WITH_CONTROL
-		rc = control__process(db, context, msg);
+		rc = control__process(context, msg);
 		db__msg_store_free(msg);
 		return rc;
 #else
@@ -261,7 +261,7 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 	}
 
 	{
-		rc = plugin__handle_message(db, context, msg);
+		rc = plugin__handle_message(context, msg);
 		if(rc){
 			db__msg_store_free(msg);
 			return rc;
@@ -277,7 +277,7 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 				|| db__ready_for_queue(context, msg->qos, &context->msgs_in)){
 
 			dup = 0;
-			rc = db__message_store(db, context, msg, message_expiry_interval, 0, mosq_mo_client);
+			rc = db__message_store(context, msg, message_expiry_interval, 0, mosq_mo_client);
 			if(rc) return rc;
 		}else{
 			/* Client isn't allowed any more incoming messages, so fail early */
@@ -294,12 +294,12 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 
 	switch(stored->qos){
 		case 0:
-			rc2 = sub__messages_queue(db, context->id, stored->topic, stored->qos, stored->retain, &stored);
+			rc2 = sub__messages_queue(context->id, stored->topic, stored->qos, stored->retain, &stored);
 			if(rc2 > 0) rc = 1;
 			break;
 		case 1:
 			util__decrement_receive_quota(context);
-			rc2 = sub__messages_queue(db, context->id, stored->topic, stored->qos, stored->retain, &stored);
+			rc2 = sub__messages_queue(context->id, stored->topic, stored->qos, stored->retain, &stored);
 			/* stored may now be free, so don't refer to it */
 			if(rc2 == MOSQ_ERR_SUCCESS || context->protocol != mosq_p_mqtt5){
 				if(send__puback(context, mid, 0, NULL)) rc = 1;
@@ -311,7 +311,7 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 			break;
 		case 2:
 			if(dup == 0){
-				res = db__message_insert(db, context, stored->source_mid, mosq_md_in, stored->qos, stored->retain, stored, NULL, false);
+				res = db__message_insert(context, stored->source_mid, mosq_md_in, stored->qos, stored->retain, stored, NULL, false);
 			}else{
 				res = 0;
 			}
@@ -326,7 +326,7 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 			break;
 	}
 
-	db__message_write_queued_in(db, context);
+	db__message_write_queued_in(context);
 	return rc;
 process_bad_message:
 	rc = 1;

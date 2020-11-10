@@ -2,6 +2,7 @@
 
 from mosq_test_helper import *
 import json
+import shutil
 
 def write_config(filename, port):
     with open(filename, 'w') as f:
@@ -28,13 +29,13 @@ write_config(conf_file, port)
 create_client_command = { "commands": [{
             "command": "createClient", "username": "user_one",
             "password": "password", "clientid": "cid",
-            "textName": "Name", "textDescription": "Description",
+            "textname": "Name", "textdescription": "Description",
             "roleName": "", "correlationData": "2" }]}
 create_client_response = {'responses':[{"command":"createClient","correlationData":"2"}]}
 
 create_group_command = { "commands": [{
-            "command": "createGroup", "groupName": "group_one",
-            "textName": "Name", "textDescription": "Description",
+            "command": "createGroup", "groupname": "group_one",
+            "textname": "Name", "textdescription": "Description",
             "correlationData":"3"}]}
 create_group_response = {'responses':[{"command":"createGroup","correlationData":"3"}]}
 create_group_repeat_response = {'responses':[{"command":"createGroup","error":"Group already exists","correlationData":"3"}]}
@@ -46,50 +47,47 @@ list_groups_response = {'responses':[{"command": "listGroups", "data":{"totalCou
 list_groups_verbose_command = { "commands": [{
             "command": "listGroups", "verbose": True, "correlationData": "15"}]}
 list_groups_verbose_response = {'responses':[{'command': 'listGroups', 'data': {"totalCount":1, 'groups':
-            [{'groupName': 'group_one', 'textName': 'Name', 'textDescription': 'Description', 'clients': [
+            [{'groupname': 'group_one', 'textname': 'Name', 'textdescription': 'Description', 'clients': [
                 {"username":"user_one"}], "roles":[]}]},
             'correlationData': '15'}]}
 
 list_clients_verbose_command = { "commands": [{
             "command": "listClients", "verbose": True, "correlationData": "20"}]}
-list_clients_verbose_response = {'responses':[{"command": "listClients", "data":{"totalCount":1, "clients":[
-            {"username":"user_one", "clientid":"cid", "textName":"Name", "textDescription":"Description",
-            "groups":[{"groupName":"group_one"}], "roles":[]}]}, "correlationData":"20"}]}
+list_clients_verbose_response = {'responses':[{"command": "listClients", "data":{"totalCount":2, "clients":[
+            {'username': 'admin', 'textname': 'Dynsec admin user', 'roles': [{'rolename': 'admin'}], 'groups': []},
+            {"username":"user_one", "clientid":"cid", "textname":"Name", "textdescription":"Description",
+            "groups":[{"groupname":"group_one"}], "roles":[]}]}, "correlationData":"20"}]}
 
-get_group_command = { "commands": [{"command": "getGroup", "groupName":"group_one"}]}
-get_group_response = {'responses':[{'command': 'getGroup', 'data': {'group': {'groupName': 'group_one',
-            'textName':'Name', 'textDescription':'Description', 'clients': [{"username":"user_one"}], 'roles': []}}}]}
+get_group_command = { "commands": [{"command": "getGroup", "groupname":"group_one"}]}
+get_group_response = {'responses':[{'command': 'getGroup', 'data': {'group': {'groupname': 'group_one',
+            'textname':'Name', 'textdescription':'Description', 'clients': [{"username":"user_one"}], 'roles': []}}}]}
 
 add_client_to_group_command = {"commands": [{"command":"addGroupClient", "username":"user_one",
-            "groupName": "group_one", "correlationData":"1234"}]}
+            "groupname": "group_one", "correlationData":"1234"}]}
 add_client_to_group_response = {'responses':[{'command': 'addGroupClient', 'correlationData': '1234'}]}
 
 remove_client_from_group_command = {"commands": [{"command":"removeGroupClient", "username":"user_one",
-            "groupName": "group_one", "correlationData":"4321"}]}
+            "groupname": "group_one", "correlationData":"4321"}]}
 remove_client_from_group_response = {'responses':[{'command': 'removeGroupClient', 'correlationData': '4321'}]}
 
-delete_group_command = {"commands": [{"command":"deleteGroup", "groupName":"group_one", "correlationData":"5678"}]}
+delete_group_command = {"commands": [{"command":"deleteGroup", "groupname":"group_one", "correlationData":"5678"}]}
 delete_group_response = {'responses':[{"command":"deleteGroup", "correlationData":"5678"}]}
 
 
 rc = 1
 keepalive = 10
-connect_packet = mosq_test.gen_connect("ctrl-test", keepalive=keepalive)
+connect_packet = mosq_test.gen_connect("ctrl-test", keepalive=keepalive, username="admin", password="admin")
 connack_packet = mosq_test.gen_connack(rc=0)
 
 mid = 2
-subscribe_packet = mosq_test.gen_subscribe(mid, "$CONTROL/#", 1)
+subscribe_packet = mosq_test.gen_subscribe(mid, "$CONTROL/dynamic-security/#", 1)
 suback_packet = mosq_test.gen_suback(mid, 1)
 
 try:
     os.mkdir(str(port))
-    with open("%d/dynamic-security.json" % port, 'w') as f:
-        f.write('{"defaultACLAction": {"publishClientSend":"allow", "publishClientReceive":"allow", "subscribe":"allow", "unsubscribe":"allow"}}')
+    shutil.copyfile("dynamic-security-init.json", "%d/dynamic-security.json" % (port))
 except FileExistsError:
-    try:
-        os.remove(f"{port}/dynamic-security.json")
-    except FileNotFoundError:
-        pass
+    pass
 
 broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port)
 

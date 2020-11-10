@@ -30,7 +30,7 @@ Contributors:
 #include "util_mosq.h"
 
 
-int handle__packet(struct mosquitto_db *db, struct mosquitto *context)
+int handle__packet(struct mosquitto *context)
 {
 	int rc = MOSQ_ERR_INVAL;
 
@@ -42,36 +42,36 @@ int handle__packet(struct mosquitto_db *db, struct mosquitto *context)
 		case CMD_PINGRESP:
 			return handle__pingresp(context);
 		case CMD_PUBACK:
-			return handle__pubackcomp(db, context, "PUBACK");
+			return handle__pubackcomp(context, "PUBACK");
 		case CMD_PUBCOMP:
-			return handle__pubackcomp(db, context, "PUBCOMP");
+			return handle__pubackcomp(context, "PUBCOMP");
 		case CMD_PUBLISH:
-			rc = handle__publish(db, context);
+			rc = handle__publish(context);
 			break;
 		case CMD_PUBREC:
-			return handle__pubrec(db, context);
+			return handle__pubrec(context);
 		case CMD_PUBREL:
-			return handle__pubrel(db, context);
+			return handle__pubrel(context);
 		case CMD_CONNECT:
-			return handle__connect(db, context);
+			return handle__connect(context);
 		case CMD_DISCONNECT:
-			return handle__disconnect(db, context);
+			return handle__disconnect(context);
 		case CMD_SUBSCRIBE:
-			rc = handle__subscribe(db, context);
+			rc = handle__subscribe(context);
 			break;
 		case CMD_UNSUBSCRIBE:
-			rc = handle__unsubscribe(db, context);
+			rc = handle__unsubscribe(context);
 			break;
 #ifdef WITH_BRIDGE
 		case CMD_CONNACK:
-			return handle__connack(db, context);
+			return handle__connack(context);
 		case CMD_SUBACK:
 			return handle__suback(context);
 		case CMD_UNSUBACK:
 			return handle__unsuback(context);
 #endif
 		case CMD_AUTH:
-			return handle__auth(db, context);
+			return handle__auth(context);
 		default:
 			rc = MOSQ_ERR_PROTOCOL;
 	}

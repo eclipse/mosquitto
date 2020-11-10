@@ -19,10 +19,6 @@ Contributors:
 #include "mosquitto_internal.h"
 #include "mosquitto.h"
 
-#ifdef WITH_BROKER
-struct mosquitto_db;
-#endif
-
 int packet__alloc(struct mosquitto__packet *packet);
 void packet__cleanup(struct mosquitto__packet *packet);
 void packet__cleanup_all(struct mosquitto *mosq);
@@ -48,10 +44,6 @@ int packet__write_varint(struct mosquitto__packet *packet, uint32_t word);
 unsigned int packet__varint_bytes(uint32_t word);
 
 int packet__write(struct mosquitto *mosq);
-#ifdef WITH_BROKER
-int packet__read(struct mosquitto_db *db, struct mosquitto *mosq);
-#else
 int packet__read(struct mosquitto *mosq);
-#endif
 
 #endif

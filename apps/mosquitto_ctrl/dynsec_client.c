@@ -25,14 +25,35 @@ Contributors:
 
 int dynsec_client__create(int argc, char *argv[], cJSON *j_command)
 {
-	char *username = NULL, *password = NULL;
+	char *username = NULL, *password = NULL, *clientid = NULL;
 	char prompt[200], verify_prompt[200];
 	char password_buf[200];
 	int rc;
+	int i;
+	bool request_password = true;
 
-	if(argc == 1){
-		username = argv[0];
+	username = argv[0];
 
+	for(i=1; i<argc; i++){
+		if(!strcmp(argv[i], "-c")){
+			if(i+1 == argc){
+				fprintf(stderr, "Error: -c argument given, but no clientid provided.\n");
+				return MOSQ_ERR_INVAL;
+			}
+			clientid = argv[i+1];
+			i++;
+		}else if(!strcmp(argv[i], "-p")){
+			if(i+1 == argc){
+				fprintf(stderr, "Error: -p argument given, but no password provided.\n");
+				return MOSQ_ERR_INVAL;
+			}
+			password = argv[i+1];
+			i++;
+			request_password = false;
+		}
+	}
+
+	if(request_password){
 		printf("Enter new password for %s. Press return for no password (user will be unable to login).\n", username);
 		snprintf(prompt, sizeof(prompt), "New password for %s: ", username);
 		snprintf(verify_prompt, sizeof(verify_prompt), "Reenter password for %s: ", username);
@@ -43,15 +64,10 @@ int dynsec_client__create(int argc, char *argv[], cJSON *j_command)
 			password = NULL;
 			printf("\n");
 		}
-	}else if(argc == 2){
-		username = argv[0];
-		password = argv[1];
-	}else{
-		return MOSQ_ERR_INVAL;
 	}
-
 	if(cJSON_AddStringToObject(j_command, "command", "createClient") == NULL
 			|| cJSON_AddStringToObject(j_command, "username", username) == NULL
+			|| (clientid && cJSON_AddStringToObject(j_command, "clientid", clientid) == NULL)
 			|| (password && cJSON_AddStringToObject(j_command, "password", password) == NULL)
 			){
 
@@ -175,7 +191,7 @@ int dynsec_client__add_remove_role(int argc, char *argv[], cJSON *j_command, con
 	if(cJSON_AddStringToObject(j_command, "command", command) == NULL
 			|| cJSON_AddStringToObject(j_command, "username", username) == NULL
 			|| cJSON_AddStringToObject(j_command, "rolename", rolename) == NULL
-			|| (priority != -1 && cJSON_AddNumberToObject(j_command, "priority", priority) == NULL)
+			|| (priority != -1 && cJSON_AddIntToObject(j_command, "priority", priority) == NULL)
 			){
 
 		return MOSQ_ERR_NOMEM;
@@ -200,8 +216,8 @@ int dynsec_client__list_all(int argc, char *argv[], cJSON *j_command)
 	}
 
 	if(cJSON_AddStringToObject(j_command, "command", "listClients") == NULL
-			|| (count > 0 && cJSON_AddNumberToObject(j_command, "count", count) == NULL)
-			|| (offset > 0 && cJSON_AddNumberToObject(j_command, "offset", offset) == NULL)
+			|| (count > 0 && cJSON_AddIntToObject(j_command, "count", count) == NULL)
+			|| (offset > 0 && cJSON_AddIntToObject(j_command, "offset", offset) == NULL)
 			){
 
 		return MOSQ_ERR_NOMEM;
