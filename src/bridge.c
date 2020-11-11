@@ -433,7 +433,8 @@ int bridge__connect(struct mosquitto *context)
 			context->bridge->addresses[context->bridge->cur_address].address,
 			context->bridge->addresses[context->bridge->cur_address].port,
 			context->bridge->bind_address,
-			false);
+			false,
+			NULL);
 
 	if(rc > 0){
 		if(rc == MOSQ_ERR_TLS){

@@ -187,6 +187,7 @@ int mosquitto_reinitialise(struct mosquitto *mosq, const char *id, bool clean_st
 	mosq->on_subscribe = NULL;
 	mosq->on_unsubscribe = NULL;
 	mosq->host = NULL;
+	mosq->hostaddress_list = NULL;
 	mosq->port = 1883;
 	mosq->in_callback = false;
 	mosq->reconnect_delay = 1;
@@ -287,6 +288,8 @@ void mosquitto__destroy(struct mosquitto *mosq)
 
 	mosquitto__free(mosq->password);
 	mosq->password = NULL;
+
+	mosquitto_clear_hostaddresses(mosq);
 
 	mosquitto__free(mosq->host);
 	mosq->host = NULL;
