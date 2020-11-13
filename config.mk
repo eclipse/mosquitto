@@ -182,6 +182,7 @@ ifeq ($(UNAME),Linux)
 	BROKER_LDADD:=$(BROKER_LDADD) -lrt
 	BROKER_LDFLAGS:=$(BROKER_LDFLAGS) -Wl,--dynamic-list=linker.syms
 	LIB_LIBADD:=$(LIB_LIBADD) -lrt
+	APP_CFLAGS+=-fPIC
 endif
 
 ifeq ($(WITH_SHARED_LIBRARIES),yes)
