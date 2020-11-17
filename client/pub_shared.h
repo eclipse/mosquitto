@@ -21,6 +21,7 @@ Contributors:
 #define STATUS_WAITING 2
 #define STATUS_DISCONNECTING 3
 #define STATUS_DISCONNECTED 4
+#define STATUS_NOHOPE 5
 
 extern int mid_sent;
 extern struct mosq_config cfg;
