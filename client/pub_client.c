@@ -180,7 +180,8 @@ void my_connect_callback(struct mosquitto *mosq, void *obj, int result, int flag
 			}else{
 				err_printf(&cfg, "Connection error: %s\n", mosquitto_connack_string(result));
 			}
-			mosquitto_disconnect_v5(mosq, 0, cfg.disconnect_props);
+			// let the loop know that this is an unrecoverable connection
+			status = STATUS_NOHOPE;
 		}
 	}
 }
@@ -250,6 +251,10 @@ int pub_stdin_line_loop(struct mosquitto *mosq)
 			ts.tv_nsec = 100000000;
 			nanosleep(&ts, NULL);
 #endif
+		}
+
+		if(status == STATUS_NOHOPE){
+			return MOSQ_ERR_CONN_REFUSED;
 		}
 
 		if(status == STATUS_CONNACK_RECVD){
