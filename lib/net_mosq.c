@@ -857,16 +857,6 @@ static int net__init_ssl_ctx(struct mosquitto *mosq)
 #endif
 
 
-void net__socket_close_compat(struct mosquitto *mosq)
-{
-#ifdef WITH_BROKER
-	struct mosquitto_db *db = mosquitto__get_db();
-	net__socket_close(db, mosq);
-#else
-	net__socket_close(mosq);
-#endif
-}
-
 int net__socket_connect_step3(struct mosquitto *mosq, const char *host)
 {
 #ifdef WITH_TLS
@@ -874,7 +864,7 @@ int net__socket_connect_step3(struct mosquitto *mosq, const char *host)
 
 	int rc = net__init_ssl_ctx(mosq);
 	if(rc){
-		net__socket_close_compat(mosq);
+		net__socket_close(mosq);
 		return rc;
 	}
 
@@ -884,7 +874,7 @@ int net__socket_connect_step3(struct mosquitto *mosq, const char *host)
 		}
 		mosq->ssl = SSL_new(mosq->ssl_ctx);
 		if(!mosq->ssl){
-			net__socket_close_compat(mosq);
+			net__socket_close(mosq);
 			net__print_ssl_error(mosq);
 			return MOSQ_ERR_TLS;
 		}
@@ -892,7 +882,7 @@ int net__socket_connect_step3(struct mosquitto *mosq, const char *host)
 		SSL_set_ex_data(mosq->ssl, tls_ex_index_mosq, mosq);
 		bio = BIO_new_socket(mosq->sock, BIO_NOCLOSE);
 		if(!bio){
-			net__socket_close_compat(mosq);
+			net__socket_close(mosq);
 			net__print_ssl_error(mosq);
 			return MOSQ_ERR_TLS;
 		}
@@ -902,12 +892,12 @@ int net__socket_connect_step3(struct mosquitto *mosq, const char *host)
 		 * required for the SNI resolving
 		 */
 		if(SSL_set_tlsext_host_name(mosq->ssl, host) != 1) {
-			net__socket_close_compat(mosq);
+			net__socket_close(mosq);
 			return MOSQ_ERR_TLS;
 		}
 
 		if(net__socket_connect_tls(mosq)){
-			net__socket_close_compat(mosq);
+			net__socket_close(mosq);
 			return MOSQ_ERR_TLS;
 		}
 
