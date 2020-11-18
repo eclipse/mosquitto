@@ -583,6 +583,7 @@ void bridge__cleanup(struct mosquitto *context)
 #ifdef WITH_TLS
 	if(context->ssl_ctx){
 		SSL_CTX_free(context->ssl_ctx);
+		context->ssl_ctx = NULL;
 	}
 #endif
 }
