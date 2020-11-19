@@ -619,6 +619,10 @@ int dynsec_clients__process_set_password(cJSON *j_responses, struct mosquitto *c
 		dynsec__command_reply(j_responses, context, "setClientPassword", "Invalid/missing password", correlation_data);
 		return MOSQ_ERR_INVAL;
 	}
+	if(strlen(password) == 0){
+		dynsec__command_reply(j_responses, context, "setClientPassword", "Empty password is not allowed", correlation_data);
+		return MOSQ_ERR_INVAL;
+	}
 
 	client = dynsec_clients__find(username);
 	if(client == NULL){
@@ -696,11 +700,14 @@ int dynsec_clients__process_modify(cJSON *j_responses, struct mosquitto *context
 	}
 
 	if(json_get_string(command, "password", &password, false) == MOSQ_ERR_SUCCESS){
-		rc = client__set_password(client, password);
-		if(rc != MOSQ_ERR_SUCCESS){
-			dynsec__command_reply(j_responses, context, "modifyClient", "Internal error", correlation_data);
-			mosquitto_kick_client_by_username(username, false);
-			return MOSQ_ERR_NOMEM;
+		if(strlen(password) > 0){
+			/* If password == "", we just ignore it */
+			rc = client__set_password(client, password);
+			if(rc != MOSQ_ERR_SUCCESS){
+				dynsec__command_reply(j_responses, context, "modifyClient", "Internal error", correlation_data);
+				mosquitto_kick_client_by_username(username, false);
+				return MOSQ_ERR_NOMEM;
+			}
 		}
 	}
 
