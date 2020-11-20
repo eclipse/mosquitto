@@ -1020,6 +1020,15 @@ int dynsec_groups__process_get_anonymous_group(cJSON *j_responses, struct mosqui
 		dynsec__command_reply(j_responses, context, "getAnonymousGroup", "Internal error", correlation_data);
 		return MOSQ_ERR_NOMEM;
 	}
+	if(correlation_data){
+		jtmp = cJSON_CreateString(correlation_data);
+		if(jtmp == NULL){
+			dynsec__command_reply(j_responses, context, "getGroup", "Internal error", correlation_data);
+			cJSON_Delete(tree);
+			return 1;
+		}
+		cJSON_AddItemToObject(tree, "correlationData", jtmp);
+	}
 
 	cJSON_AddItemToArray(j_responses, tree);
 
