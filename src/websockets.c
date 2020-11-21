@@ -648,6 +648,10 @@ static int callback_http(struct libwebsocket_context *context,
 						return -1;
 					}
 					wlen = libwebsocket_write(wsi, buf, buflen, LWS_WRITE_HTTP);
+					/* while still active, extend timeout */
+					if(wlen){
+						lws_set_timeout(wsi,PENDING_TIMEOUT_HTTP_CONTENT, 10);
+					}
 					if(wlen < buflen){
 						if(fseek(u->fptr, buflen-wlen, SEEK_CUR) < 0){
 							fclose(u->fptr);
