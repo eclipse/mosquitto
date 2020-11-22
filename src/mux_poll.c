@@ -246,6 +246,10 @@ static void loop_handle_reads_writes(struct pollfd *pollfds)
 			continue;
 		}
 
+		if(pollfds[context->pollfd_index].fd == INVALID_SOCKET){
+			continue;
+		}
+
 		assert(pollfds[context->pollfd_index].fd == context->sock);
 
 #ifdef WITH_WEBSOCKETS

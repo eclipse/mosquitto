@@ -242,6 +242,10 @@ static void loop_handle_reads_writes(struct mosquitto *context, uint32_t events)
 	socklen_t len;
 	int rc;
 
+	if(context->sock == INVALID_SOCKET){
+		return;
+	}
+
 #ifdef WITH_WEBSOCKETS
 	if(context->wsi){
 		struct lws_pollfd wspoll;
