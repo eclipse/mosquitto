@@ -109,7 +109,7 @@ int load_file(const char *filename)
 		cfg.message = NULL;
 		cfg.msglen = 0;
 		return 0;
-	}else if(cfg.msglen < 0){
+	}else if(flen < 0){
 		fclose(fptr);
 		err_printf(&cfg, "Error: Unable to determine size of file \"%s\".\n", filename);
 		return 1;

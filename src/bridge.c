@@ -399,8 +399,8 @@ int bridge__connect(struct mosquitto *context)
 			if (!context->bridge->notifications_local_only) {
 				notification_payload = '0';
 				rc = will__set(context, notification_topic, 1, &notification_payload, 1, true, NULL);
-				mosquitto__free(notification_topic);
 				if(rc != MOSQ_ERR_SUCCESS){
+					mosquitto__free(notification_topic);
 					return rc;
 				}
 			}

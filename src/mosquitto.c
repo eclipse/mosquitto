@@ -303,7 +303,7 @@ int listeners__start(struct mosquitto__listener_sock **listensock, int *listenso
 		if(listeners__start_local_only(listensock, listensock_count)){
 			db__close();
 			if(db.config->pid_file){
-				remove(db.config->pid_file);
+				(void)remove(db.config->pid_file);
 			}
 			return 1;
 		}
@@ -315,7 +315,7 @@ int listeners__start(struct mosquitto__listener_sock **listensock, int *listenso
 			if(listeners__start_single_mqtt(listensock, listensock_count, &listensock_index, &db.config->listeners[i])){
 				db__close();
 				if(db.config->pid_file){
-					remove(db.config->pid_file);
+					(void)remove(db.config->pid_file);
 				}
 				return 1;
 			}
