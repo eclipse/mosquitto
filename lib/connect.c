@@ -155,7 +155,7 @@ static int mosquitto__reconnect(struct mosquitto *mosq, bool blocking)
 	int rc;
 
 	if(!mosq) return MOSQ_ERR_INVAL;
-	if(!mosq->host || mosq->port < 0) return MOSQ_ERR_INVAL;
+	if(!mosq->host) return MOSQ_ERR_INVAL;
 
 	if(mosq->connect_properties){
 		if(mosq->protocol != mosq_p_mqtt5) return MOSQ_ERR_NOT_SUPPORTED;

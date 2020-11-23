@@ -78,7 +78,6 @@ int persist__read_string_len(FILE *db_fptr, char **str, uint16_t len)
 	if(len){
 		s = mosquitto__malloc(len+1U);
 		if(!s){
-			fclose(db_fptr);
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 			return MOSQ_ERR_NOMEM;
 		}
@@ -186,7 +185,6 @@ static int persist__client_chunk_restore(FILE *db_fptr)
 		rc = persist__chunk_client_read_v234(db_fptr, &chunk, db_version);
 	}
 	if(rc > 0){
-		fclose(db_fptr);
 		return rc;
 	}else if(rc < 0){
 		/* Client not loaded, but otherwise not an error */
@@ -238,7 +236,6 @@ static int persist__client_msg_chunk_restore(FILE *db_fptr, uint32_t length)
 		rc = persist__chunk_client_msg_read_v234(db_fptr, &chunk);
 	}
 	if(rc){
-		fclose(db_fptr);
 		return rc;
 	}
 
@@ -267,7 +264,6 @@ static int persist__msg_store_chunk_restore(FILE *db_fptr, uint32_t length)
 		rc = persist__chunk_msg_store_read_v234(db_fptr, &chunk, db_version);
 	}
 	if(rc){
-		fclose(db_fptr);
 		return rc;
 	}
 
@@ -281,7 +277,6 @@ static int persist__msg_store_chunk_restore(FILE *db_fptr, uint32_t length)
 	}
 	load = mosquitto__calloc(1, sizeof(struct mosquitto_msg_store_load));
 	if(!load){
-		fclose(db_fptr);
 		mosquitto__free(chunk.source.id);
 		mosquitto__free(chunk.source.username);
 		mosquitto__free(chunk.topic);
@@ -309,7 +304,7 @@ static int persist__msg_store_chunk_restore(FILE *db_fptr, uint32_t length)
 
 	stored = mosquitto__calloc(1, sizeof(struct mosquitto_msg_store));
 	if(stored == NULL){
-		fclose(db_fptr);
+		mosquitto__free(load);
 		mosquitto__free(chunk.source.id);
 		mosquitto__free(chunk.source.username);
 		mosquitto__free(chunk.topic);
@@ -343,7 +338,6 @@ static int persist__msg_store_chunk_restore(FILE *db_fptr, uint32_t length)
 		return MOSQ_ERR_SUCCESS;
 	}else{
 		mosquitto__free(load);
-		fclose(db_fptr);
 		return rc;
 	}
 }
@@ -364,7 +358,6 @@ static int persist__retain_chunk_restore(FILE *db_fptr)
 		rc = persist__chunk_retain_read_v234(db_fptr, &chunk);
 	}
 	if(rc){
-		fclose(db_fptr);
 		return rc;
 	}
 
@@ -393,7 +386,6 @@ static int persist__sub_chunk_restore(FILE *db_fptr)
 		rc = persist__chunk_sub_read_v234(db_fptr, &chunk);
 	}
 	if(rc){
-		fclose(db_fptr);
 		return rc;
 	}
 
@@ -494,23 +486,38 @@ int persist__restore(void)
 					break;
 
 				case DB_CHUNK_MSG_STORE:
-					if(persist__msg_store_chunk_restore(fptr, length)) return 1;
+					if(persist__msg_store_chunk_restore(fptr, length)){
+						fclose(fptr);
+						return 1;
+					}
 					break;
 
 				case DB_CHUNK_CLIENT_MSG:
-					if(persist__client_msg_chunk_restore(fptr, length)) return 1;
+					if(persist__client_msg_chunk_restore(fptr, length)){
+						fclose(fptr);
+						return 1;
+					}
 					break;
 
 				case DB_CHUNK_RETAIN:
-					if(persist__retain_chunk_restore(fptr)) return 1;
+					if(persist__retain_chunk_restore(fptr)){
+						fclose(fptr);
+						return 1;
+					}
 					break;
 
 				case DB_CHUNK_SUB:
-					if(persist__sub_chunk_restore(fptr)) return 1;
+					if(persist__sub_chunk_restore(fptr)){
+						fclose(fptr);
+						return 1;
+					}
 					break;
 
 				case DB_CHUNK_CLIENT:
-					if(persist__client_chunk_restore(fptr)) return 1;
+					if(persist__client_chunk_restore(fptr)){
+						fclose(fptr);
+						return 1;
+					}
 					break;
 
 				default:
@@ -519,7 +526,6 @@ int persist__restore(void)
 					break;
 			}
 		}
-		if(rlen < 0) goto error;
 	}else{
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to restore persistent database. Unrecognised file format.");
 		rc = 1;

@@ -2049,7 +2049,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 								strtok_r(NULL, "", &saveptr);
 							}
 							qos = (uint8_t)atoi(token);
-							if(qos < 0 || qos > 2){
+							if(qos > 2){
 								log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge QoS level '%s'.", token);
 								return MOSQ_ERR_INVAL;
 							}

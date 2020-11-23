@@ -71,6 +71,9 @@ int handle__suback(struct mosquitto *mosq)
 		rc = packet__read_byte(&mosq->in_packet, &qos);
 		if(rc){
 			mosquitto__free(granted_qos);
+#ifdef WITH_BROKER
+			mosquitto_property_free_all(&properties);
+#endif
 			return rc;
 		}
 		granted_qos[i] = (int)qos;

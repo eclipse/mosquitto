@@ -252,6 +252,8 @@ static int sub__add_shared(struct mosquitto *context, uint8_t qos, uint32_t iden
 		if(i == context->shared_sub_count){
 			shared_subs = mosquitto__realloc(context->shared_subs, sizeof(struct mosquitto__subhier_ref *)*(size_t)(context->shared_sub_count + 1));
 			if(!shared_subs){
+				mosquitto__free(shared_ref);
+				context->shared_subs[context->shared_sub_count-1] = NULL;
 				sub__remove_shared_leaf(subhier, shared, newleaf);
 				return MOSQ_ERR_NOMEM;
 			}
@@ -579,6 +581,8 @@ int sub__add(struct mosquitto *context, const char *sub, uint8_t qos, uint32_t i
 
 	topiclen = strlen(topics[0]);
 	if(topiclen > UINT16_MAX){
+		mosquitto__free(local_sub);
+		mosquitto__free(topics);
 		return MOSQ_ERR_INVAL;
 	}
 	HASH_FIND(hh, *root, topics[0], topiclen, subhier);

@@ -71,12 +71,14 @@ int send__connack(struct mosquitto *context, uint8_t ack, uint8_t reason_code, c
 
 	if(packet__check_oversize(context, remaining_length)){
 		mosquitto_property_free_all(&connack_props);
-		mosquitto__free(packet);
 		return MOSQ_ERR_OVERSIZE_PACKET;
 	}
 
 	packet = mosquitto__calloc(1, sizeof(struct mosquitto__packet));
-	if(!packet) return MOSQ_ERR_NOMEM;
+	if(!packet){
+		mosquitto_property_free_all(&connack_props);
+		return MOSQ_ERR_NOMEM;
+	}
 
 	packet->command = CMD_CONNACK;
 	packet->remaining_length = remaining_length;

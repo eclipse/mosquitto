@@ -118,6 +118,7 @@ int handle__unsubscribe(struct mosquitto *context)
 				break;
 			default:
 				mosquitto__free(sub);
+				mosquitto__free(reason_codes);
 				return rc;
 		}
 

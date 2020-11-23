@@ -63,9 +63,9 @@ int control__process(struct mosquitto *context, struct mosquitto_msg_store *stor
 	}
 
 	if(stored->qos == 1){
-		if(send__puback(context, stored->source_mid, event_data.reason_code, properties)) rc = 1;
+		if(send__puback(context, stored->source_mid, MQTT_RC_SUCCESS, properties)) rc = 1;
 	}else if(stored->qos == 2){
-		if(send__pubrec(context, stored->source_mid, event_data.reason_code, properties)) rc = 1;
+		if(send__pubrec(context, stored->source_mid, MQTT_RC_SUCCESS, properties)) rc = 1;
 	}
 	mosquitto_property_free_all(&properties);
 
