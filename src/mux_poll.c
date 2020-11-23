@@ -172,7 +172,6 @@ int mux_poll__delete(struct mosquitto *context)
 int mux_poll__handle(struct mosquitto__listener_sock *listensock, int listensock_count)
 {
 	struct mosquitto *context;
-	mosq_sock_t sock;
 	int i;
 	int fdcount;
 #ifndef WIN32
@@ -208,15 +207,9 @@ int mux_poll__handle(struct mosquitto__listener_sock *listensock, int listensock
 
 		for(i=0; i<listensock_count; i++){
 			if(pollfds[i].revents & (POLLIN | POLLPRI)){
-				while((sock = net__socket_accept(&listensock[i])) != -1){
-					context = NULL;
-					HASH_FIND(hh_sock, db.contexts_by_sock, &sock, sizeof(mosq_sock_t), context);
-					if(context) {
-						context->pollfd_index = -1;
-						mux__add_in(context);
-					}else{
-						log__printf(NULL, MOSQ_LOG_ERR, "Error in poll accepting: no context");
-					}
+				while((context = net__socket_accept(&listensock[i])) != NULL){
+					context->pollfd_index = -1;
+					mux__add_in(context);
 				}
 			}
 		}

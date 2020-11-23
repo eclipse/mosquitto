@@ -184,7 +184,6 @@ int mux_epoll__handle(void)
 	struct mosquitto *context;
 	struct mosquitto__listener_sock *listensock;
 	int event_count;
-	int sock;
 
 	memset(&ev, 0, sizeof(struct epoll_event));
 	sigprocmask(SIG_SETMASK, &my_sigblock, &origsig);
@@ -211,12 +210,7 @@ int mux_epoll__handle(void)
 				listensock = ep_events[i].data.ptr;
 
 				if (ep_events[i].events & (EPOLLIN | EPOLLPRI)){
-					while((sock = net__socket_accept(listensock)) != -1){
-						context = NULL;
-						HASH_FIND(hh_sock, db.contexts_by_sock, &sock, sizeof(mosq_sock_t), context);
-						if(!context) {
-							log__printf(NULL, MOSQ_LOG_ERR, "Error in epoll accepting: no context");
-						}
+					while((context = net__socket_accept(listensock)) != NULL){
 						context->events = EPOLLIN;
 						mux__add_in(context);
 					}
