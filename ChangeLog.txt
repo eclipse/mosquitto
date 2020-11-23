@@ -83,6 +83,7 @@ Broker:
   username. Closes #1891.
 - Fix file logging on Windows. Closes #1880.
 - Fix bridge sock not being removed from sock hash on error. Closes #1897.
+- Default for max_queued_messages has been changed to 1000.
 
 Client library:
 - Client no longer generates random client ids for v3.1.1 clients, these are

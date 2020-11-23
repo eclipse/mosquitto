@@ -609,7 +609,7 @@ int config__read(struct mosquitto__config *config, bool reload)
 	cr.log_type_set = 0;
 	cr.max_inflight_bytes = 0;
 	cr.max_queued_bytes = 0;
-	cr.max_queued_messages = 100;
+	cr.max_queued_messages = 1000;
 
 	if(!db.config_file) return 0;
 
