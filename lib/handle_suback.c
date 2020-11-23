@@ -66,7 +66,12 @@ int handle__suback(struct mosquitto *mosq)
 
 	qos_count = (int)(mosq->in_packet.remaining_length - mosq->in_packet.pos);
 	granted_qos = mosquitto__malloc((size_t)qos_count*sizeof(int));
-	if(!granted_qos) return MOSQ_ERR_NOMEM;
+	if(!granted_qos){
+#ifdef WITH_BROKER
+		mosquitto_property_free_all(&properties);
+#endif
+		return MOSQ_ERR_NOMEM;
+	}
 	while(mosq->in_packet.pos < mosq->in_packet.remaining_length){
 		rc = packet__read_byte(&mosq->in_packet, &qos);
 		if(rc){

@@ -404,6 +404,7 @@ int bridge__connect(struct mosquitto *context)
 					return rc;
 				}
 			}
+			mosquitto__free(notification_topic);
 		}
 	}
 
