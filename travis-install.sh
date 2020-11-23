@@ -10,7 +10,7 @@ if [ "$TRAVIS_OS_NAME" == "linux" ]; then
 fi
 
 if [ "$TRAVIS_OS_NAME" == "osx" ]; then
-	brew update
+	#brew update
 	brew install c-ares cjson openssl libwebsockets
 fi
 
