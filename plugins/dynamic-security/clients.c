@@ -889,13 +889,12 @@ int dynsec_clients__process_get(cJSON *j_responses, struct mosquitto *context, c
 	cJSON_AddItemToObject(j_data, "client", j_client);
 
 	if(correlation_data){
-		jtmp = cJSON_CreateString(correlation_data);
+		jtmp = cJSON_AddStringToObject(tree, "correlationData", correlation_data);
 		if(jtmp == NULL){
 			cJSON_Delete(tree);
 			dynsec__command_reply(j_responses, context, "getClient", "Internal error", correlation_data);
 			return 1;
 		}
-		cJSON_AddItemToObject(tree, "correlationData", jtmp);
 	}
 
 	cJSON_AddItemToArray(j_responses, tree);
@@ -968,13 +967,12 @@ int dynsec_clients__process_list(cJSON *j_responses, struct mosquitto *context, 
 		i++;
 	}
 	if(correlation_data){
-		jtmp = cJSON_CreateString(correlation_data);
+		jtmp = cJSON_AddStringToObject(tree, "correlationData", correlation_data);
 		if(jtmp == NULL){
 			cJSON_Delete(tree);
 			dynsec__command_reply(j_responses, context, "listClients", "Internal error", correlation_data);
 			return 1;
 		}
-		cJSON_AddItemToObject(tree, "correlationData", jtmp);
 	}
 
 	cJSON_AddItemToArray(j_responses, tree);

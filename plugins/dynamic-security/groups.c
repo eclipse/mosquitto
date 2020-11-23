@@ -731,13 +731,12 @@ int dynsec_groups__process_list(cJSON *j_responses, struct mosquitto *context, c
 		i++;
 	}
 	if(correlation_data){
-		jtmp = cJSON_CreateString(correlation_data);
+		jtmp = cJSON_AddStringToObject(tree, "correlationData", correlation_data);
 		if(jtmp == NULL){
 			cJSON_Delete(tree);
 			dynsec__command_reply(j_responses, context, "listGroups", "Internal error", correlation_data);
 			return 1;
 		}
-		cJSON_AddItemToObject(tree, "correlationData", jtmp);
 	}
 
 	cJSON_AddItemToArray(j_responses, tree);
@@ -794,13 +793,12 @@ int dynsec_groups__process_get(cJSON *j_responses, struct mosquitto *context, cJ
 		cJSON_AddItemToObject(j_data, "group", j_group);
 	}
 	if(correlation_data){
-		jtmp = cJSON_CreateString(correlation_data);
+		jtmp = cJSON_AddStringToObject(tree, "correlationData", correlation_data);
 		if(jtmp == NULL){
-			dynsec__command_reply(j_responses, context, "getGroup", "Internal error", correlation_data);
 			cJSON_Delete(tree);
+			dynsec__command_reply(j_responses, context, "getGroup", "Internal error", correlation_data);
 			return 1;
 		}
-		cJSON_AddItemToObject(tree, "correlationData", jtmp);
 	}
 
 	cJSON_AddItemToArray(j_responses, tree);
@@ -1031,13 +1029,12 @@ int dynsec_groups__process_get_anonymous_group(cJSON *j_responses, struct mosqui
 		}
 	}
 	if(correlation_data){
-		jtmp = cJSON_CreateString(correlation_data);
+		jtmp = cJSON_AddStringToObject(tree, "correlationData", correlation_data);
 		if(jtmp == NULL){
-			dynsec__command_reply(j_responses, context, "getGroup", "Internal error", correlation_data);
 			cJSON_Delete(tree);
+			dynsec__command_reply(j_responses, context, "getGroup", "Internal error", correlation_data);
 			return 1;
 		}
-		cJSON_AddItemToObject(tree, "correlationData", jtmp);
 	}
 
 	cJSON_AddItemToArray(j_responses, tree);

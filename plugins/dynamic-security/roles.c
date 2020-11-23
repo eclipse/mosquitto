@@ -579,13 +579,12 @@ int dynsec_roles__process_list(cJSON *j_responses, struct mosquitto *context, cJ
 		i++;
 	}
 	if(correlation_data){
-		jtmp = cJSON_CreateString(correlation_data);
+		jtmp = cJSON_AddStringToObject(tree, "correlationData", correlation_data);
 		if(jtmp == NULL){
 			cJSON_Delete(tree);
 			dynsec__command_reply(j_responses, context, "listRoles", "Internal error", correlation_data);
 			return 1;
 		}
-		cJSON_AddItemToObject(tree, "correlationData", jtmp);
 	}
 
 	cJSON_AddItemToArray(j_responses, tree);
@@ -813,13 +812,12 @@ int dynsec_roles__process_get(cJSON *j_responses, struct mosquitto *context, cJS
 	cJSON_AddItemToObject(j_data, "role", j_role);
 
 	if(correlation_data){
-		jtmp = cJSON_CreateString(correlation_data);
+		jtmp = cJSON_AddStringToObject(tree, "correlationData", correlation_data);
 		if(jtmp == NULL){
 			cJSON_Delete(tree);
 			dynsec__command_reply(j_responses, context, "getRole", "Internal error", correlation_data);
 			return 1;
 		}
-		cJSON_AddItemToObject(tree, "correlationData", jtmp);
 	}
 
 	cJSON_AddItemToArray(j_responses, tree);

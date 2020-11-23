@@ -256,6 +256,15 @@ int dynsec__process_get_default_acl_access(cJSON *j_responses, struct mosquitto 
 
 	cJSON_AddItemToArray(j_responses, tree);
 
+	if(correlation_data){
+		jtmp = cJSON_AddStringToObject(tree, "correlationData", correlation_data);
+		if(jtmp == NULL){
+			cJSON_Delete(tree);
+			dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
+			return 1;
+		}
+	}
+
 	return MOSQ_ERR_SUCCESS;
 }
 
