@@ -540,8 +540,9 @@ int dynsec_clients__process_enable(cJSON *j_responses, struct mosquitto *context
 
 int dynsec_clients__process_set_id(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data)
 {
-	char *username, *clientid, *clientid_heap;
+	char *username, *clientid, *clientid_heap = NULL;
 	struct dynsec__client *client;
+	size_t slen;
 
 	if(json_get_string(command, "username", &username, false) != MOSQ_ERR_SUCCESS){
 		dynsec__command_reply(j_responses, context, "setClientId", "Invalid/missing username", correlation_data);
@@ -552,29 +553,32 @@ int dynsec_clients__process_set_id(cJSON *j_responses, struct mosquitto *context
 		return MOSQ_ERR_INVAL;
 	}
 
-	if(json_get_string(command, "clientid", &clientid, false) != MOSQ_ERR_SUCCESS){
+	if(json_get_string(command, "clientid", &clientid, true) != MOSQ_ERR_SUCCESS){
 		dynsec__command_reply(j_responses, context, "setClientId", "Invalid/missing client ID", correlation_data);
 		return MOSQ_ERR_INVAL;
 	}
-	if(mosquitto_validate_utf8(clientid, (int)strlen(clientid)) != MOSQ_ERR_SUCCESS){
-		dynsec__command_reply(j_responses, context, "setClientId", "Client ID not valid UTF-8", correlation_data);
-		return MOSQ_ERR_INVAL;
+	if(clientid){
+		slen = strlen(clientid);
+		if(mosquitto_validate_utf8(clientid, (int)slen) != MOSQ_ERR_SUCCESS){
+			dynsec__command_reply(j_responses, context, "setClientId", "Client ID not valid UTF-8", correlation_data);
+			return MOSQ_ERR_INVAL;
+		}
+		if(slen > 0){
+			clientid_heap = mosquitto_strdup(clientid);
+			if(clientid_heap == NULL){
+				dynsec__command_reply(j_responses, context, "setClientId", "Internal error", correlation_data);
+				return MOSQ_ERR_NOMEM;
+			}
+		}else{
+			clientid_heap = NULL;
+		}
 	}
 
 	client = dynsec_clients__find(username);
 	if(client == NULL){
+		mosquitto_free(clientid_heap);
 		dynsec__command_reply(j_responses, context, "setClientId", "Client not found", correlation_data);
 		return MOSQ_ERR_SUCCESS;
-	}
-
-	if(clientid != NULL && strlen(clientid) > 0){
-		clientid_heap = mosquitto_strdup(clientid);
-		if(clientid_heap == NULL){
-			dynsec__command_reply(j_responses, context, "setClientId", "Internal error", correlation_data);
-			return MOSQ_ERR_NOMEM;
-		}
-	}else{
-		clientid_heap = NULL;
 	}
 
 	mosquitto_free(client->clientid);
