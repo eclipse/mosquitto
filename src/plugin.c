@@ -40,13 +40,13 @@ static bool check_callback_exists(struct mosquitto__callback *cb_base, MOSQ_FUNC
 }
 
 
-static int remove_callback(struct mosquitto__callback *cb_base, MOSQ_FUNC_generic_callback cb_func)
+static int remove_callback(struct mosquitto__callback **cb_base, MOSQ_FUNC_generic_callback cb_func)
 {
 	struct mosquitto__callback *tail, *tmp;
 
-	DL_FOREACH_SAFE(cb_base, tail, tmp){
+	DL_FOREACH_SAFE(*cb_base, tail, tmp){
 		if(tail->cb == cb_func){
-			DL_DELETE(cb_base, tail);
+			DL_DELETE(*cb_base, tail);
 			mosquitto__free(tail);
 			return MOSQ_ERR_SUCCESS;
 		}
@@ -315,5 +315,5 @@ int mosquitto_callback_unregister(
 			break;
 	}
 
-	return remove_callback(*cb_base, cb_func);
+	return remove_callback(cb_base, cb_func);
 }
