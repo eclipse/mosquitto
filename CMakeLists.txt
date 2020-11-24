@@ -15,6 +15,10 @@ set (VERSION 1.6.12)
 
 add_definitions (-DCMAKE -DVERSION=\"${VERSION}\")
 
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+	set(CMAKE_MACOSX_RPATH 1)
+endif()
+
 if (WIN32)
 	add_definitions("-D_CRT_SECURE_NO_WARNINGS")
 	add_definitions("-D_CRT_NONSTDC_NO_DEPRECATE")
