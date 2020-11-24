@@ -471,7 +471,9 @@ void dynsec__config_save(void)
 	fclose(fptr);
 
 	/* Everything is ok, so move new file over proper file */
-	rename(file_path, config_file);
+	if(rename(file_path, config_file) < 0){
+		mosquitto_log_printf(MOSQ_LOG_ERR, "Error updating dynsec config file: %s", strerror(errno));
+	}
 	mosquitto_free(file_path);
 }
 

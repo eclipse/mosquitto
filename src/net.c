@@ -645,7 +645,8 @@ static int net__socket_listen_tcp(struct mosquitto__listener *listener)
 
 #ifndef WIN32
 		ss_opt = 1;
-		setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &ss_opt, sizeof(ss_opt));
+		/* Unimportant if this fails */
+		(void)setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &ss_opt, sizeof(ss_opt));
 #endif
 #ifdef IPV6_V6ONLY
 		ss_opt = 1;

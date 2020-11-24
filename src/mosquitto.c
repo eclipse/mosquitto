@@ -568,7 +568,7 @@ int main(int argc, char *argv[])
 	mosquitto_security_module_cleanup();
 
 	if(config.pid_file){
-		remove(config.pid_file);
+		(void)remove(config.pid_file);
 	}
 
 	log__close(&config);

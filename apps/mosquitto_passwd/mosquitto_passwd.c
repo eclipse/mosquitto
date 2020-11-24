@@ -504,19 +504,21 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if(username && strlen(username) > 65535){
-		fprintf(stderr, "Error: Username must be less than 65536 characters long.\n");
-		return 1;
+	if(username){
+		if(strlen(username) > 65535){
+			fprintf(stderr, "Error: Username must be less than 65536 characters long.\n");
+			return 1;
+		}
+		if(strchr(username, ':')){
+			fprintf(stderr, "Error: Username must not contain the ':' character.\n");
+			return 1;
+		}
 	}
 	if(password_cmd && strlen(password_cmd) > 65535){
 		fprintf(stderr, "Error: Password must be less than 65536 characters long.\n");
 		return 1;
 	}
 
-	if(strchr(username, ':')){
-		fprintf(stderr, "Error: Username must not contain the ':' character.\n");
-		return 1;
-	}
 #ifdef WIN32
 	password_file = _fullpath(NULL, password_file_tmp, 0);
 	if(!password_file){
