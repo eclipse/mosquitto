@@ -919,5 +919,13 @@ void will_delay__check(void);
 void will_delay__send_all(void);
 void will_delay__remove(struct mosquitto *mosq);
 
+
+/* ============================================================
+ * Other
+ * ============================================================ */
+#ifdef WITH_XTREPORT
+void xtreport(void);
+#endif
+
 #endif
 

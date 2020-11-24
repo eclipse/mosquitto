@@ -114,6 +114,10 @@ WITH_CONTROL:=yes
 # Build the broker with the jemalloc allocator
 WITH_JEMALLOC:=no
 
+# Build with xtreport capability. This is for debugging purposes and is
+# probably of no particular interest to end users.
+WITH_XTREPORT=no
+
 # =============================================================================
 # End of user configuration
 # =============================================================================
@@ -363,6 +367,10 @@ ifeq ($(WITH_CJSON),yes)
 	CLIENT_CFLAGS:=$(CLIENT_CFLAGS) -DWITH_CJSON -I/usr/include/cjson -I/usr/local/include/cjson
 	CLIENT_LDADD:=$(CLIENT_LDADD) -lcjson
 	CLIENT_STATIC_LDADD:=$(CLIENT_STATIC_LDADD) -lcjson
+endif
+
+ifeq ($(WITH_XTREPORT),yes)
+	BROKER_CFLAGS:=$(BROKER_CFLAGS) -DWITH_XTREPORT
 endif
 
 BROKER_LDADD:=${BROKER_LDADD} ${LDADD}

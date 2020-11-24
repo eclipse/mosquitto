@@ -210,6 +210,9 @@ int mosquitto_main_loop(struct mosquitto__listener_sock *listensock, int listens
 		if(flag_tree_print){
 			sub__tree_print(db.subs, 0);
 			flag_tree_print = false;
+#ifdef WITH_XTREPORT
+			xtreport();
+#endif
 		}
 #ifdef WITH_WEBSOCKETS
 		for(i=0; i<db.config->listener_count; i++){
