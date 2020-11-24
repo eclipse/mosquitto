@@ -347,10 +347,13 @@ struct mosquitto__config {
 	char *log_timestamp_format;
 	char *log_file;
 	FILE *log_fptr;
-	uint16_t max_inflight_messages;
-	uint16_t max_keepalive;
+	size_t max_inflight_bytes;
+	size_t max_queued_bytes;
+	int max_queued_messages;
 	uint32_t max_packet_size;
 	uint32_t message_size_limit;
+	uint16_t max_inflight_messages;
+	uint16_t max_keepalive;
 	bool persistence;
 	char *persistence_location;
 	char *persistence_file;
@@ -708,7 +711,6 @@ int db__close(void);
 int persist__backup(bool shutdown);
 int persist__restore(void);
 #endif
-void db__limits_set(unsigned long inflight_bytes, int queued, unsigned long queued_bytes);
 /* Return the number of in-flight messages in count. */
 int db__message_count(int *count);
 int db__message_delete_outgoing(struct mosquitto *context, uint16_t mid, enum mosquitto_msg_state expect_state, int qos);

@@ -123,6 +123,7 @@ void packet__cleanup_all(struct mosquitto *mosq)
 		packet__cleanup(packet);
 		mosquitto__free(packet);
 	}
+	mosq->out_packet_len = 0;
 
 	packet__cleanup(&mosq->in_packet);
 
@@ -150,6 +151,7 @@ int packet__queue(struct mosquitto *mosq, struct mosquitto__packet *packet)
 		mosq->out_packet = packet;
 	}
 	mosq->out_packet_last = packet;
+	mosq->out_packet_len++;
 	pthread_mutex_unlock(&mosq->out_packet_mutex);
 #ifdef WITH_BROKER
 #  ifdef WITH_WEBSOCKETS
@@ -213,6 +215,7 @@ int packet__write(struct mosquitto *mosq)
 	if(mosq->out_packet && !mosq->current_out_packet){
 		mosq->current_out_packet = mosq->out_packet;
 		mosq->out_packet = mosq->out_packet->next;
+		mosq->out_packet_len--;
 		if(!mosq->out_packet){
 			mosq->out_packet_last = NULL;
 		}
@@ -294,6 +297,7 @@ int packet__write(struct mosquitto *mosq)
 		mosq->current_out_packet = mosq->out_packet;
 		if(mosq->out_packet){
 			mosq->out_packet = mosq->out_packet->next;
+			mosq->out_packet_len--;
 			if(!mosq->out_packet){
 				mosq->out_packet_last = NULL;
 			}

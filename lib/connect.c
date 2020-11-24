@@ -267,6 +267,7 @@ void do_client_disconnect(struct mosquitto *mosq, int reason_code, const mosquit
 	mosq->current_out_packet = mosq->out_packet;
 	if(mosq->out_packet){
 		mosq->out_packet = mosq->out_packet->next;
+		mosq->out_packet_len--;
 		if(!mosq->out_packet){
 			mosq->out_packet_last = NULL;
 		}

@@ -224,7 +224,6 @@ int mosquitto_reinitialise(struct mosquitto *mosq, const char *id, bool clean_st
 
 void mosquitto__destroy(struct mosquitto *mosq)
 {
-	struct mosquitto__packet *packet;
 	if(!mosq) return;
 
 #ifdef WITH_THREADING
@@ -295,22 +294,7 @@ void mosquitto__destroy(struct mosquitto *mosq)
 
 	mosquitto_property_free_all(&mosq->connect_properties);
 
-	/* Out packet cleanup */
-	if(mosq->out_packet && !mosq->current_out_packet){
-		mosq->current_out_packet = mosq->out_packet;
-		mosq->out_packet = mosq->out_packet->next;
-	}
-	while(mosq->current_out_packet){
-		packet = mosq->current_out_packet;
-		/* Free data and reset values */
-		mosq->current_out_packet = mosq->out_packet;
-		if(mosq->out_packet){
-			mosq->out_packet = mosq->out_packet->next;
-		}
-
-		packet__cleanup(packet);
-		mosquitto__free(packet);
-	}
+	packet__cleanup_all(mosq);
 
 	packet__cleanup(&mosq->in_packet);
 	if(mosq->sockpairR != INVALID_SOCKET){

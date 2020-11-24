@@ -52,9 +52,6 @@ struct config_recurse {
 	int log_dest_set;
 	unsigned int log_type;
 	int log_type_set;
-	unsigned long max_inflight_bytes;
-	unsigned long max_queued_bytes;
-	int max_queued_messages;
 };
 
 #if defined(WIN32) || defined(__CYGWIN__)
@@ -191,6 +188,9 @@ static void config__init_reload(struct mosquitto__config *config)
 	config->max_keepalive = 65535;
 	config->max_packet_size = 0;
 	config->max_inflight_messages = 20;
+	config->max_queued_messages = 1000;
+	config->max_inflight_bytes = 0;
+	config->max_queued_bytes = 0;
 	config->persistence = false;
 	mosquitto__free(config->persistence_location);
 	config->persistence_location = NULL;
@@ -607,9 +607,6 @@ int config__read(struct mosquitto__config *config, bool reload)
 	cr.log_dest_set = 0;
 	cr.log_type = MOSQ_LOG_NONE;
 	cr.log_type_set = 0;
-	cr.max_inflight_bytes = 0;
-	cr.max_queued_bytes = 0;
-	cr.max_queued_messages = 1000;
 
 	if(!db.config_file) return 0;
 
@@ -675,8 +672,6 @@ int config__read(struct mosquitto__config *config, bool reload)
 	if(!config->user){
 		config->user = mosquitto__strdup("mosquitto");
 	}
-
-	db__limits_set(cr.max_inflight_bytes, cr.max_queued_messages, cr.max_queued_bytes);
 
 #ifdef WITH_BRIDGE
 	for(i=0; i<config->bridge_count; i++){
@@ -1629,12 +1624,9 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 					}
 					cur_listener->maximum_qos = (uint8_t)tmp_int;
 				}else if(!strcmp(token, "max_inflight_bytes")){
-					token = strtok_r(NULL, " ", &saveptr);
-					if(token){
-						cr->max_inflight_bytes = (unsigned long)atol(token);
-					}else{
-						log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty max_inflight_bytes value in configuration.");
-					}
+					if(conf__parse_int(&token, "max_inflight_bytes", &tmp_int, saveptr)) return MOSQ_ERR_INVAL;
+					if(tmp_int < 0) tmp_int = 0;
+					config->max_inflight_bytes = (size_t)tmp_int;
 				}else if(!strcmp(token, "max_inflight_messages")){
 					if(conf__parse_int(&token, "max_inflight_messages", &tmp_int, saveptr)) return MOSQ_ERR_INVAL;
 					if(tmp_int < 0 || tmp_int == UINT16_MAX){
@@ -1659,20 +1651,13 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 					}
 					config->max_packet_size = (uint32_t)tmp_int;
 				}else if(!strcmp(token, "max_queued_bytes")){
-					token = strtok_r(NULL, " ", &saveptr);
-					if(token){
-						cr->max_queued_bytes = (unsigned long)atol(token); /* 63 bits is ok right? */
-					}else{
-						log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty max_queued_bytes value in configuration.");
-					}
+					if(conf__parse_int(&token, "max_queued_bytes", &tmp_int, saveptr)) return MOSQ_ERR_INVAL;
+					if(tmp_int < 0) tmp_int = 0;
+					config->max_queued_bytes = (size_t)tmp_int;
 				}else if(!strcmp(token, "max_queued_messages")){
-					token = strtok_r(NULL, " ", &saveptr);
-					if(token){
-						cr->max_queued_messages = atoi(token);
-						if(cr->max_queued_messages < 0) cr->max_queued_messages = 0;
-					}else{
-						log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty max_queued_messages value in configuration.");
-					}
+					if(conf__parse_int(&token, "max_queued_messages", &tmp_int, saveptr)) return MOSQ_ERR_INVAL;
+					if(tmp_int < 0) tmp_int = 0;
+					config->max_queued_messages = tmp_int;
 				}else if(!strcmp(token, "memory_limit")){
 					ssize_t lim;
 					if(conf__parse_ssize_t(&token, "memory_limit", &lim, saveptr)) return MOSQ_ERR_INVAL;
