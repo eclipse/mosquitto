@@ -650,11 +650,7 @@ static int net__socket_listen_tcp(struct mosquitto__listener *listener)
 #endif
 #ifdef IPV6_V6ONLY
 		ss_opt = 1;
-		if(setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, &ss_opt, sizeof(ss_opt)) < 0){
-			log__printf(NULL, MOSQ_LOG_WARNING,
-					"Warning when setting listener IPv6 mode: %s.\n",
-					strerror(errno));
-		}
+		(void)setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, &ss_opt, sizeof(ss_opt));
 #endif
 
 		if(net__socket_nonblock(&sock)){
