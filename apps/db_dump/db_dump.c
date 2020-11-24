@@ -156,7 +156,6 @@ static int dump__client_chunk_process(FILE *db_fd, uint32_t length)
 	}
 	if(rc){
 		fprintf(stderr, "Error: Corrupt persistent database.");
-		fclose(db_fd);
 		return rc;
 	}
 

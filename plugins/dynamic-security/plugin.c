@@ -17,6 +17,7 @@ Contributors:
 #include "config.h"
 
 #include <cJSON.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -343,6 +344,7 @@ static int dynsec__general_config_save(cJSON *tree)
 static int dynsec__config_load(void)
 {
 	FILE *fptr;
+	long flen_l;
 	size_t flen;
 	char *json_str;
 	cJSON *tree;
@@ -354,7 +356,16 @@ static int dynsec__config_load(void)
 	}
 
 	fseek(fptr, 0, SEEK_END);
-	flen = (size_t)ftell(fptr);
+	flen_l = ftell(fptr);
+	if(flen_l < 0){
+		mosquitto_log_printf(MOSQ_LOG_WARNING, "Error loading Dynamic security plugin config: %s\n", strerror(errno));
+		fclose(fptr);
+		return 1;
+	}else if(flen_l == 0){
+		fclose(fptr);
+		return 0;
+	}
+	flen = (size_t)flen_l;
 	fseek(fptr, 0, SEEK_SET);
 	json_str = mosquitto_calloc(flen+1, sizeof(char));
 	if(json_str == NULL){
@@ -362,6 +373,7 @@ static int dynsec__config_load(void)
 		return 1;
 	}
 	if(fread(json_str, 1, flen, fptr) != flen){
+		mosquitto_free(json_str);
 		fclose(fptr);
 		return 1;
 	}

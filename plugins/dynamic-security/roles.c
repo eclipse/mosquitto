@@ -668,6 +668,7 @@ int dynsec_roles__process_add_acl(cJSON *j_responses, struct mosquitto *context,
 
 	acl = mosquitto_calloc(1, sizeof(struct dynsec__acl));
 	if(acl == NULL){
+		mosquitto_free(topic);
 		dynsec__command_reply(j_responses, context, "addRoleACL", "Internal error", correlation_data);
 		return MOSQ_ERR_SUCCESS;
 	}
@@ -833,9 +834,9 @@ int dynsec_roles__process_modify(cJSON *j_responses, struct mosquitto *context, 
 	struct dynsec__role *role;
 	char *str;
 	cJSON *j_acls;
-	struct dynsec__acl *tmp_publish_c_send, *tmp_publish_c_recv;
-	struct dynsec__acl *tmp_subscribe_literal, *tmp_subscribe_pattern;
-	struct dynsec__acl *tmp_unsubscribe_literal, *tmp_unsubscribe_pattern;
+	struct dynsec__acl *tmp_publish_c_send = NULL, *tmp_publish_c_recv = NULL;
+	struct dynsec__acl *tmp_subscribe_literal = NULL, *tmp_subscribe_pattern = NULL;
+	struct dynsec__acl *tmp_unsubscribe_literal = NULL, *tmp_unsubscribe_pattern = NULL;
 
 	if(json_get_string(command, "rolename", &rolename, false) != MOSQ_ERR_SUCCESS){
 		dynsec__command_reply(j_responses, context, "modifyRole", "Invalid/missing rolename", correlation_data);

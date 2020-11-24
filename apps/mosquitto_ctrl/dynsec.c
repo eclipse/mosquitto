@@ -591,7 +591,11 @@ static cJSON *init_add_client(const char *username, const char *password, const 
 	}
 
 	j_client = cJSON_CreateObject();
-	if(j_client == NULL) return NULL;
+	if(j_client == NULL){
+		free(salt64);
+		free(hash64);
+		return NULL;
+	}
 
 	snprintf(buf, sizeof(buf), "%d", PW_DEFAULT_ITERATIONS);
 	if(cJSON_AddStringToObject(j_client, "username", username) == NULL
@@ -739,6 +743,7 @@ int dynsec_init(int argc, char *argv[])
 	if(fptr){
 		fprintf(fptr, "%s", json_str);
 		free(json_str);
+		fclose(fptr);
 	}else{
 		free(json_str);
 		fprintf(stderr, "dynsec init: Unable to open '%s' for writing.\n", filename);
