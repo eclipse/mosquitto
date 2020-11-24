@@ -79,11 +79,14 @@ static int single_publish(struct mosquitto *context, struct mosquitto_message_v5
 	msg->topic = NULL;
 	stored->retain = 0;
 	stored->payloadlen = (uint32_t)msg->payloadlen;
-	if(UHPA_ALLOC(stored->payload, stored->payloadlen) == 0){
+	stored->payload = mosquitto__malloc(stored->payloadlen+1);
+	if(stored->payload == NULL){
 		db__msg_store_free(stored);
 		return MOSQ_ERR_NOMEM;
 	}
-	memcpy(UHPA_ACCESS(stored->payload, stored->payloadlen), msg->payload, stored->payloadlen);
+	/* Ensure payload is always zero terminated, this is the reason for the extra byte above */
+	((uint8_t *)stored->payload)[stored->payloadlen] = 0;
+	memcpy(stored->payload, msg->payload, stored->payloadlen);
 
 	if(msg->properties){
 		stored->properties = msg->properties;

@@ -44,7 +44,7 @@ int control__process(struct mosquitto *context, struct mosquitto_msg_store *stor
 		memset(&event_data, 0, sizeof(event_data));
 		event_data.client = context;
 		event_data.topic = stored->topic;
-		event_data.payload = UHPA_ACCESS(stored->payload, stored->payloadlen);
+		event_data.payload = stored->payload;
 		event_data.payloadlen = stored->payloadlen;
 		event_data.qos = stored->qos;
 		event_data.retain = stored->retain;

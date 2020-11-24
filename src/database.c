@@ -199,7 +199,7 @@ void db__msg_store_free(struct mosquitto_msg_store *store)
 	}
 	mosquitto__free(store->topic);
 	mosquitto_property_free_all(&store->properties);
-	UHPA_FREE_PAYLOAD(store);
+	mosquitto__free(store->payload);
 	mosquitto__free(store);
 }
 
@@ -623,11 +623,14 @@ int db__messages_easy_queue(struct mosquitto *context, const char *topic, uint8_
 	}
 
 	stored->payloadlen = payloadlen;
-	if(UHPA_ALLOC(stored->payload, stored->payloadlen) == 0){
+	stored->payload = mosquitto__malloc(stored->payloadlen+1);
+	if(stored->payload == NULL){
 		db__msg_store_free(stored);
 		return MOSQ_ERR_NOMEM;
 	}
-	memcpy(UHPA_ACCESS(stored->payload, stored->payloadlen), payload, stored->payloadlen);
+	/* Ensure payload is always zero terminated, this is the reason for the extra byte above */
+	((uint8_t *)stored->payload)[stored->payloadlen] = 0;
+	memcpy(stored->payload, payload, stored->payloadlen);
 
 	if(context && context->id){
 		source_id = context->id;
@@ -1018,7 +1021,7 @@ static int db__message_write_inflight_out_single(struct mosquitto *context, stru
 	topic = msg->store->topic;
 	qos = (uint8_t)msg->qos;
 	payloadlen = msg->store->payloadlen;
-	payload = UHPA_ACCESS_PAYLOAD(msg->store);
+	payload = msg->store->payload;
 	cmsg_props = msg->properties;
 	store_props = msg->store->properties;
 

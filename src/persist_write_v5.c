@@ -169,7 +169,7 @@ int persist__chunk_message_store_write_v6(FILE *db_fptr, struct P_msg_store *chu
 	}
 	write_e(db_fptr, chunk->topic, topic_len);
 	if(payloadlen){
-		write_e(db_fptr, UHPA_ACCESS(chunk->payload, payloadlen), (unsigned int)payloadlen);
+		write_e(db_fptr, chunk->payload, (unsigned int)payloadlen);
 	}
 	if(chunk->properties){
 		if(proplen > 0){

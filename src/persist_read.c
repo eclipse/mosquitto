@@ -280,7 +280,7 @@ static int persist__msg_store_chunk_restore(FILE *db_fptr, uint32_t length)
 		mosquitto__free(chunk.source.id);
 		mosquitto__free(chunk.source.username);
 		mosquitto__free(chunk.topic);
-		UHPA_FREE(chunk.payload, chunk.F.payloadlen);
+		mosquitto__free(chunk.payload);
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 		return MOSQ_ERR_NOMEM;
 	}
@@ -292,7 +292,7 @@ static int persist__msg_store_chunk_restore(FILE *db_fptr, uint32_t length)
 			mosquitto__free(chunk.source.id);
 			mosquitto__free(chunk.source.username);
 			mosquitto__free(chunk.topic);
-			UHPA_FREE(chunk.payload, chunk.F.payloadlen);
+			mosquitto__free(chunk.payload);
 			mosquitto__free(load);
 			return MOSQ_ERR_SUCCESS;
 		}else{
@@ -308,7 +308,7 @@ static int persist__msg_store_chunk_restore(FILE *db_fptr, uint32_t length)
 		mosquitto__free(chunk.source.id);
 		mosquitto__free(chunk.source.username);
 		mosquitto__free(chunk.topic);
-		UHPA_FREE(chunk.payload, chunk.F.payloadlen);
+		mosquitto__free(chunk.payload);
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 		return MOSQ_ERR_NOMEM;
 	}
@@ -319,7 +319,7 @@ static int persist__msg_store_chunk_restore(FILE *db_fptr, uint32_t length)
 	stored->payloadlen = chunk.F.payloadlen;
 	stored->retain = chunk.F.retain;
 	stored->properties = chunk.properties;
-	UHPA_MOVE(stored->payload, chunk.payload, stored->payloadlen);
+	stored->payload = chunk.payload;
 
 	rc = db__message_store(&chunk.source, stored, message_expiry_interval,
 			chunk.F.store_id, mosq_mo_client);

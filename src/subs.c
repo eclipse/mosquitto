@@ -67,7 +67,7 @@ static int subs__send(struct mosquitto__subleaf *leaf, const char *topic, uint8_
 	int rc2;
 
 	/* Check for ACL topic access. */
-	rc2 = mosquitto_acl_check(leaf->context, topic, stored->payloadlen, UHPA_ACCESS(stored->payload, stored->payloadlen), stored->qos, stored->retain, MOSQ_ACL_READ);
+	rc2 = mosquitto_acl_check(leaf->context, topic, stored->payloadlen, stored->payload, stored->qos, stored->retain, MOSQ_ACL_READ);
 	if(rc2 == MOSQ_ERR_ACL_DENIED){
 		return MOSQ_ERR_SUCCESS;
 	}else if(rc2 == MOSQ_ERR_SUCCESS){
