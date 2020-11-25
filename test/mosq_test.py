@@ -634,7 +634,7 @@ def gen_unsubscribe_multiple(mid, topics, proto_ver=4):
 
         return struct.pack("!BBH", 162, remaining_length, mid) + packet
 
-def gen_unsuback(mid, proto_ver=4, reason_code=0):
+def gen_unsuback(mid, reason_code=0, proto_ver=4):
     if proto_ver == 5:
         if isinstance(reason_code, list):
             reason_code_count = len(reason_code)
