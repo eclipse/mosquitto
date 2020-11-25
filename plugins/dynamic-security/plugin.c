@@ -93,8 +93,15 @@ static int dynsec_control_callback(int event, void *event_data, void *userdata)
 	cJSON_AddItemToObject(j_response_tree, "responses", j_responses);
 
 
-	/* Parse cJSON tree */
+	/* Parse cJSON tree.
+	 * Using cJSON_ParseWithLength() is the best choice here, but Mosquitto
+	 * always adds an extra 0 to the end of the payload memory, so using
+	 * cJSON_Parse() on its own will still not overrun. */
+#if CJSON_VERSION_FULL < 1007013
+	tree = cJSON_Parse(ed->payload);
+#else
 	tree = cJSON_ParseWithLength(ed->payload, ed->payloadlen);
+#endif
 	if(tree == NULL){
 		dynsec__command_reply(j_responses, ed->client, "Unknown command", "Payload not valid JSON", NULL);
 		send_response(j_response_tree);
