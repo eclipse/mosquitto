@@ -225,19 +225,22 @@ int handle__publish(struct mosquitto *context)
 			reason_code = MQTT_RC_IMPLEMENTATION_SPECIFIC;
 			goto process_bad_message;
 		}
-		if(UHPA_ALLOC(msg->payload, msg->payloadlen) == 0){
+		msg->payload = mosquitto__malloc(msg->payloadlen+1);
+		if(msg->payload == NULL){
 			db__msg_store_free(msg);
 			return MOSQ_ERR_NOMEM;
 		}
+		/* Ensure payload is always zero terminated, this is the reason for the extra byte above */
+		((uint8_t *)msg->payload)[msg->payloadlen] = 0;
 
-		if(packet__read_bytes(&context->in_packet, UHPA_ACCESS(msg->payload, msg->payloadlen), msg->payloadlen)){
+		if(packet__read_bytes(&context->in_packet, msg->payload, msg->payloadlen)){
 			db__msg_store_free(msg);
 			return MOSQ_ERR_MALFORMED_PACKET;
 		}
 	}
 
 	/* Check for topic access */
-	rc = mosquitto_acl_check(context, msg->topic, msg->payloadlen, UHPA_ACCESS(msg->payload, msg->payloadlen), msg->qos, msg->retain, MOSQ_ACL_WRITE);
+	rc = mosquitto_acl_check(context, msg->topic, msg->payloadlen, msg->payload, msg->qos, msg->retain, MOSQ_ACL_WRITE);
 	if(rc == MOSQ_ERR_ACL_DENIED){
 		log__printf(NULL, MOSQ_LOG_DEBUG, "Denied PUBLISH from %s (d%d, q%d, r%d, m%d, '%s', ... (%ld bytes))", context->id, dup, msg->qos, msg->retain, msg->source_mid, msg->topic, (long)msg->payloadlen);
 			reason_code = MQTT_RC_NOT_AUTHORIZED;

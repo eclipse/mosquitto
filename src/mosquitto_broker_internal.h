@@ -52,10 +52,6 @@ Contributors:
 #include "tls_mosq.h"
 #include "uthash.h"
 
-#define uhpa_malloc(size) mosquitto__malloc(size)
-#define uhpa_free(ptr) mosquitto__free(ptr)
-#include "uhpa.h"
-
 #ifndef __GNUC__
 #define __attribute__(attrib)
 #endif
@@ -74,65 +70,6 @@ Contributors:
 
 #define CMD_PORT_LIMIT 10
 #define TOPIC_HIERARCHY_LIMIT 200
-
-/* ========================================
- * UHPA data types
- * ======================================== */
-
-/* See uhpa.h
- *
- * The idea here is that there is potentially a lot of wasted space (and time)
- * in malloc calls for frequent, small heap allocations. This can happen if
- * small payloads are used by clients or if individual topic elements are
- * small.
- *
- * In both cases, a struct is used that includes a void* or char* pointer to
- * point to the dynamically allocated memory used. To allocate and store a
- * single byte needs the size of the pointer (8 bytes on a 64 bit
- * architecture), the malloc overhead and the memory allocated itself (which
- * will often be larger than the memory requested, on 64 bit Linux this can be
- * a minimum of 24 bytes). To allocate and store 1 byte of heap memory we need
- * in this example 32 bytes.
- *
- * UHPA uses a union to either store data in an array, or to allocate memory on
- * the heap, depending on the size of the data being stored (this does mean
- * that the size of the data must always be known). Setting the size of the
- * array changes the point at which heap allocation starts. Using the example
- * above, this means that an array size of 32 bytes should not result in any
- * wasted space, and should be quicker as well. Certainly in the case of topic
- * elements (e.g. "bar" out of "foo/bar/baz") it is likely that an array size
- * of 32 bytes will mean that the majority of heap allocations are removed.
- *
- * You can change the size of MOSQ_PAYLOAD_UNION_SIZE and
- * MOSQ_TOPIC_ELEMENT_UNION_SIZE to change the size of the uhpa array used for
- * the payload (i.e. the published part of a message) and for topic elements
- * (e.g. "foo", "bar" or "baz" in the topic "foo/bar/baz"), and so control the
- * heap allocation threshold for these data types. You should look at your
- * application to decide what values to set, but don't set them too high
- * otherwise your overall memory usage will increase.
- *
- * You could use something like heaptrack
- * http://milianw.de/blog/heaptrack-a-heap-memory-profiler-for-linux to
- * profile heap allocations.
- *
- * I would suggest that values for MOSQ_PAYLOAD_UNION_SIZE and
- * MOSQ_TOPIC_UNION_SIZE that are equivalent to
- * sizeof(void*)+malloc_usable_size(malloc(1)) are a safe value that should
- * reduce calls to malloc without increasing memory usage at all.
- */
-#define MOSQ_PAYLOAD_UNION_SIZE 8
-typedef union {
-	void *ptr;
-	char array[MOSQ_PAYLOAD_UNION_SIZE];
-} mosquitto__payload_uhpa;
-#define UHPA_ALLOC_PAYLOAD(A) UHPA_ALLOC((A)->payload, (A)->payloadlen)
-#define UHPA_ACCESS_PAYLOAD(A) UHPA_ACCESS((A)->payload, (A)->payloadlen)
-#define UHPA_FREE_PAYLOAD(A) UHPA_FREE((A)->payload, (A)->payloadlen)
-#define UHPA_MOVE_PAYLOAD(DEST, SRC) UHPA_MOVE((DEST)->payload, (SRC)->payload, (SRC)->payloadlen)
-
-/* ========================================
- * End UHPA data types
- * ======================================== */
 
 typedef uint64_t dbid_t;
 
@@ -347,10 +284,13 @@ struct mosquitto__config {
 	char *log_timestamp_format;
 	char *log_file;
 	FILE *log_fptr;
-	uint16_t max_inflight_messages;
-	uint16_t max_keepalive;
+	size_t max_inflight_bytes;
+	size_t max_queued_bytes;
+	int max_queued_messages;
 	uint32_t max_packet_size;
 	uint32_t message_size_limit;
+	uint16_t max_inflight_messages;
+	uint16_t max_keepalive;
 	bool persistence;
 	char *persistence_location;
 	char *persistence_file;
@@ -442,7 +382,7 @@ struct mosquitto_msg_store{
 	int ref_count;
 	char* topic;
 	mosquitto_property *properties;
-	mosquitto__payload_uhpa payload;
+	void *payload;
 	time_t message_expiry_time;
 	uint32_t payloadlen;
 	uint16_t source_mid;
@@ -680,7 +620,7 @@ int send__auth(struct mosquitto *context, uint8_t reason_code, const void *auth_
  * ============================================================ */
 void net__broker_init(void);
 void net__broker_cleanup(void);
-int net__socket_accept(struct mosquitto__listener_sock *listensock);
+struct mosquitto *net__socket_accept(struct mosquitto__listener_sock *listensock);
 int net__socket_listen(struct mosquitto__listener *listener);
 int net__socket_get_address(mosq_sock_t sock, char *buf, size_t len);
 int net__tls_load_verify(struct mosquitto__listener *listener);
@@ -708,7 +648,6 @@ int db__close(void);
 int persist__backup(bool shutdown);
 int persist__restore(void);
 #endif
-void db__limits_set(unsigned long inflight_bytes, int queued, unsigned long queued_bytes);
 /* Return the number of in-flight messages in count. */
 int db__message_count(int *count);
 int db__message_delete_outgoing(struct mosquitto *context, uint16_t mid, enum mosquitto_msg_state expect_state, int qos);
@@ -916,6 +855,14 @@ int will_delay__add(struct mosquitto *context);
 void will_delay__check(void);
 void will_delay__send_all(void);
 void will_delay__remove(struct mosquitto *mosq);
+
+
+/* ============================================================
+ * Other
+ * ============================================================ */
+#ifdef WITH_XTREPORT
+void xtreport(void);
+#endif
 
 #endif
 

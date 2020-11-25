@@ -210,6 +210,8 @@ Command:
 		{
 			"command": "modifyClient",
 			"username": "username to modify"
+			"clientid": "new clientid, or empty string to clear", # Optional
+			"password": "new password", # Optional
 			"textname": "", # Optional
 			"textdescription": "", # Optional
 			"roles": [
@@ -224,6 +226,26 @@ Command:
 ```
 
 Modifying clients isn't currently possible with mosquitto_ctrl.
+
+## Set Client id
+
+Command:
+```
+{
+	"commands":[
+		{
+			"command": "setClientId",
+			"username": "username to change",
+			"clientid": "new clientid" # Optional, if blank or missing then client id will be removed.
+		}
+	]
+}
+```
+
+mosquitto_ctrl example:
+```
+mosquitto_ctrl dynsec setClientPassword username password
+```
 
 ## Set Client Password
 

@@ -40,13 +40,13 @@ static bool check_callback_exists(struct mosquitto__callback *cb_base, MOSQ_FUNC
 }
 
 
-static int remove_callback(struct mosquitto__callback *cb_base, MOSQ_FUNC_generic_callback cb_func)
+static int remove_callback(struct mosquitto__callback **cb_base, MOSQ_FUNC_generic_callback cb_func)
 {
 	struct mosquitto__callback *tail, *tmp;
 
-	DL_FOREACH_SAFE(cb_base, tail, tmp){
+	DL_FOREACH_SAFE(*cb_base, tail, tmp){
 		if(tail->cb == cb_func){
-			DL_DELETE(cb_base, tail);
+			DL_DELETE(*cb_base, tail);
 			mosquitto__free(tail);
 			return MOSQ_ERR_SUCCESS;
 		}
@@ -148,7 +148,7 @@ int plugin__handle_message(struct mosquitto *context, struct mosquitto_msg_store
 	event_data.client = context;
 	event_data.topic = stored->topic;
 	event_data.payloadlen = stored->payloadlen;
-	event_data.payload = UHPA_ACCESS(stored->payload, stored->payloadlen);
+	event_data.payload = stored->payload;
 	event_data.qos = stored->qos;
 	event_data.retain = stored->retain;
 	event_data.properties = stored->properties;
@@ -161,17 +161,11 @@ int plugin__handle_message(struct mosquitto *context, struct mosquitto_msg_store
 	}
 
 	stored->topic = event_data.topic;
-	if(UHPA_ACCESS(stored->payload, stored->payloadlen) != event_data.payload){
-		UHPA_FREE(stored->payload, stored->payloadlen);
-		if(event_data.payloadlen > sizeof(stored->payload.array)){
-			stored->payload.ptr = event_data.payload;
-		}else{
-			memcpy(stored->payload.array, event_data.payload, event_data.payloadlen);
-			mosquitto_free(event_data.payload);
-		}
+	if(stored->payload != event_data.payload){
+		mosquitto__free(stored->payload);
+		stored->payload = event_data.payload;
 		stored->payloadlen = event_data.payloadlen;
 	}
-	memcpy(UHPA_ACCESS(stored->payload, stored->payloadlen), event_data.payload, stored->payloadlen);
 	stored->retain = event_data.retain;
 	stored->properties = event_data.properties;
 
@@ -321,9 +315,5 @@ int mosquitto_callback_unregister(
 			break;
 	}
 
-	if(check_callback_exists(*cb_base, cb_func)){
-		return MOSQ_ERR_ALREADY_EXISTS;
-	}
-
-	return remove_callback(*cb_base, cb_func);
+	return remove_callback(cb_base, cb_func);
 }

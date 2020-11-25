@@ -17,6 +17,7 @@ Contributors:
 #include "config.h"
 
 #include <cJSON.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -256,6 +257,15 @@ int dynsec__process_get_default_acl_access(cJSON *j_responses, struct mosquitto 
 
 	cJSON_AddItemToArray(j_responses, tree);
 
+	if(correlation_data){
+		jtmp = cJSON_AddStringToObject(tree, "correlationData", correlation_data);
+		if(jtmp == NULL){
+			cJSON_Delete(tree);
+			dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
+			return 1;
+		}
+	}
+
 	return MOSQ_ERR_SUCCESS;
 }
 
@@ -334,6 +344,7 @@ static int dynsec__general_config_save(cJSON *tree)
 static int dynsec__config_load(void)
 {
 	FILE *fptr;
+	long flen_l;
 	size_t flen;
 	char *json_str;
 	cJSON *tree;
@@ -345,7 +356,16 @@ static int dynsec__config_load(void)
 	}
 
 	fseek(fptr, 0, SEEK_END);
-	flen = (size_t)ftell(fptr);
+	flen_l = ftell(fptr);
+	if(flen_l < 0){
+		mosquitto_log_printf(MOSQ_LOG_WARNING, "Error loading Dynamic security plugin config: %s\n", strerror(errno));
+		fclose(fptr);
+		return 1;
+	}else if(flen_l == 0){
+		fclose(fptr);
+		return 0;
+	}
+	flen = (size_t)flen_l;
 	fseek(fptr, 0, SEEK_SET);
 	json_str = mosquitto_calloc(flen+1, sizeof(char));
 	if(json_str == NULL){
@@ -353,6 +373,7 @@ static int dynsec__config_load(void)
 		return 1;
 	}
 	if(fread(json_str, 1, flen, fptr) != flen){
+		mosquitto_free(json_str);
 		fclose(fptr);
 		return 1;
 	}
@@ -450,7 +471,9 @@ void dynsec__config_save(void)
 	fclose(fptr);
 
 	/* Everything is ok, so move new file over proper file */
-	rename(file_path, config_file);
+	if(rename(file_path, config_file) < 0){
+		mosquitto_log_printf(MOSQ_LOG_ERR, "Error updating dynsec config file: %s", strerror(errno));
+	}
 	mosquitto_free(file_path);
 }
 
@@ -539,6 +562,8 @@ int dynsec__handle_control(cJSON *j_responses, struct mosquitto *context, cJSON 
 					rc = dynsec_clients__process_modify(j_responses, context, aiter, correlation_data);
 				}else if(!strcasecmp(command, "setClientPassword")){
 					rc = dynsec_clients__process_set_password(j_responses, context, aiter, correlation_data);
+				}else if(!strcasecmp(command, "setClientId")){
+					rc = dynsec_clients__process_set_id(j_responses, context, aiter, correlation_data);
 				}else if(!strcasecmp(command, "addClientRole")){
 					rc = dynsec_clients__process_add_role(j_responses, context, aiter, correlation_data);
 				}else if(!strcasecmp(command, "removeClientRole")){

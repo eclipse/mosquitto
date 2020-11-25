@@ -105,7 +105,7 @@ static void net__print_error(unsigned int log, const char *format_str)
 }
 
 
-int net__socket_accept(struct mosquitto__listener_sock *listensock)
+struct mosquitto *net__socket_accept(struct mosquitto__listener_sock *listensock)
 {
 	mosq_sock_t new_sock = INVALID_SOCKET;
 	struct mosquitto *new_context;
@@ -144,13 +144,13 @@ int net__socket_accept(struct mosquitto__listener_sock *listensock)
 			log__printf(NULL, MOSQ_LOG_WARNING,
 					"Unable to accept new connection, system socket count has been exceeded. Try increasing \"ulimit -n\" or equivalent.");
 		}
-		return -1;
+		return NULL;
 	}
 
 	G_SOCKET_CONNECTIONS_INC();
 
 	if(net__socket_nonblock(&new_sock)){
-		return INVALID_SOCKET;
+		return NULL;
 	}
 
 #ifdef WITH_WRAP
@@ -165,7 +165,7 @@ int net__socket_accept(struct mosquitto__listener_sock *listensock)
 			}
 		}
 		COMPAT_CLOSE(new_sock);
-		return -1;
+		return NULL;
 	}
 #endif
 
@@ -183,12 +183,12 @@ int net__socket_accept(struct mosquitto__listener_sock *listensock)
 	new_context = context__init(new_sock);
 	if(!new_context){
 		COMPAT_CLOSE(new_sock);
-		return -1;
+		return NULL;
 	}
 	new_context->listener = listensock->listener;
 	if(!new_context->listener){
 		context__cleanup(new_context, true);
-		return -1;
+		return NULL;
 	}
 	new_context->listener->client_count++;
 
@@ -197,7 +197,7 @@ int net__socket_accept(struct mosquitto__listener_sock *listensock)
 			log__printf(NULL, MOSQ_LOG_NOTICE, "Client connection from %s denied: max_connections exceeded.", new_context->address);
 		}
 		context__cleanup(new_context, true);
-		return -1;
+		return NULL;
 	}
 
 #ifdef WITH_TLS
@@ -206,7 +206,7 @@ int net__socket_accept(struct mosquitto__listener_sock *listensock)
 		new_context->ssl = SSL_new(new_context->listener->ssl_ctx);
 		if(!new_context->ssl){
 			context__cleanup(new_context, true);
-			return -1;
+			return NULL;
 		}
 		SSL_set_ex_data(new_context->ssl, tls_ex_index_context, new_context);
 		SSL_set_ex_data(new_context->ssl, tls_ex_index_listener, new_context->listener);
@@ -232,7 +232,7 @@ int net__socket_accept(struct mosquitto__listener_sock *listensock)
 					}
 				}
 				context__cleanup(new_context, true);
-				return -1;
+				return NULL;
 			}
 		}
 	}
@@ -242,7 +242,7 @@ int net__socket_accept(struct mosquitto__listener_sock *listensock)
 		log__printf(NULL, MOSQ_LOG_NOTICE, "New connection from %s on port %d.", new_context->address, new_context->listener->port);
 	}
 
-	return new_sock;
+	return new_context;
 }
 
 #ifdef WITH_TLS
@@ -638,17 +638,19 @@ static int net__socket_listen_tcp(struct mosquitto__listener *listener)
 		if(!listener->socks){
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 			freeaddrinfo(ainfo);
+			COMPAT_CLOSE(sock);
 			return MOSQ_ERR_NOMEM;
 		}
 		listener->socks[listener->sock_count-1] = sock;
 
 #ifndef WIN32
 		ss_opt = 1;
-		setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &ss_opt, sizeof(ss_opt));
+		/* Unimportant if this fails */
+		(void)setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &ss_opt, sizeof(ss_opt));
 #endif
 #ifdef IPV6_V6ONLY
 		ss_opt = 1;
-		setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, &ss_opt, sizeof(ss_opt));
+		(void)setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, &ss_opt, sizeof(ss_opt));
 #endif
 
 		if(net__socket_nonblock(&sock)){
@@ -726,6 +728,7 @@ static int net__socket_listen_unix(struct mosquitto__listener *listener)
 	listener->socks = mosquitto__realloc(listener->socks, sizeof(mosq_sock_t)*(size_t)listener->sock_count);
 	if(!listener->socks){
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
+		COMPAT_CLOSE(sock);
 		return MOSQ_ERR_NOMEM;
 	}
 	listener->socks[listener->sock_count-1] = sock;

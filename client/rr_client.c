@@ -70,7 +70,11 @@ void my_signal_handler(int signum)
 
 int my_publish(struct mosquitto *mosq, int *mid, const char *topic, int payloadlen, void *payload, int qos, bool retain)
 {
-	return mosquitto_publish_v5(mosq, mid, topic, payloadlen, payload, qos, retain, cfg.publish_props);
+	if(cfg.protocol_version < MQTT_PROTOCOL_V5){
+		return mosquitto_publish_v5(mosq, mid, topic, payloadlen, payload, qos, retain, NULL);
+	}else{
+		return mosquitto_publish_v5(mosq, mid, topic, payloadlen, payload, qos, retain, cfg.publish_props);
+	}
 }
 
 
@@ -209,6 +213,7 @@ void print_usage(void)
 	printf("      argument.\n");
 	printf(" -d : enable debug messages.\n");
 	printf(" -D : Define MQTT v5 properties. See the documentation for more details.\n");
+	printf(" -e : Response topic. The client will subscribe to this topic to wait for a response.\n");
 	printf(" -F : output format.\n");
 	printf(" -h : mqtt host to connect to. Defaults to localhost.\n");
 	printf(" -i : id to use for this client. Defaults to mosquitto_rr_ appended with the process id.\n");
@@ -223,7 +228,7 @@ void print_usage(void)
 #ifdef WITH_SRV
 	printf(" -S : use SRV lookups to determine which host to connect to.\n");
 #endif
-	printf(" -t : mqtt response topic to subscribe to. May be repeated multiple times.\n");
+	printf(" -t : topic where the request message will be sent.\n");
 	printf(" -u : provide a username\n");
 	printf(" -v : print received messages verbosely.\n");
 	printf(" -V : specify the version of the MQTT protocol to use when connecting.\n");

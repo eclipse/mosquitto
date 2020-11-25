@@ -44,7 +44,7 @@ int control__process(struct mosquitto *context, struct mosquitto_msg_store *stor
 		memset(&event_data, 0, sizeof(event_data));
 		event_data.client = context;
 		event_data.topic = stored->topic;
-		event_data.payload = UHPA_ACCESS(stored->payload, stored->payloadlen);
+		event_data.payload = stored->payload;
 		event_data.payloadlen = stored->payloadlen;
 		event_data.qos = stored->qos;
 		event_data.retain = stored->retain;
@@ -63,9 +63,9 @@ int control__process(struct mosquitto *context, struct mosquitto_msg_store *stor
 	}
 
 	if(stored->qos == 1){
-		if(send__puback(context, stored->source_mid, event_data.reason_code, properties)) rc = 1;
+		if(send__puback(context, stored->source_mid, MQTT_RC_SUCCESS, properties)) rc = 1;
 	}else if(stored->qos == 2){
-		if(send__pubrec(context, stored->source_mid, event_data.reason_code, properties)) rc = 1;
+		if(send__pubrec(context, stored->source_mid, MQTT_RC_SUCCESS, properties)) rc = 1;
 	}
 	mosquitto_property_free_all(&properties);
 

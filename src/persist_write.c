@@ -174,9 +174,9 @@ static int persist__client_save(FILE *db_fptr)
 			if(context->username){
 				chunk.F.username_len = (uint16_t)strlen(context->username);
 				chunk.username = context->username;
-				if(context->listener){
-					chunk.F.listener_port = context->listener->port;
-				}
+			}
+			if(context->listener){
+				chunk.F.listener_port = context->listener->port;
 			}
 
 			if(chunk.F.id_len == 0){

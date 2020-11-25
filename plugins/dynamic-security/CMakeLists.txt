@@ -1,6 +1,7 @@
 set( CLIENT_INC ${mosquitto_SOURCE_DIR} ${mosquitto_SOURCE_DIR}/include
-            ${STDBOOL_H_PATH} ${STDINT_H_PATH} ${PTHREAD_INCLUDE_DIR}
-            ${OPENSSL_INCLUDE_DIR})
+	${STDBOOL_H_PATH} ${STDINT_H_PATH} ${PTHREAD_INCLUDE_DIR}
+	${OPENSSL_INCLUDE_DIR} ${mosquitto_SOURCE_DIR}/deps
+	${mosquitto_SOURCE_DIR}/src)
 
 set( CLIENT_DIR ${mosquitto_BINARY_DIR}/lib)
 
@@ -16,12 +17,15 @@ add_library(mosquitto_dynamic_security SHARED
 	acl.c
 	auth.c
 	clients.c
+	clientlist.c
 	dynamic_security.h
 	groups.c
+	grouplist.c
 	json_help.c
 	json_help.h
 	plugin.c
 	roles.c
+	rolelist.c
 	sub_matches_sub.c)
 
 set_target_properties(mosquitto_dynamic_security PROPERTIES

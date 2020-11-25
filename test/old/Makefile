@@ -1,7 +1,7 @@
 include ../../config.mk
 
 CC=cc
-CFLAGS=-I../../src -I../../lib -I. -I../.. -Wall -ggdb -DDEBUG -DWITH_CLIENT
+CFLAGS=-I../../src -I../../include -I. -I../.. -Wall -ggdb -DDEBUG -DWITH_CLIENT
 LDFLAGS=
 SOVERSION=1
 

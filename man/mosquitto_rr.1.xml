@@ -17,6 +17,7 @@
 	<refsynopsisdiv>
 		<cmdsynopsis>
 			<command>mosquitto_rr</command>
+			<arg choice='plain'><option>-e</option> <replaceable>response-topic</replaceable></arg>
 			<group choice='req'>
 				<arg choice='plain'>
 					<arg><option>-h</option> <replaceable>hostname</replaceable></arg>
@@ -30,7 +31,6 @@
 					<arg choice='plain'><option>-L</option> <replaceable>URL</replaceable></arg>
 					<arg choice='opt' rep='repeat'><option>-t</option> <replaceable>message-topic</replaceable></arg>
 				</arg>
-				<arg><option>-e</option> <replaceable>response-topic</replaceable></arg>
 			</group>
 			<group choice='req'>
 				<arg choice='plain'><option>-f</option> <replaceable>file</replaceable></arg>
@@ -106,6 +106,10 @@
 			response. When using MQTT v5, which is the default,
 			<command>mosquitto_rr</command> will use the Request-Response
 			feature.</para>
+		<para>The important options are <option>-t</option>, <option>-e</option>,
+			and one of <option>-f</option>, <option>-m</option>, <option>-n</option>,
+			and <option>-s</option>.</para>
+		<para>Example: <code>mosquitto_rr -t request-topic -e response-topic -m message</code></para>
 	</refsect1>
 
 	<refsect1>
@@ -244,6 +248,12 @@
 						the two strings in the string pair. In that case,
 						<option>value</option> is the second of the strings in
 						the pair.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-e</option></term>
+				<listitem>
+					<para>Response topic. The client will subscribe to this topic to wait for a response.</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
@@ -521,11 +531,7 @@
 				<term><option>-t</option></term>
 				<term><option>--topic</option></term>
 				<listitem>
-					<para>The MQTT topic to subscribe to, where responses will
-						be waited for. See
-					<citerefentry><refentrytitle>mqtt</refentrytitle><manvolnum>7</manvolnum></citerefentry>
-					for more information on MQTT topics.</para>
-					<para>This option may be repeated to subscribe to multiple topics.</para>
+					<para>The MQTT topic where the request message will be sent.</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>

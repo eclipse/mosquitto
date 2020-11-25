@@ -152,13 +152,13 @@ static void write_json_payload(const char *payload, int payloadlen)
 static int json_print_properties(cJSON *root, const mosquitto_property *properties)
 {
 	int identifier;
-	uint8_t i8value;
-	uint16_t i16value;
-	uint32_t i32value;
-	char *strname, *strvalue;
-	char *binvalue;
+	uint8_t i8value = 0;
+	uint16_t i16value = 0;
+	uint32_t i32value = 0;
+	char *strname = NULL, *strvalue = NULL;
+	char *binvalue = NULL;
 	cJSON *tmp, *prop_json, *user_json = NULL;
-	const mosquitto_property *prop;
+	const mosquitto_property *prop = NULL;
 
 	prop_json = cJSON_CreateObject();
 	if(prop_json == NULL){
@@ -187,6 +187,7 @@ static int json_print_properties(cJSON *root, const mosquitto_property *properti
 				if(strvalue == NULL) return MOSQ_ERR_NOMEM;
 				tmp = cJSON_CreateString(strvalue);
 				free(strvalue);
+				strvalue = NULL;
 				break;
 
 			case MQTT_PROP_CORRELATION_DATA:
@@ -194,6 +195,7 @@ static int json_print_properties(cJSON *root, const mosquitto_property *properti
 				if(binvalue == NULL) return MOSQ_ERR_NOMEM;
 				tmp = cJSON_CreateString(binvalue);
 				free(binvalue);
+				binvalue = NULL;
 				break;
 
 			case MQTT_PROP_SUBSCRIPTION_IDENTIFIER:

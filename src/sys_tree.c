@@ -85,13 +85,6 @@ static void sys_tree__update_clients(char *buf)
 
 	if(disconnected_count != count_total-count_by_sock){
 		disconnected_count = count_total-count_by_sock;
-		if(disconnected_count < 0){
-			/* If a client has connected but not sent a CONNECT at this point,
-			 * then it is possible that count_by_sock will be bigger than
-			 * count_total, causing a negative number. This situation should
-			 * not last for long, so just cap at zero and ignore. */
-			disconnected_count = 0;
-		}
 		len = (uint32_t)snprintf(buf, BUFLEN, "%d", disconnected_count);
 		db__messages_easy_queue(NULL, "$SYS/broker/clients/inactive", SYS_TREE_QOS, len, buf, 1, 60, NULL);
 		db__messages_easy_queue(NULL, "$SYS/broker/clients/disconnected", SYS_TREE_QOS, len, buf, 1, 60, NULL);

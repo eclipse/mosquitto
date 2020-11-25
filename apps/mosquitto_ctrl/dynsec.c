@@ -38,9 +38,10 @@ void dynsec__print_usage(void)
 	printf("Set group for anonymous clients: setAnonymousGroup   <groupname>\n");
 
 	printf("\nClients\n-------\n");
-	printf("Create a new client:         createClient      <username> [password]\n");
+	printf("Create a new client:         createClient      <username> [-c clientid] [-p password]\n");
 	printf("Delete a client:             deleteClient      <username>\n");
 	printf("Set a client password:       setClientPassword <username> [password]\n");
+	printf("Set a client id:             setClientId       <username> [clientid]\n");
 	printf("Add a role to a client:      addClientRole     <username> <rolename> [priority]\n");
 	printf("    Higher priority (larger numerical value) roles are evaluated first.\n");
 	printf("Remove role from a client:   removeClientRole  <username> <rolename>\n");
@@ -590,7 +591,11 @@ static cJSON *init_add_client(const char *username, const char *password, const 
 	}
 
 	j_client = cJSON_CreateObject();
-	if(j_client == NULL) return NULL;
+	if(j_client == NULL){
+		free(salt64);
+		free(hash64);
+		return NULL;
+	}
 
 	snprintf(buf, sizeof(buf), "%d", PW_DEFAULT_ITERATIONS);
 	if(cJSON_AddStringToObject(j_client, "username", username) == NULL
@@ -738,11 +743,22 @@ int dynsec_init(int argc, char *argv[])
 	if(fptr){
 		fprintf(fptr, "%s", json_str);
 		free(json_str);
+		fclose(fptr);
 	}else{
 		free(json_str);
 		fprintf(stderr, "dynsec init: Unable to open '%s' for writing.\n", filename);
 		return -1;
 	}
+
+	printf("The client '%s' has been created in the file '%s'.\n", admin_user, filename);
+	printf("This client is configured to allow you to administer the dynamic security plugin only.\n");
+	printf("It does not have access to publish messages to normal topics.\n");
+	printf("You should create your application clients to do that, for example:\n");
+	printf("   mosquitto_ctrl <connect options> dynsec createClient <username>\n");
+	printf("   mosquitto_ctrl <connect options> dynsec createRole <rolename>\n");
+	printf("   mosquitto_ctrl <connect options> dynsec addRoleACL <rolename> publishClientSend my/topic [priority]\n");
+	printf("   mosquitto_ctrl <connect options> dynsec addClientRole <username> <rolename> [priority]\n");
+	printf("See https://mosquitto.org/documentation/dynamic-security/ for details of all commands.\n");
 
 	return -1; /* Suppress client connection */
 }
@@ -803,6 +819,8 @@ int dynsec__main(int argc, char *argv[], struct mosq_ctrl *ctrl)
 		rc = dynsec_client__get(argc-1, &argv[1], j_command);
 	}else if(!strcasecmp(argv[0], "listClients")){
 		rc = dynsec_client__list_all(argc-1, &argv[1], j_command);
+	}else if(!strcasecmp(argv[0], "setClientId")){
+		rc = dynsec_client__set_id(argc-1, &argv[1], j_command);
 	}else if(!strcasecmp(argv[0], "setClientPassword")){
 		rc = dynsec_client__set_password(argc-1, &argv[1], j_command);
 	}else if(!strcasecmp(argv[0], "addClientRole")){

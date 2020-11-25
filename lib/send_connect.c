@@ -115,6 +115,7 @@ int send__connect(struct mosquitto *mosq, uint16_t keepalive, bool clean_session
 	 * username before checking password. */
 	if(mosq->protocol == mosq_p_mqtt31 || mosq->protocol == mosq_p_mqtt311){
 		if(password != NULL && username == NULL){
+			mosquitto__free(packet);
 			return MOSQ_ERR_INVAL;
 		}
 	}

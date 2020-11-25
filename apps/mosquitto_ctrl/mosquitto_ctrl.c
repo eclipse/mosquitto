@@ -81,11 +81,11 @@ int main(int argc, char *argv[])
 		lib = LIB_LOAD(lib_name);
 		if(lib){
 			ctrl_main = (FUNC_ctrl_main)LIB_SYM(lib, "ctrl_main");
-			if(ctrl_main == NULL){
-				fprintf(stderr, "Error: Module '%s' not supported.\n", argv[0]);
-				rc = MOSQ_ERR_NOT_SUPPORTED;
-			}
 		}
+	}
+	if(ctrl_main == NULL){
+		fprintf(stderr, "Error: Module '%s' not supported.\n", argv[0]);
+		rc = MOSQ_ERR_NOT_SUPPORTED;
 	}
 
 	if(ctrl_main){

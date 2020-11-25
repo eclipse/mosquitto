@@ -9,10 +9,13 @@ OBJS=	\
 		acl.o \
 		auth.o \
 		clients.o \
+		clientlist.o \
 		groups.o \
+		grouplist.o \
 		json_help.o \
 		plugin.o \
 		roles.o \
+		rolelist.o \
 		sub_matches_sub.o
 
 all : binary
@@ -30,7 +33,13 @@ auth.o : auth.c dynamic_security.h
 clients.o : clients.c dynamic_security.h
 	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) -c $< -o $@
 
+clientlist.o : clientlist.c dynamic_security.h
+	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) -c $< -o $@
+
 groups.o : groups.c dynamic_security.h
+	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) -c $< -o $@
+
+grouplist.o : grouplist.c dynamic_security.h
 	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) -c $< -o $@
 
 json_help.o : json_help.c dynamic_security.h
@@ -40,6 +49,9 @@ plugin.o : plugin.c dynamic_security.h
 	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) -c $< -o $@
 
 roles.o : roles.c dynamic_security.h
+	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) -c $< -o $@
+
+rolelist.o : rolelist.c dynamic_security.h
 	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) -c $< -o $@
 
 sub_matches_sub.o : sub_matches_sub.c dynamic_security.h

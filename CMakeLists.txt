@@ -89,8 +89,6 @@ else (WITH_THREADING)
 	set (PTHREAD_INCLUDE_DIR "")
 endif (WITH_THREADING)
 
-option(DOCUMENTATION "Build documentation?" ON)
-
 option(WITH_DLT "Include DLT support?" OFF)
 message(STATUS "WITH_DLT = ${WITH_DLT}")
 if (WITH_DLT)
@@ -100,30 +98,37 @@ if (WITH_DLT)
 	add_definitions("-DWITH_DLT")
 endif (WITH_DLT)
 
-FIND_PACKAGE(cJSON)
-if (CJSON_FOUND)
-	message(STATUS ${CJSON_FOUND})
-	add_definitions("-DWITH_CJSON")
-endif()
-
-
 # ========================================
 # Include projects
 # ========================================
 
 option(WITH_CLIENTS "Build clients?" ON)
 option(WITH_BROKER "Build broker?" ON)
+option(WITH_APPS "Build apps?" ON)
+option(WITH_PLUGINS "Build plugins?" ON)
+option(DOCUMENTATION "Build documentation?" ON)
 
 add_subdirectory(lib)
 if (WITH_CLIENTS)
 	add_subdirectory(client)
 endif (WITH_CLIENTS)
+
 if (WITH_BROKER)
-add_subdirectory(src)
+	add_subdirectory(src)
 endif (WITH_BROKER)
 
-add_subdirectory(apps)
-add_subdirectory(plugins)
+if (WITH_APPS)
+	add_subdirectory(apps)
+endif (WITH_APPS)
+
+if (WITH_PLUGINS)
+	FIND_PACKAGE(cJSON)
+	if (CJSON_FOUND)
+		message(STATUS ${CJSON_FOUND})
+		add_definitions("-DWITH_CJSON")
+	endif()
+	add_subdirectory(plugins)
+endif (WITH_PLUGINS)
 
 if (DOCUMENTATION)
 	add_subdirectory(man)
@@ -133,8 +138,9 @@ endif (DOCUMENTATION)
 # Install config file
 # ========================================
 
-install(FILES mosquitto.conf aclfile.example pskfile.example pwfile.example DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/mosquitto")
-
+if (WITH_BROKER)
+	install(FILES mosquitto.conf aclfile.example pskfile.example pwfile.example DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/mosquitto")
+endif (WITH_BROKER)
 
 # ========================================
 # Install pkg-config files

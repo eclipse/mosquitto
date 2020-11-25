@@ -190,7 +190,7 @@ void print__msg_store(struct P_msg_store *chunk, int length)
 
 	uint8_t *payload;
 
-	payload = UHPA_ACCESS(chunk->payload, chunk->F.payloadlen);
+	payload = chunk->payload;
 	if(chunk->F.payloadlen < 256){
 		/* Print payloads with UTF-8 data below an arbitrary limit of 256 bytes */
 		if(mosquitto_validate_utf8((char *)payload, (uint16_t)chunk->F.payloadlen) == MOSQ_ERR_SUCCESS){

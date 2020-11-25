@@ -44,7 +44,7 @@ mosquitto_ctrl : ${OBJS}
 	${CROSS_COMPILE}${CC} ${APP_LDFLAGS} $^ -o $@ $(PASSWD_LDADD) $(LIBMOSQ) -lcjson -ldl
 
 mosquitto_ctrl_example.so : ${EXAMPLE_OBJS}
-	$(CROSS_COMPILE)$(CC) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) $(PLUGIN_LDFLAGS) -fPIC -shared $< -o $@
+	$(CROSS_COMPILE)$(CC) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) $(PLUGIN_LDFLAGS) -shared $< -o $@
 
 mosquitto_ctrl.o : mosquitto_ctrl.c mosquitto_ctrl.h
 	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@
@@ -65,7 +65,7 @@ dynsec_role.o : dynsec_role.c mosquitto_ctrl.h
 	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@
 
 example.o : example.c mosquitto_ctrl.h
-	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@
+	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) -c $< -o $@
 
 get_password.o : ../mosquitto_passwd/get_password.c ../mosquitto_passwd/get_password.h
 	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@

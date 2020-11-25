@@ -323,7 +323,7 @@ int bridge__connect(struct mosquitto *context)
 {
 	int rc, rc2;
 	int i;
-	char *notification_topic;
+	char *notification_topic = NULL;
 	size_t notification_topic_len;
 	uint8_t notification_payload;
 
@@ -399,11 +399,12 @@ int bridge__connect(struct mosquitto *context)
 			if (!context->bridge->notifications_local_only) {
 				notification_payload = '0';
 				rc = will__set(context, notification_topic, 1, &notification_payload, 1, true, NULL);
-				mosquitto__free(notification_topic);
 				if(rc != MOSQ_ERR_SUCCESS){
+					mosquitto__free(notification_topic);
 					return rc;
 				}
 			}
+			mosquitto__free(notification_topic);
 		}
 	}
 
@@ -417,6 +418,7 @@ int bridge__connect(struct mosquitto *context)
 	if(rc > 0){
 		if(rc == MOSQ_ERR_TLS){
 			net__socket_close(context);
+			mosquitto__free(notification_topic);
 			return rc; /* Error already printed */
 		}else if(rc == MOSQ_ERR_ERRNO){
 			log__printf(NULL, MOSQ_LOG_ERR, "Error creating bridge: %s.", strerror(errno));
@@ -583,6 +585,7 @@ void bridge__cleanup(struct mosquitto *context)
 #ifdef WITH_TLS
 	if(context->ssl_ctx){
 		SSL_CTX_free(context->ssl_ctx);
+		context->ssl_ctx = NULL;
 	}
 #endif
 }
@@ -606,6 +609,7 @@ void bridge__packet_cleanup(struct mosquitto *context)
 	}
 	context->out_packet = NULL;
 	context->out_packet_last = NULL;
+	context->out_packet_len = 0;
 
 	packet__cleanup(&(context->in_packet));
 }
@@ -734,9 +738,9 @@ void bridge_check(void)
 						}else if(rc == 0){
 							rc = bridge__connect_step2(context);
 							if(rc == MOSQ_ERR_SUCCESS){
-								rc = mux__add_in(context);
+								mux__add_in(context);
 								if(context->current_out_packet){
-									rc = mux__add_out(context);
+									mux__add_out(context);
 								}
 							}else if(rc == MOSQ_ERR_CONN_PENDING){
 								context->bridge->restart_t = 0;
@@ -778,7 +782,7 @@ void bridge_check(void)
 							}
 							mux__add_in(context);
 							if(context->current_out_packet){
-								rc = mux__add_out(context);
+								mux__add_out(context);
 							}
 						}else{
 							context->bridge->cur_address++;

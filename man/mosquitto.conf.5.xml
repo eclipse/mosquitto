@@ -671,7 +671,7 @@ log_timestamp_format %Y-%m-%dT%H:%M:%S
 				<listitem>
 					<para>The maximum number of QoS 1 or 2 messages to hold in the
 						queue (per client) above those messages that are currently
-						in flight. Defaults to 100. Set to 0 for no maximum (not
+						in flight. Defaults to 1000. Set to 0 for no maximum (not
 						recommended). See also the
 						<option>queue_qos0_messages</option> and
 						<option>max_queued_bytes</option> options.</para>

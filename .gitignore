@@ -20,6 +20,7 @@ apps/mosquitto_ctrl/mosquitto_ctrl
 apps/mosquitto_passwd/mosquitto_passwd
 
 build/
+build64/
 
 client/mosquitto_pub
 client/mosquitto_rr

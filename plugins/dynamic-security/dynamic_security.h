@@ -54,14 +54,12 @@ Contributors:
 
 struct dynsec__clientlist{
 	UT_hash_handle hh;
-	char *username;
 	struct dynsec__client *client;
 	int priority;
 };
 
 struct dynsec__grouplist{
 	UT_hash_handle hh;
-	char *groupname;
 	struct dynsec__group *group;
 	int priority;
 };
@@ -182,13 +180,22 @@ int dynsec_clients__process_get(cJSON *j_responses, struct mosquitto *context, c
 int dynsec_clients__process_list(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data);
 int dynsec_clients__process_modify(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data);
 int dynsec_clients__process_remove_role(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data);
+int dynsec_clients__process_set_id(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data);
 int dynsec_clients__process_set_password(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data);
 struct dynsec__client *dynsec_clients__find(const char *username);
 
-cJSON *dynsec_clientlists__all_to_json(struct dynsec__clientlist *base_clientlist);
-int dynsec_clientlist__cmp(void *a, void *b);
-void dynsec_clientlist__kick_all(struct dynsec__clientlist *base_clientlist);
 
+/* ################################################################
+ * #
+ * # Client List Functions
+ * #
+ * ################################################################ */
+
+cJSON *dynsec_clientlist__all_to_json(struct dynsec__clientlist *base_clientlist);
+int dynsec_clientlist__add(struct dynsec__clientlist **base_clientlist, struct dynsec__client *client, int priority);
+void dynsec_clientlist__cleanup(struct dynsec__clientlist **base_clientlist);
+void dynsec_clientlist__remove(struct dynsec__clientlist **base_clientlist, struct dynsec__client *client);
+void dynsec_clientlist__kick_all(struct dynsec__clientlist *base_clientlist);
 
 
 /* ################################################################
@@ -215,8 +222,18 @@ int dynsec_groups__process_set_anonymous_group(cJSON *j_responses, struct mosqui
 int dynsec_groups__remove_client(const char *username, const char *groupname, bool update_config);
 struct dynsec__group *dynsec_groups__find(const char *groupname);
 
-cJSON *dynsec_grouplists__all_to_json(struct dynsec__grouplist *base_grouplist);
-int dynsec_grouplist__cmp(void *a, void *b);
+
+/* ################################################################
+ * #
+ * # Group List Functions
+ * #
+ * ################################################################ */
+
+cJSON *dynsec_grouplist__all_to_json(struct dynsec__grouplist *base_grouplist);
+int dynsec_grouplist__add(struct dynsec__grouplist **base_grouplist, struct dynsec__group *group, int priority);
+void dynsec_grouplist__cleanup(struct dynsec__grouplist **base_grouplist);
+void dynsec_grouplist__remove(struct dynsec__grouplist **base_grouplist, struct dynsec__group *group);
+
 
 /* ################################################################
  * #
@@ -236,12 +253,19 @@ int dynsec_roles__process_modify(cJSON *j_responses, struct mosquitto *context, 
 int dynsec_roles__process_remove_acl(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data);
 struct dynsec__role *dynsec_roles__find(const char *rolename);
 
-int dynsec_rolelists__client_add_role(struct dynsec__client *client, struct dynsec__role *role, int priority);
-int dynsec_rolelists__client_remove_role(struct dynsec__client *client, struct dynsec__role *role);
-int dynsec_rolelists__group_add_role(struct dynsec__group *group, struct dynsec__role *role, int priority);
-int dynsec_rolelists__group_remove_role(struct dynsec__group *group, struct dynsec__role *role);
-int dynsec_rolelists__load_from_json(cJSON *command, struct dynsec__rolelist **rolelist);
-void dynsec_rolelists__free_all(struct dynsec__rolelist **base_rolelist);
-cJSON *dynsec_rolelists__all_to_json(struct dynsec__rolelist *base_rolelist);
+
+/* ################################################################
+ * #
+ * # Role List Functions
+ * #
+ * ################################################################ */
+
+int dynsec_rolelist__client_add(struct dynsec__client *client, struct dynsec__role *role, int priority);
+int dynsec_rolelist__client_remove(struct dynsec__client *client, struct dynsec__role *role);
+int dynsec_rolelist__group_add(struct dynsec__group *group, struct dynsec__role *role, int priority);
+void dynsec_rolelist__group_remove(struct dynsec__group *group, struct dynsec__role *role);
+int dynsec_rolelist__load_from_json(cJSON *command, struct dynsec__rolelist **rolelist);
+void dynsec_rolelist__cleanup(struct dynsec__rolelist **base_rolelist);
+cJSON *dynsec_rolelist__all_to_json(struct dynsec__rolelist *base_rolelist);
 
 #endif

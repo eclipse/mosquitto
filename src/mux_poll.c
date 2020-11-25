@@ -55,7 +55,7 @@ Contributors:
 #include "util_mosq.h"
 #include "mux.h"
 
-static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pollfds);
+static void loop_handle_reads_writes(struct pollfd *pollfds);
 
 static struct pollfd *pollfds = NULL;
 static size_t pollfd_max;
@@ -63,7 +63,7 @@ static size_t pollfd_max;
 static sigset_t my_sigblock;
 #endif
 
-int mux_poll__init(struct mosquitto_db *db, struct mosquitto__listener_sock *listensock, int listensock_count)
+int mux_poll__init(struct mosquitto__listener_sock *listensock, int listensock_count)
 {
 	int i;
 	int pollfd_index = 0;
@@ -101,7 +101,7 @@ int mux_poll__init(struct mosquitto_db *db, struct mosquitto__listener_sock *lis
 }
 
 
-int mux_poll__add_out(struct mosquitto_db *db, struct mosquitto *context)
+int mux_poll__add_out(struct mosquitto *context)
 {
 	int i;
 
@@ -125,13 +125,13 @@ int mux_poll__add_out(struct mosquitto_db *db, struct mosquitto *context)
 }
 
 
-int mux_poll__remove_out(struct mosquitto_db *db, struct mosquitto *context)
+int mux_poll__remove_out(struct mosquitto *context)
 {
-	return mux_poll__add_in(db, context);
+	return mux_poll__add_in(context);
 }
 
 
-int mux_poll__add_in(struct mosquitto_db *db, struct mosquitto *context)
+int mux_poll__add_in(struct mosquitto *context)
 {
 	int i;
 
@@ -154,7 +154,7 @@ int mux_poll__add_in(struct mosquitto_db *db, struct mosquitto *context)
 	return MOSQ_ERR_SUCCESS;
 }
 
-int mux_poll__delete(struct mosquitto_db *db, struct mosquitto *context)
+int mux_poll__delete(struct mosquitto *context)
 {
 	if(context->pollfd_index != -1){
 		pollfds[context->pollfd_index].fd = -1;
@@ -169,10 +169,9 @@ int mux_poll__delete(struct mosquitto_db *db, struct mosquitto *context)
 
 
 
-int mux_poll__handle(struct mosquitto_db *db, struct mosquitto__listener_sock *listensock, int listensock_count)
+int mux_poll__handle(struct mosquitto__listener_sock *listensock, int listensock_count)
 {
 	struct mosquitto *context;
-	mosq_sock_t sock;
 	int i;
 	int fdcount;
 #ifndef WIN32
@@ -187,8 +186,8 @@ int mux_poll__handle(struct mosquitto_db *db, struct mosquitto__listener_sock *l
 	fdcount = WSAPoll(pollfds, pollfd_max, 100);
 #endif
 
-	db->now_s = mosquitto_time();
-	db->now_real_s = time(NULL);
+	db.now_s = mosquitto_time();
+	db.now_real_s = time(NULL);
 
 	if(fdcount == -1){
 #  ifdef WIN32
@@ -204,18 +203,13 @@ int mux_poll__handle(struct mosquitto_db *db, struct mosquitto__listener_sock *l
 			log__printf(NULL, MOSQ_LOG_ERR, "Error in poll: %s.", strerror(errno));
 		}
 	}else{
-		loop_handle_reads_writes(db, pollfds);
+		loop_handle_reads_writes(pollfds);
 
 		for(i=0; i<listensock_count; i++){
 			if(pollfds[i].revents & (POLLIN | POLLPRI)){
-				while((sock = net__socket_accept(db, &listensock[i])) != -1){
-					context = NULL;
-					HASH_FIND(hh_sock, db->contexts_by_sock, &sock, sizeof(mosq_sock_t), context);
-					if(!context) {
-						log__printf(NULL, MOSQ_LOG_ERR, "Error in poll accepting: no context");
-					}
+				while((context = net__socket_accept(&listensock[i])) != NULL){
 					context->pollfd_index = -1;
-					mux__add_in(db, context);
+					mux__add_in(context);
 				}
 			}
 		}
@@ -224,7 +218,7 @@ int mux_poll__handle(struct mosquitto_db *db, struct mosquitto__listener_sock *l
 }
 
 
-int mux_poll__cleanup(struct mosquitto_db *db)
+int mux_poll__cleanup(void)
 {
 	mosquitto__free(pollfds);
 	pollfds = NULL;
@@ -233,15 +227,19 @@ int mux_poll__cleanup(struct mosquitto_db *db)
 }
 
 
-static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pollfds)
+static void loop_handle_reads_writes(struct pollfd *pollfds)
 {
 	struct mosquitto *context, *ctxt_tmp;
 	int err;
 	socklen_t len;
 	int rc;
 
-	HASH_ITER(hh_sock, db->contexts_by_sock, context, ctxt_tmp){
+	HASH_ITER(hh_sock, db.contexts_by_sock, context, ctxt_tmp){
 		if(context->pollfd_index < 0){
+			continue;
+		}
+
+		if(pollfds[context->pollfd_index].fd == INVALID_SOCKET){
 			continue;
 		}
 
@@ -276,25 +274,25 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 						mosquitto__set_state(context, mosq_cs_new);
 #if defined(WITH_ADNS) && defined(WITH_BRIDGE)
 						if(context->bridge){
-							bridge__connect_step3(db, context);
+							bridge__connect_step3(context);
 							continue;
 						}
 #endif
 					}
 				}else{
-					do_disconnect(db, context, MOSQ_ERR_CONN_LOST);
+					do_disconnect(context, MOSQ_ERR_CONN_LOST);
 					continue;
 				}
 			}
 			rc = packet__write(context);
 			if(rc){
-				do_disconnect(db, context, rc);
+				do_disconnect(context, rc);
 				continue;
 			}
 		}
 	}
 
-	HASH_ITER(hh_sock, db->contexts_by_sock, context, ctxt_tmp){
+	HASH_ITER(hh_sock, db.contexts_by_sock, context, ctxt_tmp){
 		if(context->pollfd_index < 0){
 			continue;
 		}
@@ -312,15 +310,15 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 		if(pollfds[context->pollfd_index].revents & POLLIN){
 #endif
 			do{
-				rc = packet__read(db, context);
+				rc = packet__read(context);
 				if(rc){
-					do_disconnect(db, context, rc);
+					do_disconnect(context, rc);
 					continue;
 				}
 			}while(SSL_DATA_PENDING(context));
 		}else{
 			if(context->pollfd_index >= 0 && pollfds[context->pollfd_index].revents & (POLLERR | POLLNVAL | POLLHUP)){
-				do_disconnect(db, context, MOSQ_ERR_CONN_LOST);
+				do_disconnect(context, MOSQ_ERR_CONN_LOST);
 				continue;
 			}
 		}

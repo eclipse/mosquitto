@@ -106,7 +106,7 @@ int bridge__add_topic(struct mosquitto__bridge *bridge, const char *topic, enum 
 	if(direction != bd_out && direction != bd_in && direction != bd_both){
 		return MOSQ_ERR_INVAL;
 	}
-	if(qos < 0 || qos > 2){
+	if(qos > 2){
 		return MOSQ_ERR_INVAL;
 	}
 	if(local_prefix && mosquitto_pub_topic_check(local_prefix)){

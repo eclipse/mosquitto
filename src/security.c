@@ -546,7 +546,9 @@ static int security__cleanup_single(struct mosquitto__security_options *opts, bo
 	int rc;
 
 	for(i=0; i<opts->auth_plugin_config_count; i++){
-		if(opts->auth_plugin_configs[i].plugin.version == 4){
+		if(opts->auth_plugin_configs[i].plugin.version == 5){
+			rc = MOSQ_ERR_SUCCESS;
+		}else if(opts->auth_plugin_configs[i].plugin.version == 4){
 			rc = opts->auth_plugin_configs[i].plugin.security_cleanup_v4(
 					opts->auth_plugin_configs[i].plugin.user_data,
 					opts->auth_plugin_configs[i].options,

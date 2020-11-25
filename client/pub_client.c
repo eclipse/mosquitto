@@ -180,7 +180,8 @@ void my_connect_callback(struct mosquitto *mosq, void *obj, int result, int flag
 			}else{
 				err_printf(&cfg, "Connection error: %s\n", mosquitto_connack_string(result));
 			}
-			mosquitto_disconnect_v5(mosq, 0, cfg.disconnect_props);
+			// let the loop know that this is an unrecoverable connection
+			status = STATUS_NOHOPE;
 		}
 	}
 }
@@ -252,6 +253,10 @@ int pub_stdin_line_loop(struct mosquitto *mosq)
 #endif
 		}
 
+		if(status == STATUS_NOHOPE){
+			return MOSQ_ERR_CONN_REFUSED;
+		}
+
 		if(status == STATUS_CONNACK_RECVD){
 			pos = 0;
 			read_len = line_buf_len;
@@ -262,8 +267,8 @@ int pub_stdin_line_loop(struct mosquitto *mosq)
 					rc = my_publish(mosq, &mid_sent, cfg.topic, buf_len_actual-1, line_buf, cfg.qos, cfg.retain);
 					pos = 0;
 					if(rc){
-						err_printf(&cfg, "Error: Publish returned %d, disconnecting.\n", rc);
-						mosquitto_disconnect_v5(mosq, MQTT_RC_DISCONNECT_WITH_WILL_MSG, cfg.disconnect_props);
+						err_printf(&cfg, "Error: Publish returned %d.\n", rc);
+						if(cfg.qos>0) return rc;
 					}
 					break;
 				}else{
@@ -281,8 +286,8 @@ int pub_stdin_line_loop(struct mosquitto *mosq)
 			if(pos != 0){
 				rc = my_publish(mosq, &mid_sent, cfg.topic, buf_len_actual, line_buf, cfg.qos, cfg.retain);
 				if(rc){
-					err_printf(&cfg, "Error: Publish returned %d, disconnecting.\n", rc);
-					mosquitto_disconnect_v5(mosq, MQTT_RC_DISCONNECT_WITH_WILL_MSG, cfg.disconnect_props);
+					err_printf(&cfg, "Error: Publish returned %d.\n", rc);
+					if(cfg.qos>0) return rc;
 				}
 			}
 			if(feof(stdin)){

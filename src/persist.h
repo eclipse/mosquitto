@@ -112,7 +112,7 @@ struct PF_msg_store{
 };
 struct P_msg_store{
 	struct PF_msg_store F;
-	mosquitto__payload_uhpa payload;
+	void *payload;
 	struct mosquitto source;
 	char *topic;
 	mosquitto_property *properties;

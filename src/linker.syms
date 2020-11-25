@@ -13,8 +13,6 @@
 	mosquitto_client_protocol_version;
 	mosquitto_client_sub_count;
 	mosquitto_client_username;
-	mosquitto_control_topic_register;
-	mosquitto_control_topic_unregister;
 	mosquitto_free;
 	mosquitto_kick_client_by_clientid;
 	mosquitto_kick_client_by_username;

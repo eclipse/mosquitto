@@ -155,7 +155,7 @@ static int mosquitto__reconnect(struct mosquitto *mosq, bool blocking)
 	int rc;
 
 	if(!mosq) return MOSQ_ERR_INVAL;
-	if(!mosq->host || mosq->port < 0) return MOSQ_ERR_INVAL;
+	if(!mosq->host) return MOSQ_ERR_INVAL;
 
 	if(mosq->connect_properties){
 		if(mosq->protocol != mosq_p_mqtt5) return MOSQ_ERR_NOT_SUPPORTED;
@@ -267,6 +267,7 @@ void do_client_disconnect(struct mosquitto *mosq, int reason_code, const mosquit
 	mosq->current_out_packet = mosq->out_packet;
 	if(mosq->out_packet){
 		mosq->out_packet = mosq->out_packet->next;
+		mosq->out_packet_len--;
 		if(!mosq->out_packet){
 			mosq->out_packet_last = NULL;
 		}

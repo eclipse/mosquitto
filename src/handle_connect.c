@@ -88,7 +88,7 @@ void connection_check_acl(struct mosquitto *context, struct mosquitto_client_msg
 	DL_FOREACH_SAFE((*head), msg_tail, tmp){
 		if(msg_tail->direction == mosq_md_out){
 			if(mosquitto_acl_check(context, msg_tail->store->topic,
-								   msg_tail->store->payloadlen, UHPA_ACCESS(msg_tail->store->payload, msg_tail->store->payloadlen),
+								   msg_tail->store->payloadlen, msg_tail->store->payload,
 								   msg_tail->store->qos, msg_tail->store->retain, MOSQ_ACL_READ) != MOSQ_ERR_SUCCESS){
 
 				DL_DELETE((*head), msg_tail);

@@ -98,7 +98,7 @@ static void free__msg_store(struct P_msg_store *chunk)
 {
 	//free(chunk->source_id);
 	free(chunk->topic);
-	UHPA_FREE(chunk->payload, chunk->F.payloadlen);
+	free(chunk->payload);
 	mosquitto_property_free_all(&chunk->properties);
 }
 
@@ -156,7 +156,6 @@ static int dump__client_chunk_process(FILE *db_fd, uint32_t length)
 	}
 	if(rc){
 		fprintf(stderr, "Error: Corrupt persistent database.");
-		fclose(db_fd);
 		return rc;
 	}
 
@@ -253,7 +252,7 @@ static int dump__msg_store_chunk_process(FILE *db_fptr, uint32_t length)
 		mosquitto__free(chunk.source.id);
 		mosquitto__free(chunk.source.username);
 		mosquitto__free(chunk.topic);
-		UHPA_FREE(chunk.payload, chunk.F.payloadlen);
+		mosquitto__free(chunk.payload);
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 		return MOSQ_ERR_NOMEM;
 	}
@@ -270,12 +269,21 @@ static int dump__msg_store_chunk_process(FILE *db_fptr, uint32_t length)
 	}
 
 	stored = mosquitto__calloc(1, sizeof(struct mosquitto_msg_store));
+	if(stored == NULL){
+		mosquitto__free(load);
+		fclose(db_fptr);
+		mosquitto__free(chunk.source.id);
+		mosquitto__free(chunk.source.username);
+		mosquitto__free(chunk.topic);
+		mosquitto__free(chunk.payload);
+		return MOSQ_ERR_NOMEM;
+	}
 	stored->source_mid = chunk.F.source_mid;
 	stored->topic = chunk.topic;
 	stored->qos = chunk.F.qos;
 	stored->retain = chunk.F.retain;
 	stored->payloadlen = chunk.F.payloadlen;
-	UHPA_MOVE(stored->payload, chunk.payload, chunk.F.payloadlen);
+	stored->payload =  chunk.payload;
 	stored->properties = chunk.properties;
 
 	rc = db__message_store(&chunk.source, stored, message_expiry_interval,
@@ -287,12 +295,9 @@ static int dump__msg_store_chunk_process(FILE *db_fptr, uint32_t length)
 	chunk.source.username = NULL;
 
 	if(rc == MOSQ_ERR_SUCCESS){
-		/*
-		printf("stored:%p\n", stored);
 		stored->source_listener = chunk.source.listener;
 		load->db_id = stored->db_id;
 		load->store = stored;
-		*/
 
 		HASH_ADD(hh, db.msg_store_load, db_id, sizeof(dbid_t), load);
 	}else{
@@ -456,7 +461,10 @@ int main(int argc, char *argv[])
 
 				default:
 					fprintf(stderr, "Warning: Unsupported chunk \"%d\" in persistent database file. Ignoring.\n", chunk);
-					fseek(fd, length, SEEK_CUR);
+					if(fseek(fd, length, SEEK_CUR) < 0){
+						fprintf(stderr, "Error seeking in file.\n");
+						return 1;
+					}
 					break;
 			}
 		}
@@ -487,7 +495,7 @@ int main(int argc, char *argv[])
 	return rc;
 error:
 	fprintf(stderr, "Error: %s.", strerror(errno));
-	if(fd >= 0) fclose(fd);
+	if(fd) fclose(fd);
 	return 1;
 }
 

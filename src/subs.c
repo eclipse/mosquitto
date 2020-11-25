@@ -67,7 +67,7 @@ static int subs__send(struct mosquitto__subleaf *leaf, const char *topic, uint8_
 	int rc2;
 
 	/* Check for ACL topic access. */
-	rc2 = mosquitto_acl_check(leaf->context, topic, stored->payloadlen, UHPA_ACCESS(stored->payload, stored->payloadlen), stored->qos, stored->retain, MOSQ_ACL_READ);
+	rc2 = mosquitto_acl_check(leaf->context, topic, stored->payloadlen, stored->payload, stored->qos, stored->retain, MOSQ_ACL_READ);
 	if(rc2 == MOSQ_ERR_ACL_DENIED){
 		return MOSQ_ERR_SUCCESS;
 	}else if(rc2 == MOSQ_ERR_SUCCESS){
@@ -246,12 +246,15 @@ static int sub__add_shared(struct mosquitto *context, uint8_t qos, uint32_t iden
 		for(i=0; i<context->shared_sub_count; i++){
 			if(!context->shared_subs[i]){
 				context->shared_subs[i] = shared_ref;
+				shared_ref = NULL;
 				break;
 			}
 		}
-		if(i == context->shared_sub_count){
+		if(shared_ref){
 			shared_subs = mosquitto__realloc(context->shared_subs, sizeof(struct mosquitto__subhier_ref *)*(size_t)(context->shared_sub_count + 1));
 			if(!shared_subs){
+				mosquitto__free(shared_ref);
+				context->shared_subs[context->shared_sub_count-1] = NULL;
 				sub__remove_shared_leaf(subhier, shared, newleaf);
 				return MOSQ_ERR_NOMEM;
 			}
@@ -579,6 +582,8 @@ int sub__add(struct mosquitto *context, const char *sub, uint8_t qos, uint32_t i
 
 	topiclen = strlen(topics[0]);
 	if(topiclen > UINT16_MAX){
+		mosquitto__free(local_sub);
+		mosquitto__free(topics);
 		return MOSQ_ERR_INVAL;
 	}
 	HASH_FIND(hh, *root, topics[0], topiclen, subhier);

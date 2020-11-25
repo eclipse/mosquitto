@@ -37,6 +37,8 @@ Contributors:
 HANDLE syslog_h;
 #endif
 
+static char log_fptr_buffer[BUFSIZ];
+
 /* Options for logging should be:
  *
  * A combination of:
@@ -113,7 +115,7 @@ int log__init(struct mosquitto__config *config)
 	if(log_destinations & MQTT3_LOG_FILE){
 		config->log_fptr = mosquitto__fopen(config->log_file, "at", true);
 		if(config->log_fptr){
-			setvbuf(config->log_fptr, NULL, _IOLBF, 0);
+			setvbuf(config->log_fptr, log_fptr_buffer, _IOLBF, sizeof(log_fptr_buffer));
 		}else{
 			log_destinations = MQTT3_LOG_STDERR;
 			log_priorities = MOSQ_LOG_ERR;
@@ -304,6 +306,10 @@ int log__vprintf(unsigned int priority, const char *fmt, va_list va)
 		}
 		if(log_destinations & MQTT3_LOG_FILE && log_fptr){
 			fprintf(log_fptr, "%s\n", log_line);
+#ifdef WIN32
+			/* Windows doesn't support line buffering, so flush. */
+			fflush(log_fptr);
+#endif
 		}
 		if(log_destinations & MQTT3_LOG_SYSLOG){
 #ifndef WIN32

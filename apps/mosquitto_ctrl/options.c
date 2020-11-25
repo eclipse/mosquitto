@@ -525,6 +525,7 @@ int client_config_load(struct mosq_config *cfg)
 		local_args = malloc(3*sizeof(char *));
 		if(local_args == NULL){
 			fprintf(stderr, "Error: Out of memory.\n");
+			fclose(fptr);
 			return 1;
 		}
 		while(fgets(line, 1024, fptr)){

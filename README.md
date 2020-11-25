@@ -58,7 +58,7 @@ To build from source the recommended route for end users is to download the
 archive from <https://mosquitto.org/download/>.
 
 On Windows and Mac, use `cmake` to build. On other platforms, just run `make`
-to build. For Windows, see also `readme-windows.txt`.
+to build. For Windows, see also `README-windows.md`.
 
 If you are building from the git repository then the documentation will not
 already be built. Use `make binary` to skip building the man pages, or install

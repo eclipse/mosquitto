@@ -17,5 +17,5 @@ the client libraries as symbol information will be included.  Use cmake to
 compile on Windows or Mac.
 
 If you have any questions, problems or suggestions (particularly related to
-installing on a more unusual device like a plug-computer) then please get in
-touch using the details in readme.txt.
+installing on a more unusual device) then please get in touch using the details
+in README.md.

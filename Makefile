@@ -38,8 +38,10 @@ DISTFILES= \
 	notice.html \
 	pskfile.example \
 	pwfile.example \
-	readme-windows.txt \
-	readme.md
+	README-compiling \
+	README-letsencrypt \
+	README-windows.md \
+	README.md
 
 .PHONY : all mosquitto api docs binary check clean reallyclean test install uninstall dist sign copy localdocker
 

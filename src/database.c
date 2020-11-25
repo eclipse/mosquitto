@@ -27,10 +27,6 @@ Contributors:
 #include "time_mosq.h"
 #include "util_mosq.h"
 
-static unsigned long max_inflight_bytes = 0;
-static int max_queued = 100;
-static unsigned long max_queued_bytes = 0;
-
 /**
  * Is this context ready to take more in flight messages right now?
  * @param context the client context of interest
@@ -42,17 +38,17 @@ bool db__ready_for_flight(struct mosquitto_msg_data *msgs, int qos)
 	bool valid_bytes;
 	bool valid_count;
 
-	if(qos == 0 || (msgs->inflight_maximum == 0 && max_inflight_bytes == 0)){
+	if(qos == 0 || (msgs->inflight_maximum == 0 && db.config->max_inflight_bytes == 0)){
 		return true;
 	}
 
-	valid_bytes = msgs->msg_bytes12 < max_inflight_bytes;
+	valid_bytes = msgs->msg_bytes12 < db.config->max_inflight_bytes;
 	valid_count = msgs->inflight_quota > 0;
 
 	if(msgs->inflight_maximum == 0){
 		return valid_bytes;
 	}
-	if(max_inflight_bytes == 0){
+	if(db.config->max_inflight_bytes == 0){
 		return valid_count;
 	}
 
@@ -73,11 +69,11 @@ bool db__ready_for_queue(struct mosquitto *context, int qos, struct mosquitto_ms
 	int source_count;
 	int adjust_count;
 	unsigned long source_bytes;
-	unsigned long adjust_bytes = max_inflight_bytes;
+	unsigned long adjust_bytes = db.config->max_inflight_bytes;
 	bool valid_bytes;
 	bool valid_count;
 
-	if(max_queued == 0 && max_queued_bytes == 0){
+	if(db.config->max_queued_messages == 0 && db.config->max_queued_bytes == 0){
 		return true;
 	}
 
@@ -96,13 +92,13 @@ bool db__ready_for_queue(struct mosquitto *context, int qos, struct mosquitto_ms
 		adjust_count = 0;
 	}
 
-	valid_bytes = source_bytes - adjust_bytes < max_queued_bytes;
-	valid_count = source_count - adjust_count < max_queued;
+	valid_bytes = source_bytes - adjust_bytes < db.config->max_queued_bytes;
+	valid_count = source_count - adjust_count < db.config->max_queued_messages;
 
-	if(max_queued_bytes == 0){
+	if(db.config->max_queued_bytes == 0){
 		return valid_count;
 	}
-	if(max_queued == 0){
+	if(db.config->max_queued_messages == 0){
 		return valid_bytes;
 	}
 
@@ -203,7 +199,7 @@ void db__msg_store_free(struct mosquitto_msg_store *store)
 	}
 	mosquitto__free(store->topic);
 	mosquitto_property_free_all(&store->properties);
-	UHPA_FREE_PAYLOAD(store);
+	mosquitto__free(store->payload);
 	mosquitto__free(store);
 }
 
@@ -627,11 +623,14 @@ int db__messages_easy_queue(struct mosquitto *context, const char *topic, uint8_
 	}
 
 	stored->payloadlen = payloadlen;
-	if(UHPA_ALLOC(stored->payload, stored->payloadlen) == 0){
+	stored->payload = mosquitto__malloc(stored->payloadlen+1);
+	if(stored->payload == NULL){
 		db__msg_store_free(stored);
 		return MOSQ_ERR_NOMEM;
 	}
-	memcpy(UHPA_ACCESS(stored->payload, stored->payloadlen), payload, stored->payloadlen);
+	/* Ensure payload is always zero terminated, this is the reason for the extra byte above */
+	((uint8_t *)stored->payload)[stored->payloadlen] = 0;
+	memcpy(stored->payload, payload, stored->payloadlen);
 
 	if(context && context->id){
 		source_id = context->id;
@@ -1022,7 +1021,7 @@ static int db__message_write_inflight_out_single(struct mosquitto *context, stru
 	topic = msg->store->topic;
 	qos = (uint8_t)msg->qos;
 	payloadlen = msg->store->payloadlen;
-	payload = UHPA_ACCESS_PAYLOAD(msg->store);
+	payload = msg->store->payload;
 	cmsg_props = msg->properties;
 	store_props = msg->store->properties;
 
@@ -1204,12 +1203,3 @@ int db__message_write_queued_out(struct mosquitto *context)
 	}
 	return MOSQ_ERR_SUCCESS;
 }
-
-
-void db__limits_set(unsigned long inflight_bytes, int queued, unsigned long queued_bytes)
-{
-	max_inflight_bytes = inflight_bytes;
-	max_queued = queued;
-	max_queued_bytes = queued_bytes;
-}
-

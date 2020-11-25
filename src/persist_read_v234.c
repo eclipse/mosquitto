@@ -170,14 +170,17 @@ int persist__chunk_msg_store_read_v234(FILE *db_fptr, struct P_msg_store *chunk,
 	chunk->F.payloadlen = ntohl(i32temp);
 
 	if(chunk->F.payloadlen){
-		if(UHPA_ALLOC(chunk->payload, chunk->F.payloadlen) == 0){
+		chunk->payload = mosquitto_malloc(chunk->F.payloadlen+1);
+		if(chunk->payload == NULL){
 			mosquitto__free(chunk->source.id);
 			mosquitto__free(chunk->source.username);
 			mosquitto__free(chunk->topic);
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 			return MOSQ_ERR_NOMEM;
 		}
-		read_e(db_fptr, UHPA_ACCESS(chunk->payload, chunk->F.payloadlen), chunk->F.payloadlen);
+		/* Ensure zero terminated regardless of contents */
+		((uint8_t *)chunk->payload)[chunk->F.payloadlen] = 0;
+		read_e(db_fptr, chunk->payload, chunk->F.payloadlen);
 	}
 
 	return MOSQ_ERR_SUCCESS;
