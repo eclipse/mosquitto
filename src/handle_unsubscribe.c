@@ -125,6 +125,8 @@ int handle__unsubscribe(struct mosquitto *context)
 		log__printf(NULL, MOSQ_LOG_DEBUG, "\t%s", sub);
 		if(allowed){
 			rc = sub__remove(context, sub, db.subs, &reason);
+		}else{
+			rc = MOSQ_ERR_SUCCESS;
 		}
 		log__printf(NULL, MOSQ_LOG_UNSUBSCRIBE, "%s %s", context->id, sub);
 		mosquitto__free(sub);
