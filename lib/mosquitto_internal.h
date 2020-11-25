@@ -233,7 +233,6 @@ struct mosquitto {
 	struct mosquitto_message_all *will;
 	struct mosquitto__alias *aliases;
 	struct will_delay_list *will_delay_entry;
-	int out_packet_len;
 	int alias_count;
 	uint32_t maximum_packet_size;
 	uint32_t will_delay_interval;

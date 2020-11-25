@@ -609,7 +609,6 @@ void bridge__packet_cleanup(struct mosquitto *context)
 	}
 	context->out_packet = NULL;
 	context->out_packet_last = NULL;
-	context->out_packet_len = 0;
 
 	packet__cleanup(&(context->in_packet));
 }

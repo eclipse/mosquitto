@@ -38,18 +38,35 @@ bool db__ready_for_flight(struct mosquitto_msg_data *msgs, int qos)
 	bool valid_bytes;
 	bool valid_count;
 
-	if(qos == 0 || (msgs->inflight_maximum == 0 && db.config->max_inflight_bytes == 0)){
+	if(msgs->inflight_maximum == 0 && db.config->max_inflight_bytes == 0){
 		return true;
 	}
 
-	valid_bytes = msgs->msg_bytes12 < db.config->max_inflight_bytes;
-	valid_count = msgs->inflight_quota > 0;
+	if(qos == 0){
+		/* Deliver QoS 0 messages unless the queue is already full.
+		 * For QoS 0 messages the choice is either "inflight" or dropped.
+		 * There is no queueing option, unless the client is offline and
+		 * queue_qos0_messages is enabled.
+		 */
+		valid_bytes = msgs->msg_bytes - db.config->max_inflight_bytes < db.config->max_queued_bytes;
+		valid_count = msgs->msg_count - msgs->inflight_maximum < db.config->max_queued_messages;
 
-	if(msgs->inflight_maximum == 0){
-		return valid_bytes;
-	}
-	if(db.config->max_inflight_bytes == 0){
-		return valid_count;
+		if(db.config->max_queued_messages == 0){
+			return valid_bytes;
+		}
+		if(db.config->max_queued_bytes == 0){
+			return valid_count;
+		}
+	}else{
+		valid_bytes = msgs->msg_bytes12 < db.config->max_inflight_bytes;
+		valid_count = msgs->inflight_quota > 0;
+
+		if(msgs->inflight_maximum == 0){
+			return valid_bytes;
+		}
+		if(db.config->max_inflight_bytes == 0){
+			return valid_count;
+		}
 	}
 
 	return valid_bytes && valid_count;
@@ -78,8 +95,7 @@ bool db__ready_for_queue(struct mosquitto *context, int qos, struct mosquitto_ms
 	}
 
 	if(qos == 0){
-		source_bytes = msg_data->msg_bytes;
-		source_count = msg_data->msg_count;
+		return false; /* This case is handled in db__ready_for_flight() */
 	}else{
 		source_bytes = msg_data->msg_bytes12;
 		source_count = msg_data->msg_count12;
@@ -427,7 +443,7 @@ int db__message_insert(struct mosquitto *context, uint16_t mid, enum mosquitto_m
 					return 1;
 				}
 			}
-		}else if(db__ready_for_queue(context, qos, msg_data)){
+		}else if(qos != 0 && db__ready_for_queue(context, qos, msg_data)){
 			state = mosq_ms_queued;
 			rc = 2;
 		}else{
@@ -529,7 +545,7 @@ int db__message_insert(struct mosquitto *context, uint16_t mid, enum mosquitto_m
 		util__decrement_send_quota(context);
 	}
 
-	if(dir == mosq_md_out && update && context->current_out_packet == NULL){
+	if(dir == mosq_md_out && update){
 		rc = db__message_write_inflight_out_latest(context);
 		if(rc) return rc;
 		rc = db__message_write_queued_out(context);

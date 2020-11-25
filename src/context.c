@@ -65,7 +65,6 @@ struct mosquitto *context__init(mosq_sock_t sock)
 	context->in_packet.payload = NULL;
 	packet__cleanup(&context->in_packet);
 	context->out_packet = NULL;
-	context->out_packet_len = 0;
 	context->current_out_packet = NULL;
 
 	context->address = NULL;
@@ -156,7 +155,6 @@ void context__cleanup(struct mosquitto *context, bool force_free)
 		context->out_packet = context->out_packet->next;
 		mosquitto__free(packet);
 	}
-	context->out_packet_len = 0;
 #if defined(WITH_BROKER) && defined(__GLIBC__) && defined(WITH_ADNS)
 	if(context->adns){
 		gai_cancel(context->adns);

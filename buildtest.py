@@ -22,6 +22,7 @@ build_variants = [
     'WITH_UNIX_SOCKETS',
     'WITH_WEBSOCKETS',
     'WITH_WRAP',
+    'WITH_XTREPORT',
 ]
 
 special_variants = [

@@ -63,29 +63,6 @@ int send__publish(struct mosquitto *mosq, uint16_t mid, const char *topic, uint3
 	}
 
 #ifdef WITH_BROKER
-	if(qos == 0){
-		/* This is a crude, incorrect limit on the number of QoS 0 PUBLISHes.
-		 * We limit QoS 1 and 2 *messages* to max_inflight_messages+max_queued_messages.
-		 * We don't create QoS 0 *messages* though, only *packets*. So it is
-		 * tricky to add a correct limit on QoS 0 PUBLISHes.
-		 * This check will drop any further outgoing QoS PUBLISHes if the queue
-		 * of packets to be sent hits the max_queued_messages limit. It won't
-		 * be exactly correct, but does set an upper limit on queued QoS 0
-		 * packets.
-		 */
-		if(mosq->out_packet_len >= db.config->max_queued_messages){
-			return MOSQ_ERR_SUCCESS;
-		}
-	}
-	if(mosq->listener && mosq->listener->mount_point){
-		len = strlen(mosq->listener->mount_point);
-		if(len < strlen(topic)){
-			topic += len;
-		}else{
-			/* Invalid topic string. Should never happen, but silently swallow the message anyway. */
-			return MOSQ_ERR_SUCCESS;
-		}
-	}
 #ifdef WITH_BRIDGE
 	if(mosq->bridge && mosq->bridge->topics && mosq->bridge->topic_remapping){
 		for(i=0; i<mosq->bridge->topic_count; i++){
