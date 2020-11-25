@@ -125,6 +125,10 @@ int output_new_password(FILE *fptr, const char *username, const char *password, 
 	char *salt64 = NULL, *hash64 = NULL;
 	struct mosquitto_pw pw;
 
+	if(password == NULL){
+		fprintf(stderr, "Error: Internal error, no password given.\n");
+		return 1;
+	}
 	memset(&pw, 0, sizeof(pw));
 
 	pw.hashtype = hashtype;
