@@ -42,7 +42,7 @@ void db__msg_store_free(struct mosquitto_msg_store *store)
 	}
 	mosquitto__free(store->topic);
 	mosquitto_property_free_all(&store->properties);
-	UHPA_FREE_PAYLOAD(store);
+	mosquitto__free(store->payload);
 	mosquitto__free(store);
 }
 

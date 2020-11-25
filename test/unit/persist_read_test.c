@@ -207,7 +207,7 @@ static void TEST_v3_message_store(void)
 		}
 		CU_ASSERT_EQUAL(db.msg_store->payloadlen, 7);
 		if(db.msg_store->payloadlen == 7){
-			CU_ASSERT_NSTRING_EQUAL(UHPA_ACCESS_PAYLOAD(db.msg_store), "payload", 7);
+			CU_ASSERT_NSTRING_EQUAL(db.msg_store->payload, "payload", 7);
 		}
 	}
 }
@@ -276,7 +276,7 @@ static void TEST_v3_client_message(void)
 				}
 				CU_ASSERT_EQUAL(context->msgs_out.inflight->store->payloadlen, 7);
 				if(context->msgs_out.inflight->store->payloadlen == 7){
-					CU_ASSERT_NSTRING_EQUAL(UHPA_ACCESS_PAYLOAD(context->msgs_out.inflight->store), "payload", 7);
+					CU_ASSERT_NSTRING_EQUAL(context->msgs_out.inflight->store->payload, "payload", 7);
 				}
 			}
 			CU_ASSERT_EQUAL(context->msgs_out.inflight->mid, 0x73);
@@ -321,7 +321,7 @@ static void TEST_v3_retain(void)
 		}
 		CU_ASSERT_EQUAL(db.msg_store->payloadlen, 7);
 		if(db.msg_store->payloadlen == 7){
-			CU_ASSERT_NSTRING_EQUAL(UHPA_ACCESS_PAYLOAD(db.msg_store), "payload", 7);
+			CU_ASSERT_NSTRING_EQUAL(db.msg_store->payload, "payload", 7);
 		}
 	}
 	CU_ASSERT_PTR_NOT_NULL(db.retains);
@@ -400,7 +400,7 @@ static void TEST_v4_message_store(void)
 		}
 		CU_ASSERT_EQUAL(db.msg_store->payloadlen, 7);
 		if(db.msg_store->payloadlen == 7){
-			CU_ASSERT_NSTRING_EQUAL(UHPA_ACCESS_PAYLOAD(db.msg_store), "payload", 7);
+			CU_ASSERT_NSTRING_EQUAL(db.msg_store->payload, "payload", 7);
 		}
 	}
 }
@@ -486,7 +486,7 @@ static void TEST_v6_message_store(void)
 		CU_ASSERT_STRING_EQUAL(db.msg_store->topic, "topic");
 		CU_ASSERT_EQUAL(db.msg_store->payloadlen, 7);
 		if(db.msg_store->payloadlen == 7){
-			CU_ASSERT_NSTRING_EQUAL(UHPA_ACCESS_PAYLOAD(db.msg_store), "payload", 7);
+			CU_ASSERT_NSTRING_EQUAL(db.msg_store->payload, "payload", 7);
 		}
 		CU_ASSERT_PTR_NULL(db.msg_store->properties);
 	}
@@ -526,7 +526,7 @@ static void TEST_v6_message_store_props(void)
 		CU_ASSERT_STRING_EQUAL(db.msg_store->topic, "topic");
 		CU_ASSERT_EQUAL(db.msg_store->payloadlen, 7);
 		if(db.msg_store->payloadlen == 7){
-			CU_ASSERT_NSTRING_EQUAL(UHPA_ACCESS_PAYLOAD(db.msg_store), "payload", 7);
+			CU_ASSERT_NSTRING_EQUAL(db.msg_store->payload, "payload", 7);
 		}
 		CU_ASSERT_PTR_NOT_NULL(db.msg_store->properties);
 		if(db.msg_store->properties){
@@ -634,7 +634,7 @@ static void TEST_v6_client_message(void)
 				CU_ASSERT_STRING_EQUAL(context->msgs_out.inflight->store->topic, "topic");
 				CU_ASSERT_EQUAL(context->msgs_out.inflight->store->payloadlen, 7);
 				if(context->msgs_out.inflight->store->payloadlen == 7){
-					CU_ASSERT_NSTRING_EQUAL(UHPA_ACCESS_PAYLOAD(context->msgs_out.inflight->store), "payload", 7);
+					CU_ASSERT_NSTRING_EQUAL(context->msgs_out.inflight->store->payload, "payload", 7);
 				}
 			}
 			CU_ASSERT_EQUAL(context->msgs_out.inflight->mid, 0x73);
@@ -682,7 +682,7 @@ static void TEST_v6_client_message_props(void)
 				CU_ASSERT_STRING_EQUAL(context->msgs_out.inflight->store->topic, "topic");
 				CU_ASSERT_EQUAL(context->msgs_out.inflight->store->payloadlen, 7);
 				if(context->msgs_out.inflight->store->payloadlen == 7){
-					CU_ASSERT_NSTRING_EQUAL(UHPA_ACCESS_PAYLOAD(context->msgs_out.inflight->store), "payload", 7);
+					CU_ASSERT_NSTRING_EQUAL(context->msgs_out.inflight->store->payload, "payload", 7);
 				}
 			}
 			CU_ASSERT_EQUAL(context->msgs_out.inflight->mid, 0x73);
@@ -728,7 +728,7 @@ static void TEST_v6_retain(void)
 		CU_ASSERT_STRING_EQUAL(db.msg_store->topic, "topic");
 		CU_ASSERT_EQUAL(db.msg_store->payloadlen, 7);
 		if(db.msg_store->payloadlen == 7){
-			CU_ASSERT_NSTRING_EQUAL(UHPA_ACCESS_PAYLOAD(db.msg_store), "payload", 7);
+			CU_ASSERT_NSTRING_EQUAL(db.msg_store->payload, "payload", 7);
 		}
 	}
 	CU_ASSERT_PTR_NOT_NULL(db.retains);
