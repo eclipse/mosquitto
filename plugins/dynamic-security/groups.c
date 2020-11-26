@@ -60,6 +60,15 @@ static struct dynsec__group *local_groups = NULL;
  * #
  * ################################################################ */
 
+static void group__kick_all(struct dynsec__group *group)
+{
+	if(group == dynsec_anonymous_group){
+		mosquitto_kick_client_by_username(NULL, false);
+	}
+	dynsec_clientlist__kick_all(group->clientlist);
+}
+
+
 static int group_cmp(void *a, void *b)
 {
 	struct dynsec__group *group_a = a;
@@ -133,6 +142,10 @@ int dynsec_groups__process_add_role(cJSON *j_responses, struct mosquitto *contex
 	dynsec_rolelist__group_add(group, role, priority);
 	dynsec__config_save();
 	dynsec__command_reply(j_responses, context, "addGroupRole", NULL, correlation_data);
+
+	/* Enforce any changes */
+	group__kick_all(group);
+
 	return MOSQ_ERR_SUCCESS;
 }
 
@@ -426,10 +439,7 @@ int dynsec_groups__process_delete(cJSON *j_responses, struct mosquitto *context,
 	group = dynsec_groups__find(groupname);
 	if(group){
 		/* Enforce any changes */
-		if(group == dynsec_anonymous_group){
-			mosquitto_kick_client_by_username(NULL, false);
-		}
-		dynsec_clientlist__kick_all(group->clientlist);
+		group__kick_all(group);
 
 		group__free_item(group);
 		dynsec__config_save();
@@ -848,10 +858,8 @@ int dynsec_groups__process_remove_role(cJSON *j_responses, struct mosquitto *con
 	dynsec__command_reply(j_responses, context, "removeGroupRole", NULL, correlation_data);
 
 	/* Enforce any changes */
-	if(group == dynsec_anonymous_group){
-		mosquitto_kick_client_by_username(NULL, false);
-	}
-	dynsec_clientlist__kick_all(group->clientlist);
+	group__kick_all(group);
+
 	return MOSQ_ERR_SUCCESS;
 }
 
@@ -938,10 +946,8 @@ int dynsec_groups__process_modify(cJSON *j_responses, struct mosquitto *context,
 	dynsec__command_reply(j_responses, context, "modifyGroup", NULL, correlation_data);
 
 	/* Enforce any changes */
-	if(group == dynsec_anonymous_group){
-		mosquitto_kick_client_by_username(NULL, false);
-	}
-	dynsec_clientlist__kick_all(group->clientlist);
+	group__kick_all(group);
+
 	return MOSQ_ERR_SUCCESS;
 }
 

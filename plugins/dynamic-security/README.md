@@ -646,6 +646,7 @@ Command:
 	"commands":[
 		{
 			"command": "addRoleACL",
+			"rolename": "role",
 			"acltype": "subscribePattern",
 			"topic": "topic/#",
 			"priority": -1,
@@ -668,6 +669,7 @@ Command:
 	"commands":[
 		{
 			"command": "removeRoleACL",
+			"rolename": "role",
 			"acltype": "subscribePattern",
 			"topic": "topic/#"
 		}
