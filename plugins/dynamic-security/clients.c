@@ -697,12 +697,16 @@ int dynsec_clients__process_modify(cJSON *j_responses, struct mosquitto *context
 	}
 
 	if(json_get_string(command, "clientid", &clientid, false) == MOSQ_ERR_SUCCESS){
-		str = mosquitto_strdup(clientid);
-		if(str == NULL){
-			dynsec__command_reply(j_responses, context, "modifyClient", "Internal error", correlation_data);
-			return MOSQ_ERR_NOMEM;
+		if(clientid && strlen(clientid) > 0){
+			str = mosquitto_strdup(clientid);
+			if(str == NULL){
+				dynsec__command_reply(j_responses, context, "modifyClient", "Internal error", correlation_data);
+				return MOSQ_ERR_NOMEM;
+			}
+			mosquitto_free(client->clientid);
+		}else{
+			str = NULL;
 		}
-		mosquitto_free(client->clientid);
 		client->clientid = str;
 	}
 

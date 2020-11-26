@@ -80,6 +80,7 @@ create_roles_response = {'responses': [
 modify_client_command1 = { "commands": [{
     "command": "modifyClient", "username": "user_one",
     "textname": "Modified name", "textdescription": "Modified description",
+    "clientid": "",
     "roles":[
         {'rolename':'role_one', 'priority':2},
         {'rolename':'role_two'},
@@ -112,7 +113,7 @@ get_client_response1 = {'responses':[{'command': 'getClient', 'data': {'client':
 
 get_client_command2 = { "commands": [{
     "command": "getClient", "username": "user_one"}]}
-get_client_response2 = {'responses':[{'command': 'getClient', 'data': {'client': {'username': 'user_one', 'clientid': 'cid',
+get_client_response2 = {'responses':[{'command': 'getClient', 'data': {'client': {'username': 'user_one',
     'textname': 'Modified name', 'textdescription': 'Modified description',
     'roles': [
         {'rolename':'role_three', 'priority':10},
@@ -126,7 +127,7 @@ get_client_response2 = {'responses':[{'command': 'getClient', 'data': {'client':
 
 get_client_command3 = { "commands": [{
             "command": "getClient", "username": "user_one"}]}
-get_client_response3 = {'responses':[{'command': 'getClient', 'data': {'client': {'username': 'user_one', 'clientid': 'cid',
+get_client_response3 = {'responses':[{'command': 'getClient', 'data': {'client': {'username': 'user_one',
     'textname': 'Modified name', 'textdescription': 'Modified description',
     'groups': [],
     'roles': [
