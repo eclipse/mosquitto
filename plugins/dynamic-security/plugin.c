@@ -171,109 +171,85 @@ int dynsec__process_get_default_acl_access(cJSON *j_responses, struct mosquitto 
 		return MOSQ_ERR_NOMEM;
 	}
 
-	jtmp = cJSON_CreateString("getDefaultACLAccess");
-	if(jtmp == NULL){
-		cJSON_Delete(tree);
-		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
-		return MOSQ_ERR_NOMEM;
-	}
-	cJSON_AddItemToObject(tree, "command", jtmp);
+	if(cJSON_AddStringToObject(tree, "command", "getDefaultACLAccess") == NULL
+		|| ((j_data = cJSON_AddObjectToObject(tree, "data")) == NULL)
 
-	j_data = cJSON_CreateObject();
-	if(j_data == NULL){
-		cJSON_Delete(tree);
-		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
-		return MOSQ_ERR_NOMEM;
+			){
+		goto internal_error;
 	}
-	cJSON_AddItemToObject(tree, "data", j_data);
 
 	j_acls = cJSON_AddArrayToObject(j_data, "acls");
 	if(j_acls == NULL){
-		cJSON_Delete(tree);
-		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
-		return MOSQ_ERR_NOMEM;
+		goto internal_error;
 	}
 
 	/* publishClientSend */
 	j_acl = cJSON_CreateObject();
 	if(j_acl == NULL){
-		cJSON_Delete(tree);
-		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
-		return MOSQ_ERR_NOMEM;
+		goto internal_error;
 	}
+	cJSON_AddItemToArray(j_acls, j_acl);
 	if(cJSON_AddStringToObject(j_acl, "acltype", ACL_TYPE_PUB_C_SEND) == NULL
 			|| cJSON_AddBoolToObject(j_acl, "allow", default_access.publish_c_send) == NULL
 			){
 
-		cJSON_Delete(tree);
-		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
-		return MOSQ_ERR_NOMEM;
+		goto internal_error;
 	}
-	cJSON_AddItemToArray(j_acls, j_acl);
 
 	/* publishClientReceive */
 	j_acl = cJSON_CreateObject();
 	if(j_acl == NULL){
-		cJSON_Delete(tree);
-		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
-		return MOSQ_ERR_NOMEM;
+		goto internal_error;
 	}
+	cJSON_AddItemToArray(j_acls, j_acl);
 	if(cJSON_AddStringToObject(j_acl, "acltype", ACL_TYPE_PUB_C_RECV) == NULL
 			|| cJSON_AddBoolToObject(j_acl, "allow", default_access.publish_c_recv) == NULL
 			){
 
-		cJSON_Delete(tree);
-		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
-		return MOSQ_ERR_NOMEM;
+		goto internal_error;
 	}
-	cJSON_AddItemToArray(j_acls, j_acl);
 
 	/* subscribe */
 	j_acl = cJSON_CreateObject();
 	if(j_acl == NULL){
-		cJSON_Delete(tree);
-		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
-		return MOSQ_ERR_NOMEM;
+		goto internal_error;
 	}
+	cJSON_AddItemToArray(j_acls, j_acl);
 	if(cJSON_AddStringToObject(j_acl, "acltype", ACL_TYPE_SUB_GENERIC) == NULL
 			|| cJSON_AddBoolToObject(j_acl, "allow", default_access.subscribe) == NULL
 			){
 
-		cJSON_Delete(tree);
-		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
-		return MOSQ_ERR_NOMEM;
+		goto internal_error;
 	}
-	cJSON_AddItemToArray(j_acls, j_acl);
 
 	/* unsubscribe */
 	j_acl = cJSON_CreateObject();
 	if(j_acl == NULL){
-		cJSON_Delete(tree);
-		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
-		return MOSQ_ERR_NOMEM;
+		goto internal_error;
 	}
+	cJSON_AddItemToArray(j_acls, j_acl);
 	if(cJSON_AddStringToObject(j_acl, "acltype", ACL_TYPE_UNSUB_GENERIC) == NULL
 			|| cJSON_AddBoolToObject(j_acl, "allow", default_access.unsubscribe) == NULL
 			){
 
-		cJSON_Delete(tree);
-		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
-		return MOSQ_ERR_NOMEM;
+		goto internal_error;
 	}
-	cJSON_AddItemToArray(j_acls, j_acl);
 
 	cJSON_AddItemToArray(j_responses, tree);
 
 	if(correlation_data){
 		jtmp = cJSON_AddStringToObject(tree, "correlationData", correlation_data);
 		if(jtmp == NULL){
-			cJSON_Delete(tree);
-			dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
-			return 1;
+			goto internal_error;
 		}
 	}
 
 	return MOSQ_ERR_SUCCESS;
+
+internal_error:
+	cJSON_Delete(tree);
+	dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
+	return MOSQ_ERR_NOMEM;
 }
 
 
@@ -429,22 +405,11 @@ void dynsec__config_save(void)
 	tree = cJSON_CreateObject();
 	if(tree == NULL) return;
 
-	if(dynsec__general_config_save(tree)){
-		cJSON_Delete(tree);
-		return;
-	}
+	if(dynsec__general_config_save(tree)
+			|| dynsec_clients__config_save(tree)
+			|| dynsec_groups__config_save(tree)
+			|| dynsec_roles__config_save(tree)){
 
-	if(dynsec_clients__config_save(tree)){
-		cJSON_Delete(tree);
-		return;
-	}
-
-	if(dynsec_groups__config_save(tree)){
-		cJSON_Delete(tree);
-		return;
-	}
-
-	if(dynsec_roles__config_save(tree)){
 		cJSON_Delete(tree);
 		return;
 	}
