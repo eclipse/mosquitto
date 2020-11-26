@@ -7,7 +7,7 @@ import shutil
 def write_config(filename, port):
     with open(filename, 'w') as f:
         f.write("listener %d\n" % (port))
-        f.write("allow_anonymous true\n")
+        f.write("allow_anonymous false\n")
         f.write("plugin ../../plugins/dynamic-security/mosquitto_dynamic_security.so\n")
         f.write("plugin_opt_config_file %d/dynamic-security.json\n" % (port))
 
@@ -107,6 +107,10 @@ connack_packet_without_pw1 = mosq_test.gen_connack(rc=mqtt5_rc.MQTT_RC_NOT_AUTHO
 connect_packet_without_pw2 = mosq_test.gen_connect("cid2", keepalive=keepalive, username="user_three", proto_ver=5)
 connack_packet_without_pw2 = mosq_test.gen_connack(rc=mqtt5_rc.MQTT_RC_NOT_AUTHORIZED, proto_ver=5, property_helper=False)
 
+# Fail - no username
+connect_packet_without_un = mosq_test.gen_connect("cid3", keepalive=keepalive, proto_ver=5)
+connack_packet_without_un = mosq_test.gen_connack(rc=mqtt5_rc.MQTT_RC_NOT_AUTHORIZED, proto_ver=5, property_helper=False)
+
 try:
     os.mkdir(str(port))
     shutil.copyfile("dynamic-security-init.json", "%d/dynamic-security.json" % (port))
@@ -161,6 +165,10 @@ try:
     csock.close()
 
     csock = mosq_test.do_client_connect(connect_packet_set_id2, connack_packet_set_id2, timeout=5, port=port, connack_error="set id 2")
+    csock.close()
+
+    # No username, anon disabled
+    csock = mosq_test.do_client_connect(connect_packet_without_un, connack_packet_without_un, timeout=5, port=port, connack_error="without username")
     csock.close()
 
     rc = 0

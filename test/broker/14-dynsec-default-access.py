@@ -9,7 +9,7 @@ import shutil
 def write_config(filename, port):
     with open(filename, 'w') as f:
         f.write("listener %d\n" % (port))
-        f.write("allow_anonymous true\n")
+        f.write("allow_anonymous false\n")
         f.write("plugin ../../plugins/dynamic-security/mosquitto_dynamic_security.so\n")
         f.write("plugin_opt_config_file %d/dynamic-security.json\n" % (port))
 
