@@ -137,6 +137,8 @@ Clients:
   precision for some parameters.
 - Add `--version` for all clients.
 - Fix description of `-e` and `-t` arguments in mosquitto_rr. Closes #1881.
+- mosquitto_sub will now quit with an error if the %U option is used on
+  Windows, rather than just quitting. Closes #1908.
 
 
 1.6.12 - 2020-08-19

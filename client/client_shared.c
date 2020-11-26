@@ -132,6 +132,10 @@ static int check_format(const char *str)
 					// JSON output, assuming JSON payload
 				}else if(str[i+1] == 'U'){
 					// Unix time+nanoseconds
+#ifdef WIN32
+					fprintf(stderr, "Error: The %%U format option is not supported on Windows.\n");
+					return 1;
+#endif
 				}else if(str[i+1] == 'x' || str[i+1] == 'X'){
 					// payload in hex
 				}else{
