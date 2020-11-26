@@ -40,6 +40,12 @@ add_client_command_without_id = { "commands": [{
 }
 add_client_response_without_id = {'responses': [{'command': 'createClient', 'correlationData': '3'}]}
 
+set_client_id_command = { "commands": [{
+    "command": "setClientId", "username": "user_two", "clientid": "new-cid",
+    "correlationData": "5" }]
+}
+set_client_id_response = {'responses': [{'command': 'setClientId', 'correlationData': '5'}]}
+
 # No password defined, this client should never be able to connect.
 add_client_command_without_pw = { "commands": [{
     "command": "createClient", "username": "user_three",
@@ -84,13 +90,21 @@ connack_packet_without_id2 = mosq_test.gen_connack(rc=mqtt5_rc.MQTT_RC_NOT_AUTHO
 connect_packet_without_id3 = mosq_test.gen_connect("no-cid", keepalive=keepalive, username="user_two", proto_ver=5)
 connack_packet_without_id3 = mosq_test.gen_connack(rc=mqtt5_rc.MQTT_RC_NOT_AUTHORIZED, proto_ver=5, property_helper=False)
 
+# Success
+connect_packet_set_id1 = mosq_test.gen_connect("new-cid", keepalive=keepalive, username="user_two", password="asdfgh", proto_ver=5)
+connack_packet_set_id1 = mosq_test.gen_connack(rc=0, proto_ver=5)
+
+# Fail - bad client id
+connect_packet_set_id2 = mosq_test.gen_connect("bad-cid", keepalive=keepalive, username="user_two", password="asdfgh", proto_ver=5)
+connack_packet_set_id2 = mosq_test.gen_connack(rc=mqtt5_rc.MQTT_RC_NOT_AUTHORIZED, proto_ver=5, property_helper=False)
+
 
 # Fail - bad password
 connect_packet_without_pw1 = mosq_test.gen_connect("cid2", keepalive=keepalive, username="user_three", password="pass", proto_ver=5)
 connack_packet_without_pw1 = mosq_test.gen_connack(rc=mqtt5_rc.MQTT_RC_NOT_AUTHORIZED, proto_ver=5, property_helper=False)
 
 # Fail - no password
-connect_packet_without_pw2 = mosq_test.gen_connect("cid2", keepalive=keepalive, username="user_two", proto_ver=5)
+connect_packet_without_pw2 = mosq_test.gen_connect("cid2", keepalive=keepalive, username="user_three", proto_ver=5)
 connack_packet_without_pw2 = mosq_test.gen_connack(rc=mqtt5_rc.MQTT_RC_NOT_AUTHORIZED, proto_ver=5, property_helper=False)
 
 try:
@@ -110,32 +124,44 @@ try:
     command_check(sock, add_client_command_without_id, add_client_response_without_id)
     command_check(sock, add_client_command_without_pw, add_client_response_without_pw)
 
-    sock = mosq_test.do_client_connect(connect_packet_with_id1, connack_packet_with_id1, timeout=5, port=port, connack_error="with id 1")
-    sock.close()
+    # Client with username, password, and client id
+    csock = mosq_test.do_client_connect(connect_packet_with_id1, connack_packet_with_id1, timeout=5, port=port, connack_error="with id 1")
+    csock.close()
 
-    sock = mosq_test.do_client_connect(connect_packet_with_id2, connack_packet_with_id2, timeout=5, port=port, connack_error="with id 2")
-    sock.close()
+    csock = mosq_test.do_client_connect(connect_packet_with_id2, connack_packet_with_id2, timeout=5, port=port, connack_error="with id 2")
+    csock.close()
 
-    sock = mosq_test.do_client_connect(connect_packet_with_id3, connack_packet_with_id3, timeout=5, port=port, connack_error="with id 3")
-    sock.close()
+    csock = mosq_test.do_client_connect(connect_packet_with_id3, connack_packet_with_id3, timeout=5, port=port, connack_error="with id 3")
+    csock.close()
 
-    sock = mosq_test.do_client_connect(connect_packet_with_id4, connack_packet_with_id4, timeout=5, port=port, connack_error="with id 4")
-    sock.close()
+    csock = mosq_test.do_client_connect(connect_packet_with_id4, connack_packet_with_id4, timeout=5, port=port, connack_error="with id 4")
+    csock.close()
 
-    sock = mosq_test.do_client_connect(connect_packet_without_id1, connack_packet_without_id1, timeout=5, port=port, connack_error="without id 1")
-    sock.close()
+    # Client with just username and password
+    csock = mosq_test.do_client_connect(connect_packet_without_id1, connack_packet_without_id1, timeout=5, port=port, connack_error="without id 1")
+    csock.close()
 
-    sock = mosq_test.do_client_connect(connect_packet_without_id2, connack_packet_without_id2, timeout=5, port=port, connack_error="without id 2")
-    sock.close()
+    csock = mosq_test.do_client_connect(connect_packet_without_id2, connack_packet_without_id2, timeout=5, port=port, connack_error="without id 2")
+    csock.close()
 
-    sock = mosq_test.do_client_connect(connect_packet_without_id3, connack_packet_without_id3, timeout=5, port=port, connack_error="without id 3")
-    sock.close()
+    csock = mosq_test.do_client_connect(connect_packet_without_id3, connack_packet_without_id3, timeout=5, port=port, connack_error="without id 3")
+    csock.close()
 
-    sock = mosq_test.do_client_connect(connect_packet_without_pw1, connack_packet_without_pw1, timeout=5, port=port, connack_error="without pw 1")
-    sock.close()
+    # Client with no password set
+    csock = mosq_test.do_client_connect(connect_packet_without_pw1, connack_packet_without_pw1, timeout=5, port=port, connack_error="without pw 1")
+    csock.close()
 
-    sock = mosq_test.do_client_connect(connect_packet_without_pw2, connack_packet_without_pw2, timeout=5, port=port, connack_error="without pw 2")
-    sock.close()
+    csock = mosq_test.do_client_connect(connect_packet_without_pw2, connack_packet_without_pw2, timeout=5, port=port, connack_error="without pw 2")
+    csock.close()
+
+    # Add client id to "user_two"
+    command_check(sock, set_client_id_command, set_client_id_response)
+
+    csock = mosq_test.do_client_connect(connect_packet_set_id1, connack_packet_set_id1, timeout=5, port=port, connack_error="set id 1")
+    csock.close()
+
+    csock = mosq_test.do_client_connect(connect_packet_set_id2, connack_packet_set_id2, timeout=5, port=port, connack_error="set id 2")
+    csock.close()
 
     rc = 0
 

@@ -584,6 +584,9 @@ int dynsec_clients__process_set_id(cJSON *j_responses, struct mosquitto *context
 	mosquitto_free(client->clientid);
 	client->clientid = clientid_heap;
 
+	dynsec__config_save();
+	dynsec__command_reply(j_responses, context, "setClientId", NULL, correlation_data);
+
 	/* Enforce any changes */
 	mosquitto_kick_client_by_username(username, false);
 
