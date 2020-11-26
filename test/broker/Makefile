@@ -223,6 +223,7 @@ endif
 14 :
 ifeq ($(WITH_TLS),yes)
 ifeq ($(WITH_CJSON),yes)
+	./14-dynsec-anon-group.py
 	./14-dynsec-auth.py
 	./14-dynsec-client.py
 	./14-dynsec-default-access.py
