@@ -700,10 +700,10 @@ int dynsec_clients__process_modify(cJSON *j_responses, struct mosquitto *context
 				dynsec__command_reply(j_responses, context, "modifyClient", "Internal error", correlation_data);
 				return MOSQ_ERR_NOMEM;
 			}
-			mosquitto_free(client->clientid);
 		}else{
 			str = NULL;
 		}
+		mosquitto_free(client->clientid);
 		client->clientid = str;
 	}
 
