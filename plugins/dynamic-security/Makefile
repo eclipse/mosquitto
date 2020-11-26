@@ -18,7 +18,17 @@ OBJS=	\
 		rolelist.o \
 		sub_matches_sub.o
 
-all : binary
+ifeq ($(WITH_CJSON),yes)
+ifeq ($(WITH_TLS),yes)
+ALL_DEPS:= binary
+else
+ALL_DEPS:=
+endif
+else
+ALL_DEPS:=
+endif
+
+all : ${ALL_DEPS}
 binary : ${PLUGIN_NAME}.so
 
 ${PLUGIN_NAME}.so : ${OBJS}
