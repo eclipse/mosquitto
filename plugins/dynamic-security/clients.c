@@ -311,12 +311,9 @@ int dynsec_clients__config_save(cJSON *tree)
 {
 	cJSON *j_clients;
 
-	j_clients = cJSON_CreateArray();
-	if(j_clients == NULL){
+	if((j_clients = cJSON_AddArrayToObject(tree, "clients")) == NULL){
 		return 1;
 	}
-
-	cJSON_AddItemToObject(tree, "clients", j_clients);
 	if(dynsec__config_add_clients(j_clients)){
 		return 1;
 	}
@@ -852,7 +849,7 @@ int dynsec_clients__process_get(cJSON *j_responses, struct mosquitto *context, c
 {
 	char *username;
 	struct dynsec__client *client;
-	cJSON *tree, *j_client, *jtmp, *j_data;
+	cJSON *tree, *j_client, *j_data;
 
 	if(json_get_string(command, "username", &username, false) != MOSQ_ERR_SUCCESS){
 		dynsec__command_reply(j_responses, context, "getClient", "Invalid/missing username", correlation_data);
@@ -875,21 +872,15 @@ int dynsec_clients__process_get(cJSON *j_responses, struct mosquitto *context, c
 		return MOSQ_ERR_NOMEM;
 	}
 
-	jtmp = cJSON_CreateString("getClient");
-	if(jtmp == NULL){
-		cJSON_Delete(tree);
-		dynsec__command_reply(j_responses, context, "getClient", "Internal error", correlation_data);
-		return MOSQ_ERR_NOMEM;
-	}
-	cJSON_AddItemToObject(tree, "command", jtmp);
+	if(cJSON_AddStringToObject(tree, "command", "getClient") == NULL
+			|| (j_data = cJSON_AddObjectToObject(tree, "data")) == NULL
+			|| (correlation_data && cJSON_AddStringToObject(tree, "correlationData", correlation_data) == NULL)
+			){
 
-	j_data = cJSON_CreateObject();
-	if(j_data == NULL){
 		cJSON_Delete(tree);
 		dynsec__command_reply(j_responses, context, "getClient", "Internal error", correlation_data);
 		return MOSQ_ERR_NOMEM;
 	}
-	cJSON_AddItemToObject(tree, "data", j_data);
 
 	j_client = add_client_to_json(client, true);
 	if(j_client == NULL){
@@ -898,16 +889,6 @@ int dynsec_clients__process_get(cJSON *j_responses, struct mosquitto *context, c
 		return MOSQ_ERR_NOMEM;
 	}
 	cJSON_AddItemToObject(j_data, "client", j_client);
-
-	if(correlation_data){
-		jtmp = cJSON_AddStringToObject(tree, "correlationData", correlation_data);
-		if(jtmp == NULL){
-			cJSON_Delete(tree);
-			dynsec__command_reply(j_responses, context, "getClient", "Internal error", correlation_data);
-			return 1;
-		}
-	}
-
 	cJSON_AddItemToArray(j_responses, tree);
 
 	return MOSQ_ERR_SUCCESS;
@@ -918,7 +899,7 @@ int dynsec_clients__process_list(cJSON *j_responses, struct mosquitto *context, 
 {
 	bool verbose;
 	struct dynsec__client *client, *client_tmp;
-	cJSON *tree, *j_clients, *j_client, *jtmp, *j_data;
+	cJSON *tree, *j_clients, *j_client, *j_data;
 	int i, count, offset;
 
 	json_get_bool(command, "verbose", &verbose, true, false);
@@ -931,31 +912,17 @@ int dynsec_clients__process_list(cJSON *j_responses, struct mosquitto *context, 
 		return MOSQ_ERR_NOMEM;
 	}
 
-	jtmp = cJSON_CreateString("listClients");
-	if(jtmp == NULL){
+	if(cJSON_AddStringToObject(tree, "command", "listClients") == NULL
+			|| (j_data = cJSON_AddObjectToObject(tree, "data")) == NULL
+			|| cJSON_AddIntToObject(j_data, "totalCount", (int)HASH_CNT(hh, local_clients)) == NULL
+			|| (j_clients = cJSON_AddArrayToObject(j_data, "clients")) == NULL
+			|| (correlation_data && cJSON_AddStringToObject(tree, "correlationData", correlation_data) == NULL)
+			){
+
 		cJSON_Delete(tree);
 		dynsec__command_reply(j_responses, context, "listClients", "Internal error", correlation_data);
 		return MOSQ_ERR_NOMEM;
 	}
-	cJSON_AddItemToObject(tree, "command", jtmp);
-
-	j_data = cJSON_CreateObject();
-	if(j_data == NULL){
-		cJSON_Delete(tree);
-		dynsec__command_reply(j_responses, context, "listClients", "Internal error", correlation_data);
-		return MOSQ_ERR_NOMEM;
-	}
-	cJSON_AddItemToObject(tree, "data", j_data);
-
-	cJSON_AddIntToObject(j_data, "totalCount", (int)HASH_CNT(hh, local_clients));
-
-	j_clients = cJSON_CreateArray();
-	if(j_clients == NULL){
-		cJSON_Delete(tree);
-		dynsec__command_reply(j_responses, context, "listClients", "Internal error", correlation_data);
-		return MOSQ_ERR_NOMEM;
-	}
-	cJSON_AddItemToObject(j_data, "clients", j_clients);
 
 	i = 0;
 	HASH_ITER(hh, local_clients, client, client_tmp){
@@ -977,15 +944,6 @@ int dynsec_clients__process_list(cJSON *j_responses, struct mosquitto *context, 
 		}
 		i++;
 	}
-	if(correlation_data){
-		jtmp = cJSON_AddStringToObject(tree, "correlationData", correlation_data);
-		if(jtmp == NULL){
-			cJSON_Delete(tree);
-			dynsec__command_reply(j_responses, context, "listClients", "Internal error", correlation_data);
-			return 1;
-		}
-	}
-
 	cJSON_AddItemToArray(j_responses, tree);
 
 	return MOSQ_ERR_SUCCESS;
