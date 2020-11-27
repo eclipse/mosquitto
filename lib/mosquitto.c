@@ -294,7 +294,7 @@ void mosquitto__destroy(struct mosquitto *mosq)
 
 	mosquitto_property_free_all(&mosq->connect_properties);
 
-	packet__cleanup_all(mosq);
+	packet__cleanup_all_no_locks(mosq);
 
 	packet__cleanup(&mosq->in_packet);
 	if(mosq->sockpairR != INVALID_SOCKET){

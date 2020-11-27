@@ -100,12 +100,9 @@ void packet__cleanup(struct mosquitto__packet *packet)
 }
 
 
-void packet__cleanup_all(struct mosquitto *mosq)
+void packet__cleanup_all_no_locks(struct mosquitto *mosq)
 {
 	struct mosquitto__packet *packet;
-
-	pthread_mutex_lock(&mosq->current_out_packet_mutex);
-	pthread_mutex_lock(&mosq->out_packet_mutex);
 
 	/* Out packet cleanup */
 	if(mosq->out_packet && !mosq->current_out_packet){
@@ -125,6 +122,14 @@ void packet__cleanup_all(struct mosquitto *mosq)
 	}
 
 	packet__cleanup(&mosq->in_packet);
+}
+
+void packet__cleanup_all(struct mosquitto *mosq)
+{
+	pthread_mutex_lock(&mosq->current_out_packet_mutex);
+	pthread_mutex_lock(&mosq->out_packet_mutex);
+
+	packet__cleanup_all_no_locks(mosq);
 
 	pthread_mutex_unlock(&mosq->out_packet_mutex);
 	pthread_mutex_unlock(&mosq->current_out_packet_mutex);
