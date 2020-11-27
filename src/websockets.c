@@ -278,7 +278,6 @@ static int callback_mqtt(struct libwebsocket_context *context,
 			if(mosq->out_packet && !mosq->current_out_packet){
 				mosq->current_out_packet = mosq->out_packet;
 				mosq->out_packet = mosq->out_packet->next;
-				mosq->out_packet_len--;
 				if(!mosq->out_packet){
 					mosq->out_packet_last = NULL;
 				}
@@ -339,7 +338,6 @@ static int callback_mqtt(struct libwebsocket_context *context,
 				mosq->current_out_packet = mosq->out_packet;
 				if(mosq->out_packet){
 					mosq->out_packet = mosq->out_packet->next;
-					mosq->out_packet_len--;
 					if(!mosq->out_packet){
 						mosq->out_packet_last = NULL;
 					}

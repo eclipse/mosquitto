@@ -2,11 +2,11 @@
 Copyright (c) 2020 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
-are made available under the terms of the Eclipse Public License v1.0
+are made available under the terms of the Eclipse Public License 2.0
 and Eclipse Distribution License v1.0 which accompany this distribution.
 
 The Eclipse Public License is available at
-   http://www.eclipse.org/legal/epl-v10.html
+   https://www.eclipse.org/legal/epl-2.0/
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
 
@@ -59,6 +59,15 @@ static struct dynsec__group *local_groups = NULL;
  * # Utility functions
  * #
  * ################################################################ */
+
+static void group__kick_all(struct dynsec__group *group)
+{
+	if(group == dynsec_anonymous_group){
+		mosquitto_kick_client_by_username(NULL, false);
+	}
+	dynsec_clientlist__kick_all(group->clientlist);
+}
+
 
 static int group_cmp(void *a, void *b)
 {
@@ -133,6 +142,10 @@ int dynsec_groups__process_add_role(cJSON *j_responses, struct mosquitto *contex
 	dynsec_rolelist__group_add(group, role, priority);
 	dynsec__config_save();
 	dynsec__command_reply(j_responses, context, "addGroupRole", NULL, correlation_data);
+
+	/* Enforce any changes */
+	group__kick_all(group);
+
 	return MOSQ_ERR_SUCCESS;
 }
 
@@ -426,10 +439,7 @@ int dynsec_groups__process_delete(cJSON *j_responses, struct mosquitto *context,
 	group = dynsec_groups__find(groupname);
 	if(group){
 		/* Enforce any changes */
-		if(group == dynsec_anonymous_group){
-			mosquitto_kick_client_by_username(NULL, false);
-		}
-		dynsec_clientlist__kick_all(group->clientlist);
+		group__kick_all(group);
 
 		group__free_item(group);
 		dynsec__config_save();
@@ -658,7 +668,7 @@ static cJSON *add_group_to_json(struct dynsec__group *group)
 int dynsec_groups__process_list(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data)
 {
 	bool verbose;
-	cJSON *tree, *j_groups, *j_group, *jtmp, *j_data;
+	cJSON *tree, *j_groups, *j_group, *j_data;
 	struct dynsec__group *group, *group_tmp;
 	int i, count, offset;
 
@@ -672,31 +682,17 @@ int dynsec_groups__process_list(cJSON *j_responses, struct mosquitto *context, c
 		return MOSQ_ERR_NOMEM;
 	}
 
-	jtmp = cJSON_CreateString("listGroups");
-	if(jtmp == NULL){
+	if(cJSON_AddStringToObject(tree, "command", "listGroups") == NULL
+			|| (j_data = cJSON_AddObjectToObject(tree, "data")) == NULL
+			|| cJSON_AddIntToObject(j_data, "totalCount", (int)HASH_CNT(hh, local_groups)) == NULL
+			|| (j_groups = cJSON_AddArrayToObject(j_data, "groups")) == NULL
+			|| (correlation_data && cJSON_AddStringToObject(tree, "correlationData", correlation_data) == NULL)
+			){
+
 		cJSON_Delete(tree);
 		dynsec__command_reply(j_responses, context, "listGroups", "Internal error", correlation_data);
 		return MOSQ_ERR_NOMEM;
 	}
-	cJSON_AddItemToObject(tree, "command", jtmp);
-
-	j_data = cJSON_CreateObject();
-	if(j_data == NULL){
-		cJSON_Delete(tree);
-		dynsec__command_reply(j_responses, context, "listGroups", "Internal error", correlation_data);
-		return MOSQ_ERR_NOMEM;
-	}
-	cJSON_AddItemToObject(tree, "data", j_data);
-
-	cJSON_AddIntToObject(j_data, "totalCount", (int)HASH_CNT(hh, local_groups));
-
-	j_groups = cJSON_CreateArray();
-	if(j_groups == NULL){
-		cJSON_Delete(tree);
-		dynsec__command_reply(j_responses, context, "listGroups", "Internal error", correlation_data);
-		return MOSQ_ERR_NOMEM;
-	}
-	cJSON_AddItemToObject(j_data, "groups", j_groups);
 
 	i = 0;
 	HASH_ITER(hh, local_groups, group, group_tmp){
@@ -730,14 +726,6 @@ int dynsec_groups__process_list(cJSON *j_responses, struct mosquitto *context, c
 		}
 		i++;
 	}
-	if(correlation_data){
-		jtmp = cJSON_AddStringToObject(tree, "correlationData", correlation_data);
-		if(jtmp == NULL){
-			cJSON_Delete(tree);
-			dynsec__command_reply(j_responses, context, "listGroups", "Internal error", correlation_data);
-			return 1;
-		}
-	}
 
 	cJSON_AddItemToArray(j_responses, tree);
 
@@ -748,7 +736,7 @@ int dynsec_groups__process_list(cJSON *j_responses, struct mosquitto *context, c
 int dynsec_groups__process_get(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data)
 {
 	char *groupname;
-	cJSON *tree, *j_group, *jtmp, *j_data;
+	cJSON *tree, *j_group, *j_data;
 	struct dynsec__group *group;
 
 	if(json_get_string(command, "groupname", &groupname, false) != MOSQ_ERR_SUCCESS){
@@ -766,21 +754,15 @@ int dynsec_groups__process_get(cJSON *j_responses, struct mosquitto *context, cJ
 		return MOSQ_ERR_NOMEM;
 	}
 
-	jtmp = cJSON_CreateString("getGroup");
-	if(jtmp == NULL){
-		cJSON_Delete(tree);
-		dynsec__command_reply(j_responses, context, "getGroup", "Internal error", correlation_data);
-		return MOSQ_ERR_NOMEM;
-	}
-	cJSON_AddItemToObject(tree, "command", jtmp);
+	if(cJSON_AddStringToObject(tree, "command", "getGroup") == NULL
+			|| (j_data = cJSON_AddObjectToObject(tree, "data")) == NULL
+			|| (correlation_data && cJSON_AddStringToObject(tree, "correlationData", correlation_data) == NULL)
+			){
 
-	j_data = cJSON_CreateObject();
-	if(j_data == NULL){
 		cJSON_Delete(tree);
 		dynsec__command_reply(j_responses, context, "getGroup", "Internal error", correlation_data);
 		return MOSQ_ERR_NOMEM;
 	}
-	cJSON_AddItemToObject(tree, "data", j_data);
 
 	group = dynsec_groups__find(groupname);
 	if(group){
@@ -791,14 +773,6 @@ int dynsec_groups__process_get(cJSON *j_responses, struct mosquitto *context, cJ
 			return MOSQ_ERR_NOMEM;
 		}
 		cJSON_AddItemToObject(j_data, "group", j_group);
-	}
-	if(correlation_data){
-		jtmp = cJSON_AddStringToObject(tree, "correlationData", correlation_data);
-		if(jtmp == NULL){
-			cJSON_Delete(tree);
-			dynsec__command_reply(j_responses, context, "getGroup", "Internal error", correlation_data);
-			return 1;
-		}
 	}
 
 	cJSON_AddItemToArray(j_responses, tree);
@@ -848,10 +822,8 @@ int dynsec_groups__process_remove_role(cJSON *j_responses, struct mosquitto *con
 	dynsec__command_reply(j_responses, context, "removeGroupRole", NULL, correlation_data);
 
 	/* Enforce any changes */
-	if(group == dynsec_anonymous_group){
-		mosquitto_kick_client_by_username(NULL, false);
-	}
-	dynsec_clientlist__kick_all(group->clientlist);
+	group__kick_all(group);
+
 	return MOSQ_ERR_SUCCESS;
 }
 
@@ -938,10 +910,8 @@ int dynsec_groups__process_modify(cJSON *j_responses, struct mosquitto *context,
 	dynsec__command_reply(j_responses, context, "modifyGroup", NULL, correlation_data);
 
 	/* Enforce any changes */
-	if(group == dynsec_anonymous_group){
-		mosquitto_kick_client_by_username(NULL, false);
-	}
-	dynsec_clientlist__kick_all(group->clientlist);
+	group__kick_all(group);
+
 	return MOSQ_ERR_SUCCESS;
 }
 
@@ -979,7 +949,8 @@ int dynsec_groups__process_set_anonymous_group(cJSON *j_responses, struct mosqui
 
 int dynsec_groups__process_get_anonymous_group(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data)
 {
-	cJSON *tree, *jtmp, *j_data, *j_group;
+	cJSON *tree, *j_data, *j_group;
+	const char *groupname;
 
 	tree = cJSON_CreateObject();
 	if(tree == NULL){
@@ -987,54 +958,22 @@ int dynsec_groups__process_get_anonymous_group(cJSON *j_responses, struct mosqui
 		return MOSQ_ERR_NOMEM;
 	}
 
-	jtmp = cJSON_CreateString("getAnonymousGroup");
-	if(jtmp == NULL){
-		cJSON_Delete(tree);
-		dynsec__command_reply(j_responses, context, "getAnonymousGroup", "Internal error", correlation_data);
-		return MOSQ_ERR_NOMEM;
-	}
-	cJSON_AddItemToObject(tree, "command", jtmp);
-
-	j_data = cJSON_CreateObject();
-	if(j_data == NULL){
-		cJSON_Delete(tree);
-		dynsec__command_reply(j_responses, context, "getAnonymousGroup", "Internal error", correlation_data);
-		return MOSQ_ERR_NOMEM;
-	}
-	cJSON_AddItemToObject(tree, "data", j_data);
-
-	j_group = cJSON_CreateObject();
-	if(j_group == NULL){
-		cJSON_Delete(tree);
-		dynsec__command_reply(j_responses, context, "getAnonymousGroup", "Internal error", correlation_data);
-		return MOSQ_ERR_NOMEM;
-	}
-	cJSON_AddItemToObject(j_data, "group", j_group);
-
 	if(dynsec_anonymous_group){
-		if(cJSON_AddStringToObject(j_group, "groupname", dynsec_anonymous_group->groupname) == NULL
-				){
-
-			cJSON_Delete(tree);
-			dynsec__command_reply(j_responses, context, "getAnonymousGroup", "Internal error", correlation_data);
-			return MOSQ_ERR_NOMEM;
-		}
+		groupname = dynsec_anonymous_group->groupname;
 	}else{
-		if(cJSON_AddStringToObject(j_group, "groupname", "") == NULL
-				){
-
-			cJSON_Delete(tree);
-			dynsec__command_reply(j_responses, context, "getAnonymousGroup", "Internal error", correlation_data);
-			return MOSQ_ERR_NOMEM;
-		}
+		groupname = "";
 	}
-	if(correlation_data){
-		jtmp = cJSON_AddStringToObject(tree, "correlationData", correlation_data);
-		if(jtmp == NULL){
-			cJSON_Delete(tree);
-			dynsec__command_reply(j_responses, context, "getGroup", "Internal error", correlation_data);
-			return 1;
-		}
+
+	if(cJSON_AddStringToObject(tree, "command", "getAnonymousGroup") == NULL
+			|| (j_data = cJSON_AddObjectToObject(tree, "data")) == NULL
+			|| (j_group = cJSON_AddObjectToObject(j_data, "group")) == NULL
+			|| cJSON_AddStringToObject(j_group, "groupname", groupname) == NULL
+			|| (correlation_data && cJSON_AddStringToObject(tree, "correlationData", correlation_data) == NULL)
+			){
+
+		cJSON_Delete(tree);
+		dynsec__command_reply(j_responses, context, "getAnonymousGroup", "Internal error", correlation_data);
+		return MOSQ_ERR_NOMEM;
 	}
 
 	cJSON_AddItemToArray(j_responses, tree);

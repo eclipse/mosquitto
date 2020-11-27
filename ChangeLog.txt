@@ -40,6 +40,8 @@ Breaking changes:
   regardless of whether the `-d` argument is used when running the broker.
 - The `tls_version` option now defines the *minimum* TLS protocol version to
   be used, rather than the exact version. Closes #1258.
+- The `max_queued_messages` option has been increased from 100 to 1000 by
+  default, and now also applies to QoS 0 messages, when a client is connected.
 
 Broker:
 - When running as root, if dropping privileges to the "mosquitto" user fails,
@@ -135,6 +137,8 @@ Clients:
   precision for some parameters.
 - Add `--version` for all clients.
 - Fix description of `-e` and `-t` arguments in mosquitto_rr. Closes #1881.
+- mosquitto_sub will now quit with an error if the %U option is used on
+  Windows, rather than just quitting. Closes #1908.
 
 
 1.6.12 - 2020-08-19

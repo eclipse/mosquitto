@@ -221,10 +221,19 @@ endif
 	./13-malformed-unsubscribe-v5.py
 
 14 :
+ifeq ($(WITH_TLS),yes)
+ifeq ($(WITH_CJSON),yes)
+	./14-dynsec-acl.py
+	./14-dynsec-anon-group.py
+	./14-dynsec-auth.py
 	./14-dynsec-client.py
+	./14-dynsec-client-invalid.py
+	./14-dynsec-default-access.py
+	./14-dynsec-disable-client.py
 	./14-dynsec-group.py
-	./14-dynsec-role.py
 	./14-dynsec-modify-client.py
 	./14-dynsec-modify-group.py
 	./14-dynsec-modify-role.py
-	./14-dynsec-disable-client.py
+	./14-dynsec-role.py
+endif
+endif

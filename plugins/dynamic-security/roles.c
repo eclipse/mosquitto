@@ -2,11 +2,11 @@
 Copyright (c) 2020 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
-are made available under the terms of the Eclipse Public License v1.0
+are made available under the terms of the Eclipse Public License 2.0
 and Eclipse Distribution License v1.0 which accompany this distribution.
 
 The Eclipse Public License is available at
-   http://www.eclipse.org/legal/epl-v10.html
+   https://www.eclipse.org/legal/epl-2.0/
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
 
@@ -185,11 +185,9 @@ int dynsec_roles__config_save(cJSON *tree)
 	cJSON *j_roles, *j_role;
 	struct dynsec__role *role, *role_tmp;
 
-	j_roles = cJSON_CreateArray();
-	if(j_roles == NULL){
+	if((j_roles = cJSON_AddArrayToObject(tree, "roles")) == NULL){
 		return 1;
 	}
-	cJSON_AddItemToObject(tree, "roles", j_roles);
 
 	HASH_ITER(hh, local_roles, role, role_tmp){
 		j_role = add_role_to_json(role, true);
@@ -519,7 +517,7 @@ int dynsec_roles__process_list(cJSON *j_responses, struct mosquitto *context, cJ
 {
 	bool verbose;
 	struct dynsec__role *role, *role_tmp;
-	cJSON *tree, *j_roles, *j_role, *jtmp, *j_data;
+	cJSON *tree, *j_roles, *j_role, *j_data;
 	int i, count, offset;
 
 	json_get_bool(command, "verbose", &verbose, true, false);
@@ -532,31 +530,17 @@ int dynsec_roles__process_list(cJSON *j_responses, struct mosquitto *context, cJ
 		return MOSQ_ERR_NOMEM;
 	}
 
-	jtmp = cJSON_CreateString("listRoles");
-	if(jtmp == NULL){
+	if(cJSON_AddStringToObject(tree, "command", "listRoles") == NULL
+			|| (j_data = cJSON_AddObjectToObject(tree, "data")) == NULL
+			|| cJSON_AddIntToObject(j_data, "totalCount", (int)HASH_CNT(hh, local_roles)) == NULL
+			|| (j_roles = cJSON_AddArrayToObject(j_data, "roles")) == NULL
+			|| (correlation_data && cJSON_AddStringToObject(tree, "correlationData", correlation_data) == NULL)
+			){
+
 		cJSON_Delete(tree);
 		dynsec__command_reply(j_responses, context, "listRoles", "Internal error", correlation_data);
 		return MOSQ_ERR_NOMEM;
 	}
-	cJSON_AddItemToObject(tree, "command", jtmp);
-
-	j_data = cJSON_CreateObject();
-	if(j_data == NULL){
-		cJSON_Delete(tree);
-		dynsec__command_reply(j_responses, context, "listRoles", "Internal error", correlation_data);
-		return MOSQ_ERR_NOMEM;
-	}
-	cJSON_AddItemToObject(tree, "data", j_data);
-
-	cJSON_AddIntToObject(j_data, "totalCount", (int)HASH_CNT(hh, local_roles));
-
-	j_roles = cJSON_CreateArray();
-	if(j_roles == NULL){
-		cJSON_Delete(tree);
-		dynsec__command_reply(j_responses, context, "listRoles", "Internal error", correlation_data);
-		return MOSQ_ERR_NOMEM;
-	}
-	cJSON_AddItemToObject(j_data, "roles", j_roles);
 
 	i = 0;
 	HASH_ITER(hh, local_roles, role, role_tmp){
@@ -577,14 +561,6 @@ int dynsec_roles__process_list(cJSON *j_responses, struct mosquitto *context, cJ
 			}
 		}
 		i++;
-	}
-	if(correlation_data){
-		jtmp = cJSON_AddStringToObject(tree, "correlationData", correlation_data);
-		if(jtmp == NULL){
-			cJSON_Delete(tree);
-			dynsec__command_reply(j_responses, context, "listRoles", "Internal error", correlation_data);
-			return 1;
-		}
 	}
 
 	cJSON_AddItemToArray(j_responses, tree);
@@ -765,7 +741,7 @@ int dynsec_roles__process_get(cJSON *j_responses, struct mosquitto *context, cJS
 {
 	char *rolename;
 	struct dynsec__role *role;
-	cJSON *tree, *j_role, *jtmp, *j_data;
+	cJSON *tree, *j_role, *j_data;
 
 	if(json_get_string(command, "rolename", &rolename, false) != MOSQ_ERR_SUCCESS){
 		dynsec__command_reply(j_responses, context, "getRole", "Invalid/missing rolename", correlation_data);
@@ -788,21 +764,15 @@ int dynsec_roles__process_get(cJSON *j_responses, struct mosquitto *context, cJS
 		return MOSQ_ERR_NOMEM;
 	}
 
-	jtmp = cJSON_CreateString("getRole");
-	if(jtmp == NULL){
-		cJSON_Delete(tree);
-		dynsec__command_reply(j_responses, context, "getRole", "Internal error", correlation_data);
-		return MOSQ_ERR_NOMEM;
-	}
-	cJSON_AddItemToObject(tree, "command", jtmp);
+	if(cJSON_AddStringToObject(tree, "command", "getRole") == NULL
+			|| (j_data = cJSON_AddObjectToObject(tree, "data")) == NULL
+			|| (correlation_data && cJSON_AddStringToObject(tree, "correlationData", correlation_data) == NULL)
+			){
 
-	j_data = cJSON_CreateObject();
-	if(j_data == NULL){
 		cJSON_Delete(tree);
 		dynsec__command_reply(j_responses, context, "getRole", "Internal error", correlation_data);
 		return MOSQ_ERR_NOMEM;
 	}
-	cJSON_AddItemToObject(tree, "data", j_data);
 
 	j_role = add_role_to_json(role, true);
 	if(j_role == NULL){
@@ -811,16 +781,6 @@ int dynsec_roles__process_get(cJSON *j_responses, struct mosquitto *context, cJS
 		return MOSQ_ERR_NOMEM;
 	}
 	cJSON_AddItemToObject(j_data, "role", j_role);
-
-	if(correlation_data){
-		jtmp = cJSON_AddStringToObject(tree, "correlationData", correlation_data);
-		if(jtmp == NULL){
-			cJSON_Delete(tree);
-			dynsec__command_reply(j_responses, context, "getRole", "Internal error", correlation_data);
-			return 1;
-		}
-	}
-
 	cJSON_AddItemToArray(j_responses, tree);
 
 	return MOSQ_ERR_SUCCESS;

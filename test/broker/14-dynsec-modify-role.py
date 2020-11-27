@@ -49,6 +49,20 @@ create_role_response = {'responses': [{'command': 'createRole', 'correlationData
 modify_role_command = { "commands": [{
     "command": "modifyRole", "rolename": "role_one",
     "textname": "Modified name", "textdescription": "Modified description",
+    "acls":[
+        {
+            "acltype": "publishClientReceive",
+            "allow": True,
+            "topic": "topic/#",
+            "priority": 2
+        },
+        {
+            "acltype": "publishClientReceive",
+            "allow": True,
+            "topic": "topic/2/#",
+            "priority": 1
+        }
+    ],
     "correlationData": "3" }]
 }
 modify_role_response = {'responses': [{'command': 'modifyRole', 'correlationData': '3'}]}
@@ -78,16 +92,16 @@ get_role_response2 = {'responses':[{'command': 'getRole', 'data': {'role': {'rol
     'textname': 'Modified name', 'textdescription': 'Modified description',
     'acls': [
         {
-            "acltype": "publishClientSend",
-            "topic": "topic/2/#",
-            "allow": True,
-            "priority": 9
-        },
-        {
-            "acltype": "publishClientSend",
+            "acltype": "publishClientReceive",
             "topic": "topic/#",
             "allow": True,
-            "priority": 8
+            "priority": 2
+        },
+        {
+            "acltype": "publishClientReceive",
+            "topic": "topic/2/#",
+            "allow": True,
+            "priority": 1
         }
     ]}}}]}
 

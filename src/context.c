@@ -2,11 +2,11 @@
 Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
-are made available under the terms of the Eclipse Public License v1.0
+are made available under the terms of the Eclipse Public License 2.0
 and Eclipse Distribution License v1.0 which accompany this distribution.
  
 The Eclipse Public License is available at
-   http://www.eclipse.org/legal/epl-v10.html
+   https://www.eclipse.org/legal/epl-2.0/
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
  
@@ -65,7 +65,6 @@ struct mosquitto *context__init(mosq_sock_t sock)
 	context->in_packet.payload = NULL;
 	packet__cleanup(&context->in_packet);
 	context->out_packet = NULL;
-	context->out_packet_len = 0;
 	context->current_out_packet = NULL;
 
 	context->address = NULL;
@@ -156,7 +155,6 @@ void context__cleanup(struct mosquitto *context, bool force_free)
 		context->out_packet = context->out_packet->next;
 		mosquitto__free(packet);
 	}
-	context->out_packet_len = 0;
 #if defined(WITH_BROKER) && defined(__GLIBC__) && defined(WITH_ADNS)
 	if(context->adns){
 		gai_cancel(context->adns);

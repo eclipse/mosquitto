@@ -2,11 +2,11 @@
 Copyright (c) 2020 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
-are made available under the terms of the Eclipse Public License v1.0
+are made available under the terms of the Eclipse Public License 2.0
 and Eclipse Distribution License v1.0 which accompany this distribution.
 
 The Eclipse Public License is available at
-   http://www.eclipse.org/legal/epl-v10.html
+   https://www.eclipse.org/legal/epl-2.0/
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
 
@@ -167,21 +167,25 @@ int dynsec_rolelist__load_from_json(cJSON *command, struct dynsec__rolelist **ro
 	struct dynsec__role *role;
 
 	j_roles = cJSON_GetObjectItem(command, "roles");
-	if(j_roles && cJSON_IsArray(j_roles)){
-		cJSON_ArrayForEach(j_role, j_roles){
-			j_rolename = cJSON_GetObjectItem(j_role, "rolename");
-			if(j_rolename && cJSON_IsString(j_rolename)){
-				json_get_int(j_role, "priority", &priority, true, -1);
-				role = dynsec_roles__find(j_rolename->valuestring);
-				if(role){
-					dynsec_rolelist__add(rolelist, role, priority);
-				}else{
-					dynsec_rolelist__cleanup(rolelist);
-					return MOSQ_ERR_NOT_FOUND;
+	if(j_roles){
+		if(cJSON_IsArray(j_roles)){
+			cJSON_ArrayForEach(j_role, j_roles){
+				j_rolename = cJSON_GetObjectItem(j_role, "rolename");
+				if(j_rolename && cJSON_IsString(j_rolename)){
+					json_get_int(j_role, "priority", &priority, true, -1);
+					role = dynsec_roles__find(j_rolename->valuestring);
+					if(role){
+						dynsec_rolelist__add(rolelist, role, priority);
+					}else{
+						dynsec_rolelist__cleanup(rolelist);
+						return MOSQ_ERR_NOT_FOUND;
+					}
 				}
 			}
+			return MOSQ_ERR_SUCCESS;
+		}else{
+			return MOSQ_ERR_INVAL;
 		}
-		return MOSQ_ERR_SUCCESS;
 	}else{
 		return ERR_LIST_NOT_FOUND;
 	}

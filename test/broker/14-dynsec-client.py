@@ -50,9 +50,9 @@ list_clients_verbose_response = {'responses':[{"command": "listClients", "data":
 
 
 get_client_command = { "commands": [{
-            "command": "getClient", "username": "user_one"}]}
+    "command": "getClient", "username": "user_one", "correlationData": "42"}]}
 get_client_response = {'responses':[{'command': 'getClient', 'data': {'client': {'username': 'user_one', 'clientid': 'cid',
-            'textname': 'Name', 'textdescription': 'Description', 'groups': [], 'roles': []}}}]}
+    'textname': 'Name', 'textdescription': 'Description', 'groups': [], 'roles': []}}, "correlationData":"42"}]}
 
 set_client_password_command = {"commands": [{
     "command": "setClientPassword", "username": "user_one", "password": "password"}]}

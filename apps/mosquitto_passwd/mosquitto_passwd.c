@@ -2,11 +2,11 @@
 Copyright (c) 2012-2020 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
-are made available under the terms of the Eclipse Public License v1.0
+are made available under the terms of the Eclipse Public License 2.0
 and Eclipse Distribution License v1.0 which accompany this distribution.
  
 The Eclipse Public License is available at
-   http://www.eclipse.org/legal/epl-v10.html
+   https://www.eclipse.org/legal/epl-2.0/
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
  
@@ -125,6 +125,10 @@ int output_new_password(FILE *fptr, const char *username, const char *password, 
 	char *salt64 = NULL, *hash64 = NULL;
 	struct mosquitto_pw pw;
 
+	if(password == NULL){
+		fprintf(stderr, "Error: Internal error, no password given.\n");
+		return 1;
+	}
 	memset(&pw, 0, sizeof(pw));
 
 	pw.hashtype = hashtype;

@@ -189,13 +189,18 @@ tests = [
     (1, './13-malformed-subscribe-v5.py'),
     (1, './13-malformed-unsubscribe-v5.py'),
 
+    (1, './14-dynsec-acl.py'),
+    (1, './14-dynsec-anon-group.py'),
+    (1, './14-dynsec-auth.py'),
     (1, './14-dynsec-client.py'),
+    (1, './14-dynsec-client-invalid.py'),
+    (1, './14-dynsec-default-access.py'),
+    (1, './14-dynsec-disable-client.py'),
     (1, './14-dynsec-group.py'),
-    (1, './14-dynsec-role.py'),
     (1, './14-dynsec-modify-client.py'),
     (1, './14-dynsec-modify-group.py'),
     (1, './14-dynsec-modify-role.py'),
-    (1, './14-dynsec-disable-client.py'),
+    (1, './14-dynsec-role.py'),
     ]
 
 ptest.run_tests(tests)

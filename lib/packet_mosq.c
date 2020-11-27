@@ -2,11 +2,11 @@
 Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
-are made available under the terms of the Eclipse Public License v1.0
+are made available under the terms of the Eclipse Public License 2.0
 and Eclipse Distribution License v1.0 which accompany this distribution.
 
 The Eclipse Public License is available at
-   http://www.eclipse.org/legal/epl-v10.html
+   https://www.eclipse.org/legal/epl-2.0/
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
 
@@ -100,12 +100,9 @@ void packet__cleanup(struct mosquitto__packet *packet)
 }
 
 
-void packet__cleanup_all(struct mosquitto *mosq)
+void packet__cleanup_all_no_locks(struct mosquitto *mosq)
 {
 	struct mosquitto__packet *packet;
-
-	pthread_mutex_lock(&mosq->current_out_packet_mutex);
-	pthread_mutex_lock(&mosq->out_packet_mutex);
 
 	/* Out packet cleanup */
 	if(mosq->out_packet && !mosq->current_out_packet){
@@ -123,9 +120,16 @@ void packet__cleanup_all(struct mosquitto *mosq)
 		packet__cleanup(packet);
 		mosquitto__free(packet);
 	}
-	mosq->out_packet_len = 0;
 
 	packet__cleanup(&mosq->in_packet);
+}
+
+void packet__cleanup_all(struct mosquitto *mosq)
+{
+	pthread_mutex_lock(&mosq->current_out_packet_mutex);
+	pthread_mutex_lock(&mosq->out_packet_mutex);
+
+	packet__cleanup_all_no_locks(mosq);
 
 	pthread_mutex_unlock(&mosq->out_packet_mutex);
 	pthread_mutex_unlock(&mosq->current_out_packet_mutex);
@@ -151,7 +155,6 @@ int packet__queue(struct mosquitto *mosq, struct mosquitto__packet *packet)
 		mosq->out_packet = packet;
 	}
 	mosq->out_packet_last = packet;
-	mosq->out_packet_len++;
 	pthread_mutex_unlock(&mosq->out_packet_mutex);
 #ifdef WITH_BROKER
 #  ifdef WITH_WEBSOCKETS
@@ -215,7 +218,6 @@ int packet__write(struct mosquitto *mosq)
 	if(mosq->out_packet && !mosq->current_out_packet){
 		mosq->current_out_packet = mosq->out_packet;
 		mosq->out_packet = mosq->out_packet->next;
-		mosq->out_packet_len--;
 		if(!mosq->out_packet){
 			mosq->out_packet_last = NULL;
 		}
@@ -297,7 +299,6 @@ int packet__write(struct mosquitto *mosq)
 		mosq->current_out_packet = mosq->out_packet;
 		if(mosq->out_packet){
 			mosq->out_packet = mosq->out_packet->next;
-			mosq->out_packet_len--;
 			if(!mosq->out_packet){
 				mosq->out_packet_last = NULL;
 			}
