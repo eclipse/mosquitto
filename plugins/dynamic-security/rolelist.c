@@ -167,21 +167,25 @@ int dynsec_rolelist__load_from_json(cJSON *command, struct dynsec__rolelist **ro
 	struct dynsec__role *role;
 
 	j_roles = cJSON_GetObjectItem(command, "roles");
-	if(j_roles && cJSON_IsArray(j_roles)){
-		cJSON_ArrayForEach(j_role, j_roles){
-			j_rolename = cJSON_GetObjectItem(j_role, "rolename");
-			if(j_rolename && cJSON_IsString(j_rolename)){
-				json_get_int(j_role, "priority", &priority, true, -1);
-				role = dynsec_roles__find(j_rolename->valuestring);
-				if(role){
-					dynsec_rolelist__add(rolelist, role, priority);
-				}else{
-					dynsec_rolelist__cleanup(rolelist);
-					return MOSQ_ERR_NOT_FOUND;
+	if(j_roles){
+		if(cJSON_IsArray(j_roles)){
+			cJSON_ArrayForEach(j_role, j_roles){
+				j_rolename = cJSON_GetObjectItem(j_role, "rolename");
+				if(j_rolename && cJSON_IsString(j_rolename)){
+					json_get_int(j_role, "priority", &priority, true, -1);
+					role = dynsec_roles__find(j_rolename->valuestring);
+					if(role){
+						dynsec_rolelist__add(rolelist, role, priority);
+					}else{
+						dynsec_rolelist__cleanup(rolelist);
+						return MOSQ_ERR_NOT_FOUND;
+					}
 				}
 			}
+			return MOSQ_ERR_SUCCESS;
+		}else{
+			return MOSQ_ERR_INVAL;
 		}
-		return MOSQ_ERR_SUCCESS;
 	}else{
 		return ERR_LIST_NOT_FOUND;
 	}
