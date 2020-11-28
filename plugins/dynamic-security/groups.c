@@ -778,6 +778,10 @@ int dynsec_groups__process_get(cJSON *j_responses, struct mosquitto *context, cJ
 			return MOSQ_ERR_NOMEM;
 		}
 		cJSON_AddItemToObject(j_data, "group", j_group);
+	}else{
+		cJSON_Delete(tree);
+		dynsec__command_reply(j_responses, context, "getGroup", "Group not found", correlation_data);
+		return MOSQ_ERR_NOMEM;
 	}
 
 	cJSON_AddItemToArray(j_responses, tree);

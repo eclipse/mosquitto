@@ -258,6 +258,10 @@ get_group2_response = {'responses': [{'command': 'getGroup', 'error': 'Invalid/m
 #get_group3_command = { 'commands': [{'command': 'getGroup', 'groupname':5}] }
 #get_group3_response = {'responses': [{'command': 'getGroup', 'error': 'Invalid/missing groupname'}]}
 
+# Group not found
+get_group4_command = { 'commands': [{'command': 'getGroup', 'groupname':"missing"}] }
+get_group4_response = {'responses': [{'command': 'getGroup', 'error': 'Group not found'}]}
+
 # ==========================================================================
 # Set anon group
 # ==========================================================================
@@ -396,6 +400,7 @@ try:
     command_check(sock, get_group1_command, get_group1_response, "1")
     command_check(sock, get_group2_command, get_group2_response, "2")
     #command_check(sock, get_group3_command, get_group3_response, "3")
+    command_check(sock, get_group4_command, get_group4_response, "4")
 
     command_check(sock, set_anon_group1_command, set_anon_group1_response, "1")
     command_check(sock, set_anon_group2_command, set_anon_group2_response, "2")
