@@ -320,27 +320,23 @@ modify_client2_response = {'responses': [{'command': 'modifyClient', 'error': 'I
 
 # roles not a list
 modify_client4_command = { 'commands': [{'command': 'modifyClient', 'username':'user', 'password':'test', 'roles':'string'}]}
-modify_client4_response = {'responses': [{'command': 'modifyClient', 'error': "'roles' not an array"}]}
+modify_client4_response = {'responses': [{'command': 'modifyClient', 'error': "'roles' not an array or missing/invalid rolename"}]}
 
 # No rolename
 modify_client5_command = { 'commands': [{'command': 'modifyClient', 'username':'user', 'roles':[{'rolename':5}]}]}
-modify_client5_response = {'responses': [{'command': 'modifyClient', 'error': 'Invalid/missing rolename'}]}
-
-# rolename not a string
-modify_client6_command = { 'commands': [{'command': 'modifyClient', 'username':'user', 'rolename':5}]}
-modify_client6_response = {'responses': [{'command': 'modifyClient', 'error': 'Invalid/missing rolename'}]}
+modify_client5_response = {'responses': [{'command': 'modifyClient', 'error': "'roles' not an array or missing/invalid rolename"}]}
 
 # rolename not UTF-8
-#modify_client7_command = { 'commands': [{'command': 'modifyClient', 'username':'user'}]}
-#modify_client7_response = {'responses': [{'command': 'modifyClient', 'error': 'Invalid/missing rolename'}]}
+#modify_client6_command = { 'commands': [{'command': 'modifyClient', 'username':'user'}]}
+#modify_client6_response = {'responses': [{'command': 'modifyClient', 'error': 'Invalid/missing rolename'}]}
 
 # Client not found
-modify_client8_command = { 'commands': [{'command': 'modifyClient', 'username':'notfound', 'rolename':'notfound'}]}
-modify_client8_response = {'responses': [{'command': 'modifyClient', 'error': 'Client not found'}]}
+modify_client7_command = { 'commands': [{'command': 'modifyClient', 'username':'notfound', 'rolename':'notfound'}]}
+modify_client7_response = {'responses': [{'command': 'modifyClient', 'error': 'Client not found'}]}
 
 # Role not found
-modify_client9_command = { 'commands': [{'command': 'modifyClient', 'username':'admin', 'rolename':'notfound'}]}
-modify_client9_response = {'responses': [{'command': 'modifyClient', 'error': 'Role not found'}]}
+modify_client8_command = { 'commands': [{'command': 'modifyClient', 'username':'user', 'roles':[{'rolename':'notfound'}]}]}
+modify_client8_response = {'responses': [{'command': 'modifyClient', 'error': 'Role not found'}]}
 
 
 rc = 1
@@ -434,10 +430,10 @@ try:
     command_check(sock, modify_client2_command, modify_client2_response, "2")
     #command_check(sock, modify_client3_command, modify_client3_response, "3")
     command_check(sock, modify_client4_command, modify_client4_response, "4")
-    #command_check(sock, modify_client5_command, modify_client5_response, "5")
+    command_check(sock, modify_client5_command, modify_client5_response, "5")
     #command_check(sock, modify_client6_command, modify_client6_response, "6")
-    #command_check(sock, modify_client7_command, modify_client7_response, "7")
-    #command_check(sock, modify_client8_command, modify_client8_response, "8")
+    command_check(sock, modify_client7_command, modify_client7_response, "7")
+    command_check(sock, modify_client8_command, modify_client8_response, "8")
 
 
     rc = 0

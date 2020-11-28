@@ -180,6 +180,8 @@ int dynsec_rolelist__load_from_json(cJSON *command, struct dynsec__rolelist **ro
 						dynsec_rolelist__cleanup(rolelist);
 						return MOSQ_ERR_NOT_FOUND;
 					}
+				}else{
+					return MOSQ_ERR_INVAL;
 				}
 			}
 			return MOSQ_ERR_SUCCESS;

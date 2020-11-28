@@ -40,8 +40,14 @@ int dynsec_auth__base64_encode(unsigned char *in, int in_len, char **encoded)
 	if(in_len < 0) return 1;
 
 	b64 = BIO_new(BIO_f_base64());
+	if(b64 == NULL) return 1;
+
 	BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
 	bmem = BIO_new(BIO_s_mem());
+	if(bmem == NULL){
+		BIO_free_all(b64);
+		return 1;
+	}
 	b64 = BIO_push(b64, bmem);
 	BIO_write(b64, in, in_len);
 	if(BIO_flush(b64) != 1){
