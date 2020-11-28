@@ -202,6 +202,7 @@ tests = [
     (1, './14-dynsec-modify-group.py'),
     (1, './14-dynsec-modify-role.py'),
     (1, './14-dynsec-role.py'),
+    (1, './14-dynsec-role-invalid.py'),
     ]
 
 ptest.run_tests(tests)

@@ -236,5 +236,6 @@ ifeq ($(WITH_CJSON),yes)
 	./14-dynsec-modify-group.py
 	./14-dynsec-modify-role.py
 	./14-dynsec-role.py
+	./14-dynsec-role-invalid.py
 endif
 endif
