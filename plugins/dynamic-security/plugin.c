@@ -368,22 +368,12 @@ static int dynsec__config_load(void)
 		return 1;
 	}
 
-	if(dynsec__general_config_load(tree)){
-		cJSON_Delete(tree);
-		return 1;
-	}
+	if(dynsec__general_config_load(tree)
+			|| dynsec_roles__config_load(tree)
+			|| dynsec_clients__config_load(tree)
+			|| dynsec_groups__config_load(tree)
+			){
 
-	if(dynsec_roles__config_load(tree)){
-		cJSON_Delete(tree);
-		return 1;
-	}
-
-	if(dynsec_clients__config_load(tree)){
-		cJSON_Delete(tree);
-		return 1;
-	}
-
-	if(dynsec_groups__config_load(tree)){
 		cJSON_Delete(tree);
 		return 1;
 	}
