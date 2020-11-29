@@ -22,7 +22,6 @@ Contributors:
 int json_get_bool(cJSON *json, const char *name, bool *value, bool optional, bool default_value);
 int json_get_int(cJSON *json, const char *name, int *value, bool optional, int default_value);
 int json_get_string(cJSON *json, const char *name, char **value, bool optional);
-double json_get_as_number(const cJSON *json);
 
 cJSON *cJSON_AddIntToObject(cJSON * const object, const char * const name, int number);
 cJSON *cJSON_CreateInt(int num);

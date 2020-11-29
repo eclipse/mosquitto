@@ -91,22 +91,6 @@ int json_get_string(cJSON *json, const char *name, char **value, bool optional)
 }
 
 
-/* Return a number as a number, or attempt to convert a string to a number, or a bool to a number */
-double json_get_as_number(const cJSON *json)
-{
-	char *endptr = NULL;
-
-	if(cJSON_IsNumber(json)){
-		return json->valuedouble;
-	}else if(cJSON_IsString(json)){
-		return strtod(json->valuestring, &endptr);
-	}else if(cJSON_IsBool(json)){
-		return cJSON_IsTrue(json);
-	}else{
-		return 0.0;
-	}
-}
-
 cJSON *cJSON_AddIntToObject(cJSON * const object, const char * const name, int number)
 {
 	char buf[30];
