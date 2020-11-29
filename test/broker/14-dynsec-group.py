@@ -30,7 +30,7 @@ create_client_command = { "commands": [{
             "command": "createClient", "username": "user_one",
             "password": "password", "clientid": "cid",
             "textname": "Name", "textdescription": "Description",
-            "roleName": "", "correlationData": "2" }]}
+            "rolename": "", "correlationData": "2" }]}
 create_client_response = {'responses':[{"command":"createClient","correlationData":"2"}]}
 
 create_group_command = { "commands": [{

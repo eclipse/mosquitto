@@ -78,19 +78,6 @@ static int group_cmp(void *a, void *b)
 }
 
 
-static void group__free_item(struct dynsec__group *group)
-{
-	if(group == NULL) return;
-
-	HASH_DEL(local_groups, group);
-	dynsec__remove_all_clients_from_group(group);
-	mosquitto_free(group->text_name);
-	mosquitto_free(group->text_description);
-	mosquitto_free(group->groupname);
-	dynsec_rolelist__cleanup(&group->rolelist);
-	mosquitto_free(group);
-}
-
 struct dynsec__group *dynsec_groups__find(const char *groupname)
 {
 	struct dynsec__group *group = NULL;
@@ -99,6 +86,24 @@ struct dynsec__group *dynsec_groups__find(const char *groupname)
 		HASH_FIND(hh, local_groups, groupname, strlen(groupname), group);
 	}
 	return group;
+}
+
+static void group__free_item(struct dynsec__group *group)
+{
+	struct dynsec__group *found_group = NULL;
+
+	if(group == NULL) return;
+
+	found_group = dynsec_groups__find(group->groupname);
+	if(found_group){
+		HASH_DEL(local_groups, found_group);
+	}
+	dynsec__remove_all_clients_from_group(group);
+	mosquitto_free(group->text_name);
+	mosquitto_free(group->text_description);
+	mosquitto_free(group->groupname);
+	dynsec_rolelist__cleanup(&group->rolelist);
+	mosquitto_free(group);
 }
 
 int dynsec_groups__process_add_role(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data)
@@ -117,8 +122,8 @@ int dynsec_groups__process_add_role(cJSON *j_responses, struct mosquitto *contex
 		return MOSQ_ERR_INVAL;
 	}
 
-	if(json_get_string(command, "roleName", &rolename, false) != MOSQ_ERR_SUCCESS){
-		dynsec__command_reply(j_responses, context, "addGroupRole", "Invalid/missing roleName", correlation_data);
+	if(json_get_string(command, "rolename", &rolename, false) != MOSQ_ERR_SUCCESS){
+		dynsec__command_reply(j_responses, context, "addGroupRole", "Invalid/missing rolename", correlation_data);
 		return MOSQ_ERR_INVAL;
 	}
 	if(mosquitto_validate_utf8(rolename, (int)strlen(rolename)) != MOSQ_ERR_SUCCESS){
@@ -239,7 +244,7 @@ int dynsec_groups__config_load(cJSON *tree)
 			if(j_roles && cJSON_IsArray(j_roles)){
 				cJSON_ArrayForEach(j_role, j_roles){
 					if(cJSON_IsObject(j_role)){
-						j_rolename = cJSON_GetObjectItem(j_role, "roleName");
+						j_rolename = cJSON_GetObjectItem(j_role, "rolename");
 						if(j_rolename && cJSON_IsString(j_rolename)){
 							json_get_int(j_role, "priority", &priority, true, -1);
 							role = dynsec_roles__find(j_rolename->valuestring);
@@ -773,6 +778,10 @@ int dynsec_groups__process_get(cJSON *j_responses, struct mosquitto *context, cJ
 			return MOSQ_ERR_NOMEM;
 		}
 		cJSON_AddItemToObject(j_data, "group", j_group);
+	}else{
+		cJSON_Delete(tree);
+		dynsec__command_reply(j_responses, context, "getGroup", "Group not found", correlation_data);
+		return MOSQ_ERR_NOMEM;
 	}
 
 	cJSON_AddItemToArray(j_responses, tree);
@@ -796,8 +805,8 @@ int dynsec_groups__process_remove_role(cJSON *j_responses, struct mosquitto *con
 		return MOSQ_ERR_INVAL;
 	}
 
-	if(json_get_string(command, "roleName", &rolename, false) != MOSQ_ERR_SUCCESS){
-		dynsec__command_reply(j_responses, context, "removeGroupRole", "Invalid/missing roleName", correlation_data);
+	if(json_get_string(command, "rolename", &rolename, false) != MOSQ_ERR_SUCCESS){
+		dynsec__command_reply(j_responses, context, "removeGroupRole", "Invalid/missing rolename", correlation_data);
 		return MOSQ_ERR_INVAL;
 	}
 	if(mosquitto_validate_utf8(rolename, (int)strlen(rolename)) != MOSQ_ERR_SUCCESS){
@@ -850,7 +859,7 @@ int dynsec_groups__process_modify(cJSON *j_responses, struct mosquitto *context,
 
 	group = dynsec_groups__find(groupname);
 	if(group == NULL){
-		dynsec__command_reply(j_responses, context, "modifyGroup", "Group does not exist", correlation_data);
+		dynsec__command_reply(j_responses, context, "modifyGroup", "Group not found", correlation_data);
 		return MOSQ_ERR_INVAL;
 	}
 
@@ -878,15 +887,21 @@ int dynsec_groups__process_modify(cJSON *j_responses, struct mosquitto *context,
 	if(rc == MOSQ_ERR_SUCCESS){
 		dynsec_rolelist__cleanup(&group->rolelist);
 		group->rolelist = rolelist;
+	}else if(rc == ERR_LIST_NOT_FOUND){
+		/* There was no list in the JSON, so no modification */
 	}else if(rc == MOSQ_ERR_NOT_FOUND){
 		dynsec__command_reply(j_responses, context, "modifyGroup", "Role not found", correlation_data);
 		dynsec_rolelist__cleanup(&rolelist);
+		group__kick_all(group);
 		return MOSQ_ERR_INVAL;
-	}else if(rc == ERR_LIST_NOT_FOUND){
-		/* There was no list in the JSON, so no modification */
 	}else{
-		dynsec__command_reply(j_responses, context, "modifyGroup", "Internal error", correlation_data);
+		if(rc == MOSQ_ERR_INVAL){
+			dynsec__command_reply(j_responses, context, "modifyGroup", "'roles' not an array or missing/invalid rolename", correlation_data);
+		}else{
+			dynsec__command_reply(j_responses, context, "modifyGroup", "Internal error", correlation_data);
+		}
 		dynsec_rolelist__cleanup(&rolelist);
+		group__kick_all(group);
 		return MOSQ_ERR_INVAL;
 	}
 

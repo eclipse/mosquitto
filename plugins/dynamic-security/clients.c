@@ -427,7 +427,11 @@ int dynsec_clients__process_create(cJSON *j_responses, struct mosquitto *context
 		client__free_item(client);
 		return MOSQ_ERR_INVAL;
 	}else{
-		dynsec__command_reply(j_responses, context, "createClient", "Internal error", correlation_data);
+		if(rc == MOSQ_ERR_INVAL){
+			dynsec__command_reply(j_responses, context, "createClient", "'roles' not an array or missing/invalid rolename", correlation_data);
+		}else{
+			dynsec__command_reply(j_responses, context, "createClient", "Internal error", correlation_data);
+		}
 		client__free_item(client);
 		return MOSQ_ERR_INVAL;
 	}
@@ -703,7 +707,7 @@ int dynsec_clients__process_modify(cJSON *j_responses, struct mosquitto *context
 
 	client = dynsec_clients__find(username);
 	if(client == NULL){
-		dynsec__command_reply(j_responses, context, "modifyClient", "Client does not exist", correlation_data);
+		dynsec__command_reply(j_responses, context, "modifyClient", "Client not found", correlation_data);
 		return MOSQ_ERR_INVAL;
 	}
 
@@ -762,9 +766,14 @@ int dynsec_clients__process_modify(cJSON *j_responses, struct mosquitto *context
 		dynsec_rolelist__cleanup(&rolelist);
 	}else if(rc == ERR_LIST_NOT_FOUND){
 		/* There was no list in the JSON, so no modification */
+	}else if(rc == MOSQ_ERR_NOT_FOUND){
+		dynsec__command_reply(j_responses, context, "modifyClient", "Role not found", correlation_data);
+		dynsec_rolelist__cleanup(&rolelist);
+		mosquitto_kick_client_by_username(username, false);
+		return MOSQ_ERR_INVAL;
 	}else{
 		if(rc == MOSQ_ERR_INVAL){
-			dynsec__command_reply(j_responses, context, "modifyClient", "'roles' not an array", correlation_data);
+			dynsec__command_reply(j_responses, context, "modifyClient", "'roles' not an array or missing/invalid rolename", correlation_data);
 		}else{
 			dynsec__command_reply(j_responses, context, "modifyClient", "Internal error", correlation_data);
 		}
