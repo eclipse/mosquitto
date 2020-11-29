@@ -395,6 +395,8 @@ static int net__try_connect_tcp(const char *host, uint16_t port, mosq_sock_t *so
 	uint32_t val = 1;
 #endif
 
+	ainfo_bind = NULL;
+
 	*sock = INVALID_SOCKET;
 	memset(&hints, 0, sizeof(struct addrinfo));
 	hints.ai_family = AF_UNSPEC;
@@ -919,7 +921,7 @@ int net__socket_connect(struct mosquitto *mosq, const char *host, uint16_t port,
 
 	if(mosq->tcp_nodelay){
 		int flag = 1;
-		if(setsockopt(mosq->sock, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(int)) != 0){
+		if(setsockopt(mosq->sock, IPPROTO_TCP, TCP_NODELAY, (const void*)&flag, sizeof(int)) != 0){
 			log__printf(mosq, MOSQ_LOG_WARNING, "Warning: Unable to set TCP_NODELAY.");
 		}
 	}
