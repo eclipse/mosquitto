@@ -42,6 +42,10 @@ create_group0_response = {'responses': [{'command': 'createGroup'}]}
 create_role0_command = { 'commands': [{'command': 'createRole', 'rolename':'validrole' }] }
 create_role0_response = {'responses': [{'command': 'createRole'}]}
 
+# Add ACL for modifying
+add_role_acl0_command = { 'commands': [{'command': 'addRoleACL', 'rolename':'validrole', 'acltype':'unsubscribePattern', 'topic':'validtopic', 'allow':True }] }
+add_role_acl0_response = {'responses': [{'command': 'addRoleACL'}]}
+
 # ==========================================================================
 # Create role
 # ==========================================================================
@@ -55,8 +59,8 @@ create_role2_command = { 'commands': [{'command': 'createRole', 'rolename':5 }] 
 create_role2_response = {'responses': [{'command': 'createRole', 'error': 'Invalid/missing rolename'}]}
 
 # Rolename not UTF-8
-#create_role3_command = { 'commands': [{'command': 'createRole', 'rolename':5 }] }
-#create_role3_response = {'responses': [{'command': 'createRole', 'error': 'Invalid/missing rolename'}]}
+create_role3_command = { 'commands': [{'command': 'createRole', 'rolename': '￿LO' }] }
+create_role3_response = {'responses': [{'command': 'createRole', 'error': 'Role name not valid UTF-8'}]}
 
 # textname not a string
 create_role4_command = { 'commands': [{'command': 'createRole', 'rolename':'g', 'textname':5 }] }
@@ -87,8 +91,8 @@ delete_role2_command = { 'commands': [{'command': 'deleteRole', 'rolename':5 }] 
 delete_role2_response = {'responses': [{'command': 'deleteRole', 'error': 'Invalid/missing rolename'}]}
 
 # Rolename not UTF-8
-#delete_role3_command = { 'commands': [{'command': 'deleteRole', 'rolename':5 }] }
-#delete_role3_response = {'responses': [{'command': 'deleteRole', 'error': 'Invalid/missing rolename'}]}
+delete_role3_command = { 'commands': [{'command': 'deleteRole', 'rolename': '￿LO' }] }
+delete_role3_response = {'responses': [{'command': 'deleteRole', 'error': 'Role name not valid UTF-8'}]}
 
 # Role not found
 delete_role4_command = { 'commands': [{'command': 'deleteRole', 'rolename': 'role'}]}
@@ -107,8 +111,8 @@ get_role2_command = { 'commands': [{'command': 'getRole', 'rolename':5}] }
 get_role2_response = {'responses': [{'command': 'getRole', 'error': 'Invalid/missing rolename'}]}
 
 # rolename not UTF-8
-#get_role3_command = { 'commands': [{'command': 'getRole', 'rolename':5}] }
-#get_role3_response = {'responses': [{'command': 'getRole', 'error': 'Invalid/missing rolename'}]}
+get_role3_command = { 'commands': [{'command': 'getRole', 'rolename': '￿LO' }] }
+get_role3_response = {'responses': [{'command': 'getRole', 'error': 'Role name not valid UTF-8'}]}
 
 # role not found
 get_role4_command = { 'commands': [{'command': 'getRole', 'rolename':"notfound"}] }
@@ -116,44 +120,109 @@ get_role4_response = {'responses': [{'command': 'getRole', 'error': 'Role not fo
 
 
 # ==========================================================================
-# Modify group
+# Add role ACL
+# ==========================================================================
+
+add_role_acl1_command = { 'commands': [{'command': 'addRoleACL'}]}
+add_role_acl1_response = {'responses': [{'command': 'addRoleACL', 'error': 'Invalid/missing rolename'}]}
+
+add_role_acl2_command = { 'commands': [{'command': 'addRoleACL', 'rolename':5}]}
+add_role_acl2_response = {'responses': [{'command': 'addRoleACL', 'error': 'Invalid/missing rolename'}]}
+
+add_role_acl3_command = { 'commands': [{'command': 'addRoleACL', 'rolename': '￿LO' }] }
+add_role_acl3_response = {'responses': [{'command': 'addRoleACL', 'error': 'Role name not valid UTF-8'}]}
+
+add_role_acl4_command = { 'commands': [{'command': 'addRoleACL', 'rolename': 'notvalid' }] }
+add_role_acl4_response = {'responses': [{'command': 'addRoleACL', 'error': 'Role not found'}]}
+
+add_role_acl5_command = { 'commands': [{'command': 'addRoleACL', 'rolename': 'validrole' }] }
+add_role_acl5_response = {'responses': [{'command': 'addRoleACL', 'error': 'Invalid/missing acltype'}]}
+
+add_role_acl6_command = { 'commands': [{'command': 'addRoleACL', 'rolename': 'validrole', 'acltype':'notvalid' }] }
+add_role_acl6_response = {'responses': [{'command': 'addRoleACL', 'error': 'Unknown acltype'}]}
+
+add_role_acl7_command = { 'commands': [{'command': 'addRoleACL', 'rolename': 'validrole', 'acltype':'unsubscribePattern' }] }
+add_role_acl7_response = {'responses': [{'command': 'addRoleACL', 'error': 'Invalid/missing topic'}]}
+
+add_role_acl8_command = { 'commands': [{'command': 'addRoleACL', 'rolename': 'validrole', 'acltype':'unsubscribePattern', 'topic':5 }] }
+add_role_acl8_response = {'responses': [{'command': 'addRoleACL', 'error': 'Invalid/missing topic'}]}
+
+add_role_acl9_command = { 'commands': [{'command': 'addRoleACL', 'rolename': 'validrole', 'acltype':'unsubscribePattern', 'topic':'￿LO' }] }
+add_role_acl9_response = {'responses': [{'command': 'addRoleACL', 'error': 'Topic not valid UTF-8'}]}
+
+
+# ==========================================================================
+# Remove role ACL
+# ==========================================================================
+
+remove_role_acl1_command = { 'commands': [{'command': 'removeRoleACL'}]}
+remove_role_acl1_response = {'responses': [{'command': 'removeRoleACL', 'error': 'Invalid/missing rolename'}]}
+
+remove_role_acl2_command = { 'commands': [{'command': 'removeRoleACL', 'rolename':5}]}
+remove_role_acl2_response = {'responses': [{'command': 'removeRoleACL', 'error': 'Invalid/missing rolename'}]}
+
+remove_role_acl3_command = { 'commands': [{'command': 'removeRoleACL', 'rolename': '￿LO' }] }
+remove_role_acl3_response = {'responses': [{'command': 'removeRoleACL', 'error': 'Role name not valid UTF-8'}]}
+
+remove_role_acl4_command = { 'commands': [{'command': 'removeRoleACL', 'rolename': 'notvalid' }] }
+remove_role_acl4_response = {'responses': [{'command': 'removeRoleACL', 'error': 'Role not found'}]}
+
+remove_role_acl5_command = { 'commands': [{'command': 'removeRoleACL', 'rolename': 'validrole' }] }
+remove_role_acl5_response = {'responses': [{'command': 'removeRoleACL', 'error': 'Invalid/missing acltype'}]}
+
+remove_role_acl6_command = { 'commands': [{'command': 'removeRoleACL', 'rolename': 'validrole', 'acltype':'notvalid' }] }
+remove_role_acl6_response = {'responses': [{'command': 'removeRoleACL', 'error': 'Unknown acltype'}]}
+
+remove_role_acl7_command = { 'commands': [{'command': 'removeRoleACL', 'rolename': 'validrole', 'acltype':'unsubscribePattern' }] }
+remove_role_acl7_response = {'responses': [{'command': 'removeRoleACL', 'error': 'Invalid/missing topic'}]}
+
+remove_role_acl8_command = { 'commands': [{'command': 'removeRoleACL', 'rolename': 'validrole', 'acltype':'unsubscribePattern', 'topic':5 }] }
+remove_role_acl8_response = {'responses': [{'command': 'removeRoleACL', 'error': 'Invalid/missing topic'}]}
+
+remove_role_acl9_command = { 'commands': [{'command': 'removeRoleACL', 'rolename': 'validrole', 'acltype':'unsubscribePattern', 'topic':'￿LO' }] }
+remove_role_acl9_response = {'responses': [{'command': 'removeRoleACL', 'error': 'Topic not valid UTF-8'}]}
+
+
+# ==========================================================================
+# Modify role
 # ==========================================================================
 
 # No groupname
-modify_group1_command = { 'commands': [{'command': 'modifyGroup'}]}
-modify_group1_response = {'responses': [{'command': 'modifyGroup', 'error': 'Invalid/missing groupname'}]}
+modify_group1_command = { 'commands': [{'command': 'modifyRole'}]}
+modify_group1_response = {'responses': [{'command': 'modifyRole', 'error': 'Invalid/missing groupname'}]}
 
 # Username not a string
-modify_group2_command = { 'commands': [{'command': 'modifyGroup', 'groupname':5}]}
-modify_group2_response = {'responses': [{'command': 'modifyGroup', 'error': 'Invalid/missing groupname'}]}
+modify_group2_command = { 'commands': [{'command': 'modifyRole', 'groupname':5}]}
+modify_group2_response = {'responses': [{'command': 'modifyRole', 'error': 'Invalid/missing groupname'}]}
 
 # Username not UTF-8
-#modify_group3_command = { 'commands': [{'command': 'modifyGroup', 'groupname':5}]}
-#modify_group3_response = {'responses': [{'command': 'modifyGroup', 'error': 'Invalid/missing groupname'}]}
+modify_group3_command = { 'commands': [{'command': 'modifyRole', 'rolename': '￿LO' }] }
+modify_group3_response = {'responses': [{'command': 'modifyRole', 'error': 'Role name not valid UTF-8'}]}
 
 # roles not a list
-modify_group4_command = { 'commands': [{'command': 'modifyGroup', 'groupname':'validgroup', 'password':'test', 'roles':'string'}]}
-modify_group4_response = {'responses': [{'command': 'modifyGroup', 'error': "'roles' not an array or missing/invalid rolename"}]}
+modify_group4_command = { 'commands': [{'command': 'modifyRole', 'groupname':'validgroup', 'password':'test', 'roles':'string'}]}
+modify_group4_response = {'responses': [{'command': 'modifyRole', 'error': "'roles' not an array or missing/invalid rolename"}]}
 
 # No rolename
-modify_group5_command = { 'commands': [{'command': 'modifyGroup', 'groupname':'validgroup', 'roles':[{}]}]}
-modify_group5_response = {'responses': [{'command': 'modifyGroup', 'error': "'roles' not an array or missing/invalid rolename"}]}
+modify_group5_command = { 'commands': [{'command': 'modifyRole', 'groupname':'validgroup', 'roles':[{}]}]}
+modify_group5_response = {'responses': [{'command': 'modifyRole', 'error': "'roles' not an array or missing/invalid rolename"}]}
 
 # rolename not a string
-modify_group6_command = { 'commands': [{'command': 'modifyGroup', 'groupname':'validgroup', 'roles':[{'rolename':5}]}]}
-modify_group6_response = {'responses': [{'command': 'modifyGroup', 'error': "'roles' not an array or missing/invalid rolename"}]}
+modify_group6_command = { 'commands': [{'command': 'modifyRole', 'groupname':'validgroup', 'roles':[{'rolename':5}]}]}
+modify_group6_response = {'responses': [{'command': 'modifyRole', 'error': "'roles' not an array or missing/invalid rolename"}]}
 
 # rolename not UTF-8
-#modify_group7_command = { 'commands': [{'command': 'modifyGroup', 'groupname':'validgroup'}]}
-#modify_group7_response = {'responses': [{'command': 'modifyGroup', 'error': 'Invalid/missing rolename'}]}
-
-# Group not found
-modify_group8_command = { 'commands': [{'command': 'modifyGroup', 'groupname':'notfound', 'rolename':'notfound'}]}
-modify_group8_response = {'responses': [{'command': 'modifyGroup', 'error': 'Group not found'}]}
+modify_group3_command = { 'commands': [{'command': 'modifyRole', 'rolename': '￿LO' }] }
+#modify_group7_command = { 'commands': [{'command': 'modifyRole', 'groupname':'validgroup'}]}
+#modify_group7_response = {'responses': [{'command': 'modifyRole', 'error': 'Invalid/missing rolename'}]}
 
 # Role not found
-modify_group9_command = { 'commands': [{'command': 'modifyGroup', 'groupname':'validgroup', 'roles':[{'rolename':'notfound'}]}]}
-modify_group9_response = {'responses': [{'command': 'modifyGroup', 'error': 'Role not found'}]}
+modify_group8_command = { 'commands': [{'command': 'modifyRole', 'groupname':'notfound', 'rolename':'notfound'}]}
+modify_group8_response = {'responses': [{'command': 'modifyRole', 'error': 'Role not found'}]}
+
+# Role not found
+modify_group9_command = { 'commands': [{'command': 'modifyRole', 'groupname':'validgroup', 'roles':[{'rolename':'notfound'}]}]}
+modify_group9_response = {'responses': [{'command': 'modifyRole', 'error': 'Role not found'}]}
 
 
 rc = 1
@@ -180,10 +249,11 @@ try:
     command_check(sock, create_client0_command, create_client0_response, "0")
     command_check(sock, create_group0_command, create_group0_response, "0")
     command_check(sock, create_role0_command, create_role0_response, "0")
+    command_check(sock, add_role_acl0_command, add_role_acl0_response, "0")
 
     command_check(sock, create_role1_command, create_role1_response, "1")
     command_check(sock, create_role2_command, create_role2_response, "2")
-    #command_check(sock, create_role3_command, create_role3_response, "3")
+    command_check(sock, create_role3_command, create_role3_response, "3")
     command_check(sock, create_role4_command, create_role4_response, "4")
     command_check(sock, create_role5_command, create_role5_response, "5")
     command_check(sock, create_role6_command, create_role6_response, "6")
@@ -191,13 +261,33 @@ try:
 
     command_check(sock, delete_role1_command, delete_role1_response, "1")
     command_check(sock, delete_role2_command, delete_role2_response, "2")
-    #command_check(sock, delete_role3_command, delete_role3_response, "3")
+    command_check(sock, delete_role3_command, delete_role3_response, "3")
     command_check(sock, delete_role4_command, delete_role4_response, "4")
 
     command_check(sock, get_role1_command, get_role1_response, "1")
     command_check(sock, get_role2_command, get_role2_response, "2")
-    #command_check(sock, get_role3_command, get_role3_response, "3")
+    command_check(sock, get_role3_command, get_role3_response, "3")
     command_check(sock, get_role4_command, get_role4_response, "4")
+
+    command_check(sock, add_role_acl1_command, add_role_acl1_response, "1")
+    command_check(sock, add_role_acl2_command, add_role_acl2_response, "2")
+    command_check(sock, add_role_acl3_command, add_role_acl3_response, "3")
+    command_check(sock, add_role_acl4_command, add_role_acl4_response, "4")
+    command_check(sock, add_role_acl5_command, add_role_acl5_response, "5")
+    command_check(sock, add_role_acl6_command, add_role_acl6_response, "6")
+    command_check(sock, add_role_acl7_command, add_role_acl7_response, "7")
+    command_check(sock, add_role_acl8_command, add_role_acl8_response, "8")
+    command_check(sock, add_role_acl9_command, add_role_acl9_response, "9")
+
+    command_check(sock, remove_role_acl1_command, remove_role_acl1_response, "1")
+    command_check(sock, remove_role_acl2_command, remove_role_acl2_response, "2")
+    command_check(sock, remove_role_acl3_command, remove_role_acl3_response, "3")
+    command_check(sock, remove_role_acl4_command, remove_role_acl4_response, "4")
+    command_check(sock, remove_role_acl5_command, remove_role_acl5_response, "5")
+    command_check(sock, remove_role_acl6_command, remove_role_acl6_response, "6")
+    command_check(sock, remove_role_acl7_command, remove_role_acl7_response, "7")
+    command_check(sock, remove_role_acl8_command, remove_role_acl8_response, "8")
+    command_check(sock, remove_role_acl9_command, remove_role_acl9_response, "9")
 
     #command_check(sock, modify_role1_command, modify_role1_response, "1")
     #command_check(sock, modify_role2_command, modify_role2_response, "2")

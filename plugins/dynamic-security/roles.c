@@ -617,11 +617,12 @@ int dynsec_roles__process_add_acl(cJSON *j_responses, struct mosquitto *context,
 
 	jtmp = cJSON_GetObjectItem(command, "topic");
 	if(jtmp && cJSON_IsString(jtmp)){
-		rc = mosquitto_sub_topic_check(jtmp->valuestring);
-		if(rc == MOSQ_ERR_INVAL){
-			dynsec__command_reply(j_responses, context, "addRoleACL", "ACL topic not valid UTF-8", correlation_data);
+		if(mosquitto_validate_utf8(jtmp->valuestring, (int)strlen(jtmp->valuestring)) != MOSQ_ERR_SUCCESS){
+			dynsec__command_reply(j_responses, context, "addRoleACL", "Topic not valid UTF-8", correlation_data);
 			return MOSQ_ERR_INVAL;
-		}else if(rc == MOSQ_ERR_MALFORMED_UTF8){
+		}
+		rc = mosquitto_sub_topic_check(jtmp->valuestring);
+		if(rc != MOSQ_ERR_SUCCESS){
 			dynsec__command_reply(j_responses, context, "addRoleACL", "Invalid ACL topic", correlation_data);
 			return MOSQ_ERR_INVAL;
 		}
@@ -713,11 +714,12 @@ int dynsec_roles__process_remove_acl(cJSON *j_responses, struct mosquitto *conte
 		dynsec__command_reply(j_responses, context, "removeRoleACL", "Invalid/missing topic", correlation_data);
 		return MOSQ_ERR_SUCCESS;
 	}
-	rc = mosquitto_sub_topic_check(jtmp->valuestring);
-	if(rc == MOSQ_ERR_INVAL){
-		dynsec__command_reply(j_responses, context, "removeRoleACL", "ACL topic not valid UTF-8", correlation_data);
+	if(mosquitto_validate_utf8(topic, (int)strlen(topic)) != MOSQ_ERR_SUCCESS){
+		dynsec__command_reply(j_responses, context, "removeRoleACL", "Topic not valid UTF-8", correlation_data);
 		return MOSQ_ERR_INVAL;
-	}else if(rc == MOSQ_ERR_MALFORMED_UTF8){
+	}
+	rc = mosquitto_sub_topic_check(topic);
+	if(rc != MOSQ_ERR_SUCCESS){
 		dynsec__command_reply(j_responses, context, "removeRoleACL", "Invalid ACL topic", correlation_data);
 		return MOSQ_ERR_INVAL;
 	}

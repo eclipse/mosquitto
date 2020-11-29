@@ -43,8 +43,8 @@ create_client2_command = { 'commands': [{'command': 'createClient', 'username': 
 create_client2_response = {'responses': [{'command': 'createClient', 'error': 'Invalid/missing username'}]}
 
 # Username not UTF-8
-#create_client3_command = { 'commands': [{'command': 'createClient', 'username':  }] }
-#create_client3_response = {'responses': [{'command': 'createClient', 'error': 'Invalid/missing username'}]}
+create_client3_command = { 'commands': [{'command': 'createClient', 'username': '￿LO' }] }
+create_client3_response = {'responses': [{'command': 'createClient', 'error': 'Username not valid UTF-8'}]}
 
 # Password not a string
 create_client4_command = { 'commands': [{'command': 'createClient', 'username': 'user', 'password':5 }] }
@@ -54,25 +54,29 @@ create_client4_response = {'responses': [{'command': 'createClient', 'error': 'I
 create_client5_command = { 'commands': [{'command': 'createClient', 'username': 'user', 'password':'5', 'clientid':5}] }
 create_client5_response = {'responses': [{'command': 'createClient', 'error': 'Invalid/missing client id'}]}
 
+# Client id not UTF-8
+create_client6_command = { 'commands': [{'command': 'createClient', 'username': 'user', 'clientid':'￿LO' }] }
+create_client6_response = {'responses': [{'command': 'createClient', 'error': 'Client ID not valid UTF-8'}]}
+
 # Text name not a string
-create_client6_command = { 'commands': [{'command': 'createClient', 'username': 'user', 'password':'5', 'textname':5}] }
-create_client6_response = {'responses': [{'command': 'createClient', 'error': 'Invalid/missing textname'}]}
+create_client7_command = { 'commands': [{'command': 'createClient', 'username': 'user', 'password':'5', 'textname':5}] }
+create_client7_response = {'responses': [{'command': 'createClient', 'error': 'Invalid/missing textname'}]}
 
 # Text description not a string
-create_client7_command = { 'commands': [{'command': 'createClient', 'username': 'user', 'password':'5', 'textdescription':5}] }
-create_client7_response = {'responses': [{'command': 'createClient', 'error': 'Invalid/missing textdescription'}]}
+create_client8_command = { 'commands': [{'command': 'createClient', 'username': 'user', 'password':'5', 'textdescription':5}] }
+create_client8_response = {'responses': [{'command': 'createClient', 'error': 'Invalid/missing textdescription'}]}
 
 # Client already exists
-create_client8_command = { 'commands': [{'command': 'createClient', 'username': 'admin', 'password':'5'}]}
-create_client8_response = {'responses': [{'command': 'createClient', 'error': 'Client already exists'}]}
+create_client9_command = { 'commands': [{'command': 'createClient', 'username': 'admin', 'password':'5'}]}
+create_client9_response = {'responses': [{'command': 'createClient', 'error': 'Client already exists'}]}
 
 # Role not found
-create_client9_command = { 'commands': [{'command': 'createClient', 'username': 'user', 'password':'5', 'roles':[{'rolename':'notfound'}]}] }
-create_client9_response = {'responses': [{'command': 'createClient', 'error': 'Role not found'}]}
+create_client10_command = { 'commands': [{'command': 'createClient', 'username': 'user', 'password':'5', 'roles':[{'rolename':'notfound'}]}] }
+create_client10_response = {'responses': [{'command': 'createClient', 'error': 'Role not found'}]}
 
 # Group not found
-create_client10_command = { 'commands': [{'command': 'createClient', 'username': 'user', 'password':'5', 'groups':[{'groupname':'notfound'}]}] }
-create_client10_response = {'responses': [{'command': 'createClient', 'error': 'Group not found'}]}
+create_client11_command = { 'commands': [{'command': 'createClient', 'username': 'user', 'password':'5', 'groups':[{'groupname':'notfound'}]}] }
+create_client11_response = {'responses': [{'command': 'createClient', 'error': 'Group not found'}]}
 
 
 # ==========================================================================
@@ -88,8 +92,8 @@ delete_client2_command = { 'commands': [{'command': 'deleteClient', 'username':5
 delete_client2_response = {'responses': [{'command': 'deleteClient', 'error': 'Invalid/missing username'}]}
 
 # Username not UTF-8
-#delete_client3_command = { 'commands': [{'command': 'deleteClient', 'username':5}]}
-#delete_client3_response = {'responses': [{'command': 'deleteClient', 'error': 'Invalid/missing username'}]}
+delete_client3_command = { 'commands': [{'command': 'deleteClient', 'username': '￿LO' }] }
+delete_client3_response = {'responses': [{'command': 'deleteClient', 'error': 'Username not valid UTF-8'}]}
 
 # Client not found
 delete_client4_command = { 'commands': [{'command': 'deleteClient', 'username':'notfound'}]}
@@ -108,8 +112,8 @@ disable_client2_command = { 'commands': [{'command': 'disableClient', 'username'
 disable_client2_response = {'responses': [{'command': 'disableClient', 'error': 'Invalid/missing username'}]}
 
 # Username not UTF-8
-#disable_client3_command = { 'commands': [{'command': 'disableClient', 'username':5}]}
-#disable_client3_response = {'responses': [{'command': 'disableClient', 'error': 'Invalid/missing username'}]}
+disable_client3_command = { 'commands': [{'command': 'disableClient', 'username': '￿LO' }] }
+disable_client3_response = {'responses': [{'command': 'disableClient', 'error': 'Username not valid UTF-8'}]}
 
 # Client not found
 disable_client4_command = { 'commands': [{'command': 'disableClient', 'username':'notfound'}]}
@@ -129,8 +133,8 @@ enable_client2_command = { 'commands': [{'command': 'enableClient', 'username':5
 enable_client2_response = {'responses': [{'command': 'enableClient', 'error': 'Invalid/missing username'}]}
 
 # Username not UTF-8
-#enable_client3_command = { 'commands': [{'command': 'enableClient', 'username':5}]}
-#enable_client3_response = {'responses': [{'command': 'enableClient', 'error': 'Invalid/missing username'}]}
+enable_client3_command = { 'commands': [{'command': 'enableClient', 'username': '￿LO' }] }
+enable_client3_response = {'responses': [{'command': 'enableClient', 'error': 'Username not valid UTF-8'}]}
 
 # Client not found
 enable_client4_command = { 'commands': [{'command': 'enableClient', 'username':'notfound'}]}
@@ -150,8 +154,8 @@ set_client_id2_command = { 'commands': [{'command': 'setClientId', 'username':5}
 set_client_id2_response = {'responses': [{'command': 'setClientId', 'error': 'Invalid/missing username'}]}
 
 # Username not UTF-8
-#set_client_id3_command = { 'commands': [{'command': 'setClientId', 'username':5}]}
-#set_client_id3_response = {'responses': [{'command': 'setClientId', 'error': 'Invalid/missing username'}]}
+set_client_id3_command = { 'commands': [{'command': 'setClientId', 'username': '￿LO' }] }
+set_client_id3_response = {'responses': [{'command': 'setClientId', 'error': 'Username not valid UTF-8'}]}
 
 # No client id
 set_client_id4_command = { 'commands': [{'command': 'setClientId', 'username':'user'}]}
@@ -162,8 +166,8 @@ set_client_id5_command = { 'commands': [{'command': 'setClientId', 'username':'u
 set_client_id5_response = {'responses': [{'command': 'setClientId', 'error': 'Invalid/missing client ID'}]}
 
 # Client id not UTF-8
-#set_client_id6_command = { 'commands': [{'command': 'setClientPassword', 'username':'user', 'clientid':5}]}
-#set_client_id6_response = {'responses': [{'command': 'setClientPassword', 'error': 'Invalid/missing clientid'}]}
+set_client_id6_command = { 'commands': [{'command': 'setClientId', 'username':'user', 'clientid': '￿LO' }] }
+set_client_id6_response = {'responses': [{'command': 'setClientId', 'error': 'Client ID not valid UTF-8'}]}
 
 # Client not found
 set_client_id7_command = { 'commands': [{'command': 'setClientId', 'username':'notfound', 'clientid':'newid'}]}
@@ -183,8 +187,8 @@ set_password2_command = { 'commands': [{'command': 'setClientPassword', 'usernam
 set_password2_response = {'responses': [{'command': 'setClientPassword', 'error': 'Invalid/missing username'}]}
 
 # Username not UTF-8
-#set_password3_command = { 'commands': [{'command': 'setClientPassword', 'username':5}]}
-#set_password3_response = {'responses': [{'command': 'setClientPassword', 'error': 'Invalid/missing username'}]}
+set_password3_command = { 'commands': [{'command': 'setClientPassword', 'username':'￿LO' }] }
+set_password3_response = {'responses': [{'command': 'setClientPassword', 'error': 'Username not valid UTF-8'}]}
 
 # No password
 set_password4_command = { 'commands': [{'command': 'setClientPassword', 'username':'user'}]}
@@ -216,8 +220,8 @@ get_client2_command = { 'commands': [{'command': 'getClient', 'username':5}]}
 get_client2_response = {'responses': [{'command': 'getClient', 'error': 'Invalid/missing username'}]}
 
 # Username not UTF-8
-#get_client3_command = { 'commands': [{'command': 'getClient', 'username':5}]}
-#get_client3_response = {'responses': [{'command': 'getClient', 'error': 'Invalid/missing username'}]}
+get_client3_command = { 'commands': [{'command': 'getClient', 'username':'￿LO' }] }
+get_client3_response = {'responses': [{'command': 'getClient', 'error': 'Username not valid UTF-8'}]}
 
 # Client not found
 get_client4_command = { 'commands': [{'command': 'getClient', 'username':'notfound'}]}
@@ -237,8 +241,8 @@ add_role2_command = { 'commands': [{'command': 'addClientRole', 'username':5}]}
 add_role2_response = {'responses': [{'command': 'addClientRole', 'error': 'Invalid/missing username'}]}
 
 # Username not UTF-8
-#add_role3_command = { 'commands': [{'command': 'addClientRole', 'username':5}]}
-#add_role3_response = {'responses': [{'command': 'addClientRole', 'error': 'Invalid/missing username'}]}
+add_role3_command = { 'commands': [{'command': 'addClientRole', 'username':'￿LO' }] }
+add_role3_response = {'responses': [{'command': 'addClientRole', 'error': 'Username not valid UTF-8'}]}
 
 # No rolename
 add_role4_command = { 'commands': [{'command': 'addClientRole', 'username':'user'}]}
@@ -249,8 +253,8 @@ add_role5_command = { 'commands': [{'command': 'addClientRole', 'username':'user
 add_role5_response = {'responses': [{'command': 'addClientRole', 'error': 'Invalid/missing rolename'}]}
 
 # rolename not UTF-8
-#add_role6_command = { 'commands': [{'command': 'addClientRole', 'username':'user'}]}
-#add_role6_response = {'responses': [{'command': 'addClientRole', 'error': 'Invalid/missing rolename'}]}
+add_role6_command = { 'commands': [{'command': 'addClientRole', 'username':'user', 'rolename':'￿LO' }] }
+add_role6_response = {'responses': [{'command': 'addClientRole', 'error': 'Role name not valid UTF-8'}]}
 
 # Client not found
 add_role7_command = { 'commands': [{'command': 'addClientRole', 'username':'notfound', 'rolename':'notfound'}]}
@@ -274,8 +278,8 @@ remove_role2_command = { 'commands': [{'command': 'removeClientRole', 'username'
 remove_role2_response = {'responses': [{'command': 'removeClientRole', 'error': 'Invalid/missing username'}]}
 
 # Username not UTF-8
-#remove_role3_command = { 'commands': [{'command': 'removeClientRole', 'username':5}]}
-#remove_role3_response = {'responses': [{'command': 'removeClientRole', 'error': 'Invalid/missing username'}]}
+remove_role3_command = { 'commands': [{'command': 'removeClientRole', 'username':'￿LO' }] }
+remove_role3_response = {'responses': [{'command': 'removeClientRole', 'error': 'Username not valid UTF-8'}]}
 
 # No rolename
 remove_role4_command = { 'commands': [{'command': 'removeClientRole', 'username':'user'}]}
@@ -286,8 +290,8 @@ remove_role5_command = { 'commands': [{'command': 'removeClientRole', 'username'
 remove_role5_response = {'responses': [{'command': 'removeClientRole', 'error': 'Invalid/missing rolename'}]}
 
 # rolename not UTF-8
-#remove_role6_command = { 'commands': [{'command': 'removeClientRole', 'username':'user'}]}
-#remove_role6_response = {'responses': [{'command': 'removeClientRole', 'error': 'Invalid/missing rolename'}]}
+remove_role6_command = { 'commands': [{'command': 'removeClientRole', 'username':'user', 'rolename':'￿LO' }] }
+remove_role6_response = {'responses': [{'command': 'removeClientRole', 'error': 'Role name not valid UTF-8'}]}
 
 # Client not found
 remove_role7_command = { 'commands': [{'command': 'removeClientRole', 'username':'notfound', 'rolename':'notfound'}]}
@@ -315,8 +319,8 @@ modify_client2_command = { 'commands': [{'command': 'modifyClient', 'username':5
 modify_client2_response = {'responses': [{'command': 'modifyClient', 'error': 'Invalid/missing username'}]}
 
 # Username not UTF-8
-#modify_client3_command = { 'commands': [{'command': 'modifyClient', 'username':5}]}
-#modify_client3_response = {'responses': [{'command': 'modifyClient', 'error': 'Invalid/missing username'}]}
+modify_client3_command = { 'commands': [{'command': 'modifyClient', 'username':'￿LO' }] }
+modify_client3_response = {'responses': [{'command': 'modifyClient', 'error': 'Username not valid UTF-8'}]}
 
 # roles not a list
 modify_client4_command = { 'commands': [{'command': 'modifyClient', 'username':'user', 'password':'test', 'roles':'string'}]}
@@ -327,8 +331,8 @@ modify_client5_command = { 'commands': [{'command': 'modifyClient', 'username':'
 modify_client5_response = {'responses': [{'command': 'modifyClient', 'error': "'roles' not an array or missing/invalid rolename"}]}
 
 # rolename not UTF-8
-#modify_client6_command = { 'commands': [{'command': 'modifyClient', 'username':'user'}]}
-#modify_client6_response = {'responses': [{'command': 'modifyClient', 'error': 'Invalid/missing rolename'}]}
+#modify_client6_command = { 'commands': [{'command': 'modifyClient', 'username':'user', 'rolename':'￿LO' }] }
+#modify_client6_response = {'responses': [{'command': 'modifyClient', 'error': 'Username not valid UTF-8'}]}
 
 # Client not found
 modify_client7_command = { 'commands': [{'command': 'modifyClient', 'username':'notfound', 'rolename':'notfound'}]}
@@ -362,7 +366,7 @@ try:
 
     command_check(sock, create_client1_command, create_client1_response, "1")
     command_check(sock, create_client2_command, create_client2_response, "2")
-    #command_check(sock, create_client3_command, create_client3_response, "3")
+    command_check(sock, create_client3_command, create_client3_response, "3")
     command_check(sock, create_client4_command, create_client4_response, "4")
     command_check(sock, create_client5_command, create_client5_response, "5")
     command_check(sock, create_client6_command, create_client6_response, "6")
@@ -370,6 +374,7 @@ try:
     command_check(sock, create_client8_command, create_client8_response, "8")
     command_check(sock, create_client9_command, create_client9_response, "9")
     command_check(sock, create_client10_command, create_client10_response, "10")
+    command_check(sock, create_client11_command, create_client11_response, "11")
 
     command_check(sock, delete_client1_command, delete_client1_response, "1")
     command_check(sock, delete_client2_command, delete_client2_response, "2")
@@ -378,25 +383,25 @@ try:
 
     command_check(sock, disable_client1_command, disable_client1_response, "1")
     command_check(sock, disable_client2_command, disable_client2_response, "2")
-    #command_check(sock, disable_client3_command, disable_client3_response, "3")
+    command_check(sock, disable_client3_command, disable_client3_response, "3")
     command_check(sock, disable_client4_command, disable_client4_response, "4")
 
     command_check(sock, enable_client1_command, enable_client1_response, "1")
     command_check(sock, enable_client2_command, enable_client2_response, "2")
-    #command_check(sock, enable_client3_command, enable_client3_response, "3")
+    command_check(sock, enable_client3_command, enable_client3_response, "3")
     command_check(sock, enable_client4_command, enable_client4_response, "4")
 
     command_check(sock, set_client_id1_command, set_client_id1_response, "1")
     command_check(sock, set_client_id2_command, set_client_id2_response, "2")
-    #command_check(sock, set_client_id3_command, set_client_id3_response, "3")
+    command_check(sock, set_client_id3_command, set_client_id3_response, "3")
     command_check(sock, set_client_id4_command, set_client_id4_response, "4")
     command_check(sock, set_client_id5_command, set_client_id5_response, "5")
-    #command_check(sock, set_client_id6_command, set_client_id6_response, "6")
+    command_check(sock, set_client_id6_command, set_client_id6_response, "6")
     command_check(sock, set_client_id7_command, set_client_id7_response, "7")
 
     command_check(sock, set_password1_command, set_password1_response, "1")
     command_check(sock, set_password2_command, set_password2_response, "2")
-    #command_check(sock, set_password3_command, set_password3_response, "3")
+    command_check(sock, set_password3_command, set_password3_response, "3")
     command_check(sock, set_password4_command, set_password4_response, "4")
     command_check(sock, set_password5_command, set_password5_response, "5")
     command_check(sock, set_password6_command, set_password6_response, "6")
@@ -404,31 +409,31 @@ try:
 
     command_check(sock, get_client1_command, get_client1_response, "1")
     command_check(sock, get_client2_command, get_client2_response, "2")
-    #command_check(sock, get_client3_command, get_client3_response, "3")
+    command_check(sock, get_client3_command, get_client3_response, "3")
     command_check(sock, get_client4_command, get_client4_response, "4")
 
     command_check(sock, add_role1_command, add_role1_response, "1")
     command_check(sock, add_role2_command, add_role2_response, "2")
-    #command_check(sock, add_role3_command, add_role3_response, "3")
+    command_check(sock, add_role3_command, add_role3_response, "3")
     command_check(sock, add_role4_command, add_role4_response, "4")
     command_check(sock, add_role5_command, add_role5_response, "5")
-    #command_check(sock, add_role6_command, add_role6_response, "6")
+    command_check(sock, add_role6_command, add_role6_response, "6")
     command_check(sock, add_role7_command, add_role7_response, "7")
     command_check(sock, add_role8_command, add_role8_response, "8")
 
     command_check(sock, remove_role1_command, remove_role1_response, "1")
     command_check(sock, remove_role2_command, remove_role2_response, "2")
-    #command_check(sock, remove_role3_command, remove_role3_response, "3")
+    command_check(sock, remove_role3_command, remove_role3_response, "3")
     command_check(sock, remove_role4_command, remove_role4_response, "4")
     command_check(sock, remove_role5_command, remove_role5_response, "5")
-    #command_check(sock, remove_role6_command, remove_role6_response, "6")
+    command_check(sock, remove_role6_command, remove_role6_response, "6")
     command_check(sock, remove_role7_command, remove_role7_response, "7")
     command_check(sock, remove_role8_command, remove_role8_response, "8")
 
     command_check(sock, modify_client0_command, modify_client0_response, "1")
     command_check(sock, modify_client1_command, modify_client1_response, "1")
     command_check(sock, modify_client2_command, modify_client2_response, "2")
-    #command_check(sock, modify_client3_command, modify_client3_response, "3")
+    command_check(sock, modify_client3_command, modify_client3_response, "3")
     command_check(sock, modify_client4_command, modify_client4_response, "4")
     command_check(sock, modify_client5_command, modify_client5_response, "5")
     #command_check(sock, modify_client6_command, modify_client6_response, "6")
