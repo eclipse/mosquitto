@@ -58,6 +58,7 @@ add_client_group_role_response = {'responses': [
 
 add_publish_acl_command = {"commands":[
     { "command": "addRoleACL", "rolename": "myrole", "acltype": "publishClientSend", "topic": "simple/topic", "allow": True },
+    { "command": "addRoleACL", "rolename": "myrole", "acltype": "publishClientSend", "topic": "single-wildcard/deny/deny", "priority":10, "allow": False },
     { "command": "addRoleACL", "rolename": "myrole", "acltype": "publishClientSend", "topic": "single-wildcard/+/+", "allow": True },
     { "command": "addRoleACL", "rolename": "myrole", "acltype": "publishClientSend", "topic": "multilevel-wildcard/topic/#", "allow": True },
     { "command": "addRoleACL", "rolename": "myrole", "acltype": "publishClientReceive", "topic": "single-wildcard/bob/bob", "allow": False },
@@ -67,7 +68,7 @@ add_publish_acl_command = {"commands":[
 add_publish_acl_response = {'responses': [
     {'command': 'addRoleACL'}, {'command': 'addRoleACL'},
     {'command': 'addRoleACL'}, {'command': 'addRoleACL'},
-    {'command': 'addRoleACL'}
+    {'command': 'addRoleACL'}, {'command': 'addRoleACL'}
     ]}
 
 delete_role_command = {"commands":[
@@ -109,6 +110,11 @@ puback_simple_packet_success = mosq_test.gen_puback(mid, proto_ver=5)
 puback_simple_packet_fail = mosq_test.gen_puback(mid, reason_code=mqtt5_rc.MQTT_RC_NOT_AUTHORIZED, proto_ver=5)
 
 publish_simple_packet_r = mosq_test.gen_publish(topic="simple/topic", qos=0, payload="message", proto_ver=5)
+
+# This message is in single-wildcard/+/+ so could be allowed, but the single-wildcard/deny/deny with higher priority should override
+mid = 9
+publish_single_packet_denied = mosq_test.gen_publish(mid=mid, topic="single-wildcard/deny/deny", qos=1, payload="message", proto_ver=5)
+puback_single_packet_denied_fail = mosq_test.gen_puback(mid, reason_code=mqtt5_rc.MQTT_RC_NOT_AUTHORIZED, proto_ver=5)
 
 mid = 8
 publish_single_packet = mosq_test.gen_publish(mid=mid, topic="single-wildcard/bob/topic", qos=1, payload="message", proto_ver=5)
@@ -231,6 +237,9 @@ try:
     # Publish to "single-wildcard/bob/topic" - this is now allowed
     csock.send(publish_single_packet)
     mosq_test.receive_unordered(csock, publish_single_packet_r, puback_single_packet_success, "puback single 3 / publish r")
+
+    # Publish to "single-wildcard/deny/deny" - this is stillnot allowed
+    mosq_test.do_send_receive(csock, publish_single_packet_denied, puback_single_packet_denied_fail, "puback single denied 1")
 
     # Publish to "multilevel-wildcard/topic/topic/allowed" - this is now allowed
     csock.send(publish_multi_packet)

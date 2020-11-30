@@ -29,42 +29,70 @@ write_config(conf_file, port)
 create_client_command = { "commands": [{
             "command": "createClient", "username": "user_one",
             "password": "password", "clientid": "cid",
-            "textname": "Name", "textdescription": "Description",
+            "textname": "Name", "textdescription": "description",
             "rolename": "", "correlationData": "2" }]}
 create_client_response = {'responses':[{"command":"createClient","correlationData":"2"}]}
 
+create_client2_command = { "commands": [{
+            "command": "createClient", "username": "user_two",
+            "password": "password",
+            "textname": "Name", "textdescription": "description",
+            "rolename": "", "correlationData": "1" }]}
+create_client2_response = {'responses':[{"command":"createClient","correlationData":"1"}]}
+
 create_group_command = { "commands": [{
             "command": "createGroup", "groupname": "group_one",
-            "textname": "Name", "textdescription": "Description",
+            "textname": "Name", "textdescription": "description",
             "correlationData":"3"}]}
 create_group_response = {'responses':[{"command":"createGroup","correlationData":"3"}]}
 create_group_repeat_response = {'responses':[{"command":"createGroup","error":"Group already exists","correlationData":"3"}]}
 
+create_group2_command = { "commands": [{
+            "command": "createGroup", "groupname": "group_two",
+            "textname": "Name", "textdescription": "description",
+            "correlationData":"30"}]}
+create_group2_response = {'responses':[{"command":"createGroup","correlationData":"30"}]}
+
 list_groups_command = { "commands": [{
             "command": "listGroups", "verbose": False, "correlationData": "10"}]}
-list_groups_response = {'responses':[{"command": "listGroups", "data":{"totalCount":1, "groups":["group_one"]},"correlationData":"10"}]}
+list_groups_response = {'responses':[{"command": "listGroups", "data":{"totalCount":2, "groups":["group_one","group_two"]},"correlationData":"10"}]}
 
 list_groups_verbose_command = { "commands": [{
             "command": "listGroups", "verbose": True, "correlationData": "15"}]}
-list_groups_verbose_response = {'responses':[{'command': 'listGroups', 'data': {"totalCount":1, 'groups':
-            [{'groupname': 'group_one', 'textname': 'Name', 'textdescription': 'Description', 'clients': [
-                {"username":"user_one"}], "roles":[]}]},
-            'correlationData': '15'}]}
+list_groups_verbose_response = {'responses':[{'command': 'listGroups', 'data': {"totalCount":2, 'groups':[
+    {'groupname': 'group_one', 'textname': 'Name', 'textdescription': 'description', 'clients': [
+    {"username":"user_one"}, {"username":"user_two"}], "roles":[]},
+    {'groupname': 'group_two', 'textname': 'Name', 'textdescription': 'description', 'clients': [
+    {"username":"user_one"}], "roles":[]}
+    ]},
+    'correlationData': '15'}]}
 
 list_clients_verbose_command = { "commands": [{
             "command": "listClients", "verbose": True, "correlationData": "20"}]}
-list_clients_verbose_response = {'responses':[{"command": "listClients", "data":{"totalCount":2, "clients":[
+list_clients_verbose_response = {'responses':[{"command": "listClients", "data":{"totalCount":3, "clients":[
             {'username': 'admin', 'textname': 'Dynsec admin user', 'roles': [{'rolename': 'admin'}], 'groups': []},
-            {"username":"user_one", "clientid":"cid", "textname":"Name", "textdescription":"Description",
-            "groups":[{"groupname":"group_one"}], "roles":[]}]}, "correlationData":"20"}]}
+            {"username":"user_one", "clientid":"cid", "textname":"Name", "textdescription":"description",
+            "groups":[{"groupname":"group_one"}, {"groupname":"group_two"}], "roles":[]},
+            {"username":"user_two", "textname":"Name", "textdescription":"description",
+            "groups":[{"groupname":"group_one"}], "roles":[]},
+            ]}, "correlationData":"20"}]}
 
 get_group_command = { "commands": [{"command": "getGroup", "groupname":"group_one"}]}
 get_group_response = {'responses':[{'command': 'getGroup', 'data': {'group': {'groupname': 'group_one',
-            'textname':'Name', 'textdescription':'Description', 'clients': [{"username":"user_one"}], 'roles': []}}}]}
+    'textname':'Name', 'textdescription':'description', 'clients': [{"username":"user_one"}, {"username":"user_two"}], 'roles': []}}}]}
 
 add_client_to_group_command = {"commands": [{"command":"addGroupClient", "username":"user_one",
             "groupname": "group_one", "correlationData":"1234"}]}
 add_client_to_group_response = {'responses':[{'command': 'addGroupClient', 'correlationData': '1234'}]}
+add_duplicate_client_to_group_response = {'responses':[{'command': 'addGroupClient', 'correlationData': '1234'}]}
+
+add_client_to_group2_command = {"commands": [{"command":"addGroupClient", "username":"user_one",
+            "groupname": "group_two", "correlationData":"1234"}]}
+add_client_to_group2_response = {'responses':[{'command': 'addGroupClient', 'correlationData': '1234'}]}
+
+add_client2_to_group_command = {"commands": [{"command":"addGroupClient", "username":"user_two",
+            "groupname": "group_one", "correlationData":"1235"}]}
+add_client2_to_group_response = {'responses':[{'command': 'addGroupClient', 'correlationData': '1235'}]}
 
 remove_client_from_group_command = {"commands": [{"command":"removeGroupClient", "username":"user_one",
             "groupname": "group_one", "correlationData":"4321"}]}
@@ -97,12 +125,17 @@ try:
 
     # Add client
     command_check(sock, create_client_command, create_client_response)
+    command_check(sock, create_client2_command, create_client2_response)
 
     # Add group
+    command_check(sock, create_group2_command, create_group2_response)
     command_check(sock, create_group_command, create_group_response)
 
     # Add client to group
     command_check(sock, add_client_to_group_command, add_client_to_group_response)
+    command_check(sock, add_client_to_group2_command, add_client_to_group2_response)
+    command_check(sock, add_client2_to_group_command, add_client2_to_group_response)
+    command_check(sock, add_client_to_group_command, add_duplicate_client_to_group_response)
 
     # Get group
     command_check(sock, get_group_command, get_group_response)

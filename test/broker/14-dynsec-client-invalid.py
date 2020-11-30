@@ -70,13 +70,17 @@ create_client8_response = {'responses': [{'command': 'createClient', 'error': 'I
 create_client9_command = { 'commands': [{'command': 'createClient', 'username': 'admin', 'password':'5'}]}
 create_client9_response = {'responses': [{'command': 'createClient', 'error': 'Client already exists'}]}
 
+# Roles not an array
+create_client10_command = { 'commands': [{'command': 'createClient', 'username': 'user', 'password':'5', 'roles':'bad'}] }
+create_client10_response = {'responses': [{'command': 'createClient', 'error': "'roles' not an array or missing/invalid rolename"}]}
+
 # Role not found
-create_client10_command = { 'commands': [{'command': 'createClient', 'username': 'user', 'password':'5', 'roles':[{'rolename':'notfound'}]}] }
-create_client10_response = {'responses': [{'command': 'createClient', 'error': 'Role not found'}]}
+create_client11_command = { 'commands': [{'command': 'createClient', 'username': 'user', 'password':'5', 'roles':[{'rolename':'notfound'}]}] }
+create_client11_response = {'responses': [{'command': 'createClient', 'error': 'Role not found'}]}
 
 # Group not found
-create_client11_command = { 'commands': [{'command': 'createClient', 'username': 'user', 'password':'5', 'groups':[{'groupname':'notfound'}]}] }
-create_client11_response = {'responses': [{'command': 'createClient', 'error': 'Group not found'}]}
+create_client12_command = { 'commands': [{'command': 'createClient', 'username': 'user', 'password':'5', 'groups':[{'groupname':'notfound'}]}] }
+create_client12_response = {'responses': [{'command': 'createClient', 'error': 'Group not found'}]}
 
 
 # ==========================================================================
@@ -375,6 +379,7 @@ try:
     command_check(sock, create_client9_command, create_client9_response, "9")
     command_check(sock, create_client10_command, create_client10_response, "10")
     command_check(sock, create_client11_command, create_client11_response, "11")
+    command_check(sock, create_client12_command, create_client12_response, "12")
 
     command_check(sock, delete_client1_command, delete_client1_response, "1")
     command_check(sock, delete_client2_command, delete_client2_response, "2")

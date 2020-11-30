@@ -35,6 +35,14 @@ create_client_command = { "commands": [{
 }
 create_client_response = {'responses': [{'command': 'createClient', 'correlationData': '2'}]}
 
+create_client2_command = { "commands": [{
+    "command": "createClient", "username": "user_two",
+    "password": "password",
+    "textname": "Name", "textdescription": "Description",
+    "rolename": "", "correlationData": "3" }]
+}
+create_client2_response = {'responses': [{'command': 'createClient', 'correlationData': '3'}]}
+
 create_group_command = { "commands": [{
             "command": "createGroup", "groupname": "group_one",
             "textname": "Name", "textdescription": "Description",
@@ -47,10 +55,20 @@ create_role_command = { "commands": [{'command': 'createRole', 'correlationData'
     }]}
 create_role_response = {'responses': [{'command': 'createRole', 'correlationData': '3'}]}
 
+create_role2_command = { "commands": [{'command': 'createRole', 'correlationData': '3',
+    "rolename": "basic2", "acls":[
+    {"acltype":"publishClientSend", "topic": "out/#", "priority":3, "allow": True}], "textname":"name", "textdescription":"desc"
+    }]}
+create_role2_response = {'responses': [{'command': 'createRole', 'correlationData': '3'}]}
+
 
 add_role_to_client_command = {"commands": [{'command': 'addClientRole', "username": "user_one",
     "rolename": "basic"}]}
 add_role_to_client_response = {'responses': [{'command': 'addClientRole'}]}
+
+add_role_to_client2_command = {"commands": [{'command': 'addClientRole', "username": "user_one",
+    "rolename": "basic2"}]}
+add_role_to_client2_response = {'responses': [{'command': 'addClientRole'}]}
 
 add_role_to_group_command = {"commands": [{'command': 'addGroupRole', "groupname": "group_one",
     "rolename": "basic"}]}
@@ -61,7 +79,7 @@ list_roles_verbose_command1 = { "commands": [{
     "command": "listRoles", "verbose": True, "correlationData": "21"}]
 }
 list_roles_verbose_response1 = {'responses': [{'command': 'listRoles', 'data':
-    {'totalCount':2, 'roles': [
+    {'totalCount':3, 'roles': [
     {"rolename":"admin","acls":[
     {"acltype": "publishClientSend", "topic": "$CONTROL/dynamic-security/#", "priority":0, "allow": True },
     {"acltype": "publishClientReceive", "topic": "$CONTROL/dynamic-security/#", "priority":0, "allow": True },
@@ -72,6 +90,8 @@ list_roles_verbose_response1 = {'responses': [{'command': 'listRoles', 'data':
     {"acltype": "subscribePattern", "topic": "#", "priority":0, "allow": True},
     {"acltype": "unsubscribePattern", "topic": "#", "priority":0, "allow": True}]},
     {'rolename': 'basic', "textname": "name", "textdescription": "desc",
+    'acls': [{'acltype':'publishClientSend', 'topic': 'out/#', 'priority': 3, 'allow': True}]},
+    {'rolename': 'basic2', "textname": "name", "textdescription": "desc",
     'acls': [{'acltype':'publishClientSend', 'topic': 'out/#', 'priority': 3, 'allow': True}]
     }]}, 'correlationData': '21'}]}
 
@@ -79,10 +99,14 @@ add_acl_command = {"commands": [{'command': "addRoleACL", "rolename":"basic", "a
     "topic":"basic/out", "priority":1, "allow":True}]}
 add_acl_response = {'responses': [{'command': 'addRoleACL'}]}
 
+add_acl2_command = {"commands": [{'command': "addRoleACL", "rolename":"basic", "acltype":"subscribeLiteral",
+    "topic":"basic/out", "priority":1, "allow":True}]}
+add_acl2_response = {'responses': [{'command': 'addRoleACL', 'error':'ACL with this topic already exists'}]}
+
 list_roles_verbose_command2 = { "commands": [{
     "command": "listRoles", "verbose": True, "correlationData": "22"}]
 }
-list_roles_verbose_response2 = {'responses': [{'command': 'listRoles', 'data': {'totalCount':2, 'roles':
+list_roles_verbose_response2 = {'responses': [{'command': 'listRoles', 'data': {'totalCount':3, 'roles':
     [{"rolename":"admin","acls":[
     {"acltype": "publishClientSend", "topic": "$CONTROL/dynamic-security/#", "priority":0, "allow": True },
     {"acltype": "publishClientReceive", "topic": "$CONTROL/dynamic-security/#", "priority":0, "allow": True },
@@ -94,7 +118,9 @@ list_roles_verbose_response2 = {'responses': [{'command': 'listRoles', 'data': {
     {"acltype": "unsubscribePattern", "topic": "#", "priority":0, "allow": True}]},
     {'rolename': 'basic', 'textname': 'name', 'textdescription': 'desc', 'acls':
     [{'acltype':'publishClientSend', 'topic': 'out/#', 'priority': 3, 'allow': True},
-    {'acltype':'subscribeLiteral', 'topic': 'basic/out', 'priority': 1, 'allow': True}],
+    {'acltype':'subscribeLiteral', 'topic': 'basic/out', 'priority': 1, 'allow': True}]},
+    {'rolename': 'basic2', "textname": "name", "textdescription": "desc",
+    'acls': [{'acltype':'publishClientSend', 'topic': 'out/#', 'priority': 3, 'allow': True}]
     }]}, 'correlationData': '22'}]}
 
 get_role_command = {"commands": [{'command': "getRole", "rolename":"basic"}]}
@@ -108,16 +134,25 @@ remove_acl_command = {"commands": [{'command': "removeRoleACL", "rolename":"basi
     "topic":"basic/out"}]}
 remove_acl_response = {'responses': [{'command': 'removeRoleACL'}]}
 
+remove_acl2_command = {"commands": [{'command': "removeRoleACL", "rolename":"basic", "acltype":"subscribeLiteral",
+    "topic":"basic/out"}]}
+remove_acl2_response = {'responses': [{'command': 'removeRoleACL', 'error':'ACL not found'}]}
+
 delete_role_command = {"commands": [{'command': "deleteRole", "rolename":"basic"}]}
 delete_role_response = {"responses": [{"command": "deleteRole"}]}
+
+delete_role2_command = {"commands": [{'command': "deleteRole", "rolename":"basic"}]}
+delete_role2_response = {"responses": [{"command": "deleteRole"}]}
 
 list_clients_verbose_command = { "commands": [{
     "command": "listClients", "verbose": True, "correlationData": "20"}]
 }
-list_clients_verbose_response = {'responses':[{"command": "listClients", "data":{'totalCount':2, "clients":[
+list_clients_verbose_response = {'responses':[{"command": "listClients", "data":{'totalCount':3, "clients":[
     {'username': 'admin', 'textname': 'Dynsec admin user', 'roles': [{'rolename': 'admin'}], 'groups': []},
     {"username":"user_one", "clientid":"cid", "textname":"Name", "textdescription":"Description",
-    "groups":[], "roles":[{'rolename':'basic'}]}]}, "correlationData":"20"}]}
+    "groups":[], "roles":[{'rolename':'basic'}, {'rolename':'basic2'}]},
+    {"username":"user_two", "textname":"Name", "textdescription":"Description",
+    "groups":[], "roles":[]}]}, "correlationData":"20"}]}
 
 list_groups_verbose_command = { "commands": [{
     "command": "listGroups", "verbose": True, "correlationData": "20"}]
@@ -157,6 +192,7 @@ try:
     mosq_test.do_send_receive(sock, subscribe_packet, suback_packet, "suback")
 
     # Create client
+    command_check(sock, create_client2_command, create_client2_response)
     command_check(sock, create_client_command, create_client_response)
 
     # Create group
@@ -164,8 +200,10 @@ try:
 
     # Create role
     command_check(sock, create_role_command, create_role_response)
+    command_check(sock, create_role2_command, create_role2_response)
 
     # Add role to client
+    command_check(sock, add_role_to_client2_command, add_role_to_client2_response)
     command_check(sock, add_role_to_client_command, add_role_to_client_response)
 
     # Add role to group
@@ -182,6 +220,7 @@ try:
 
     # Add ACL
     command_check(sock, add_acl_command, add_acl_response)
+    command_check(sock, add_acl2_command, add_acl2_response)
 
     # List roles verbose 2
     command_check(sock, list_roles_verbose_command2, list_roles_verbose_response2, "list roles verbose 2a")
@@ -202,6 +241,7 @@ try:
 
     # Remove ACL
     command_check(sock, remove_acl_command, remove_acl_response)
+    command_check(sock, remove_acl2_command, remove_acl2_response)
 
     # List roles verbose 1
     command_check(sock, list_roles_verbose_command1, list_roles_verbose_response1, "list roles verbose 1b")

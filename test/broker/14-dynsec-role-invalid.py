@@ -144,11 +144,14 @@ add_role_acl6_response = {'responses': [{'command': 'addRoleACL', 'error': 'Unkn
 add_role_acl7_command = { 'commands': [{'command': 'addRoleACL', 'rolename': 'validrole', 'acltype':'unsubscribePattern' }] }
 add_role_acl7_response = {'responses': [{'command': 'addRoleACL', 'error': 'Invalid/missing topic'}]}
 
-add_role_acl8_command = { 'commands': [{'command': 'addRoleACL', 'rolename': 'validrole', 'acltype':'unsubscribePattern', 'topic':5 }] }
+add_role_acl8_command = { 'commands': [{'command': 'addRoleACL', 'rolename': 'validrole', 'acltype':'subscribePattern', 'topic':5 }] }
 add_role_acl8_response = {'responses': [{'command': 'addRoleACL', 'error': 'Invalid/missing topic'}]}
 
-add_role_acl9_command = { 'commands': [{'command': 'addRoleACL', 'rolename': 'validrole', 'acltype':'unsubscribePattern', 'topic':'￿LO' }] }
+add_role_acl9_command = { 'commands': [{'command': 'addRoleACL', 'rolename': 'validrole', 'acltype':'unsubscribeLiteral', 'topic':'￿LO' }] }
 add_role_acl9_response = {'responses': [{'command': 'addRoleACL', 'error': 'Topic not valid UTF-8'}]}
+
+add_role_acl10_command = { 'commands': [{'command': 'addRoleACL', 'rolename': 'validrole', 'acltype':'unsubscribeLiteral', 'topic':'not/#/valid' }] }
+add_role_acl10_response = {'responses': [{'command': 'addRoleACL', 'error': 'Invalid ACL topic'}]}
 
 
 # ==========================================================================
@@ -278,6 +281,7 @@ try:
     command_check(sock, add_role_acl7_command, add_role_acl7_response, "7")
     command_check(sock, add_role_acl8_command, add_role_acl8_response, "8")
     command_check(sock, add_role_acl9_command, add_role_acl9_response, "9")
+    command_check(sock, add_role_acl10_command, add_role_acl10_response, "10")
 
     command_check(sock, remove_role_acl1_command, remove_role_acl1_response, "1")
     command_check(sock, remove_role_acl2_command, remove_role_acl2_response, "2")
