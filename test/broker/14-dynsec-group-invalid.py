@@ -119,8 +119,8 @@ add_role5_command = { 'commands': [{'command': 'addGroupRole', 'groupname':'g', 
 add_role5_response = {'responses': [{'command': 'addGroupRole', 'error': 'Invalid/missing rolename'}]}
 
 # Rolename not UTF-8
-add_role6_command = { 'commands': [{'command': 'addGroupRole', 'groupname': '￿LO' }] }
-add_role6_response = {'responses': [{'command': 'addGroupRole', 'error': 'Group name not valid UTF-8'}]}
+add_role6_command = { 'commands': [{'command': 'addGroupRole', 'groupname':'g', 'rolename':'￿LO' }] }
+add_role6_response = {'responses': [{'command': 'addGroupRole', 'error': 'Role name not valid UTF-8'}]}
 
 # Group not found
 add_role7_command = { 'commands': [{'command': 'addGroupRole', 'groupname':'notfound', 'rolename':'notfound' }] }
