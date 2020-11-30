@@ -243,7 +243,7 @@ int listeners__add_local(struct mosquitto__listener_sock **listensock, int *list
 		return MOSQ_ERR_NOMEM;
 	}
 	if(listeners__start_single_mqtt(listensock, listensock_count, listensock_index, &listeners[db.config->listener_count])){
-		mosquitto__free(listeners[db.config->listener_count-1].host);
+		mosquitto__free(listeners[db.config->listener_count].host);
 		listeners[db.config->listener_count].host = NULL;
 		return MOSQ_ERR_UNKNOWN;
 	}
