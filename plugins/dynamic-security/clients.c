@@ -1058,7 +1058,10 @@ int dynsec_clients__process_add_role(cJSON *j_responses, struct mosquitto *conte
 		return MOSQ_ERR_SUCCESS;
 	}
 
-	dynsec_rolelist__client_add(client, role, priority);
+	if(dynsec_rolelist__client_add(client, role, priority) != MOSQ_ERR_SUCCESS){
+		dynsec__command_reply(j_responses, context, "addClientRole", "Internal error", correlation_data);
+		return MOSQ_ERR_UNKNOWN;
+	}
 	dynsec__config_save();
 	dynsec__command_reply(j_responses, context, "addClientRole", NULL, correlation_data);
 

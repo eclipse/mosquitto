@@ -151,7 +151,10 @@ int dynsec_groups__process_add_role(cJSON *j_responses, struct mosquitto *contex
 	mosquitto_log_printf(MOSQ_LOG_INFO, "dynsec: %s/%s | addGroupRole | groupname=%s | rolename=%s | priority=%d",
 			admin_clientid, admin_username, groupname, rolename, priority);
 
-	dynsec_rolelist__group_add(group, role, priority);
+	if(dynsec_rolelist__group_add(group, role, priority) != MOSQ_ERR_SUCCESS){
+		dynsec__command_reply(j_responses, context, "addGroupRole", "Internal error", correlation_data);
+		return MOSQ_ERR_UNKNOWN;
+	}
 	dynsec__config_save();
 	dynsec__command_reply(j_responses, context, "addGroupRole", NULL, correlation_data);
 
