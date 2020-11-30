@@ -113,6 +113,10 @@ int client_request_response(struct mosq_ctrl *ctrl)
 	int rc;
 	time_t start;
 
+	if(ctrl->cfg.cafile == NULL && ctrl->cfg.capath == NULL){
+		fprintf(stderr, "Warning: You are running mosquitto_ctrl without encryption.\nThis means all of the configuration changes you are making are visible on the network, including passwords.\n\n");
+	}
+
 	mosquitto_lib_init();
 
 	mosq = mosquitto_new(ctrl->cfg.id, true, ctrl);
