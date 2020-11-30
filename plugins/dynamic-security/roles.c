@@ -576,7 +576,7 @@ int dynsec_roles__process_list(cJSON *j_responses, struct mosquitto *context, cJ
 
 	admin_clientid = mosquitto_client_id(context);
 	admin_username = mosquitto_client_username(context);
-	mosquitto_log_printf(MOSQ_LOG_INFO, "dynsec: %s/%s | listRoles | rolename=%s | verbose=%s | count=%d | offset=%d",
+	mosquitto_log_printf(MOSQ_LOG_INFO, "dynsec: %s/%s | listRoles | verbose=%s | count=%d | offset=%d",
 			admin_clientid, admin_username, verbose?"true":"false", count, offset);
 
 	return MOSQ_ERR_SUCCESS;
