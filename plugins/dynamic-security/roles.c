@@ -265,20 +265,17 @@ int dynsec_roles__config_load(cJSON *tree)
 		if(cJSON_IsObject(j_role) == true){
 			role = mosquitto_calloc(1, sizeof(struct dynsec__role));
 			if(role == NULL){
-				// FIXME log
 				return MOSQ_ERR_NOMEM;
 			}
 
 			/* Role name */
 			jtmp = cJSON_GetObjectItem(j_role, "rolename");
 			if(jtmp == NULL){
-				// FIXME log
 				mosquitto_free(role);
 				continue;
 			}
 			role->rolename = mosquitto_strdup(jtmp->valuestring);
 			if(role->rolename == NULL){
-				// FIXME log
 				mosquitto_free(role);
 				continue;
 			}
@@ -288,7 +285,6 @@ int dynsec_roles__config_load(cJSON *tree)
 			if(jtmp != NULL){
 				role->text_name = mosquitto_strdup(jtmp->valuestring);
 				if(role->text_name == NULL){
-					// FIXME log
 					mosquitto_free(role->rolename);
 					mosquitto_free(role);
 					continue;
@@ -300,7 +296,6 @@ int dynsec_roles__config_load(cJSON *tree)
 			if(jtmp != NULL){
 				role->text_description = mosquitto_strdup(jtmp->valuestring);
 				if(role->text_description == NULL){
-					// FIXME log
 					mosquitto_free(role->text_name);
 					mosquitto_free(role->rolename);
 					mosquitto_free(role);
@@ -319,7 +314,6 @@ int dynsec_roles__config_load(cJSON *tree)
 						|| dynsec_roles__acl_load(j_acls, ACL_TYPE_UNSUB_PATTERN, &role->acls.unsubscribe_pattern) != 0
 						){
 
-					// FIXME log
 					mosquitto_free(role->rolename);
 					mosquitto_free(role);
 					continue;
@@ -342,6 +336,7 @@ int dynsec_roles__process_create(cJSON *j_responses, struct mosquitto *context, 
 	struct dynsec__role *role;
 	int rc = MOSQ_ERR_SUCCESS;
 	cJSON *j_acls;
+	const char *admin_clientid, *admin_username;
 
 	if(json_get_string(command, "rolename", &rolename, false) != MOSQ_ERR_SUCCESS){
 		dynsec__command_reply(j_responses, context, "createRole", "Invalid/missing rolename", correlation_data);
@@ -419,6 +414,12 @@ int dynsec_roles__process_create(cJSON *j_responses, struct mosquitto *context, 
 	dynsec__config_save();
 
 	dynsec__command_reply(j_responses, context, "createRole", NULL, correlation_data);
+
+	admin_clientid = mosquitto_client_id(context);
+	admin_username = mosquitto_client_username(context);
+	mosquitto_log_printf(MOSQ_LOG_INFO, "dynsec: %s/%s | createRole | rolename=%s",
+			admin_clientid, admin_username, rolename);
+
 	return MOSQ_ERR_SUCCESS;
 error:
 	if(role){
@@ -457,6 +458,7 @@ int dynsec_roles__process_delete(cJSON *j_responses, struct mosquitto *context, 
 {
 	char *rolename;
 	struct dynsec__role *role;
+	const char *admin_clientid, *admin_username;
 
 	if(json_get_string(command, "rolename", &rolename, false) != MOSQ_ERR_SUCCESS){
 		dynsec__command_reply(j_responses, context, "deleteRole", "Invalid/missing rolename", correlation_data);
@@ -474,6 +476,12 @@ int dynsec_roles__process_delete(cJSON *j_responses, struct mosquitto *context, 
 		role__free_item(role, true);
 		dynsec__config_save();
 		dynsec__command_reply(j_responses, context, "deleteRole", NULL, correlation_data);
+
+		admin_clientid = mosquitto_client_id(context);
+		admin_username = mosquitto_client_username(context);
+		mosquitto_log_printf(MOSQ_LOG_INFO, "dynsec: %s/%s | deleteRole | rolename=%s",
+				admin_clientid, admin_username, rolename);
+
 		return MOSQ_ERR_SUCCESS;
 	}else{
 		dynsec__command_reply(j_responses, context, "deleteRole", "Role not found", correlation_data);
@@ -519,6 +527,7 @@ int dynsec_roles__process_list(cJSON *j_responses, struct mosquitto *context, cJ
 	struct dynsec__role *role, *role_tmp;
 	cJSON *tree, *j_roles, *j_role, *j_data;
 	int i, count, offset;
+	const char *admin_clientid, *admin_username;
 
 	json_get_bool(command, "verbose", &verbose, true, false);
 	json_get_int(command, "count", &count, true, -1);
@@ -565,6 +574,11 @@ int dynsec_roles__process_list(cJSON *j_responses, struct mosquitto *context, cJ
 
 	cJSON_AddItemToArray(j_responses, tree);
 
+	admin_clientid = mosquitto_client_id(context);
+	admin_username = mosquitto_client_username(context);
+	mosquitto_log_printf(MOSQ_LOG_INFO, "dynsec: %s/%s | listRoles | rolename=%s | verbose=%s | count=%d | offset=%d",
+			admin_clientid, admin_username, verbose?"true":"false", count, offset);
+
 	return MOSQ_ERR_SUCCESS;
 }
 
@@ -574,9 +588,10 @@ int dynsec_roles__process_add_acl(cJSON *j_responses, struct mosquitto *context,
 	char *rolename;
 	char *topic;
 	struct dynsec__role *role;
-	cJSON *jtmp;
+	cJSON *jtmp, *j_acltype;
 	struct dynsec__acl **acllist, *acl;
 	int rc;
+	const char *admin_clientid, *admin_username;
 
 	if(json_get_string(command, "rolename", &rolename, false) != MOSQ_ERR_SUCCESS){
 		dynsec__command_reply(j_responses, context, "addRoleACL", "Invalid/missing rolename", correlation_data);
@@ -593,22 +608,22 @@ int dynsec_roles__process_add_acl(cJSON *j_responses, struct mosquitto *context,
 		return MOSQ_ERR_SUCCESS;
 	}
 
-	jtmp = cJSON_GetObjectItem(command, "acltype");
-	if(jtmp == NULL || !cJSON_IsString(jtmp)){
+	j_acltype = cJSON_GetObjectItem(command, "acltype");
+	if(j_acltype == NULL || !cJSON_IsString(j_acltype)){
 		dynsec__command_reply(j_responses, context, "addRoleACL", "Invalid/missing acltype", correlation_data);
 		return MOSQ_ERR_SUCCESS;
 	}
-	if(!strcasecmp(jtmp->valuestring, ACL_TYPE_PUB_C_SEND)){
+	if(!strcasecmp(j_acltype->valuestring, ACL_TYPE_PUB_C_SEND)){
 		acllist = &role->acls.publish_c_send;
-	}else if(!strcasecmp(jtmp->valuestring, ACL_TYPE_PUB_C_RECV)){
+	}else if(!strcasecmp(j_acltype->valuestring, ACL_TYPE_PUB_C_RECV)){
 		acllist = &role->acls.publish_c_recv;
-	}else if(!strcasecmp(jtmp->valuestring, ACL_TYPE_SUB_LITERAL)){
+	}else if(!strcasecmp(j_acltype->valuestring, ACL_TYPE_SUB_LITERAL)){
 		acllist = &role->acls.subscribe_literal;
-	}else if(!strcasecmp(jtmp->valuestring, ACL_TYPE_SUB_PATTERN)){
+	}else if(!strcasecmp(j_acltype->valuestring, ACL_TYPE_SUB_PATTERN)){
 		acllist = &role->acls.subscribe_pattern;
-	}else if(!strcasecmp(jtmp->valuestring, ACL_TYPE_UNSUB_LITERAL)){
+	}else if(!strcasecmp(j_acltype->valuestring, ACL_TYPE_UNSUB_LITERAL)){
 		acllist = &role->acls.unsubscribe_literal;
-	}else if(!strcasecmp(jtmp->valuestring, ACL_TYPE_UNSUB_PATTERN)){
+	}else if(!strcasecmp(j_acltype->valuestring, ACL_TYPE_UNSUB_PATTERN)){
 		acllist = &role->acls.unsubscribe_pattern;
 	}else{
 		dynsec__command_reply(j_responses, context, "addRoleACL", "Unknown acltype", correlation_data);
@@ -660,6 +675,11 @@ int dynsec_roles__process_add_acl(cJSON *j_responses, struct mosquitto *context,
 
 	role__kick_all(role);
 
+	admin_clientid = mosquitto_client_id(context);
+	admin_username = mosquitto_client_username(context);
+	mosquitto_log_printf(MOSQ_LOG_INFO, "dynsec: %s/%s | addRoleACL | rolename=%s | acltype=%s | topic=%s | priority=%d | allow=%s",
+			admin_clientid, admin_username, rolename, j_acltype->valuestring, topic, acl->priority, acl->allow?"true":"false");
+
 	return MOSQ_ERR_SUCCESS;
 }
 
@@ -670,8 +690,9 @@ int dynsec_roles__process_remove_acl(cJSON *j_responses, struct mosquitto *conte
 	struct dynsec__role *role;
 	struct dynsec__acl **acllist, *acl;
 	char *topic;
-	cJSON *jtmp;
+	cJSON *j_acltype;
 	int rc;
+	const char *admin_clientid, *admin_username;
 
 	if(json_get_string(command, "rolename", &rolename, false) != MOSQ_ERR_SUCCESS){
 		dynsec__command_reply(j_responses, context, "removeRoleACL", "Invalid/missing rolename", correlation_data);
@@ -688,22 +709,22 @@ int dynsec_roles__process_remove_acl(cJSON *j_responses, struct mosquitto *conte
 		return MOSQ_ERR_SUCCESS;
 	}
 
-	jtmp = cJSON_GetObjectItem(command, "acltype");
-	if(jtmp == NULL || !cJSON_IsString(jtmp)){
+	j_acltype = cJSON_GetObjectItem(command, "acltype");
+	if(j_acltype == NULL || !cJSON_IsString(j_acltype)){
 		dynsec__command_reply(j_responses, context, "removeRoleACL", "Invalid/missing acltype", correlation_data);
 		return MOSQ_ERR_SUCCESS;
 	}
-	if(!strcasecmp(jtmp->valuestring, ACL_TYPE_PUB_C_SEND)){
+	if(!strcasecmp(j_acltype->valuestring, ACL_TYPE_PUB_C_SEND)){
 		acllist = &role->acls.publish_c_send;
-	}else if(!strcasecmp(jtmp->valuestring, ACL_TYPE_PUB_C_RECV)){
+	}else if(!strcasecmp(j_acltype->valuestring, ACL_TYPE_PUB_C_RECV)){
 		acllist = &role->acls.publish_c_recv;
-	}else if(!strcasecmp(jtmp->valuestring, ACL_TYPE_SUB_LITERAL)){
+	}else if(!strcasecmp(j_acltype->valuestring, ACL_TYPE_SUB_LITERAL)){
 		acllist = &role->acls.subscribe_literal;
-	}else if(!strcasecmp(jtmp->valuestring, ACL_TYPE_SUB_PATTERN)){
+	}else if(!strcasecmp(j_acltype->valuestring, ACL_TYPE_SUB_PATTERN)){
 		acllist = &role->acls.subscribe_pattern;
-	}else if(!strcasecmp(jtmp->valuestring, ACL_TYPE_UNSUB_LITERAL)){
+	}else if(!strcasecmp(j_acltype->valuestring, ACL_TYPE_UNSUB_LITERAL)){
 		acllist = &role->acls.unsubscribe_literal;
-	}else if(!strcasecmp(jtmp->valuestring, ACL_TYPE_UNSUB_PATTERN)){
+	}else if(!strcasecmp(j_acltype->valuestring, ACL_TYPE_UNSUB_PATTERN)){
 		acllist = &role->acls.unsubscribe_pattern;
 	}else{
 		dynsec__command_reply(j_responses, context, "removeRoleACL", "Unknown acltype", correlation_data);
@@ -731,6 +752,12 @@ int dynsec_roles__process_remove_acl(cJSON *j_responses, struct mosquitto *conte
 		dynsec__command_reply(j_responses, context, "removeRoleACL", NULL, correlation_data);
 
 		role__kick_all(role);
+
+		admin_clientid = mosquitto_client_id(context);
+		admin_username = mosquitto_client_username(context);
+		mosquitto_log_printf(MOSQ_LOG_INFO, "dynsec: %s/%s | removeRoleACL | rolename=%s | acltype=%s | topic=%s",
+				admin_clientid, admin_username, rolename, j_acltype->valuestring, topic);
+
 	}else{
 		dynsec__command_reply(j_responses, context, "removeRoleACL", "ACL not found", correlation_data);
 	}
@@ -799,6 +826,7 @@ int dynsec_roles__process_modify(cJSON *j_responses, struct mosquitto *context, 
 	struct dynsec__acl *tmp_publish_c_send = NULL, *tmp_publish_c_recv = NULL;
 	struct dynsec__acl *tmp_subscribe_literal = NULL, *tmp_subscribe_pattern = NULL;
 	struct dynsec__acl *tmp_unsubscribe_literal = NULL, *tmp_unsubscribe_pattern = NULL;
+	const char *admin_clientid, *admin_username;
 
 	if(json_get_string(command, "rolename", &rolename, false) != MOSQ_ERR_SUCCESS){
 		dynsec__command_reply(j_responses, context, "modifyRole", "Invalid/missing rolename", correlation_data);
@@ -875,5 +903,11 @@ int dynsec_roles__process_modify(cJSON *j_responses, struct mosquitto *context, 
 	dynsec__config_save();
 
 	dynsec__command_reply(j_responses, context, "modifyRole", NULL, correlation_data);
+
+	admin_clientid = mosquitto_client_id(context);
+	admin_username = mosquitto_client_username(context);
+	mosquitto_log_printf(MOSQ_LOG_INFO, "dynsec: %s/%s | modifyRole | rolename=%s",
+			admin_clientid, admin_username, rolename);
+
 	return MOSQ_ERR_SUCCESS;
 }

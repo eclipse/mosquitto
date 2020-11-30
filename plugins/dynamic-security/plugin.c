@@ -128,12 +128,16 @@ int dynsec__process_set_default_acl_access(cJSON *j_responses, struct mosquitto 
 {
 	cJSON *j_actions, *j_action, *j_acltype, *j_allow;
 	bool allow;
+	const char *admin_clientid, *admin_username;
 
 	j_actions = cJSON_GetObjectItem(command, "acls");
 	if(j_actions == NULL || !cJSON_IsArray(j_actions)){
 		dynsec__command_reply(j_responses, context, "setDefaultACLAccess", "Missing/invalid actions array", correlation_data);
 		return MOSQ_ERR_INVAL;
 	}
+
+	admin_clientid = mosquitto_client_id(context);
+	admin_username = mosquitto_client_username(context);
 
 	cJSON_ArrayForEach(j_action, j_actions){
 		j_acltype = cJSON_GetObjectItem(j_action, "acltype");
@@ -152,6 +156,8 @@ int dynsec__process_set_default_acl_access(cJSON *j_responses, struct mosquitto 
 			}else if(!strcasecmp(j_acltype->valuestring, ACL_TYPE_UNSUB_GENERIC)){
 				default_access.unsubscribe = allow;
 			}
+			mosquitto_log_printf(MOSQ_LOG_INFO, "dynsec: %s/%s | setDefaultACLAccess | acltype=%s | allow=%s",
+					admin_clientid, admin_username, j_acltype->valuestring, allow?"true":"false");
 		}
 	}
 
@@ -164,12 +170,18 @@ int dynsec__process_set_default_acl_access(cJSON *j_responses, struct mosquitto 
 int dynsec__process_get_default_acl_access(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data)
 {
 	cJSON *tree, *jtmp, *j_data, *j_acls, *j_acl;
+	const char *admin_clientid, *admin_username;
 
 	tree = cJSON_CreateObject();
 	if(tree == NULL){
 		dynsec__command_reply(j_responses, context, "getDefaultACLAccess", "Internal error", correlation_data);
 		return MOSQ_ERR_NOMEM;
 	}
+
+	admin_clientid = mosquitto_client_id(context);
+	admin_username = mosquitto_client_username(context);
+	mosquitto_log_printf(MOSQ_LOG_INFO, "dynsec: %s/%s | getDefaultACLAccess",
+			admin_clientid, admin_username);
 
 	if(cJSON_AddStringToObject(tree, "command", "getDefaultACLAccess") == NULL
 		|| ((j_data = cJSON_AddObjectToObject(tree, "data")) == NULL)
