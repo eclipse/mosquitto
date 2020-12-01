@@ -130,6 +130,7 @@ endif (CMAKE_SYSTEM_NAME STREQUAL Linux)
 option(WITH_WEBSOCKETS "Include websockets support?" OFF)
 option(STATIC_WEBSOCKETS "Use the static libwebsockets library?" OFF)
 if (WITH_WEBSOCKETS)
+	find_package(libwebsockets)
 	add_definitions("-DWITH_WEBSOCKETS")
 endif (WITH_WEBSOCKETS)
 
