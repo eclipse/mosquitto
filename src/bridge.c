@@ -376,12 +376,10 @@ int bridge__connect(struct mosquitto *context)
 				context->bridge->initial_notification_done = true;
 			}
 
-			if (!context->bridge->notifications_local_only) {
-				notification_payload = '0';
-				rc = will__set(context, context->bridge->notification_topic, 1, &notification_payload, 1, true, NULL);
-				if(rc != MOSQ_ERR_SUCCESS){
-					return rc;
-				}
+			notification_payload = '0';
+			rc = will__set(context, context->bridge->notification_topic, 1, &notification_payload, 1, true, NULL);
+			if(rc != MOSQ_ERR_SUCCESS){
+				return rc;
 			}
 		}else{
 			notification_topic_len = strlen(context->bridge->remote_clientid)+strlen("$SYS/broker/connection//state");
@@ -396,13 +394,11 @@ int bridge__connect(struct mosquitto *context)
 				context->bridge->initial_notification_done = true;
 			}
 
-			if (!context->bridge->notifications_local_only) {
-				notification_payload = '0';
-				rc = will__set(context, notification_topic, 1, &notification_payload, 1, true, NULL);
-				if(rc != MOSQ_ERR_SUCCESS){
-					mosquitto__free(notification_topic);
-					return rc;
-				}
+			notification_payload = '0';
+			rc = will__set(context, notification_topic, 1, &notification_payload, 1, true, NULL);
+			if(rc != MOSQ_ERR_SUCCESS){
+				mosquitto__free(notification_topic);
+				return rc;
 			}
 			mosquitto__free(notification_topic);
 		}

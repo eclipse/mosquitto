@@ -100,7 +100,11 @@ int send__connect(struct mosquitto *mosq, uint16_t keepalive, bool clean_session
 	}else{
 		payloadlen = 2U;
 	}
+#ifdef WITH_BROKER
+	if(mosq->will && (mosq->bridge == NULL || mosq->bridge->notifications_local_only == false)){
+#else
 	if(mosq->will){
+#endif
 		will = 1;
 		assert(mosq->will->msg.topic);
 
