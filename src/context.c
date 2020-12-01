@@ -71,7 +71,7 @@ struct mosquitto *context__init(mosq_sock_t sock)
 
 	context->address = NULL;
 	if((int)sock >= 0){
-		if(!net__socket_get_address(sock, address, 1024)){
+		if(!net__socket_get_address(sock, address, 1024, &context->remote_port)){
 			context->address = mosquitto__strdup(address);
 		}
 		if(!context->address){

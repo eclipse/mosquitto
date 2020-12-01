@@ -111,7 +111,7 @@ static void easy_address(int sock, struct mosquitto *mosq)
 {
 	char address[1024];
 
-	if(!net__socket_get_address(sock, address, 1024)){
+	if(!net__socket_get_address(sock, address, 1024, &mosq->remote_port)){
 		mosq->address = mosquitto__strdup(address);
 	}
 }

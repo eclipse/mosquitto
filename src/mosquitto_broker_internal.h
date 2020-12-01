@@ -607,7 +607,7 @@ void net__broker_init(void);
 void net__broker_cleanup(void);
 struct mosquitto *net__socket_accept(struct mosquitto__listener_sock *listensock);
 int net__socket_listen(struct mosquitto__listener *listener);
-int net__socket_get_address(mosq_sock_t sock, char *buf, size_t len);
+int net__socket_get_address(mosq_sock_t sock, char *buf, size_t len, uint16_t *remote_address);
 int net__tls_load_verify(struct mosquitto__listener *listener);
 int net__tls_server_ctx(struct mosquitto__listener *listener);
 int net__load_certificates(struct mosquitto__listener *listener);

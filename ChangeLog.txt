@@ -98,6 +98,7 @@ Broker:
   `notifications_local_only` was set true. Closes #1902.
 - Bridges now obey MQTT v5 server-keepalive.
 - Add bridge support for the MQTT v5 maximum-qos property.
+- Log client port on new connections. Closes #1911.
 
 Client library:
 - Client no longer generates random client ids for v3.1.1 clients, these are

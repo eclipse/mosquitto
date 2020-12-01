@@ -162,7 +162,7 @@ struct mosquitto *net__socket_accept(struct mosquitto__listener_sock *listensock
 	if(!hosts_access(&wrap_req)){
 		/* Access is denied */
 		if(db.config->connection_messages == true){
-			if(!net__socket_get_address(new_sock, address, 1024)){
+			if(!net__socket_get_address(new_sock, address, 1024, NULL)){
 				log__printf(NULL, MOSQ_LOG_NOTICE, "Client connection from %s denied access by tcpd.", address);
 			}
 		}
@@ -241,7 +241,8 @@ struct mosquitto *net__socket_accept(struct mosquitto__listener_sock *listensock
 #endif
 
 	if(db.config->connection_messages == true){
-		log__printf(NULL, MOSQ_LOG_NOTICE, "New connection from %s on port %d.", new_context->address, new_context->listener->port);
+		log__printf(NULL, MOSQ_LOG_NOTICE, "New connection from %s:%d on port %d.",
+				new_context->address, new_context->remote_port, new_context->listener->port);
 	}
 
 	return new_context;
@@ -835,7 +836,7 @@ int net__socket_listen(struct mosquitto__listener *listener)
 	}
 }
 
-int net__socket_get_address(mosq_sock_t sock, char *buf, size_t len)
+int net__socket_get_address(mosq_sock_t sock, char *buf, size_t len, uint16_t *remote_port)
 {
 	struct sockaddr_storage addr;
 	socklen_t addrlen;
@@ -844,10 +845,16 @@ int net__socket_get_address(mosq_sock_t sock, char *buf, size_t len)
 	addrlen = sizeof(addr);
 	if(!getpeername(sock, (struct sockaddr *)&addr, &addrlen)){
 		if(addr.ss_family == AF_INET){
+			if(remote_port){
+				*remote_port = ntohs(((struct sockaddr_in *)&addr)->sin_port);
+			}
 			if(inet_ntop(AF_INET, &((struct sockaddr_in *)&addr)->sin_addr.s_addr, buf, (socklen_t)len)){
 				return 0;
 			}
 		}else if(addr.ss_family == AF_INET6){
+			if(remote_port){
+				*remote_port = ntohs(((struct sockaddr_in6 *)&addr)->sin6_port);
+			}
 			if(inet_ntop(AF_INET6, &((struct sockaddr_in6 *)&addr)->sin6_addr.s6_addr, buf, (socklen_t)len)){
 				return 0;
 			}

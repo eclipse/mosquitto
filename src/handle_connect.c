@@ -184,19 +184,19 @@ int connect__on_authorised(struct mosquitto *context, void *auth_data_out, uint1
 	if(db.config->connection_messages == true){
 		if(context->is_bridge){
 			if(context->username){
-				log__printf(NULL, MOSQ_LOG_NOTICE, "New bridge connected from %s as %s (p%d, c%d, k%d, u'%s').",
-						context->address, context->id, context->protocol, context->clean_start, context->keepalive, context->username);
+				log__printf(NULL, MOSQ_LOG_NOTICE, "New bridge connected from %s:%d as %s (p%d, c%d, k%d, u'%s').",
+						context->address, context->remote_port, context->id, context->protocol, context->clean_start, context->keepalive, context->username);
 			}else{
-				log__printf(NULL, MOSQ_LOG_NOTICE, "New bridge connected from %s as %s (p%d, c%d, k%d).",
-						context->address, context->id, context->protocol, context->clean_start, context->keepalive);
+				log__printf(NULL, MOSQ_LOG_NOTICE, "New bridge connected from %s:%d as %s (p%d, c%d, k%d).",
+						context->address, context->remote_port, context->id, context->protocol, context->clean_start, context->keepalive);
 			}
 		}else{
 			if(context->username){
-				log__printf(NULL, MOSQ_LOG_NOTICE, "New client connected from %s as %s (p%d, c%d, k%d, u'%s').",
-						context->address, context->id, context->protocol, context->clean_start, context->keepalive, context->username);
+				log__printf(NULL, MOSQ_LOG_NOTICE, "New client connected from %s:%d as %s (p%d, c%d, k%d, u'%s').",
+						context->address, context->remote_port, context->id, context->protocol, context->clean_start, context->keepalive, context->username);
 			}else{
-				log__printf(NULL, MOSQ_LOG_NOTICE, "New client connected from %s as %s (p%d, c%d, k%d).",
-						context->address, context->id, context->protocol, context->clean_start, context->keepalive);
+				log__printf(NULL, MOSQ_LOG_NOTICE, "New client connected from %s:%d as %s (p%d, c%d, k%d).",
+						context->address, context->remote_port, context->id, context->protocol, context->clean_start, context->keepalive);
 			}
 		}
 

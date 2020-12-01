@@ -346,6 +346,7 @@ struct mosquitto {
 	UT_hash_handle hh_sock;
 	struct mosquitto *for_free_next;
 	struct session_expiry_list *expiry_list_item;
+	uint16_t remote_port;
 #endif
 #ifdef WITH_EPOLL
 	uint32_t events;
