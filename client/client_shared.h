@@ -83,6 +83,7 @@ struct mosq_config {
 	char *tls_engine;
 	char *tls_engine_kpass_sha1;
 	char *keyform;
+	bool tls_use_os_certs;
 #  ifdef FINAL_WITH_TLS_PSK
 	char *psk;
 	char *psk_identity;

@@ -81,6 +81,7 @@
 						<arg choice='plain'><replaceable>engine</replaceable></arg>
 					</group></arg>
 					<arg><option>--tls-engine-kpass-sha1</option> <replaceable>kpass-sha1</replaceable></arg>
+					<arg><option>--tls-use-os-certs</option></arg>
 					<arg><option>--insecure</option></arg>
 				</arg>
 				<arg>
@@ -560,6 +561,20 @@
 						password to the engine directly, instead of the user
 						being prompted for the password.</para>
 					<para>See also <option>--tls-engine</option>.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>--tls-use-os-certs</option></term>
+				<listitem>
+                    <para>
+                        If used, this will load and trust the OS provided CA
+                        certificates. This can be used in conjunction with 
+                        <option>--cafile</option> and <option>--capath</option>
+                        and can be used on its own to enable TLS mode. This
+						will be set by default if <option>-L mqtts://...</option>
+                        is used, or if port is 8883 and no other certificate
+                        options are used.
+					</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>

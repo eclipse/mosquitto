@@ -460,6 +460,18 @@ int mosquitto_int_option(struct mosquitto *mosq, enum mosq_opt_t option, int val
 			return MOSQ_ERR_NOT_SUPPORTED;
 #endif
 
+		case MOSQ_OPT_TLS_USE_OS_CERTS:
+#ifdef WITH_TLS
+			if(value){
+				mosq->tls_use_os_certs = true;
+			}else{
+				mosq->tls_use_os_certs = false;
+			}
+			break;
+#else
+			return MOSQ_ERR_NOT_SUPPORTED;
+#endif
+
 		case MOSQ_OPT_TLS_OCSP_REQUIRED:
 #ifdef WITH_TLS
 			mosq->tls_ocsp_required = (bool)value;

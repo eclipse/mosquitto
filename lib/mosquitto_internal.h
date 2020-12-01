@@ -249,14 +249,15 @@ struct mosquitto {
 	char *tls_ciphers;
 	char *tls_psk;
 	char *tls_psk_identity;
+	char *tls_engine;
+	char *tls_engine_kpass_sha1;
+	char *tls_alpn;
 	int tls_cert_reqs;
 	bool tls_insecure;
 	bool ssl_ctx_defaults;
 	bool tls_ocsp_required;
-	char *tls_engine;
-	char *tls_engine_kpass_sha1;
+	bool tls_use_os_certs;
 	enum mosquitto__keyform tls_keyform;
-	char *tls_alpn;
 #endif
 	bool want_write;
 	bool want_connect;

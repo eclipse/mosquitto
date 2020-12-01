@@ -732,6 +732,7 @@ int client_config_line_proc(struct mosq_config *cfg, int pub_or_sub, int argc, c
 				} else if(!strncasecmp(url, "mqtts://", 8)) {
 					url += 8;
 					cfg->port = 8883;
+					cfg->tls_use_os_certs = true;
 				} else {
 					fprintf(stderr, "Error: unsupported URL scheme.\n\n");
 					return 1;
@@ -1049,6 +1050,8 @@ int client_config_line_proc(struct mosq_config *cfg, int pub_or_sub, int argc, c
 				cfg->tls_engine_kpass_sha1 = strdup(argv[i+1]);
 			}
 			i++;
+		}else if(!strcmp(argv[i], "--tls-use-os-certs")){
+			cfg->tls_use_os_certs = true;
 		}else if(!strcmp(argv[i], "--tls-version")){
 			if(i==argc-1){
 				fprintf(stderr, "Error: --tls-version argument given but no version specified.\n\n");
@@ -1253,7 +1256,13 @@ int client_opts_set(struct mosquitto *mosq, struct mosq_config *cfg)
 			mosquitto_lib_cleanup();
 			return 1;
 		}
+	}else if(cfg->port == 8883){
+		mosquitto_int_option(mosq, MOSQ_OPT_TLS_USE_OS_CERTS, 1);
 	}
+	if(cfg->tls_use_os_certs){
+		mosquitto_int_option(mosq, MOSQ_OPT_TLS_USE_OS_CERTS, 1);
+	}
+
 	if(cfg->insecure && mosquitto_tls_insecure_set(mosq, true)){
 		err_printf(cfg, "Error: Problem setting TLS insecure option.\n");
 		mosquitto_lib_cleanup();

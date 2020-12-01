@@ -42,6 +42,10 @@ Breaking changes:
   be used, rather than the exact version. Closes #1258.
 - The `max_queued_messages` option has been increased from 100 to 1000 by
   default, and now also applies to QoS 0 messages, when a client is connected.
+- The mosquitto_sub, mosquitto_pub, and mosquitto_rr clients will now load
+  OS provided CA certificates by default if `-L mqtts://...` is used, or if
+  the port is set to 8883 and no other CA certificates are loaded.
+
 
 Broker:
 - When running as root, if dropping privileges to the "mosquitto" user fails,
@@ -113,6 +117,8 @@ Client library:
   of the `mosquitto_connect*()` call.
 - Fix connect properties not being sent when the client automatically
   reconnects. Closes #1846.
+- Add `MOSQ_OPT_TLS_USE_OS_CERTS` option, to instruct the client to load and
+  trust OS provided CA certificates for use with TLS connections.
 
 Clients:
 - Add timeout return code (27) for `mosquitto_sub -W <secs>` and
@@ -141,6 +147,10 @@ Clients:
 - Fix description of `-e` and `-t` arguments in mosquitto_rr. Closes #1881.
 - mosquitto_sub will now quit with an error if the %U option is used on
   Windows, rather than just quitting. Closes #1908.
+- All clients now load OS provided CA certificates if used with `-L
+  mqtts://...`, or if port is set to 8883 and no other CA certificates are
+  used. Closes #1824.
+- Add the `--tls-use-os-certs` option to all clients.
 
 
 1.6.12 - 2020-08-19
