@@ -101,7 +101,7 @@ int handle__connack(struct mosquitto *context)
 					log__printf(NULL, MOSQ_LOG_ERR, "Connection Refused: retain not available (will retry)");
 					return MOSQ_ERR_CONN_LOST;
 				default:
-					log__printf(NULL, MOSQ_LOG_ERR, "Connection Refused: %s", "FIXME"); //mosquitto_reason_string(reason_code));
+					log__printf(NULL, MOSQ_LOG_ERR, "Connection Refused: %s", mosquitto_reason_string(reason_code));
 					return MOSQ_ERR_CONN_LOST;
 			}
 		}else{

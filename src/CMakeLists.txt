@@ -60,6 +60,7 @@ set (MOSQ_SRCS
 	send_unsuback.c
 	../lib/send_unsubscribe.c
 	session_expiry.c
+	../lib/strings_mosq.c
 	subs.c
 	sys_tree.c sys_tree.h
 	../lib/time_mosq.c

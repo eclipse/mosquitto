@@ -67,6 +67,7 @@ OBJS=	mosquitto.o \
 		service.o \
 		session_expiry.o \
 		signals.o \
+		strings_mosq.o \
 		subs.o \
 		sys_tree.o \
 		time_mosq.o \
@@ -270,6 +271,9 @@ session_expiry.o : session_expiry.c mosquitto_broker_internal.h
 	${CROSS_COMPILE}${CC} $(BROKER_CPPFLAGS) $(BROKER_CFLAGS) -c $< -o $@
 
 signals.o : signals.c mosquitto_broker_internal.h
+	${CROSS_COMPILE}${CC} $(BROKER_CPPFLAGS) $(BROKER_CFLAGS) -c $< -o $@
+
+strings_mosq.o : ../lib/strings_mosq.c mosquitto_broker_internal.h
 	${CROSS_COMPILE}${CC} $(BROKER_CPPFLAGS) $(BROKER_CFLAGS) -c $< -o $@
 
 subs.o : subs.c mosquitto_broker_internal.h

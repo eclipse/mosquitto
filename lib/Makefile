@@ -37,6 +37,7 @@ MOSQ_OBJS=mosquitto.o \
 		  send_unsubscribe.o \
 		  socks_mosq.o \
 		  srv_mosq.o \
+		  strings_mosq.o \
 		  thread_mosq.o \
 		  time_mosq.o \
 		  tls_mosq.o \
@@ -200,6 +201,9 @@ socks_mosq.o : socks_mosq.c
 	${CROSS_COMPILE}$(CC) $(LIB_CPPFLAGS) $(LIB_CFLAGS) -c $< -o $@
 
 srv_mosq.o : srv_mosq.c
+	${CROSS_COMPILE}$(CC) $(LIB_CPPFLAGS) $(LIB_CFLAGS) -c $< -o $@
+
+strings_mosq.o : strings_mosq.c
 	${CROSS_COMPILE}$(CC) $(LIB_CPPFLAGS) $(LIB_CFLAGS) -c $< -o $@
 
 thread_mosq.o : thread_mosq.c
