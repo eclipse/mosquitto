@@ -1171,8 +1171,8 @@ log_timestamp_format %Y-%m-%dT%H:%M:%S
 							default at compile time. Certificate based TLS may be used
 							with websockets, except that only the
 							<option>cafile</option>, <option>certfile</option>,
-							<option>keyfile</option> and
-							<option>ciphers</option> options are
+							<option>keyfile</option>, <option>ciphers</option>, and
+							<option>ciphers_tls1.3</option> options are
 							supported.</para>
 						<para>Not reloaded on reload signal.</para>
 					</listitem>
@@ -1289,9 +1289,21 @@ log_timestamp_format %Y-%m-%dT%H:%M:%S
 				<varlistentry>
 					<term><option>ciphers</option> <replaceable>cipher:list</replaceable></term>
 					<listitem>
-						<para>The list of allowed ciphers, each separated with
-							a colon. Available ciphers can be obtained using
-							the "openssl ciphers" command.</para>
+                        <para>
+                            The list of allowed ciphers for this listener, for
+                            TLS v1.2 and earlier only, each separated with
+                            a colon. Available ciphers can be obtained using
+                            the "openssl ciphers" command.
+                        </para>
+					</listitem>
+				</varlistentry>
+				<varlistentry>
+					<term><option>ciphers_tls1.3</option> <replaceable>cipher:list</replaceable></term>
+					<listitem>
+                        <para>
+                            The list of allowed ciphersuites for this listener,
+                            for TLS v1.3, each separated with a colon.
+                        </para>
 					</listitem>
 				</varlistentry>
 				<varlistentry>

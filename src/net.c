@@ -386,6 +386,16 @@ int net__tls_server_ctx(struct mosquitto__listener *listener)
 			return MOSQ_ERR_TLS;
 		}
 	}
+#if OPENSSL_VERSION_NUMBER >= 0x10101000
+	if(listener->ciphers_tls13){
+		rc = SSL_CTX_set_ciphersuites(listener->ssl_ctx, listener->ciphers_tls13);
+		if(rc == 0){
+			log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to set TLS 1.3 ciphersuites. Check cipher_tls13 list \"%s\".", listener->ciphers_tls13);
+			return MOSQ_ERR_TLS;
+		}
+	}
+#endif
+
 	if(listener->dhparamfile){
 		dhparamfile = fopen(listener->dhparamfile, "r");
 		if(!dhparamfile){

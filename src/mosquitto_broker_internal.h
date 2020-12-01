@@ -228,6 +228,7 @@ struct mosquitto__listener {
 	char *tls_engine;
 	char *tls_engine_kpass_sha1;
 	char *ciphers;
+	char *ciphers_tls13;
 	char *psk_hint;
 	SSL_CTX *ssl_ctx;
 	char *crlfile;

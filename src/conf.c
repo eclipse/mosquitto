@@ -278,6 +278,7 @@ void config__cleanup(struct mosquitto__config *config)
 			mosquitto__free(config->listeners[i].certfile);
 			mosquitto__free(config->listeners[i].keyfile);
 			mosquitto__free(config->listeners[i].ciphers);
+			mosquitto__free(config->listeners[i].ciphers_tls13);
 			mosquitto__free(config->listeners[i].psk_hint);
 			mosquitto__free(config->listeners[i].crlfile);
 			mosquitto__free(config->listeners[i].dhparamfile);
@@ -428,6 +429,7 @@ int config__parse_args(struct mosquitto__config *config, int argc, char *argv[])
 			|| config->default_listener.tls_keyform != mosq_k_pem
 			|| config->default_listener.tls_engine_kpass_sha1
 			|| config->default_listener.ciphers
+			|| config->default_listener.ciphers_tls13
 			|| config->default_listener.dhparamfile
 			|| config->default_listener.psk_hint
 			|| config->default_listener.require_certificate
@@ -492,6 +494,7 @@ int config__parse_args(struct mosquitto__config *config, int argc, char *argv[])
 		config->listeners[config->listener_count-1].certfile = config->default_listener.certfile;
 		config->listeners[config->listener_count-1].keyfile = config->default_listener.keyfile;
 		config->listeners[config->listener_count-1].ciphers = config->default_listener.ciphers;
+		config->listeners[config->listener_count-1].ciphers_tls13 = config->default_listener.ciphers_tls13;
 		config->listeners[config->listener_count-1].dhparamfile = config->default_listener.dhparamfile;
 		config->listeners[config->listener_count-1].psk_hint = config->default_listener.psk_hint;
 		config->listeners[config->listener_count-1].require_certificate = config->default_listener.require_certificate;
@@ -1171,6 +1174,13 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 #ifdef WITH_TLS
 					if(reload) continue; /* Listeners not valid for reloading. */
 					if(conf__parse_string(&token, "ciphers", &cur_listener->ciphers, saveptr)) return MOSQ_ERR_INVAL;
+#else
+					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: TLS support not available.");
+#endif
+				}else if(!strcmp(token, "ciphers_tls1.3")){
+#ifdef WITH_TLS
+					if(reload) continue; /* Listeners not valid for reloading. */
+					if(conf__parse_string(&token, "ciphers_tls1.3", &cur_listener->ciphers_tls13, saveptr)) return MOSQ_ERR_INVAL;
 #else
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: TLS support not available.");
 #endif
