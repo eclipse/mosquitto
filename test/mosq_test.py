@@ -201,7 +201,7 @@ def to_string(packet):
     if len(packet) == 0:
         return ""
 
-    packet0 = struct.unpack("!B", bytes(packet[0]))
+    packet0 = struct.unpack("!B%ds" % (len(packet)-1), bytes(packet))
     packet0 = packet0[0]
     cmd = packet0 & 0xF0
     if cmd == 0x00:
@@ -214,7 +214,7 @@ def to_string(packet):
         (slen, packet) = struct.unpack(pack_format, packet)
         pack_format = "!" + str(slen)+'sBBH' + str(len(packet)-slen-4) + 's'
         (protocol, proto_ver, flags, keepalive, packet) = struct.unpack(pack_format, packet)
-        s = "CONNECT, proto="+protocol+str(proto_ver)+", keepalive="+str(keepalive)
+        s = "CONNECT, proto="+str(protocol)+str(proto_ver)+", keepalive="+str(keepalive)
         if flags&2:
             s = s+", clean-session"
         else:
@@ -224,14 +224,14 @@ def to_string(packet):
         (slen, packet) = struct.unpack(pack_format, packet)
         pack_format = "!" + str(slen)+'s' + str(len(packet)-slen) + 's'
         (client_id, packet) = struct.unpack(pack_format, packet)
-        s = s+", id="+client_id
+        s = s+", id="+str(client_id)
 
         if flags&4:
             pack_format = "!H" + str(len(packet)-2) + 's'
             (slen, packet) = struct.unpack(pack_format, packet)
             pack_format = "!" + str(slen)+'s' + str(len(packet)-slen) + 's'
             (will_topic, packet) = struct.unpack(pack_format, packet)
-            s = s+", will-topic="+will_topic
+            s = s+", will-topic="+str(will_topic)
 
             pack_format = "!H" + str(len(packet)-2) + 's'
             (slen, packet) = struct.unpack(pack_format, packet)
@@ -247,14 +247,14 @@ def to_string(packet):
             (slen, packet) = struct.unpack(pack_format, packet)
             pack_format = "!" + str(slen)+'s' + str(len(packet)-slen) + 's'
             (username, packet) = struct.unpack(pack_format, packet)
-            s = s+", username="+username
+            s = s+", username="+str(username)
 
         if flags&64:
             pack_format = "!H" + str(len(packet)-2) + 's'
             (slen, packet) = struct.unpack(pack_format, packet)
             pack_format = "!" + str(slen)+'s' + str(len(packet)-slen) + 's'
             (password, packet) = struct.unpack(pack_format, packet)
-            s = s+", password="+password
+            s = s+", password="+str(password)
 
         if flags&1:
             s = s+", reserved=1"
@@ -274,13 +274,13 @@ def to_string(packet):
         (tlen, packet) = struct.unpack(pack_format, packet)
         pack_format = "!" + str(tlen)+'s' + str(len(packet)-tlen) + 's'
         (topic, packet) = struct.unpack(pack_format, packet)
-        s = "PUBLISH, rl="+str(rl)+", topic="+topic+", qos="+str(qos)+", retain="+str(retain)+", dup="+str(dup)
+        s = "PUBLISH, rl="+str(rl)+", topic="+str(topic)+", qos="+str(qos)+", retain="+str(retain)+", dup="+str(dup)
         if qos > 0:
             pack_format = "!H" + str(len(packet)-2) + 's'
             (mid, packet) = struct.unpack(pack_format, packet)
             s = s + ", mid="+str(mid)
 
-        s = s + ", payload="+packet
+        s = s + ", payload="+str(packet)
         return s
     elif cmd == 0x40:
         # PUBACK
@@ -311,7 +311,7 @@ def to_string(packet):
             (tlen, packet) = struct.unpack(pack_format, packet)
             pack_format = "!" + str(tlen)+'sB' + str(len(packet)-tlen-1) + 's'
             (topic, qos, packet) = struct.unpack(pack_format, packet)
-            s = s + ", topic"+str(topic_index)+"="+topic+","+str(qos)
+            s = s + ", topic"+str(topic_index)+"="+str(topic)+","+str(qos)
         return s
     elif cmd == 0x90:
         # SUBACK
@@ -337,7 +337,7 @@ def to_string(packet):
             (tlen, packet) = struct.unpack(pack_format, packet)
             pack_format = "!" + str(tlen)+'s' + str(len(packet)-tlen) + 's'
             (topic, packet) = struct.unpack(pack_format, packet)
-            s = s + ", topic"+str(topic_index)+"="+topic
+            s = s + ", topic"+str(topic_index)+"="+str(topic)
         return s
     elif cmd == 0xB0:
         # UNSUBACK
