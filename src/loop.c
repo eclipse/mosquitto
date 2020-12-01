@@ -225,12 +225,12 @@ int mosquitto_main_loop(struct mosquitto__listener_sock *listensock, int listens
 			 * citizens. */
 			if(db.config->listeners[i].ws_context){
 #if LWS_LIBRARY_VERSION_NUMBER > 3002000
-				libwebsocket_service(db.config->listeners[i].ws_context, -1);
+				lws_service(db.config->listeners[i].ws_context, -1);
 #elif LWS_LIBRARY_VERSION_NUMBER == 3002000
 				lws_sul_schedule(db.config->listeners[i].ws_context, 0, &sul, lws__sul_callback, 10);
-				libwebsocket_service(db.config->listeners[i].ws_context, 0);
+				lws_service(db.config->listeners[i].ws_context, 0);
 #else
-				libwebsocket_service(db.config->listeners[i].ws_context, 0);
+				lws_service(db.config->listeners[i].ws_context, 0);
 #endif
 
 			}
@@ -264,7 +264,7 @@ void do_disconnect(struct mosquitto *context, int reason)
 			mosquitto__set_state(context, mosq_cs_disconnect_ws);
 		}
 		if(context->wsi){
-			libwebsocket_callback_on_writable(context->ws_context, context->wsi);
+			lws_callback_on_writable(context->wsi);
 		}
 		if(context->sock != INVALID_SOCKET){
 			HASH_DELETE(hh_sock, db.contexts_by_sock, context);

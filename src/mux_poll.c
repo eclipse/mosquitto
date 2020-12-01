@@ -251,11 +251,7 @@ static void loop_handle_reads_writes(struct pollfd *pollfds)
 			wspoll.fd = pollfds[context->pollfd_index].fd;
 			wspoll.events = pollfds[context->pollfd_index].events;
 			wspoll.revents = pollfds[context->pollfd_index].revents;
-#ifdef LWS_LIBRARY_VERSION_NUMBER
 			lws_service_fd(lws_get_context(context->wsi), &wspoll);
-#else
-			lws_service_fd(context->ws_context, &wspoll);
-#endif
 			continue;
 		}
 #endif

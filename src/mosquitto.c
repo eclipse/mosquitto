@@ -344,7 +344,7 @@ void listeners__stop(struct mosquitto__listener_sock *listensock, int listensock
 	for(i=0; i<db.config->listener_count; i++){
 #ifdef WITH_WEBSOCKETS
 		if(db.config->listeners[i].ws_context){
-			libwebsocket_context_destroy(db.config->listeners[i].ws_context);
+			lws_context_destroy(db.config->listeners[i].ws_context);
 		}
 		mosquitto__free(db.config->listeners[i].ws_protocol);
 #endif

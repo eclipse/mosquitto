@@ -45,6 +45,7 @@ Breaking changes:
 - The mosquitto_sub, mosquitto_pub, and mosquitto_rr clients will now load
   OS provided CA certificates by default if `-L mqtts://...` is used, or if
   the port is set to 8883 and no other CA certificates are loaded.
+- Minimum support libwebsockets version is now 2.4.0
 
 
 Broker:

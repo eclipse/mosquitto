@@ -69,7 +69,7 @@ int packet__alloc(struct mosquitto__packet *packet)
 	if(packet->remaining_count == 5) return MOSQ_ERR_PAYLOAD_SIZE;
 	packet->packet_length = packet->remaining_length + 1 + (uint8_t)packet->remaining_count;
 #ifdef WITH_WEBSOCKETS
-	packet->payload = mosquitto__malloc(sizeof(uint8_t)*packet->packet_length + LWS_SEND_BUFFER_PRE_PADDING + LWS_SEND_BUFFER_POST_PADDING);
+	packet->payload = mosquitto__malloc(sizeof(uint8_t)*packet->packet_length + LWS_PRE);
 #else
 	packet->payload = mosquitto__malloc(sizeof(uint8_t)*packet->packet_length);
 #endif
@@ -159,7 +159,7 @@ int packet__queue(struct mosquitto *mosq, struct mosquitto__packet *packet)
 #ifdef WITH_BROKER
 #  ifdef WITH_WEBSOCKETS
 	if(mosq->wsi){
-		libwebsocket_callback_on_writable(mosq->ws_context, mosq->wsi);
+		lws_callback_on_writable(mosq->wsi);
 		return MOSQ_ERR_SUCCESS;
 	}else{
 		return packet__write(mosq);
