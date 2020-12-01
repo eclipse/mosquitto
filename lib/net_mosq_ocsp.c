@@ -11,6 +11,8 @@ The Eclipse Public License is available at
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
 
+SPDX-License-Identifier: EPL-2.0 OR EDL-1.0
+
 Contributors:
    Dr. Lars Voelker, BMW AG
 */
