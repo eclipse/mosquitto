@@ -2174,6 +2174,18 @@ int config__read_file(struct mosquitto__config *config, bool reload, const char 
 	FILE *fptr = NULL;
 	char *buf;
 	int buflen;
+#ifndef WIN32
+	DIR *dir;
+#endif
+
+#ifndef WIN32
+	dir = opendir(file);
+	if(dir){
+		closedir(dir);
+		log__printf(NULL, MOSQ_LOG_ERR, "Error: Config file %s is a directory.", file);
+		return 1;
+	}
+#endif
 
 	fptr = mosquitto__fopen(file, "rt", false);
 	if(!fptr){
