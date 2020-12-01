@@ -345,6 +345,11 @@ int net__tls_server_ctx(struct mosquitto__listener *listener)
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Unsupported tls_version \"%s\".", listener->tls_version);
 		return MOSQ_ERR_TLS;
 	}
+	/* Use a new key when using temporary/ephemeral DH parameters.
+	 * This shouldn't be necessary, but we can't guarantee that `dhparam` has
+	 * been generated using strong primes.
+	 */
+	SSL_CTX_set_options(listener->ssl_ctx, SSL_OP_SINGLE_DH_USE);
 
 #ifdef SSL_OP_NO_COMPRESSION
 	/* Disable compression */
