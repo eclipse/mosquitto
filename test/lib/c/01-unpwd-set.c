@@ -15,6 +15,9 @@ int main(int argc, char *argv[])
 	mosquitto_lib_init();
 
 	mosq = mosquitto_new("01-unpwd-set", true, NULL);
+	if(mosq == NULL){
+		return 1;
+	}
 	mosquitto_username_pw_set(mosq, "uname", ";'[08gn=#");
 
 	rc = mosquitto_connect(mosq, "localhost", port, 60);

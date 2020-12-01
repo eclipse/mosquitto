@@ -15,6 +15,9 @@ int main(int argc, char *argv[])
 	mosquitto_lib_init();
 
 	mosq = mosquitto_new("01-will-set", true, NULL);
+	if(mosq == NULL){
+		return 1;
+	}
 	mosquitto_will_set(mosq, "topic/on/unexpected/disconnect", strlen("will message"), "will message", 1, true);
 
 	rc = mosquitto_connect(mosq, "localhost", port, 60);

@@ -21,6 +21,9 @@ int main(int argc, char *argv[])
 	mosquitto_lib_init();
 
 	mosq = mosquitto_new("08-ssl-connect-crt-auth", true, NULL);
+	if(mosq == NULL){
+		return 1;
+	}
 	mosquitto_tls_set(mosq, "../ssl/test-fake-root-ca.crt", NULL, "../ssl/client.crt", "../ssl/client.key", NULL);
 	mosquitto_connect_callback_set(mosq, on_connect);
 

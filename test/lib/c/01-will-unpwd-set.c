@@ -15,6 +15,9 @@ int main(int argc, char *argv[])
 	mosquitto_lib_init();
 
 	mosq = mosquitto_new("01-will-unpwd-set", true, NULL);
+	if(mosq == NULL){
+		return 1;
+	}
 	mosquitto_username_pw_set(mosq, "oibvvwqw", "#'^2hg9a&nm38*us");
 	mosquitto_will_set(mosq, "will-topic", strlen("will message"), "will message", 2, false);
 

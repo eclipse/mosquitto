@@ -15,6 +15,9 @@ int main(int argc, char *argv[])
 	mosquitto_lib_init();
 
 	mosq = mosquitto_new("01-no-clean-session", false, NULL);
+	if(mosq == NULL){
+		return 1;
+	}
 
 	rc = mosquitto_connect(mosq, "localhost", port, 60);
 

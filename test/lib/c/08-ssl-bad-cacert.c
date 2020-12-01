@@ -12,6 +12,9 @@ int main(int argc, char *argv[])
 	mosquitto_lib_init();
 
 	mosq = mosquitto_new("08-ssl-bad-cacert", true, NULL);
+	if(mosq == NULL){
+		return 1;
+	}
 	if(mosquitto_tls_set(mosq, "this/file/doesnt/exist", NULL, NULL, NULL, NULL) == MOSQ_ERR_INVAL){
 		rc = 0;
 	}

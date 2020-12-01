@@ -50,6 +50,9 @@ int main(int argc, char *argv[])
 	mosquitto_lib_init();
 
 	mosq = mosquitto_new("response-test", true, NULL);
+	if(mosq == NULL){
+		return 1;
+	}
 	mosquitto_opts_set(mosq, MOSQ_OPT_PROTOCOL_VERSION, &ver);
 	mosquitto_connect_callback_set(mosq, on_connect);
 	mosquitto_publish_callback_set(mosq, on_publish);
