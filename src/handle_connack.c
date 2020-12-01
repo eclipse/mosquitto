@@ -76,6 +76,11 @@ int handle__connack(struct mosquitto *context)
 			}
 		}
 
+		/* receive-maximum */
+		mosquitto_property_read_int16(properties, MQTT_PROP_RECEIVE_MAXIMUM,
+				&context->msgs_out.inflight_maximum, false);
+		context->msgs_out.inflight_quota = context->msgs_out.inflight_maximum;
+
 		/* retain-available */
 		if(mosquitto_property_read_byte(properties, MQTT_PROP_RETAIN_AVAILABLE,
 					&retain_available, false)){
