@@ -34,6 +34,7 @@ int handle__connack(struct mosquitto *context)
 	mosquitto_property *properties = NULL;
 	uint32_t maximum_packet_size;
 	uint8_t retain_available;
+	uint16_t server_keepalive;
 
 	if(!context){
 		return MOSQ_ERR_INVAL;
@@ -75,6 +76,13 @@ int handle__connack(struct mosquitto *context)
 			if(context->retain_available){
 				context->retain_available = retain_available;
 			}
+		}
+
+		/* server-keepalive */
+		if(mosquitto_property_read_int16(properties, MQTT_PROP_SERVER_KEEP_ALIVE,
+					&server_keepalive, false)){
+
+			context->keepalive = server_keepalive;
 		}
 
 		mosquitto_property_free_all(&properties);
