@@ -730,9 +730,14 @@ int client_config_line_proc(struct mosq_config *cfg, int pub_or_sub, int argc, c
 					url += 7;
 					cfg->port = 1883;
 				} else if(!strncasecmp(url, "mqtts://", 8)) {
+#ifdef WITH_TLS
 					url += 8;
 					cfg->port = 8883;
 					cfg->tls_use_os_certs = true;
+#else
+					fprintf(stderr, "Error: TLS support not available.\n\n");
+					return 1;
+#endif
 				} else {
 					fprintf(stderr, "Error: unsupported URL scheme.\n\n");
 					return 1;
