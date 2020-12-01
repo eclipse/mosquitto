@@ -173,7 +173,7 @@ int mosquitto_reinitialise(struct mosquitto *mosq, const char *id, bool clean_st
 	mosq->ping_t = 0;
 	mosq->last_mid = 0;
 	mosq->state = mosq_cs_new;
-	mosq->maximum_qos = 2;
+	mosq->max_qos = 2;
 	mosq->msgs_in.inflight_maximum = 20;
 	mosq->msgs_out.inflight_maximum = 20;
 	mosq->msgs_in.inflight_quota = 20;

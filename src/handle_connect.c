@@ -225,17 +225,11 @@ int connect__on_authorised(struct mosquitto *context, void *auth_data_out, uint1
 		db.persistence_changes++;
 	}
 #endif
-	context->maximum_qos = context->listener->maximum_qos;
+	context->max_qos = context->listener->max_qos;
 
 	if(context->protocol == mosq_p_mqtt5){
 		if(context->listener->max_topic_alias > 0){
 			if(mosquitto_property_add_int16(&connack_props, MQTT_PROP_TOPIC_ALIAS_MAXIMUM, context->listener->max_topic_alias)){
-				rc = MOSQ_ERR_NOMEM;
-				goto error;
-			}
-		}
-		if(context->maximum_qos != 2){
-			if(mosquitto_property_add_byte(&connack_props, MQTT_PROP_MAXIMUM_QOS, context->maximum_qos)){
 				rc = MOSQ_ERR_NOMEM;
 				goto error;
 			}
@@ -527,6 +521,14 @@ int handle__connect(struct mosquitto *context)
 		if(rc) goto handle_connect_error;
 	}
 	property__process_connect(context, &properties);
+
+	if(will && will_qos > context->listener->max_qos){
+		if(protocol_version == mosq_p_mqtt5){
+			send__connack(context, 0, MQTT_RC_QOS_NOT_SUPPORTED, NULL);
+		}
+		rc = MOSQ_ERR_NOT_SUPPORTED;
+		goto handle_connect_error;
+	}
 
 	if(mosquitto_property_read_string(properties, MQTT_PROP_AUTHENTICATION_METHOD, &context->auth_method, false)){
 		mosquitto_property_read_binary(properties, MQTT_PROP_AUTHENTICATION_DATA, &auth_data, &auth_data_len, false);

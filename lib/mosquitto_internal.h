@@ -335,7 +335,7 @@ struct mosquitto {
 	ares_channel achan;
 #  endif
 #endif
-	uint8_t maximum_qos;
+	uint8_t max_qos;
 	uint8_t retain_available;
 	bool tcp_nodelay;
 

@@ -174,7 +174,7 @@ void listener__set_defaults(struct mosquitto__listener *listener)
 	listener->security_options.allow_zero_length_clientid = true;
 	listener->protocol = mp_mqtt;
 	listener->max_connections = -1;
-	listener->maximum_qos = 2;
+	listener->max_qos = 2;
 	listener->max_topic_alias = 10;
 }
 

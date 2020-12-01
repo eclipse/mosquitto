@@ -97,6 +97,7 @@ Broker:
 - Fix bridges incorrectly setting Wills to manage remote notifications when
   `notifications_local_only` was set true. Closes #1902.
 - Bridges now obey MQTT v5 server-keepalive.
+- Add bridge support for the MQTT v5 maximum-qos property.
 
 Client library:
 - Client no longer generates random client ids for v3.1.1 clients, these are

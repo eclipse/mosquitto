@@ -492,8 +492,8 @@ int db__message_insert(struct mosquitto *context, uint16_t mid, enum mosquitto_m
 	msg->direction = dir;
 	msg->state = state;
 	msg->dup = false;
-	if(qos > context->maximum_qos){
-		msg->qos = context->maximum_qos;
+	if(qos > context->max_qos){
+		msg->qos = context->max_qos;
 	}else{
 		msg->qos = qos;
 	}

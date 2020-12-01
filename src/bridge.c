@@ -149,6 +149,7 @@ int bridge__connect_step1(struct mosquitto *context)
 	size_t notification_topic_len;
 	uint8_t notification_payload;
 	int i;
+	uint8_t qos;
 
 	if(!context || !context->bridge) return MOSQ_ERR_INVAL;
 
@@ -176,9 +177,14 @@ int bridge__connect_step1(struct mosquitto *context)
 	for(i=0; i<context->bridge->topic_count; i++){
 		if(context->bridge->topics[i].direction == bd_out || context->bridge->topics[i].direction == bd_both){
 			log__printf(NULL, MOSQ_LOG_DEBUG, "Bridge %s doing local SUBSCRIBE on topic %s", context->id, context->bridge->topics[i].local_topic);
+			if(context->bridge->topics[i].qos > context->max_qos){
+				qos = context->max_qos;
+			}else{
+				qos = context->bridge->topics[i].qos;
+			}
 			if(sub__add(context,
 						context->bridge->topics[i].local_topic,
-						context->bridge->topics[i].qos,
+						qos,
 						0,
 						MQTT_SUB_OPT_NO_LOCAL | MQTT_SUB_OPT_RETAIN_AS_PUBLISHED,
 						&db.subs) > 0){
@@ -186,7 +192,7 @@ int bridge__connect_step1(struct mosquitto *context)
 			}
 			retain__queue(context,
 					context->bridge->topics[i].local_topic,
-					context->bridge->topics[i].qos, 0);
+					qos, 0);
 		}
 	}
 
@@ -194,14 +200,19 @@ int bridge__connect_step1(struct mosquitto *context)
 	bridge__backoff_step(context);
 
 	if(context->bridge->notifications){
+		if(context->max_qos == 0){
+			qos = 0;
+		}else{
+			qos = 1;
+		}
 		if(context->bridge->notification_topic){
 			if(!context->bridge->initial_notification_done){
 				notification_payload = '0';
-				db__messages_easy_queue(context, context->bridge->notification_topic, 1, 1, &notification_payload, 1, 0, NULL);
+				db__messages_easy_queue(context, context->bridge->notification_topic, qos, 1, &notification_payload, 1, 0, NULL);
 				context->bridge->initial_notification_done = true;
 			}
 			notification_payload = '0';
-			rc = will__set(context, context->bridge->notification_topic, 1, &notification_payload, 1, true, NULL);
+			rc = will__set(context, context->bridge->notification_topic, 1, &notification_payload, qos, true, NULL);
 			if(rc != MOSQ_ERR_SUCCESS){
 				return rc;
 			}
@@ -214,12 +225,12 @@ int bridge__connect_step1(struct mosquitto *context)
 
 			if(!context->bridge->initial_notification_done){
 				notification_payload = '0';
-				db__messages_easy_queue(context, notification_topic, 1, 1, &notification_payload, 1, 0, NULL);
+				db__messages_easy_queue(context, notification_topic, qos, 1, &notification_payload, 1, 0, NULL);
 				context->bridge->initial_notification_done = true;
 			}
 
 			notification_payload = '0';
-			rc = will__set(context, notification_topic, 1, &notification_payload, 1, true, NULL);
+			rc = will__set(context, notification_topic, 1, &notification_payload, qos, true, NULL);
 			mosquitto__free(notification_topic);
 			if(rc != MOSQ_ERR_SUCCESS){
 				return rc;
@@ -326,6 +337,7 @@ int bridge__connect(struct mosquitto *context)
 	char *notification_topic = NULL;
 	size_t notification_topic_len;
 	uint8_t notification_payload;
+	uint8_t qos;
 
 	if(!context || !context->bridge) return MOSQ_ERR_INVAL;
 
@@ -353,9 +365,14 @@ int bridge__connect(struct mosquitto *context)
 	for(i=0; i<context->bridge->topic_count; i++){
 		if(context->bridge->topics[i].direction == bd_out || context->bridge->topics[i].direction == bd_both){
 			log__printf(NULL, MOSQ_LOG_DEBUG, "Bridge %s doing local SUBSCRIBE on topic %s", context->id, context->bridge->topics[i].local_topic);
+			if(context->bridge->topics[i].qos > context->max_qos){
+				qos = context->max_qos;
+			}else{
+				qos = context->bridge->topics[i].qos;
+			}
 			if(sub__add(context,
 						context->bridge->topics[i].local_topic,
-						context->bridge->topics[i].qos,
+						qos,
 						0,
 						MQTT_SUB_OPT_NO_LOCAL | MQTT_SUB_OPT_RETAIN_AS_PUBLISHED,
 						&db.subs) > 0){
@@ -369,15 +386,20 @@ int bridge__connect(struct mosquitto *context)
 	bridge__backoff_step(context);
 
 	if(context->bridge->notifications){
+		if(context->max_qos == 0){
+			qos = 0;
+		}else{
+			qos = 1;
+		}
 		if(context->bridge->notification_topic){
 			if(!context->bridge->initial_notification_done){
 				notification_payload = '0';
-				db__messages_easy_queue(context, context->bridge->notification_topic, 1, 1, &notification_payload, 1, 0, NULL);
+				db__messages_easy_queue(context, context->bridge->notification_topic, qos, 1, &notification_payload, 1, 0, NULL);
 				context->bridge->initial_notification_done = true;
 			}
 
 			notification_payload = '0';
-			rc = will__set(context, context->bridge->notification_topic, 1, &notification_payload, 1, true, NULL);
+			rc = will__set(context, context->bridge->notification_topic, 1, &notification_payload, qos, true, NULL);
 			if(rc != MOSQ_ERR_SUCCESS){
 				return rc;
 			}
@@ -390,12 +412,12 @@ int bridge__connect(struct mosquitto *context)
 
 			if(!context->bridge->initial_notification_done){
 				notification_payload = '0';
-				db__messages_easy_queue(context, notification_topic, 1, 1, &notification_payload, 1, 0, NULL);
+				db__messages_easy_queue(context, notification_topic, qos, 1, &notification_payload, 1, 0, NULL);
 				context->bridge->initial_notification_done = true;
 			}
 
 			notification_payload = '0';
-			rc = will__set(context, notification_topic, 1, &notification_payload, 1, true, NULL);
+			rc = will__set(context, notification_topic, 1, &notification_payload, qos, true, NULL);
 			if(rc != MOSQ_ERR_SUCCESS){
 				mosquitto__free(notification_topic);
 				return rc;
@@ -459,8 +481,14 @@ int bridge__on_connect(struct mosquitto *context)
 	char notification_payload;
 	int sub_opts;
 	bool retain = true;
+	uint8_t qos;
 
 	if(context->bridge->notifications){
+		if(context->max_qos == 0){
+			qos = 0;
+		}else{
+			qos = 1;
+		}
 		if(!context->retain_available){
 			retain = false;
 		}
@@ -468,12 +496,12 @@ int bridge__on_connect(struct mosquitto *context)
 		if(context->bridge->notification_topic){
 			if(!context->bridge->notifications_local_only){
 				if(send__real_publish(context, mosquitto__mid_generate(context),
-						context->bridge->notification_topic, 1, &notification_payload, 1, retain, 0, NULL, NULL, 0)){
+						context->bridge->notification_topic, 1, &notification_payload, qos, retain, 0, NULL, NULL, 0)){
 
 					return 1;
 				}
 			}
-			db__messages_easy_queue(context, context->bridge->notification_topic, 1, 1, &notification_payload, 1, 0, NULL);
+			db__messages_easy_queue(context, context->bridge->notification_topic, qos, 1, &notification_payload, 1, 0, NULL);
 		}else{
 			notification_topic_len = strlen(context->bridge->remote_clientid)+strlen("$SYS/broker/connection//state");
 			notification_topic = mosquitto__malloc(sizeof(char)*(notification_topic_len+1));
@@ -483,19 +511,23 @@ int bridge__on_connect(struct mosquitto *context)
 			notification_payload = '1';
 			if(!context->bridge->notifications_local_only){
 				if(send__real_publish(context, mosquitto__mid_generate(context),
-						notification_topic, 1, &notification_payload, 1, retain, 0, NULL, NULL, 0)){
+						notification_topic, 1, &notification_payload, qos, retain, 0, NULL, NULL, 0)){
 
 					mosquitto__free(notification_topic);
 					return 1;
 				}
 			}
-			db__messages_easy_queue(context, notification_topic, 1, 1, &notification_payload, 1, 0, NULL);
+			db__messages_easy_queue(context, notification_topic, qos, 1, &notification_payload, 1, 0, NULL);
 			mosquitto__free(notification_topic);
 		}
 	}
 	for(i=0; i<context->bridge->topic_count; i++){
 		if(context->bridge->topics[i].direction == bd_in || context->bridge->topics[i].direction == bd_both){
-			sub_opts = context->bridge->topics[i].qos;
+			if(context->bridge->topics[i].qos > context->max_qos){
+				sub_opts = context->max_qos;
+			}else{
+				sub_opts = context->bridge->topics[i].qos;
+			}
 			if(context->bridge->protocol_version == mosq_p_mqtt5){
 				sub_opts = sub_opts
 					| MQTT_SUB_OPT_NO_LOCAL
@@ -518,9 +550,14 @@ int bridge__on_connect(struct mosquitto *context)
 	}
 	for(i=0; i<context->bridge->topic_count; i++){
 		if(context->bridge->topics[i].direction == bd_out || context->bridge->topics[i].direction == bd_both){
+			if(context->bridge->topics[i].qos > context->max_qos){
+				qos = context->max_qos;
+			}else{
+				qos = context->bridge->topics[i].qos;
+			}
 			retain__queue(context,
 					context->bridge->topics[i].local_topic,
-					context->bridge->topics[i].qos, 0);
+					qos, 0);
 		}
 	}
 

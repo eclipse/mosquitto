@@ -22,9 +22,12 @@ def do_test(publish_packet, reason_code, error_string):
     keepalive = 10
     connect_packet = mosq_test.gen_connect("test", proto_ver=5, keepalive=keepalive)
 
-    connack_props = mqtt5_props.gen_byte_prop(mqtt5_props.PROP_MAXIMUM_QOS, 1)
+    connack_props = mqtt5_props.gen_uint16_prop(mqtt5_props.PROP_TOPIC_ALIAS_MAXIMUM, 10)
     connack_props += mqtt5_props.gen_byte_prop(mqtt5_props.PROP_RETAIN_AVAILABLE, 0)
-    connack_packet = mosq_test.gen_connack(rc=0, proto_ver=5, properties=connack_props)
+    connack_props += mqtt5_props.gen_uint16_prop(mqtt5_props.PROP_RECEIVE_MAXIMUM, 20)
+    connack_props += mqtt5_props.gen_byte_prop(mqtt5_props.PROP_MAXIMUM_QOS, 1)
+
+    connack_packet = mosq_test.gen_connack(rc=0, proto_ver=5, properties=connack_props, property_helper=False)
 
     mid = 0
     disconnect_packet = mosq_test.gen_disconnect(proto_ver=5, reason_code=reason_code)

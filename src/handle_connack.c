@@ -35,6 +35,7 @@ int handle__connack(struct mosquitto *context)
 	uint32_t maximum_packet_size;
 	uint8_t retain_available;
 	uint16_t server_keepalive;
+	uint8_t max_qos = 255;
 
 	if(!context){
 		return MOSQ_ERR_INVAL;
@@ -56,8 +57,13 @@ int handle__connack(struct mosquitto *context)
 			context->bridge->protocol_version = mosq_p_mqtt311;
 			return MOSQ_ERR_PROTOCOL;
 		}
+
 		rc = property__read_all(CMD_CONNACK, &context->in_packet, &properties);
 		if(rc) return rc;
+
+		/* maximum-qos */
+		mosquitto_property_read_byte(properties, MQTT_PROP_MAXIMUM_QOS,
+					&max_qos, false);
 
 		/* maximum-packet-size */
 		if(mosquitto_property_read_int32(properties, MQTT_PROP_MAXIMUM_PACKET_SIZE,
@@ -96,6 +102,9 @@ int handle__connack(struct mosquitto *context)
 			if(rc) return rc;
 		}
 #endif
+		if(max_qos != 255){
+			context->max_qos = max_qos;
+		}
 		mosquitto__set_state(context, mosq_cs_active);
 		rc = db__message_write_queued_out(context);
 		if(rc) return rc;
@@ -107,6 +116,16 @@ int handle__connack(struct mosquitto *context)
 				case MQTT_RC_RETAIN_NOT_SUPPORTED:
 					context->retain_available = 0;
 					log__printf(NULL, MOSQ_LOG_ERR, "Connection Refused: retain not available (will retry)");
+					return MOSQ_ERR_CONN_LOST;
+				case MQTT_RC_QOS_NOT_SUPPORTED:
+					if(max_qos == 255){
+						if(context->max_qos != 0){
+							context->max_qos--;
+						}
+					}else{
+						context->max_qos = max_qos;
+					}
+					log__printf(NULL, MOSQ_LOG_ERR, "Connection Refused: QoS not supported (will retry)");
 					return MOSQ_ERR_CONN_LOST;
 				default:
 					log__printf(NULL, MOSQ_LOG_ERR, "Connection Refused: %s", mosquitto_reason_string(reason_code));

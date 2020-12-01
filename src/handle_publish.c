@@ -68,7 +68,7 @@ int handle__publish(struct mosquitto *context)
 		db__msg_store_free(msg);
 		return MOSQ_ERR_MALFORMED_PACKET;
 	}
-	if(msg->qos > context->maximum_qos){
+	if(msg->qos > context->max_qos){
 		log__printf(NULL, MOSQ_LOG_INFO,
 				"Too high QoS in PUBLISH from %s, disconnecting.", context->id);
 		db__msg_store_free(msg);

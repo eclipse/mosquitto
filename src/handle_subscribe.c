@@ -142,6 +142,9 @@ int handle__subscribe(struct mosquitto *context)
 				mosquitto__free(payload);
 				return MOSQ_ERR_MALFORMED_PACKET;
 			}
+			if(qos > context->max_qos){
+				qos = context->max_qos;
+			}
 
 
 			if(context->listener && context->listener->mount_point){

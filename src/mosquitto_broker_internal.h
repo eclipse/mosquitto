@@ -199,7 +199,7 @@ struct mosquitto__listener {
 	enum mosquitto_protocol protocol;
 	int socket_domain;
 	bool use_username_as_clientid;
-	uint8_t maximum_qos;
+	uint8_t max_qos;
 	uint16_t max_topic_alias;
 #ifdef WITH_TLS
 	char *cafile;
@@ -273,6 +273,7 @@ struct mosquitto__config {
 	uint32_t message_size_limit;
 	uint16_t max_inflight_messages;
 	uint16_t max_keepalive;
+	uint8_t max_qos;
 	bool persistence;
 	char *persistence_location;
 	char *persistence_file;

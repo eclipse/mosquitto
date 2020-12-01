@@ -1107,7 +1107,7 @@ log_timestamp_format %Y-%m-%dT%H:%M:%S
 					</listitem>
 				</varlistentry>
 				<varlistentry>
-					<term><option>maximum_qos</option> <replaceable>count</replaceable></term>
+					<term><option>max_qos</option> <replaceable>value</replaceable></term>
 					<listitem>
 						<para>Limit the QoS value allowed for clients connecting to this
 							listener. Defaults to 2, which means any QoS can be

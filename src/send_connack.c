@@ -65,6 +65,13 @@ int send__connack(struct mosquitto *context, uint8_t ack, uint8_t reason_code, c
 				return rc;
 			}
 		}
+		if(context->listener->max_qos != 2){
+			rc = mosquitto_property_add_byte(&connack_props, MQTT_PROP_MAXIMUM_QOS, context->listener->max_qos);
+			if(rc){
+				mosquitto_property_free_all(&connack_props);
+				return rc;
+			}
+		}
 
 		remaining_length += property__get_remaining_length(connack_props);
 	}

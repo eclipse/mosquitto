@@ -49,7 +49,7 @@ int mosquitto_publish_v5(struct mosquitto *mosq, int *mid, const char *topic, in
 
 	if(!mosq || qos<0 || qos>2) return MOSQ_ERR_INVAL;
 	if(mosq->protocol != mosq_p_mqtt5 && properties) return MOSQ_ERR_NOT_SUPPORTED;
-	if(qos > mosq->maximum_qos) return MOSQ_ERR_QOS_NOT_SUPPORTED;
+	if(qos > mosq->max_qos) return MOSQ_ERR_QOS_NOT_SUPPORTED;
 
 	if(!mosq->retain_available){
 		retain = false;
