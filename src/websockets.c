@@ -754,7 +754,7 @@ struct libwebsocket_context *mosq_websockets_init(struct mosquitto__listener *li
 	info.ssl_private_key_filepath = listener->keyfile;
 	info.ssl_cipher_list = listener->ciphers;
 #if defined(WITH_WEBSOCKETS) && LWS_LIBRARY_VERSION_NUMBER>=3001000
-	info->tls_1_3_plus_cipher_list = listener->ciphers_tls13;
+	info.tls_1_3_plus_cipher_list = listener->ciphers_tls13;
 #endif
 	if(listener->require_certificate){
 		info.options |= LWS_SERVER_OPTION_REQUIRE_VALID_OPENSSL_CLIENT_CERT;
