@@ -52,7 +52,7 @@ FILE *mosquitto__fopen(const char *path, const char *mode, bool restrict_read)
 			EXPLICIT_ACCESS_A ea;
 			PACL pacl = NULL;
 			char username[UNLEN + 1];
-			int ulen = UNLEN;
+			DWORD ulen = UNLEN;
 			SECURITY_DESCRIPTOR sd;
 			DWORD dwCreationDisposition;
 

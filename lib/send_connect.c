@@ -143,9 +143,9 @@ int send__connect(struct mosquitto *mosq, uint16_t keepalive, bool clean_session
 
 	/* Variable header */
 	if(version == MQTT_PROTOCOL_V31){
-		packet__write_string(packet, PROTOCOL_NAME_v31, strlen(PROTOCOL_NAME_v31));
+		packet__write_string(packet, PROTOCOL_NAME_v31, (uint16_t)strlen(PROTOCOL_NAME_v31));
 	}else{
-		packet__write_string(packet, PROTOCOL_NAME, strlen(PROTOCOL_NAME));
+		packet__write_string(packet, PROTOCOL_NAME, (uint16_t)strlen(PROTOCOL_NAME));
 	}
 #if defined(WITH_BROKER) && defined(WITH_BRIDGE)
 	if(mosq->bridge && mosq->bridge->protocol_version != mosq_p_mqtt5 && mosq->bridge->try_private && mosq->bridge->try_private_accepted){

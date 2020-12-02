@@ -103,7 +103,7 @@ int mosquitto_loop(struct mosquitto *mosq, int timeout, int max_packets)
 		/* sockpairR is used to break out of select() before the timeout, on a
 		 * call to publish() etc. */
 		FD_SET(mosq->sockpairR, &readfds);
-		if(mosq->sockpairR > maxfd){
+		if((int)mosq->sockpairR > maxfd){
 			maxfd = mosq->sockpairR;
 		}
 	}
@@ -246,7 +246,7 @@ static int interruptible_sleep(struct mosquitto *mosq, time_t reconnect_delay)
 int mosquitto_loop_forever(struct mosquitto *mosq, int timeout, int max_packets)
 {
 	int run = 1;
-	int rc;
+	int rc = MOSQ_ERR_SUCCESS;
 	unsigned long reconnect_delay;
 	enum mosquitto_client_state state;
 
@@ -361,7 +361,7 @@ static int mosquitto__loop_rc_handle(struct mosquitto *mosq, int rc)
 
 int mosquitto_loop_read(struct mosquitto *mosq, int max_packets)
 {
-	int rc;
+	int rc = MOSQ_ERR_SUCCESS;
 	int i;
 	if(max_packets < 1) return MOSQ_ERR_INVAL;
 
@@ -402,7 +402,7 @@ int mosquitto_loop_read(struct mosquitto *mosq, int max_packets)
 
 int mosquitto_loop_write(struct mosquitto *mosq, int max_packets)
 {
-	int rc;
+	int rc = MOSQ_ERR_SUCCESS;
 	int i;
 	if(max_packets < 1) return MOSQ_ERR_INVAL;
 

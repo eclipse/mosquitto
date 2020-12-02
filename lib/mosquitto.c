@@ -58,7 +58,7 @@ int mosquitto_lib_init(void)
 
 	if (init_refcount == 0) {
 #ifdef WIN32
-		srand(GetTickCount64());
+		srand((unsigned int)GetTickCount64());
 #elif _POSIX_TIMERS>0 && defined(_POSIX_MONOTONIC_CLOCK)
 		struct timespec tp;
 
@@ -348,7 +348,7 @@ int mosquitto_sub_topic_tokenise(const char *subtopic, char ***topics, int *coun
 	size_t len;
 	size_t hier_count = 1;
 	size_t start, stop;
-	int hier;
+	size_t hier;
 	size_t tlen;
 	size_t i, j;
 
