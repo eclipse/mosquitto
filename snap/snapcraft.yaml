@@ -10,7 +10,7 @@ description: This is a message broker that supports version 5.0, 3.1.1, and 3.1 
     example.
 confinement: strict
 grade: stable
-base: core18
+base: core20
 
 apps:
   mosquitto:
@@ -18,6 +18,10 @@ apps:
     daemon: simple
     restart-condition: always
     plugs: [home, network, network-bind]
+
+  ctrl:
+    command: usr/bin/mosquitto_ctrl
+    plugs: [home, network]
 
   pub:
     command: usr/bin/mosquitto_pub
@@ -59,26 +63,31 @@ parts:
     source-type: git
 
     build-packages:
+      - libcjson-dev
       - libssl-dev
       - xsltproc
       - docbook-xsl
       - gcc
       - g++
     stage-packages:
+      - libcjson1
       - libssl1.0.0
       - ca-certificates
     prime:
       - usr/sbin/mosquitto
+      - usr/bin/mosquitto_ctrl
       - usr/bin/mosquitto_pub
       - usr/bin/mosquitto_rr
       - usr/bin/mosquitto_sub
       - usr/bin/mosquitto_passwd
       - usr/lib/libmosquitto.so*
+      - usr/lib/mosquitto_dynamic_security.so*
       - lib/*-linux-gnu/libcrypto.so*
       - lib/*-linux-gnu/libssl.so*
       - usr/include/mosquitto.h
       - usr/include/mosquitto_broker.h
       - usr/include/mosquitto_plugin.h
+      - usr/include/mqtt_protocol.h
 
   lws:
     plugin: cmake
