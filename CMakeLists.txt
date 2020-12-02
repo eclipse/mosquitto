@@ -98,6 +98,14 @@ if (WITH_DLT)
 	add_definitions("-DWITH_DLT")
 endif (WITH_DLT)
 
+FIND_PACKAGE(cJSON)
+if (CJSON_FOUND)
+	message(STATUS ${CJSON_FOUND})
+	add_definitions("-DWITH_CJSON")
+else (CJSON_FOUND)
+	message(STATUS "Optional dependency cJSON not found. Some features will be disabled.")
+endif(CJSON_FOUND)
+
 # ========================================
 # Include projects
 # ========================================
@@ -122,11 +130,6 @@ if (WITH_APPS)
 endif (WITH_APPS)
 
 if (WITH_PLUGINS)
-	FIND_PACKAGE(cJSON)
-	if (CJSON_FOUND)
-		message(STATUS ${CJSON_FOUND})
-		add_definitions("-DWITH_CJSON")
-	endif()
 	add_subdirectory(plugins)
 endif (WITH_PLUGINS)
 
