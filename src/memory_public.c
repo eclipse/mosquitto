@@ -16,6 +16,7 @@ Contributors:
    Roger Light - initial implementation and documentation.
 */
 
+#include "mosquitto_broker.h"
 #include "memory_mosq.h"
 
 void *mosquitto_calloc(size_t nmemb, size_t size)

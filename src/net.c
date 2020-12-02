@@ -279,7 +279,7 @@ static unsigned int psk_server_callback(SSL *ssl, const char *identity, unsigned
 
 	/* The hex to BN conversion results in the length halving, so we can pass
 	 * max_psk_len*2 as the max hex key here. */
-	psk_key = mosquitto__calloc(1, max_psk_len*2 + 1);
+	psk_key = mosquitto__calloc(1, (size_t)max_psk_len*2 + 1);
 	if(!psk_key) return 0;
 
 	if(mosquitto_psk_key_get(context, psk_hint, identity, psk_key, (int)max_psk_len*2) != MOSQ_ERR_SUCCESS){

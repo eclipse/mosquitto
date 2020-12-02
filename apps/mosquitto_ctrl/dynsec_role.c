@@ -15,6 +15,8 @@ SPDX-License-Identifier: EPL-2.0 OR EDL-1.0
 Contributors:
    Roger Light - initial implementation and documentation.
 */
+#include "config.h"
+
 #include <cJSON.h>
 #include <stdio.h>
 #include <stdlib.h>

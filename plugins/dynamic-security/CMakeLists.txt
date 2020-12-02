@@ -10,7 +10,7 @@ if (CJSON_FOUND AND WITH_TLS)
 	set( CLIENT_DIR ${mosquitto_BINARY_DIR}/lib ${CJSON_DIR})
 
 	include_directories(${CLIENT_INC})
-	link_directories(${CLIENT_DIR})
+	link_directories(${CLIENT_DIR} ${mosquitto_SOURCE_DIR})
 
 	add_library(mosquitto_dynamic_security SHARED
 		acl.c
@@ -33,6 +33,9 @@ if (CJSON_FOUND AND WITH_TLS)
 	set_target_properties(mosquitto_dynamic_security PROPERTIES PREFIX "")
 
 	target_link_libraries(mosquitto_dynamic_security ${CJSON_LIBRARIES})
+	if(WIN32)
+		target_link_libraries(mosquitto_dynamic_security mosquitto)
+	endif(WIN32)
 
 	install(TARGETS mosquitto_dynamic_security RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 endif()

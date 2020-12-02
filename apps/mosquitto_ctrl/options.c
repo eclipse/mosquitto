@@ -461,6 +461,7 @@ static char *get_default_cfg_location(void)
 	char *env;
 #else
 	char env[1024];
+	int rc;
 #endif
 
 #ifndef WIN32
