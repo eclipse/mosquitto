@@ -66,8 +66,8 @@ static int persist__client_messages_save(FILE *db_fptr, struct mosquitto *contex
 		chunk.F.id_len = (uint16_t)strlen(context->id);
 		chunk.F.qos = cmsg->qos;
 		chunk.F.retain_dup = (uint8_t)((cmsg->retain&0x0F)<<4 | (cmsg->dup&0x0F));
-		chunk.F.direction = cmsg->direction;
-		chunk.F.state = cmsg->state;
+		chunk.F.direction = (uint8_t)cmsg->direction;
+		chunk.F.state = (uint8_t)cmsg->state;
 		chunk.client_id = context->id;
 		chunk.properties = cmsg->properties;
 

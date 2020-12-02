@@ -154,7 +154,7 @@ int send__connect(struct mosquitto *mosq, uint16_t keepalive, bool clean_session
 	}
 #endif
 	packet__write_byte(packet, version);
-	byte = (clean_session&0x1)<<1;
+	byte = (uint8_t)((clean_session&0x1)<<1);
 	if(will){
 		byte = byte | (uint8_t)(((mosq->will->msg.qos&0x3)<<3) | ((will&0x1)<<2));
 		if(mosq->retain_available){

@@ -840,7 +840,7 @@ static int unpwd__decode_passwords(struct mosquitto__unpwd **unpwd)
 	unsigned char *password;
 	unsigned int password_len;
 	int rc;
-	int hashtype;
+	enum mosquitto_pwhash_type hashtype;
 
 	HASH_ITER(hh, *unpwd, u, tmp){
 		/* Need to decode password into hashed data + salt. */
