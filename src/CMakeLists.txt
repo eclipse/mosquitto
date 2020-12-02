@@ -134,6 +134,12 @@ if (WITH_WEBSOCKETS)
 	add_definitions("-DWITH_WEBSOCKETS")
 endif (WITH_WEBSOCKETS)
 
+option(WITH_CONTROL "Include $CONTROL topic support?" ON)
+if (WITH_CONTROL)
+	add_definitions("-DWITH_CONTROL")
+endif (WITH_CONTROL)
+
+
 if (WIN32 OR CYGWIN)
 	set (MOSQ_SRCS ${MOSQ_SRCS} service.c)
 endif (WIN32 OR CYGWIN)
