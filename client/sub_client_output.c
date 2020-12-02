@@ -437,7 +437,7 @@ static void formatted_print_str(const char *value, char align, int field_width, 
 static void formatted_print_percent(const struct mosq_config *lcfg, const struct mosquitto_message *message, const mosquitto_property *properties, char format, char align, char pad, int field_width, int precision)
 {
 	struct tm *ti = NULL;
-	long ns;
+	long ns = 0;
 	char buf[100];
 	int rc;
 	uint8_t i8value;
