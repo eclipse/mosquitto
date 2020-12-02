@@ -25,6 +25,10 @@ Contributors:
 #endif
 #include <time.h>
 
+#if defined(__APPLE__)
+#  include <sys/time.h>
+#endif
+
 #ifdef WITH_DLT
 #include <sys/stat.h>
 #include <dlt/dlt.h>
