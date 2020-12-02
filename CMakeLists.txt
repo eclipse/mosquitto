@@ -8,8 +8,8 @@ set(CMAKE_LEGACY_CYGWIN_WIN32 0)
 
 project(mosquitto)
 
-cmake_minimum_required(VERSION 2.8)
-# Only for version 3 and up. cmake_policy(SET CMP0042 NEW)
+cmake_minimum_required(VERSION 3.0)
+cmake_policy(SET CMP0042 NEW)
 
 set (VERSION 1.6.12)
 
@@ -21,6 +21,10 @@ if (WIN32)
 	add_definitions("-D_CRT_SECURE_NO_WARNINGS")
 	add_definitions("-D_CRT_NONSTDC_NO_DEPRECATE")
 endif (WIN32)
+
+if(APPLE)
+	set(CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS "${CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS} -undefined dynamic_lookup")
+endif(APPLE)
 
 include(GNUInstallDirs)
 
