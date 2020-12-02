@@ -11,7 +11,7 @@ fi
 
 if [ "$TRAVIS_OS_NAME" == "osx" ]; then
 	#brew update
-	brew install c-ares openssl libwebsockets
+	HOMEBREW_NO_AUTO_UPDATE=1 brew install c-ares openssl libwebsockets
 fi
 
 sudo pip install paho-mqtt
