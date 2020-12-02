@@ -9,6 +9,7 @@ LIBMOSQ:=../../lib/libmosquitto.a
 endif
 
 LOCAL_CPPFLAGS:=-I/usr/include/cjson -I/usr/local/include/cjson -I../mosquitto_passwd
+LOCAL_LDFLAGS:=-L/usr/local/lib
 
 OBJS=	mosquitto_ctrl.o \
 		client.o \
@@ -25,23 +26,21 @@ OBJS=	mosquitto_ctrl.o \
 EXAMPLE_OBJS= example.o
 
 ifeq ($(WITH_TLS),yes)
-ifeq ($(WITH_CJSON),yes)
 
-ifeq ($(WITH_SHARED_LIBRARIES),yes)
+ifeq ($(WITH_CJSON),yes)
 TARGET:=mosquitto_ctrl mosquitto_ctrl_example.so
 else
-ifeq ($(WITH_STATIC_LIBRARIES),yes)
-TARGET:=mosquitto_ctrl mosquitto_ctrl_example.so
-endif
+TARGET:=
 endif
 
-endif
+else
+TARGET:=
 endif
 
 all : $(TARGET)
 
 mosquitto_ctrl : ${OBJS}
-	${CROSS_COMPILE}${CC} ${APP_LDFLAGS} $^ -o $@ $(PASSWD_LDADD) $(LIBMOSQ) -lcjson -ldl
+	${CROSS_COMPILE}${CC} ${APP_LDFLAGS} $^ -o $@ $(PASSWD_LDADD) $(LOCAL_LDFLAGS) $(LIBMOSQ) -lcjson -ldl
 
 mosquitto_ctrl_example.so : ${EXAMPLE_OBJS}
 	$(CROSS_COMPILE)$(CC) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) $(PLUGIN_LDFLAGS) -shared $< -o $@
