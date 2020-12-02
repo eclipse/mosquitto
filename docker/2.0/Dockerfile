@@ -48,9 +48,9 @@ RUN set -x && \
         -DCMAKE_INSTALL_PREFIX=/usr && \
     make -j "$(nproc)" && \
     rm -rf /root/.cmake && \
-    wget https://mosquitto.org/files/tmp/mosquitto-${VERSION}.tar.gz -O /tmp/mosq.tar.gz && \
+    wget https://mosquitto.org/files/source/mosquitto-${VERSION}.tar.gz -O /tmp/mosq.tar.gz && \
     echo "$DOWNLOAD_SHA256  /tmp/mosq.tar.gz" | sha256sum -c - && \
-    wget https://mosquitto.org/files/tmp/mosquitto-${VERSION}.tar.gz.asc -O /tmp/mosq.tar.gz.asc && \
+    wget https://mosquitto.org/files/source/mosquitto-${VERSION}.tar.gz.asc -O /tmp/mosq.tar.gz.asc && \
     export GNUPGHOME="$(mktemp -d)" && \
     found=''; \
     for server in \
