@@ -541,14 +541,15 @@ int main(int argc, char *argv[])
 #endif
 	session_expiry__remove_all();
 
+	listeners__stop(listensock, listensock_count);
+
 	HASH_ITER(hh_id, db.contexts_by_id, ctxt, ctxt_tmp){
 #ifdef WITH_WEBSOCKETS
-		if(!ctxt->wsi){
+		if(!ctxt->wsi)
+#endif
+		{
 			context__cleanup(ctxt, true);
 		}
-#else
-		context__cleanup(ctxt, true);
-#endif
 	}
 	HASH_ITER(hh_sock, db.contexts_by_sock, ctxt, ctxt_tmp){
 		context__cleanup(ctxt, true);
@@ -564,8 +565,6 @@ int main(int argc, char *argv[])
 	context__free_disused();
 
 	db__close();
-
-	listeners__stop(listensock, listensock_count);
 
 	mosquitto_security_module_cleanup();
 
