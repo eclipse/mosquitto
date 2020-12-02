@@ -260,6 +260,15 @@ int handle__publish(struct mosquitto *context)
 		db__msg_store_free(msg);
 		return rc;
 #else
+		if(msg->qos == 1){
+			if (send__puback(context, msg->source_mid, MQTT_RC_SUCCESS, NULL)) {
+				return MOSQ_ERR_UNKNOWN;
+			}
+		}else if(msg->qos == 2){
+			if(send__pubrec(context, msg->source_mid, MQTT_RC_SUCCESS, NULL)){
+				return MOSQ_ERR_UNKNOWN;
+			}
+		}
 		db__msg_store_free(msg);
 		return MOSQ_ERR_SUCCESS;
 #endif
