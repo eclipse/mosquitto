@@ -1,4 +1,6 @@
 if (CJSON_FOUND AND WITH_TLS)
+	add_definitions("-DWITH_CJSON")
+
 	set( CLIENT_INC ${mosquitto_SOURCE_DIR} ${mosquitto_SOURCE_DIR}/include
 		${STDBOOL_H_PATH} ${STDINT_H_PATH} ${PTHREAD_INCLUDE_DIR}
 		${OPENSSL_INCLUDE_DIR} ${mosquitto_SOURCE_DIR}/deps
