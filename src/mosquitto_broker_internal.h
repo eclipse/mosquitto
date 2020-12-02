@@ -374,7 +374,7 @@ struct mosquitto_msg_store{
 	uint16_t mid;
 	uint8_t qos;
 	bool retain;
-	uint8_t origin;
+	enum mosquitto_msg_origin origin;
 };
 
 struct mosquitto_client_msg{

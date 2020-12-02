@@ -122,7 +122,7 @@ int socks5__send(struct mosquitto *mosq)
 	struct in6_addr addr_ipv6;
 	int ipv4_pton_result;
 	int ipv6_pton_result;
-	int state;
+	enum mosquitto_client_state state;
 
 	state = mosquitto__get_state(mosq);
 
@@ -264,7 +264,7 @@ int socks5__read(struct mosquitto *mosq)
 	ssize_t len;
 	uint8_t *payload;
 	uint8_t i;
-	int state;
+	enum mosquitto_client_state state;
 
 	state = mosquitto__get_state(mosq);
 	if(state == mosq_cs_socks5_start){

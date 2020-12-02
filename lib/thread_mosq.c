@@ -99,7 +99,6 @@ int mosquitto_loop_stop(struct mosquitto *mosq, bool force)
 void *mosquitto__thread_main(void *obj)
 {
 	struct mosquitto *mosq = obj;
-	int state;
 #ifndef WIN32
 	struct timespec ts;
 	ts.tv_sec = 0;
@@ -109,8 +108,7 @@ void *mosquitto__thread_main(void *obj)
 	if(!mosq) return NULL;
 
 	do{
-		state = mosquitto__get_state(mosq);
-		if(state == mosq_cs_new){
+		if(mosquitto__get_state(mosq) == mosq_cs_new){
 #ifdef WIN32
 			Sleep(10);
 #else

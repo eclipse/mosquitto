@@ -43,12 +43,10 @@ int handle__pubrec(struct mosquitto *mosq)
 	uint16_t mid;
 	int rc;
 	mosquitto_property *properties = NULL;
-	int state;
 
 	assert(mosq);
 
-	state = mosquitto__get_state(mosq);
-	if(state != mosq_cs_active){
+	if(mosquitto__get_state(mosq) != mosq_cs_active){
 		return MOSQ_ERR_PROTOCOL;
 	}
 

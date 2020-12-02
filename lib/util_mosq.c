@@ -67,7 +67,7 @@ int mosquitto__check_keepalive(struct mosquitto *mosq)
 #ifndef WITH_BROKER
 	int rc;
 #endif
-	int state;
+	enum mosquitto_client_state state;
 
 	assert(mosq);
 #ifdef WITH_BROKER

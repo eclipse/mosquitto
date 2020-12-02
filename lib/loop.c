@@ -49,9 +49,6 @@ int mosquitto_loop(struct mosquitto *mosq, int timeout, int max_packets)
 	char pairbuf;
 	int maxfd = 0;
 	time_t now;
-#ifdef WITH_SRV
-	int state;
-#endif
 	time_t timeout_ms;
 
 	if(!mosq || max_packets < 1) return MOSQ_ERR_INVAL;
@@ -89,8 +86,7 @@ int mosquitto_loop(struct mosquitto *mosq, int timeout, int max_packets)
 	}else{
 #ifdef WITH_SRV
 		if(mosq->achan){
-			state = mosquitto__get_state(mosq);
-			if(state == mosq_cs_connect_srv){
+			if(mosquitto__get_state(mosq) == mosq_cs_connect_srv){
 				rc = ares_fds(mosq->achan, &readfds, &writefds);
 				if(rc > maxfd){
 					maxfd = rc;
@@ -252,7 +248,7 @@ int mosquitto_loop_forever(struct mosquitto *mosq, int timeout, int max_packets)
 	int run = 1;
 	int rc;
 	unsigned long reconnect_delay;
-	int state;
+	enum mosquitto_client_state state;
 
 	if(!mosq) return MOSQ_ERR_INVAL;
 
@@ -338,7 +334,7 @@ int mosquitto_loop_misc(struct mosquitto *mosq)
 
 static int mosquitto__loop_rc_handle(struct mosquitto *mosq, int rc)
 {
-	int state;
+	enum mosquitto_client_state state;
 
 	if(rc){
 		net__socket_close(mosq);

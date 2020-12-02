@@ -39,12 +39,9 @@ Contributors:
 
 int handle__pingreq(struct mosquitto *mosq)
 {
-	int state;
-
 	assert(mosq);
 
-	state = mosquitto__get_state(mosq);
-	if(state != mosq_cs_active){
+	if(mosquitto__get_state(mosq) != mosq_cs_active){
 		return MOSQ_ERR_PROTOCOL;
 	}
 
@@ -58,12 +55,9 @@ int handle__pingreq(struct mosquitto *mosq)
 
 int handle__pingresp(struct mosquitto *mosq)
 {
-	int state;
-
 	assert(mosq);
 
-	state = mosquitto__get_state(mosq);
-	if(state != mosq_cs_active){
+	if(mosquitto__get_state(mosq) != mosq_cs_active){
 		return MOSQ_ERR_PROTOCOL;
 	}
 
