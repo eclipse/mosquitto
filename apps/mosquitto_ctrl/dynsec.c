@@ -731,7 +731,7 @@ int dynsec_init(int argc, char *argv[])
 	fptr = fopen(filename, "rb");
 	if(fptr){
 		fclose(fptr);
-		fprintf(stderr, "dynsec init: '%s' already exists. Use --force to overwrite.\n", filename);
+		fprintf(stderr, "dynsec init: '%s' already exists. Remove the file or use a different location..\n", filename);
 		return -1;
 	}
 
