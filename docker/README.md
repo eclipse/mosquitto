@@ -2,10 +2,14 @@
 
 This directory contains Docker files for Mosquitto.
 
-The `1.6` directory contains the latest version of Mosquitto for
-that series, and provide the basis of the official image. It uses libressl. The
-`1.6-openssl` directory is identical except that it uses openssl instead of
-libressl, and enables TLS-PSK support.
+The `2.0` directory contains the latest version of Mosquitto for that
+series, it uses libressl. The `2.0-openssl` directory is identical except that
+it uses openssl instead of libressl, and enables TLS-PSK and TLS v1.3 cipher
+support.
+
+The `1.6` directory contains the version of Mosquitto based on the 1.6 branch.
+It uses libressl. The `1.6-openssl` directory is identical except that it uses
+openssl instead of libressl, and enables TLS-PSK support.
 
 The `1.5` directory contains the version of Mosquitto based on the 1.5 branch.
 It uses libressl. The `1.5-openssl` directory is identical except that it uses
