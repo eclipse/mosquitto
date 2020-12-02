@@ -1,3 +1,6 @@
+2.0.0 - 2020-12-03
+==================
+
 Breaking changes:
 - When the Mosquitto broker is run without configuring any listeners it will
   now bind to the loopback interfaces 127.0.0.1 and/or ::1. This means that
@@ -48,7 +51,12 @@ Breaking changes:
 - Minimum support libwebsockets version is now 2.4.0
 
 
-Broker:
+Broker features:
+- New plugin interface which is more flexible, easier to develop for and
+  easier to extend.
+- New dynamic security plugin, which allows clients, groups, and roles to be
+  defined and updated as the broker is running.
+- Performance improvements, particularly for higher numbers of clients.
 - When running as root, if dropping privileges to the "mosquitto" user fails,
   then try "nobody" instead. This reduces the burden on users installing
   Mosquitto themselves.
@@ -66,8 +74,6 @@ Broker:
   publish messages.
 - Add `mosquitto_client_protocol_version()` function which can be used by
   plugins to determine which version of MQTT a client has connected with.
-- Send DISCONNECT with `malformed-packet` reason code on invalid PUBLISH, 
-  SUBSCRIBE, and UNSUBSCRIBE packets.
 - Add `mosquitto_kick_client_by_clientid()` and `mosquitto_kick_client_by_username()`
   functions, which can be used by plugins to disconnect clients.
 - Add support for handling $CONTROL/ topics in plugins.
@@ -75,32 +81,36 @@ Broker:
 - Enabling certificate based TLS encryption is now through certfile and
   keyfile, not capath or cafile.
 - Added support for controlling UNSUBSCRIBE calls in v5 plugin ACL checks.
-- Document that X509_free() must be called after using
-  mosquitto_client_certificate(). Closes #1842.
 - Add "deny" acl type. Closes #1611.
 - The broker now sends the receive-maximum property for MQTT v5 CONNACKs.
-- mosquitto_password now forbids the : character. Closes #1833.
-- Fix `log_timestamp_format` not applying to `log_dest topic`. Closes #1862.
 - Add the `bridge_max_packet_size` option. Closes #265.
 - Add the `bridge_bind_address` option. Closes #1311.
-- Fix crash on Windows if loading a plugin fails. Closes #1866.
 - TLS certificates for the server are now reloaded on SIGHUP.
-- Fix listener not being reassociated with client when reloading a persistence
-  file and `per_listener_settings true` is set and the client did not set a
-  username. Closes #1891.
-- Fix file logging on Windows. Closes #1880.
-- Fix bridge sock not being removed from sock hash on error. Closes #1897.
 - Default for max_queued_messages has been changed to 1000.
 - Add `ciphers_tls1.3` option, to allow setting TLS v1.3 ciphersuites.
   Closes #1825.
-- Report an error if the config file is set to a directory. Closes #1814.
-- Fix bridges incorrectly setting Wills to manage remote notifications when
-  `notifications_local_only` was set true. Closes #1902.
 - Bridges now obey MQTT v5 server-keepalive.
 - Add bridge support for the MQTT v5 maximum-qos property.
 - Log client port on new connections. Closes #1911.
 
-Client library:
+Broker fixes:
+- Send DISCONNECT with `malformed-packet` reason code on invalid PUBLISH,
+  SUBSCRIBE, and UNSUBSCRIBE packets.
+- Document that X509_free() must be called after using
+  mosquitto_client_certificate(). Closes #1842.
+- Fix listener not being reassociated with client when reloading a persistence
+  file and `per_listener_settings true` is set and the client did not set a
+  username. Closes #1891.
+- Fix bridge sock not being removed from sock hash on error. Closes #1897.
+- mosquitto_password now forbids the : character. Closes #1833.
+- Fix `log_timestamp_format` not applying to `log_dest topic`. Closes #1862.
+- Fix crash on Windows if loading a plugin fails. Closes #1866.
+- Fix file logging on Windows. Closes #1880.
+- Report an error if the config file is set to a directory. Closes #1814.
+- Fix bridges incorrectly setting Wills to manage remote notifications when
+  `notifications_local_only` was set true. Closes #1902.
+
+Client library features:
 - Client no longer generates random client ids for v3.1.1 clients, these are
   now expected to be generated on the broker. This matches the behaviour for
   v5 clients. Closes #291.
@@ -117,17 +127,19 @@ Client library:
   sockets. Closes #1526.
 - Add `mosquitto_ssl_get()` to allow clients to access their SSL structure and
   perform additional verification.
-- Fix send quota being incorrecly reset on reconnect. Closes #1822.
-- Don't use logging until log mutex is initialised. Closes #1819.
-- Fix missing mach/mach_time.h header on OS X. Closes #1831.
 - Add MOSQ_OPT_BIND_ADDRESS to allow setting of a bind address independently
   of the `mosquitto_connect*()` call.
-- Fix connect properties not being sent when the client automatically
-  reconnects. Closes #1846.
 - Add `MOSQ_OPT_TLS_USE_OS_CERTS` option, to instruct the client to load and
   trust OS provided CA certificates for use with TLS connections.
 
-Clients:
+Client library fixes:
+- Fix send quota being incorrecly reset on reconnect. Closes #1822.
+- Don't use logging until log mutex is initialised. Closes #1819.
+- Fix missing mach/mach_time.h header on OS X. Closes #1831.
+- Fix connect properties not being sent when the client automatically
+  reconnects. Closes #1846.
+
+Client features:
 - Add timeout return code (27) for `mosquitto_sub -W <secs>` and
   `mosquitto_rr -W <secs>`. Closes #275.
 - Add support for connecting to brokers through Unix domain sockets with the
@@ -139,7 +151,6 @@ Clients:
   output.
 - Add support for v5 property printing to mosquitto_sub/rr in non-JSON mode.
   Closes #1416.
-- mosquitto_sub will now exit if all subscriptions were denied.
 - Add `--nodelay` to all clients to allow them to use the MOSQ_OPT_TCP_NODELAY
   option.
 - Add `-x` to all clients to all the session-expiry-interval property to be
@@ -147,17 +158,20 @@ Clients:
 - Add `--random-filter` to mosquitto_sub, to allow only a certain proportion
   of received messages to be printed.
 - mosquitto_sub %j and %J timestamps are now in a ISO 8601 compatible format.
-- mosquitto_pub now sends 0 length files without an error when using `-f`.
 - mosquitto_sub now supports extra format specifiers for field width and
   precision for some parameters.
 - Add `--version` for all clients.
-- Fix description of `-e` and `-t` arguments in mosquitto_rr. Closes #1881.
-- mosquitto_sub will now quit with an error if the %U option is used on
-  Windows, rather than just quitting. Closes #1908.
 - All clients now load OS provided CA certificates if used with `-L
   mqtts://...`, or if port is set to 8883 and no other CA certificates are
   used. Closes #1824.
 - Add the `--tls-use-os-certs` option to all clients.
+
+Client fixes:
+- mosquitto_sub will now exit if all subscriptions were denied.
+- mosquitto_pub now sends 0 length files without an error when using `-f`.
+- Fix description of `-e` and `-t` arguments in mosquitto_rr. Closes #1881.
+- mosquitto_sub will now quit with an error if the %U option is used on
+  Windows, rather than just quitting. Closes #1908.
 
 
 1.6.12 - 2020-08-19

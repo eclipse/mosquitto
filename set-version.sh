@@ -1,14 +1,14 @@
 #!/bin/sh
 
-MAJOR=1
-MINOR=6
-REVISION=12
+MAJOR=2
+MINOR=0
+REVISION=0
 
 sed -i "s/^VERSION=.*/VERSION=${MAJOR}.${MINOR}.${REVISION}/" config.mk
 
-sed -i "s/^#define LIBMOSQUITTO_MAJOR .*/#define LIBMOSQUITTO_MAJOR ${MAJOR}/" lib/mosquitto.h
-sed -i "s/^#define LIBMOSQUITTO_MINOR .*/#define LIBMOSQUITTO_MINOR ${MINOR}/" lib/mosquitto.h
-sed -i "s/^#define LIBMOSQUITTO_REVISION .*/#define LIBMOSQUITTO_REVISION ${REVISION}/" lib/mosquitto.h
+sed -i "s/^#define LIBMOSQUITTO_MAJOR .*/#define LIBMOSQUITTO_MAJOR ${MAJOR}/" include/mosquitto.h
+sed -i "s/^#define LIBMOSQUITTO_MINOR .*/#define LIBMOSQUITTO_MINOR ${MINOR}/" include/mosquitto.h
+sed -i "s/^#define LIBMOSQUITTO_REVISION .*/#define LIBMOSQUITTO_REVISION ${REVISION}/" include/mosquitto.h
 
 sed -i "s/^set (VERSION .*)/set (VERSION ${MAJOR}.${MINOR}.${REVISION})/" CMakeLists.txt
 
