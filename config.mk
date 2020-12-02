@@ -367,6 +367,7 @@ ifeq ($(WITH_CJSON),yes)
 	CLIENT_CFLAGS:=$(CLIENT_CFLAGS) -DWITH_CJSON -I/usr/include/cjson -I/usr/local/include/cjson
 	CLIENT_LDADD:=$(CLIENT_LDADD) -lcjson
 	CLIENT_STATIC_LDADD:=$(CLIENT_STATIC_LDADD) -lcjson
+	CLIENT_LDFLAGS:=$(CLIENT_LDFLAGS) -L/usr/local/lib
 endif
 
 ifeq ($(WITH_XTREPORT),yes)
