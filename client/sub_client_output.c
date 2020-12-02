@@ -331,7 +331,7 @@ static int json_print(const struct mosquitto_message *message, const mosquitto_p
 		return_parse_end = NULL;
 		if(message->payload){
 			tmp = cJSON_ParseWithOpts(message->payload, &return_parse_end, true);
-			if(tmp == NULL || return_parse_end != (uint8_t *)message->payload + message->payloadlen){
+			if(tmp == NULL || return_parse_end != (char *)message->payload + message->payloadlen){
 				cJSON_Delete(root);
 				return MOSQ_ERR_INVAL;
 			}

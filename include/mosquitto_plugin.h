@@ -60,6 +60,8 @@ struct mosquitto_acl_msg {
 
 #ifdef WIN32
 #  define mosq_plugin_EXPORT __declspec(dllexport)
+#else
+#  define mosq_plugin_EXPORT
 #endif
 
 /*
