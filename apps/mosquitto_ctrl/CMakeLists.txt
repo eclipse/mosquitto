@@ -6,6 +6,8 @@ if (WITH_TLS AND CJSON_FOUND)
 			${OPENSSL_INCLUDE_DIR} ${STDBOOL_H_PATH} ${STDINT_H_PATH}
 			${CJSON_INCLUDE_DIRS} ${mosquitto_SOURCE_DIR}/apps/mosquitto_passwd)
 
+	link_directories(${CJSON_DIR})
+
 	add_executable(mosquitto_ctrl
 		mosquitto_ctrl.c mosquitto_ctrl.h
 		client.c

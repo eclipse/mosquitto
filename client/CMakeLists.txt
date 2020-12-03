@@ -12,7 +12,7 @@ set( CLIENT_DIR ${mosquitto_BINARY_DIR}/lib)
 
 if (CJSON_FOUND)
 	add_definitions("-DWITH_CJSON")
-	set( CLIENT_DIR "${CLIENT_DIR} ${CJSON_DIR}" )
+	set( CLIENT_DIR "${CLIENT_DIR};${CJSON_DIR}" )
 	set( CLIENT_INC "${CLIENT_INC};${CJSON_INCLUDE_DIRS}" )
 endif()
 
