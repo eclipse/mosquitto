@@ -1177,7 +1177,20 @@ PRETTY_URLS = True
 # Note: most Nikola-specific extensions are done via the Nikola plugin system,
 #       with the MarkdownExtension class and should not be added here.
 # The default is ['fenced_code', 'codehilite']
-MARKDOWN_EXTENSIONS = ['fenced_code', 'codehilite', 'extra']
+#MARKDOWN_EXTENSIONS = ['fenced_code', 'codehilite', 'extra', 'toc']
+
+MARKDOWN_EXTENSIONS = ['markdown.extensions.fenced_code', 'markdown.extensions.codehilite', 'markdown.extensions.extra', 'markdown.extensions.toc']
+
+# Options to be passed to markdown extensions (See https://python-markdown.github.io/reference/)
+# Default is {} (no config at all)
+MARKDOWN_EXTENSION_CONFIGS = {
+    DEFAULT_LANG: {
+        'markdown.extensions.toc':{
+            'toc_depth':2
+        }
+    }
+}
+
 
 # Extra options to pass to the pandoc command.
 # by default, it's empty, is a list of strings, for example

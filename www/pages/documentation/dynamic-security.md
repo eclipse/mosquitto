@@ -9,6 +9,9 @@
 .. type: text
 -->
 
+
+[TOC]
+
 ## Introduction
 
 The Dynamic Security plugin is a Mosquitto plugin which provides role based
@@ -17,6 +20,7 @@ is running, using a special topic based API.
 
 It is supported since Mosquitto 2.0, and should be available in all
 installations, but will not be activated by default.
+
 
 ## Concepts
 
@@ -199,8 +203,6 @@ role.
 
 ### Priorities
 
-**FIXME** example needs completing.
-
 If you are working with more than one role per client or group, or more than
 one group per client, then it is crucial to understand how roles and ACLs are
 applied.
@@ -238,13 +240,33 @@ Group: `humidity`
 Roles: `humidity`
 
 Role: `hallway`
+ACLs: `Z` (priority 3), `A` (priority 1)
 
 Role: `input`
+ACLs: `Z` (priority 3), `A` (priority 3)
 
 Role: `output`
+ACLs: `Z` (priority 3), `A` (priority 1)
 
 Role: `humidity`
+ACLs: `Z` (priority 3), `A` (priority 1)
 
+We are also assuming we are only looking at single ACL type.
+
+If our client `sensor` triggers an ACL check, the ACLs will be checked in this
+order, and the first matching ACL will be used to allow/reject the event:
+
+1. sensor/hallway Z
+2. sensor/hallway A
+3. temperature/input A (alphabetical sort)
+4. temperature/input Z (alphabetical sort)
+5. temperature/output Z
+6. temperature/output A
+7. humidity/humidity Z
+8. humidity/humidity A
+
+This is provided as an example that covers all combinations of roles, it is
+recommended to use as simple a setup as possible for your situation.
 
 ### Anonymous access
 

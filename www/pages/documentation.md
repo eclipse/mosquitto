@@ -27,6 +27,8 @@
 # Other
 
 * [Using the snap package] - specific instructions on installing and configuring the Mosquitto snap package.
+* [Dynamic Security plugin] - details of using the Dynamic Security authentication and access control plugin.
+* [Migrating from 1.x to 2.0] - details of changes needed to migrate to version 2.0.
 
 [mosquitto]:/man/mosquitto-8.html
 [mosquitto.conf]:/man/mosquitto-conf-5.html
@@ -40,3 +42,5 @@
 [libmosquitto API documentation]:/api/
 
 [Using the snap package]:/documentation/using-the-snap/
+[Dynamic Security plugin]:/documentation/dynamic-security/
+[Migrating from 1.x to 2.0]:/documentation/migrating-to-2-0/
