@@ -5,7 +5,8 @@ are optional.
 * c-ares (for DNS-SRV support, disabled by default)
 * tcp-wrappers (optional, package name libwrap0-dev)
 * libwebsockets (optional, disabled by default, version 2.4 and above)
-* cJSON (optional, for JSON output from mosquitto_sub/mosquitto_rr)
+* cJSON (optional but recommended, for dynamic-security plugin support, and
+  JSON output from mosquitto_sub/mosquitto_rr)
 * On Windows, a pthreads library is required if threading support is to be
   included.
 
