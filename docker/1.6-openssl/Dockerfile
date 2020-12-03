@@ -6,7 +6,8 @@ LABEL maintainer="Roger Light <roger@atchoo.org>" \
 ENV VERSION=1.6.12 \
     DOWNLOAD_SHA256=548d73d19fb787dd0530334e398fd256ef3a581181678488a741a995c4f007fb \
     GPG_KEYS=A0D6EEA1DCAE49A635A3B2F0779B22DFB3E717B7 \
-    LWS_VERSION=2.4.2
+    LWS_VERSION=2.4.2 \
+    LWS_SHA256=73012d7fcf428dedccc816e83a63a01462e27819d5537b8e0d0c7264bfacfad6
 
 RUN set -x && \
     apk --no-cache add --virtual build-deps \
@@ -16,6 +17,7 @@ RUN set -x && \
         openssl-dev \
         util-linux-dev && \
     wget https://github.com/warmcat/libwebsockets/archive/v${LWS_VERSION}.tar.gz -O /tmp/lws.tar.gz && \
+    echo "$LWS_SHA256  /tmp/lws.tar.gz" | sha256sum -c - && \
     mkdir -p /build/lws && \
     tar --strip=1 -xf /tmp/lws.tar.gz -C /build/lws && \
     rm /tmp/lws.tar.gz && \

@@ -7,7 +7,9 @@ ENV VERSION=2.0.0 \
     DOWNLOAD_SHA256=ca8c21d1b04037df27639de9ea8f82fa73e1cbd24e83e6394ed67b537c4b6d86 \
     GPG_KEYS=A0D6EEA1DCAE49A635A3B2F0779B22DFB3E717B7 \
     LWS_VERSION=2.4.2 \
-    CJSON_VERSION=1.7.14
+    LWS_SHA256=73012d7fcf428dedccc816e83a63a01462e27819d5537b8e0d0c7264bfacfad6 \
+    CJSON_VERSION=1.7.14 \
+    CJSON_SHA256=fb50a663eefdc76bafa80c82bc045af13b1363e8f45cec8b442007aef6a41343
 
 RUN set -x && \
     apk --no-cache add --virtual build-deps \
@@ -17,6 +19,7 @@ RUN set -x && \
         libressl-dev \
         util-linux-dev && \
     wget https://github.com/warmcat/libwebsockets/archive/v${LWS_VERSION}.tar.gz -O /tmp/lws.tar.gz && \
+    echo "$LWS_SHA256  /tmp/lws.tar.gz" | sha256sum -c - && \
     mkdir -p /build/lws && \
     tar --strip=1 -xf /tmp/lws.tar.gz -C /build/lws && \
     rm /tmp/lws.tar.gz && \
@@ -35,6 +38,7 @@ RUN set -x && \
     make -j "$(nproc)" && \
     rm -rf /root/.cmake && \
     wget https://github.com/DaveGamble/cJSON/archive/v${CJSON_VERSION}.tar.gz -O /tmp/cjson.tar.gz && \
+    echo "$CJSON_SHA256  /tmp/cjson.tar.gz" | sha256sum -c - && \
     mkdir -p /build/cjson && \
     tar --strip=1 -xf /tmp/cjson.tar.gz -C /build/cjson && \
     rm /tmp/cjson.tar.gz && \
