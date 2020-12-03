@@ -10,7 +10,7 @@ description: This is a message broker that supports version 5.0, 3.1.1, and 3.1 
     example.
 confinement: strict
 grade: stable
-base: core20
+base: core18
 
 apps:
   mosquitto:
@@ -57,20 +57,19 @@ parts:
   mosquitto:
     after:
       - lws
+      - cjson
     plugin: make
-    make-parameters: ["prefix=/usr", "WITH_WEBSOCKETS=yes", "WITH_ADNS=yes", "CFLAGS=-Wall -ggdb -O2 -I$SNAPCRAFT_STAGE -D_GNU_SOURCE"]
+    make-parameters: ["prefix=/usr", "WITH_WEBSOCKETS=yes", "WITH_ADNS=yes", "CFLAGS=-Wall -ggdb -O2 -I$SNAPCRAFT_STAGE/include -I$SNAPCRAFT_STAGE/include/cjson -D_GNU_SOURCE"]
     source: https://github.com/eclipse/mosquitto
     source-type: git
 
     build-packages:
-      - libcjson-dev
       - libssl-dev
       - xsltproc
       - docbook-xsl
       - gcc
       - g++
     stage-packages:
-      - libcjson1
       - libssl1.0.0
       - ca-certificates
     prime:
@@ -98,4 +97,14 @@ parts:
       - include/libwebsockets.h
       - include/lws_config.h
       - lib/libwebsockets.a
+    prime: [-*]
+
+  cjson:
+    plugin: cmake
+    configflags: ["-DCMAKE_C_FLAGS=-fPIC", "-DBUILD_SHARED_AND_STATIC_LIBS=OFF", "-DBUILD_SHARED_LIBS=OFF", "-DCJSON_BUILD_SHARED_LIBS=OFF", "-DCJSON_OVERRIDE_BUILD_SHARED_LIBS=OFF"]
+    source: https://github.com/DaveGamble/cJSON/archive/v1.7.14.tar.gz
+    source-type: tar
+    stage:
+      - include/cjson/cJSON.h
+      - lib/libcjson.a
     prime: [-*]
