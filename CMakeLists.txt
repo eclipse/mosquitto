@@ -9,15 +9,14 @@ set(CMAKE_LEGACY_CYGWIN_WIN32 0)
 project(mosquitto)
 
 cmake_minimum_required(VERSION 2.8)
-# Only for version 3 and up. cmake_policy(SET CMP0042 NEW)
+if (CMAKE_MAJOR_VERSION GREATER_EQUAL 3)
+    # set MACOSX_RPATH ON by default, see https://cmake.org/cmake/help/v3.0/policy/CMP0042.html
+    cmake_policy(SET CMP0042 NEW)
+endif()
 
 set (VERSION 1.6.12)
 
 add_definitions (-DCMAKE -DVERSION=\"${VERSION}\")
-
-if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-	set(CMAKE_MACOSX_RPATH 1)
-endif()
 
 if (WIN32)
 	add_definitions("-D_CRT_SECURE_NO_WARNINGS")
