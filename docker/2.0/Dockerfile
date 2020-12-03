@@ -4,7 +4,7 @@ LABEL maintainer="Roger Light <roger@atchoo.org>" \
     description="Eclipse Mosquitto MQTT Broker"
 
 ENV VERSION=2.0.0 \
-    DOWNLOAD_SHA256=ab89ddba508131b82c274f5697b03e6a067ac89cc2af4ac59dc124ac135d95a4 \
+    DOWNLOAD_SHA256=ca8c21d1b04037df27639de9ea8f82fa73e1cbd24e83e6394ed67b537c4b6d86 \
     GPG_KEYS=A0D6EEA1DCAE49A635A3B2F0779B22DFB3E717B7 \
     LWS_VERSION=2.4.2 \
     CJSON_VERSION=1.7.14
@@ -77,7 +77,7 @@ RUN set -x && \
         WITH_SHARED_LIBRARIES=yes \
         WITH_SRV=no \
         WITH_STRIP=yes \
-		WITH_TLS_PSK=no \
+        WITH_TLS_PSK=no \
         WITH_WEBSOCKETS=yes \
         prefix=/usr \
         binary && \
