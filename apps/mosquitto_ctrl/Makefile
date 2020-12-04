@@ -8,8 +8,7 @@ else
 LIBMOSQ:=../../lib/libmosquitto.a
 endif
 
-LOCAL_CPPFLAGS:=-I/usr/include/cjson -I/usr/local/include/cjson -I../mosquitto_passwd
-LOCAL_LDFLAGS:=-L/usr/local/lib
+LOCAL_CPPFLAGS:=-I../mosquitto_passwd
 
 OBJS=	mosquitto_ctrl.o \
 		client.o \
