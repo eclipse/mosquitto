@@ -17,7 +17,7 @@ SPDX-License-Identifier: EPL-2.0 OR EDL-1.0
 Contributors:
    Roger Light - initial implementation and documentation.
 */
-#include <cJSON.h>
+#include <cjson/cJSON.h>
 #include <stdbool.h>
 
 /* "optional==false" can also be taken to mean "only return success if the key exists and is valid" */

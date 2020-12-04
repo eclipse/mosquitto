@@ -18,7 +18,7 @@ Contributors:
    Roger Light - initial implementation and documentation.
 */
 
-#include <cJSON.h>
+#include <cjson/cJSON.h>
 #include <uthash.h>
 #include "mosquitto.h"
 #include "password_mosq.h"

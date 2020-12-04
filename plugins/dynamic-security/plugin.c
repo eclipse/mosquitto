@@ -18,7 +18,7 @@ Contributors:
 
 #include "config.h"
 
-#include <cJSON.h>
+#include <cjson/cJSON.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>

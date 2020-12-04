@@ -59,7 +59,7 @@ parts:
       - lws
       - cjson
     plugin: make
-    make-parameters: ["prefix=/usr", "WITH_WEBSOCKETS=yes", "WITH_ADNS=yes", "CFLAGS=-Wall -ggdb -O2 -I$SNAPCRAFT_STAGE/include -I$SNAPCRAFT_STAGE/include/cjson -D_GNU_SOURCE"]
+    make-parameters: ["prefix=/usr", "WITH_WEBSOCKETS=yes", "WITH_ADNS=yes", "CFLAGS=-Wall -ggdb -O2 -I$SNAPCRAFT_STAGE/include -D_GNU_SOURCE"]
     source: https://github.com/eclipse/mosquitto
     source-type: git
 

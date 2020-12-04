@@ -8,11 +8,9 @@ ENDIF()
 
 FIND_PATH(
 		CJSON_INCLUDE_DIR
-		cJSON.h
+		cjson/cJSON.h
 	HINTS
 		CJSON_DIR
-		/usr/include/cjson
-		/usr/local/include/cjson
 )
 
 FIND_LIBRARY( CJSON_LIBRARY

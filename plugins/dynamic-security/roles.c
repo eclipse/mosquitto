@@ -18,7 +18,7 @@ Contributors:
 
 #include "config.h"
 
-#include <cJSON.h>
+#include <cjson/cJSON.h>
 #include <stdio.h>
 #include <string.h>
 #include <uthash.h>

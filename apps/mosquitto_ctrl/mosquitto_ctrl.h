@@ -18,7 +18,7 @@ Contributors:
 #ifndef MOSQUITTO_CTRL_H
 #define MOSQUITTO_CTRL_H
 
-#include <cJSON.h>
+#include <cjson/cJSON.h>
 #include <stdbool.h>
 
 #include "mosquitto.h"
