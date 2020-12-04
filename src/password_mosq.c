@@ -19,10 +19,12 @@ Contributors:
 #include "config.h"
 
 #include <errno.h>
-#include <openssl/opensslv.h>
-#include <openssl/evp.h>
-#include <openssl/rand.h>
-#include <openssl/buffer.h>
+#ifdef WITH_TLS
+#  include <openssl/opensslv.h>
+#  include <openssl/evp.h>
+#  include <openssl/rand.h>
+#  include <openssl/buffer.h>
+#endif
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>

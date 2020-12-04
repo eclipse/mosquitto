@@ -1,4 +1,6 @@
+Build:
 - Fix cjson include paths.
+- Fix build using WITH_TLS=no when the openssl headers aren't available.
 
 
 2.0.0 - 2020-12-03
