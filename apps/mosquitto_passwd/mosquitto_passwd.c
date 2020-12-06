@@ -273,7 +273,11 @@ int delete_pwuser(FILE *fptr, FILE *ftmp, const char *username)
  * ====================================================================== */
 static int update_file_cb(FILE *fptr, FILE *ftmp, const char *username, const char *password, const char *line, struct cb_helper *helper)
 {
-	return output_new_password(ftmp, username, password, helper->iterations);
+	if(helper){
+		return output_new_password(ftmp, username, password, helper->iterations);
+	}else{
+		return output_new_password(ftmp, username, password, PW_DEFAULT_ITERATIONS);
+	}
 }
 
 int update_file(FILE *fptr, FILE *ftmp)

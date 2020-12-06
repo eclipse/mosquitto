@@ -2,6 +2,9 @@ Broker:
 - Fix websockets connections on Windows blocking subsequent connections.
   Closes #1934.
 
+Apps:
+- Fix `mosquitto_passwd -U`
+
 Build:
 - Fix cjson include paths.
 - Fix build using WITH_TLS=no when the openssl headers aren't available.
