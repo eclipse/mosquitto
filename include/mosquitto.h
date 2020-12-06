@@ -1665,6 +1665,22 @@ libmosq_EXPORT void mosquitto_user_data_set(struct mosquitto *mosq, void *obj);
  */
 libmosq_EXPORT void *mosquitto_userdata(struct mosquitto *mosq);
 
+/*
+ * Function: mosquitto_delay_puback
+ *
+ * Per Default, the library will acknowledge a QoS 1 message before it calls the 
+ * on_message callback. After <mosquitto_delay_puback> is called, the library
+ * delays the acknowledgment until after the on_message callback has returned.
+ *
+ * Parameters:
+ *  mosq - a valid mosquitto instance.
+ *
+ * Returns:
+ *	MOSQ_ERR_SUCCESS - on success.
+ * 	MOSQ_ERR_INVAL -   if the input parameters were invalid.
+ */
+libmosq_EXPORT int mosquitto_delay_puback(struct mosquitto *mosq);
+
 
 /* ======================================================================
  *

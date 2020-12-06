@@ -530,3 +530,12 @@ void *mosquitto_userdata(struct mosquitto *mosq)
 {
 	return mosq->userdata;
 }
+
+int mosquitto_delay_puback(struct mosquitto *mosq)
+{
+	if(!mosq) return MOSQ_ERR_INVAL;
+
+	mosq->delayed_puback = true;
+	
+	return MOSQ_ERR_SUCCESS;
+}
