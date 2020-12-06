@@ -6,6 +6,7 @@ DISTDIRS=man
 DISTFILES= \
 	apps/ \
 	client/ \
+	cmake/ \
 	deps/ \
 	examples/ \
 	include/ \
@@ -17,6 +18,7 @@ DISTFILES= \
 	plugins/ \
 	security/ \
 	service/ \
+	snap/ \
 	src/ \
 	test/ \
 	\
