@@ -438,7 +438,6 @@ int bridge__connect(struct mosquitto *context)
 	if(rc > 0){
 		if(rc == MOSQ_ERR_TLS){
 			net__socket_close(context);
-			mosquitto__free(notification_topic);
 			return rc; /* Error already printed */
 		}else if(rc == MOSQ_ERR_ERRNO){
 			log__printf(NULL, MOSQ_LOG_ERR, "Error creating bridge: %s.", strerror(errno));
