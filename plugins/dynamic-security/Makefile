@@ -4,7 +4,6 @@ include ../../config.mk
 
 PLUGIN_NAME=mosquitto_dynamic_security
 LOCAL_CPPFLAGS=-I../../src/
-LOCAL_LDFLAGS=-L/usr/local/lib
 
 OBJS=	\
 		acl.o \
@@ -33,7 +32,7 @@ all : ${ALL_DEPS}
 binary : ${PLUGIN_NAME}.so
 
 ${PLUGIN_NAME}.so : ${OBJS}
-	${CROSS_COMPILE}${CC} $(PLUGIN_LDFLAGS) $(LOCAL_LDFLAGS) -fPIC -shared $^ -o $@ -lcjson
+	${CROSS_COMPILE}${CC} $(PLUGIN_LDFLAGS) -fPIC -shared $^ -o $@ -lcjson
 
 acl.o : acl.c dynamic_security.h
 	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) -c $< -o $@
