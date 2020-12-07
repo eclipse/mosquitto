@@ -4,11 +4,10 @@
 # To configure the build options either use the CMake gui, or run the command
 # line utility including the "-i" option.
 
-project(mosquitto)
-
 cmake_minimum_required(VERSION 3.0)
 cmake_policy(SET CMP0042 NEW)
 
+project(mosquitto)
 set (VERSION 2.0.2)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
