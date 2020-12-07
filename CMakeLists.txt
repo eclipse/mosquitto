@@ -4,8 +4,6 @@
 # To configure the build options either use the CMake gui, or run the command
 # line utility including the "-i" option.
 
-set(CMAKE_LEGACY_CYGWIN_WIN32 0)
-
 project(mosquitto)
 
 cmake_minimum_required(VERSION 3.0)
