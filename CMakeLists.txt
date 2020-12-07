@@ -10,7 +10,7 @@ cmake_policy(SET CMP0042 NEW)
 project(mosquitto)
 set (VERSION 2.0.2)
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/")
 
 add_definitions (-DCMAKE -DVERSION=\"${VERSION}\")
 
