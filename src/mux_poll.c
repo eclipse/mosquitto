@@ -89,7 +89,10 @@ int mux_poll__init(struct mosquitto__listener_sock *listensock, int listensock_c
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 		return MOSQ_ERR_NOMEM;
 	}
-	memset(pollfds, -1, sizeof(struct pollfd)*pollfd_max);
+	memset(pollfds, 0, sizeof(struct pollfd)*pollfd_max);
+	for(i=0; i<pollfd_max; i++) {
+		pollfds[i].fd = INVALID_SOCKET;
+	}
 
 	for(i=0; i<listensock_count; i++){
 		pollfds[pollfd_index].fd = listensock[i].sock;
@@ -112,7 +115,7 @@ int mux_poll__add_out(struct mosquitto *context)
 		pollfds[context->pollfd_index].revents = 0;
 	}else{
 		for(i=0; i<pollfd_max; i++){
-			if(pollfds[i].fd == -1){
+			if(pollfds[i].fd == INVALID_SOCKET){
 				pollfds[i].fd = context->sock;
 				pollfds[i].events = POLLIN | POLLOUT;
 				pollfds[i].revents = 0;
@@ -142,7 +145,7 @@ int mux_poll__add_in(struct mosquitto *context)
 		pollfds[context->pollfd_index].revents = 0;
 	}else{
 		for(i=0; i<pollfd_max; i++){
-			if(pollfds[i].fd == -1){
+			if(pollfds[i].fd == INVALID_SOCKET){
 				pollfds[i].fd = context->sock;
 				pollfds[i].events = POLLIN;
 				pollfds[i].revents = 0;
@@ -158,7 +161,7 @@ int mux_poll__add_in(struct mosquitto *context)
 int mux_poll__delete(struct mosquitto *context)
 {
 	if(context->pollfd_index != -1){
-		pollfds[context->pollfd_index].fd = -1;
+		pollfds[context->pollfd_index].fd = INVALID_SOCKET;
 		pollfds[context->pollfd_index].events = 0;
 		pollfds[context->pollfd_index].revents = 0;
 		context->pollfd_index = -1;
