@@ -1,6 +1,8 @@
 Broker:
 - Fix websockets connections on Windows blocking subsequent connections.
   Closes #1934.
+- Fix DH group not being set for TLS connections, which meant ciphers using
+  DHE couldn't be used. Closes #1925. Closes #1476.
 
 Apps:
 - Fix `mosquitto_passwd -U`

@@ -373,6 +373,9 @@ int net__tls_server_ctx(struct mosquitto__listener *listener)
 	SSL_CTX_set_ecdh_auto(listener->ssl_ctx, 1);
 #endif
 #endif
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+	SSL_CTX_set_dh_auto(listener->ssl_ctx, 1);
+#endif
 
 #ifdef SSL_OP_NO_RENEGOTIATION
 	SSL_CTX_set_options(listener->ssl_ctx, SSL_OP_NO_RENEGOTIATION);
