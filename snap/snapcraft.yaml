@@ -1,5 +1,5 @@
 name: mosquitto
-version: 2.0.0
+version: 2.0.1
 summary: Eclipse Mosquitto MQTT broker
 description: This is a message broker that supports version 5.0, 3.1.1, and 3.1 of the MQTT
     protocol.

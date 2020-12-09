@@ -9,7 +9,7 @@
 !define env_hklm 'HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"'
 
 Name "Eclipse Mosquitto"
-!define VERSION 2.0.0
+!define VERSION 2.0.1
 OutFile "mosquitto-${VERSION}-install-windows-x64.exe"
 
 !include "x64.nsh"

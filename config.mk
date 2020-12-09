@@ -125,7 +125,7 @@ WITH_XTREPORT=no
 
 # Also bump lib/mosquitto.h, CMakeLists.txt,
 # installer/mosquitto.nsi, installer/mosquitto64.nsi
-VERSION=2.0.0
+VERSION=2.0.1
 
 # Client library SO version. Bump if incompatible API/ABI changes are made.
 SOVERSION=1
