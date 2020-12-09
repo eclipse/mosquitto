@@ -11,4 +11,5 @@ if(WIN32)
 	target_link_libraries(mosquitto_payload_modification mosquitto)
 endif(WIN32)
 
-install(TARGETS mosquitto_payload_modification RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+# Don't install, these are example plugins only.
+#install(TARGETS mosquitto_payload_modification RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
