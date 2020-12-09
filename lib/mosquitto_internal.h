@@ -351,7 +351,7 @@ struct mosquitto {
 #ifdef WITH_EPOLL
 	uint32_t events;
 #endif
-	bool delayed_puback;
+	bool delayed_ack;
 };
 
 #define STREMPTY(str) (str[0] == '\0')

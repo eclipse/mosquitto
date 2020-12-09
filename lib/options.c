@@ -486,6 +486,10 @@ int mosquitto_int_option(struct mosquitto *mosq, enum mosq_opt_t option, int val
 			mosq->tcp_nodelay = (bool)value;
 			break;
 
+		case MOSQ_OPT_DELAYED_ACK:
+			mosq->delayed_ack = (bool)value;
+			break;
+
 		default:
 			return MOSQ_ERR_INVAL;
 	}
@@ -529,13 +533,4 @@ void mosquitto_user_data_set(struct mosquitto *mosq, void *userdata)
 void *mosquitto_userdata(struct mosquitto *mosq)
 {
 	return mosq->userdata;
-}
-
-int mosquitto_delay_puback(struct mosquitto *mosq)
-{
-	if(!mosq) return MOSQ_ERR_INVAL;
-
-	mosq->delayed_puback = true;
-	
-	return MOSQ_ERR_SUCCESS;
 }
