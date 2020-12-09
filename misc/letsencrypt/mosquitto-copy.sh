@@ -9,7 +9,7 @@
 # may be just "example.com", or multiple domains "www.example.com example.com"
 # depending on your certificate.
 
-# Place this script in /etc/letsencrypt/renewal-hoots/deploy/ and make it
+# Place this script in /etc/letsencrypt/renewal-hooks/deploy/ and make it
 # executable after editing it to your needs.
 
 if [ ${RENEWED_DOMAINS} == "my-mosquitto-domain" ]; then
