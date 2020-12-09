@@ -715,6 +715,10 @@ static int net__init_ssl_ctx(struct mosquitto *mosq)
 			return MOSQ_ERR_INVAL;
 		}
 
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+		/* Allow use of DHE ciphers */
+		SSL_CTX_set_dh_auto(mosq->ssl_ctx, 1);
+#endif
 		/* Disable compression */
 		SSL_CTX_set_options(mosq->ssl_ctx, SSL_OP_NO_COMPRESSION);
 
