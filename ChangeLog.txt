@@ -1,3 +1,10 @@
+2.0.2 - 2020-12-10
+==================
+
+Broker:
+- Fix build regression for WITH_WEBSOCKETS=yes on non-Linux systems.
+
+
 2.0.1 - 2020-12-10
 ==================
 

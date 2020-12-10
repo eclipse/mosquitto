@@ -212,7 +212,7 @@ int mux_poll__handle(struct mosquitto__listener_sock *listensock, int listensock
 		for(i=0; i<listensock_count; i++){
 			if(pollfds[i].revents & (POLLIN | POLLPRI)){
 #ifdef WITH_WEBSOCKETS
-				if(listensock[i]->listener.ws_context){
+				if(listensock[i].listener->ws_context){
 					/* Nothing needs to happen here, because we always call lws_service in the loop.
 					 * The important point is we've been woken up for this listener. */
 				}else
