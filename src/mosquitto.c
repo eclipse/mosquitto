@@ -58,6 +58,10 @@ Contributors:
 
 struct mosquitto_db db;
 
+static struct mosquitto__listener_sock *listensock = NULL;
+static int listensock_count = 0;
+static int listensock_index = 0;
+
 bool flag_reload = false;
 #ifdef WITH_PERSISTENCE
 bool flag_db_backup = false;
@@ -202,7 +206,7 @@ void listeners__reload_all_certificates(void)
 }
 
 
-int listeners__start_single_mqtt(struct mosquitto__listener_sock **listensock, int *listensock_count, int *listensock_index, struct mosquitto__listener *listener)
+int listeners__start_single_mqtt(struct mosquitto__listener *listener)
 {
 	int i;
 	struct mosquitto__listener_sock *listensock_new;
@@ -210,29 +214,66 @@ int listeners__start_single_mqtt(struct mosquitto__listener_sock **listensock, i
 	if(net__socket_listen(listener)){
 		return 1;
 	}
-	(*listensock_count) += listener->sock_count;
-	listensock_new = mosquitto__realloc(*listensock, sizeof(struct mosquitto__listener_sock)*(size_t)(*listensock_count));
+	listensock_count += listener->sock_count;
+	listensock_new = mosquitto__realloc(listensock, sizeof(struct mosquitto__listener_sock)*(size_t)listensock_count);
 	if(!listensock_new){
 		return 1;
 	}
-	*listensock = listensock_new;
+	listensock = listensock_new;
 
 	for(i=0; i<listener->sock_count; i++){
 		if(listener->socks[i] == INVALID_SOCKET){
 			return 1;
 		}
-		(*listensock)[*listensock_index].sock = listener->socks[i];
-		(*listensock)[*listensock_index].listener = listener;
+		listensock[listensock_index].sock = listener->socks[i];
+		listensock[listensock_index].listener = listener;
 #ifdef WITH_EPOLL
-		(*listensock)[*listensock_index].ident = id_listener;
+		listensock[listensock_index].ident = id_listener;
 #endif
-		(*listensock_index)++;
+		listensock_index++;
 	}
 	return MOSQ_ERR_SUCCESS;
 }
 
 
-int listeners__add_local(struct mosquitto__listener_sock **listensock, int *listensock_count, int *listensock_index, const char *host, uint16_t port)
+#ifdef WITH_WEBSOCKETS
+void listeners__add_websockets(struct lws_context *ws_context, int fd)
+{
+	int i;
+	struct mosquitto__listener *listener = NULL;
+	struct mosquitto__listener_sock *listensock_new;
+
+	/* Don't add more listeners after we've started the main loop */
+	if(run || ws_context == NULL) return;
+
+	/* Find context */
+	for(i=0; i<db.config->listener_count; i++){
+		if(db.config->listeners[i].ws_in_init){
+			listener = &db.config->listeners[i];
+			break;
+		}
+	}
+	if(listener == NULL){
+		return;
+	}
+
+	listensock_count++;
+	listensock_new = mosquitto__realloc(listensock, sizeof(struct mosquitto__listener_sock)*(size_t)listensock_count);
+	if(!listensock_new){
+		return;
+	}
+	listensock = listensock_new;
+
+	listensock[listensock_index].sock = fd;
+	listensock[listensock_index].listener = listener;
+#ifdef WITH_EPOLL
+	listensock[listensock_index].ident = id_listener_ws;
+#endif
+	listensock_index++;
+}
+#endif
+
+int listeners__add_local(const char *host, uint16_t port)
 {
 	struct mosquitto__listener *listeners;
 	listeners = db.config->listeners;
@@ -244,7 +285,7 @@ int listeners__add_local(struct mosquitto__listener_sock **listensock, int *list
 	if(listeners[db.config->listener_count].host == NULL){
 		return MOSQ_ERR_NOMEM;
 	}
-	if(listeners__start_single_mqtt(listensock, listensock_count, listensock_index, &listeners[db.config->listener_count])){
+	if(listeners__start_single_mqtt(&listeners[db.config->listener_count])){
 		mosquitto__free(listeners[db.config->listener_count].host);
 		listeners[db.config->listener_count].host = NULL;
 		return MOSQ_ERR_UNKNOWN;
@@ -253,11 +294,10 @@ int listeners__add_local(struct mosquitto__listener_sock **listensock, int *list
 	return MOSQ_ERR_SUCCESS;
 }
 
-int listeners__start_local_only(struct mosquitto__listener_sock **listensock, int *listensock_count)
+int listeners__start_local_only(void)
 {
 	/* Attempt to open listeners bound to 127.0.0.1 and ::1 only */
 	int i;
-	int listensock_index = 0;
 	int rc;
 	struct mosquitto__listener *listeners;
 
@@ -272,15 +312,15 @@ int listeners__start_local_only(struct mosquitto__listener_sock **listensock, in
 	log__printf(NULL, MOSQ_LOG_WARNING, "Starting in local only mode. Connections will only be possible from clients running on this machine.");
 	log__printf(NULL, MOSQ_LOG_WARNING, "Create a configuration file which defines a listener to allow remote access.");
 	if(db.config->cmd_port_count == 0){
-		rc = listeners__add_local(listensock, listensock_count, &listensock_index, "127.0.0.1", 1883);
+		rc = listeners__add_local("127.0.0.1", 1883);
 		if(rc == MOSQ_ERR_NOMEM) return MOSQ_ERR_NOMEM;
-		rc = listeners__add_local(listensock, listensock_count, &listensock_index, "::1", 1883);
+		rc = listeners__add_local("::1", 1883);
 		if(rc == MOSQ_ERR_NOMEM) return MOSQ_ERR_NOMEM;
 	}else{
 		for(i=0; i<db.config->cmd_port_count; i++){
-			rc = listeners__add_local(listensock, listensock_count, &listensock_index, "127.0.0.1", db.config->cmd_port[i]);
+			rc = listeners__add_local("127.0.0.1", db.config->cmd_port[i]);
 			if(rc == MOSQ_ERR_NOMEM) return MOSQ_ERR_NOMEM;
-			rc = listeners__add_local(listensock, listensock_count, &listensock_index, "::1", db.config->cmd_port[i]);
+			rc = listeners__add_local("::1", db.config->cmd_port[i]);
 			if(rc == MOSQ_ERR_NOMEM) return MOSQ_ERR_NOMEM;
 		}
 	}
@@ -293,16 +333,14 @@ int listeners__start_local_only(struct mosquitto__listener_sock **listensock, in
 }
 
 
-int listeners__start(struct mosquitto__listener_sock **listensock, int *listensock_count)
+int listeners__start(void)
 {
 	int i;
-	int listensock_index = 0;
 
-	listensock_index = 0;
-	(*listensock_count) = 0;
+	listensock_count = 0;
 
 	if(db.config->listener_count == 0){
-		if(listeners__start_local_only(listensock, listensock_count)){
+		if(listeners__start_local_only()){
 			db__close();
 			if(db.config->pid_file){
 				(void)remove(db.config->pid_file);
@@ -314,7 +352,7 @@ int listeners__start(struct mosquitto__listener_sock **listensock, int *listenso
 
 	for(i=0; i<db.config->listener_count; i++){
 		if(db.config->listeners[i].protocol == mp_mqtt){
-			if(listeners__start_single_mqtt(listensock, listensock_count, &listensock_index, &db.config->listeners[i])){
+			if(listeners__start_single_mqtt(&db.config->listeners[i])){
 				db__close();
 				if(db.config->pid_file){
 					(void)remove(db.config->pid_file);
@@ -323,7 +361,7 @@ int listeners__start(struct mosquitto__listener_sock **listensock, int *listenso
 			}
 		}else if(db.config->listeners[i].protocol == mp_websockets){
 #ifdef WITH_WEBSOCKETS
-			db.config->listeners[i].ws_context = mosq_websockets_init(&db.config->listeners[i], db.config);
+			mosq_websockets_init(&db.config->listeners[i], db.config);
 			if(!db.config->listeners[i].ws_context){
 				log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to create websockets listener on port %d.", db.config->listeners[i].port);
 				return 1;
@@ -331,7 +369,7 @@ int listeners__start(struct mosquitto__listener_sock **listensock, int *listenso
 #endif
 		}
 	}
-	if((*listensock) == NULL){
+	if(listensock == NULL){
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to start any listening sockets, exiting.");
 		return 1;
 	}
@@ -339,7 +377,7 @@ int listeners__start(struct mosquitto__listener_sock **listensock, int *listenso
 }
 
 
-void listeners__stop(struct mosquitto__listener_sock *listensock, int listensock_count)
+void listeners__stop(void)
 {
 	int i;
 
@@ -404,8 +442,6 @@ int pid__write(void)
 
 int main(int argc, char *argv[])
 {
-	struct mosquitto__listener_sock *listensock = NULL;
-	int listensock_count = 0;
 	struct mosquitto__config config;
 #ifdef WITH_BRIDGE
 	int i;
@@ -510,7 +546,7 @@ int main(int argc, char *argv[])
 	sys_tree__init();
 #endif
 
-	if(listeners__start(&listensock, &listensock_count)) return 1;
+	if(listeners__start()) return 1;
 
 	signal__setup();
 
@@ -541,7 +577,7 @@ int main(int argc, char *argv[])
 #endif
 	session_expiry__remove_all();
 
-	listeners__stop(listensock, listensock_count);
+	listeners__stop();
 
 	HASH_ITER(hh_id, db.contexts_by_id, ctxt, ctxt_tmp){
 #ifdef WITH_WEBSOCKETS

@@ -6,6 +6,8 @@ Broker:
   Closes #1934.
 - Fix DH group not being set for TLS connections, which meant ciphers using
   DHE couldn't be used. Closes #1925. Closes #1476.
+- Fix websockets listeners not causing the main loop not to wake up.
+  Closes #1936.
 
 Client library:
 - Fix DH group not being set for TLS connections, which meant ciphers using

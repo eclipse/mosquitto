@@ -217,6 +217,11 @@ int mux_epoll__handle(void)
 						mux__add_in(context);
 					}
 				}
+#ifdef WITH_WEBSOCKETS
+			}else if(context->ident == id_listener_ws){
+				/* Nothing needs to happen here, because we always call lws_service in the loop.
+				 * The important point is we've been woken up for this listener. */
+#endif
 			}
 		}
 	}
