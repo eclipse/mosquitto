@@ -3,8 +3,8 @@ FROM alpine:3.12
 LABEL maintainer="Roger Light <roger@atchoo.org>" \
     description="Eclipse Mosquitto MQTT Broker"
 
-ENV VERSION=2.0.0 \
-    DOWNLOAD_SHA256=ca8c21d1b04037df27639de9ea8f82fa73e1cbd24e83e6394ed67b537c4b6d86 \
+ENV VERSION=2.0.1 \
+    DOWNLOAD_SHA256=84fa7646b35176259e990f25608e9f8223a5ef42543cd5c192baaa5e648359b5 \
     GPG_KEYS=A0D6EEA1DCAE49A635A3B2F0779B22DFB3E717B7 \
     LWS_VERSION=2.4.2 \
     LWS_SHA256=73012d7fcf428dedccc816e83a63a01462e27819d5537b8e0d0c7264bfacfad6 \
@@ -74,7 +74,7 @@ RUN set -x && \
     tar --strip=1 -xf /tmp/mosq.tar.gz -C /build/mosq && \
     rm /tmp/mosq.tar.gz && \
     make -C /build/mosq -j "$(nproc)" \
-        CFLAGS="-Wall -O2 -I/build/lws/include -I/build/cjson" \
+        CFLAGS="-Wall -O2 -I/build/lws/include -I/build" \
         LDFLAGS="-L/build/lws/lib -L/build/cjson" \
         WITH_ADNS=no \
         WITH_DOCS=no \
