@@ -1,7 +1,7 @@
 <!--
 .. title: Download
 .. slug: download
-.. date: 2020-12-10 14:36:38 UTC
+.. date: 2020-12-10 23:34:38 UTC
 .. tags: tag
 .. category: category
 .. link: link
@@ -11,7 +11,7 @@
 
 # Source
 
-* [mosquitto-2.0.1.tar.gz](https://mosquitto.org/files/source/mosquitto-2.0.1.tar.gz) (319kB) ([GPG signature](https://mosquitto.org/files/source/mosquitto-2.0.1.tar.gz.asc))
+* [mosquitto-2.0.2.tar.gz](https://mosquitto.org/files/source/mosquitto-2.0.2.tar.gz) (319kB) ([GPG signature](https://mosquitto.org/files/source/mosquitto-2.0.2.tar.gz.asc))
 * [Git source code repository](https://github.com/eclipse/mosquitto) (github.com)
 
 Older downloads are available at [https://mosquitto.org/files/](../files/)
