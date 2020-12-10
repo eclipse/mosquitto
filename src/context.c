@@ -42,8 +42,9 @@ struct mosquitto *context__init(mosq_sock_t sock)
 	
 #ifdef WITH_EPOLL
 	context->ident = id_client;
-#endif
+#else
 	context->pollfd_index = -1;
+#endif
 	mosquitto__set_state(context, mosq_cs_new);
 	context->sock = sock;
 	context->last_msg_in = db.now_s;

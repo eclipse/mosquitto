@@ -215,6 +215,7 @@ struct mosquitto {
 #ifndef WITH_BROKER
 	mosq_sock_t sockpairR, sockpairW;
 #endif
+	uint32_t maximum_packet_size;
 #if defined(__GLIBC__) && defined(WITH_ADNS)
 	struct gaicb *adns; /* For getaddrinfo_a */
 #endif
@@ -236,7 +237,6 @@ struct mosquitto {
 	struct mosquitto__alias *aliases;
 	struct will_delay_list *will_delay_entry;
 	int alias_count;
-	uint32_t maximum_packet_size;
 	uint32_t will_delay_interval;
 	time_t will_delay_time;
 #ifdef WITH_TLS
@@ -274,8 +274,8 @@ struct mosquitto {
 	pthread_t thread_id;
 #endif
 	bool clean_start;
-	uint32_t session_expiry_interval;
 	time_t session_expiry_time;
+	uint32_t session_expiry_interval;
 #ifdef WITH_BROKER
 	bool removed_from_by_id; /* True if removed from by_id hash */
 	bool is_dropping;
@@ -291,7 +291,9 @@ struct mosquitto {
 	char *auth_method;
 	int sub_count;
 	int shared_sub_count;
+#  ifndef WITH_EPOLL
 	int pollfd_index;
+#  endif
 #  ifdef WITH_WEBSOCKETS
 	struct lws *wsi;
 #  endif

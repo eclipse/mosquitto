@@ -241,8 +241,8 @@ struct mosquitto__listener_sock{
 	/* This *must* be the first element in the struct. */
 	int ident;
 #endif
-	struct mosquitto__listener *listener;
 	mosq_sock_t sock;
+	struct mosquitto__listener *listener;
 };
 
 typedef struct mosquitto_plugin_id_t{
@@ -372,11 +372,11 @@ struct mosquitto_msg_store{
 	void *payload;
 	time_t message_expiry_time;
 	uint32_t payloadlen;
+	enum mosquitto_msg_origin origin;
 	uint16_t source_mid;
 	uint16_t mid;
 	uint8_t qos;
 	bool retain;
-	enum mosquitto_msg_origin origin;
 };
 
 struct mosquitto_client_msg{
