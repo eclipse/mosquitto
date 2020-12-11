@@ -36,7 +36,7 @@ else
 TARGET:=
 endif
 
-all : $(TARGET)
+all : ${TARGET}
 
 mosquitto_ctrl : ${OBJS}
 	${CROSS_COMPILE}${CC} ${APP_LDFLAGS} $^ -o $@ $(PASSWD_LDADD) $(LOCAL_LDFLAGS) $(LIBMOSQ) -lcjson -ldl
@@ -84,8 +84,12 @@ password_mosq.o : ../../src/password_mosq.c ../../src/password_mosq.h
 	${CROSS_COMPILE}${CC} $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@
 
 install : all
+ifeq ($(WITH_TLS),yes)
+ifeq ($(WITH_CJSON),yes)
 	$(INSTALL) -d "${DESTDIR}$(prefix)/bin"
 	$(INSTALL) ${STRIP_OPTS} mosquitto_ctrl "${DESTDIR}${prefix}/bin/mosquitto_ctrl"
+endif
+endif
 
 uninstall :
 	-rm -f "${DESTDIR}${prefix}/bin/mosquitto_ctrl"

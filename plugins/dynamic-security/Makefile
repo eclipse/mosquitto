@@ -74,9 +74,13 @@ clean:
 check: test
 test:
 
-install: ${PLUGIN_NAME}.so
+install: all
+ifeq ($(WITH_CJSON),yes)
+ifeq ($(WITH_TLS),yes)
 	$(INSTALL) -d "${DESTDIR}$(prefix)/lib"
 	$(INSTALL) ${STRIP_OPTS} ${PLUGIN_NAME}.so "${DESTDIR}${prefix}/lib/${PLUGIN_NAME}.so"
+endif
+endif
 
 uninstall :
 	-rm -f "${DESTDIR}${prefix}/lib/${PLUGIN_NAME}.so"
