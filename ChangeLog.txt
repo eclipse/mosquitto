@@ -1,3 +1,7 @@
+Broker:
+- Fix excessive CPU use on non-Linux systems when the open file limit is set
+  high. Closes #1947.
+
 Build:
 - Fix `install` target when using WITH_CJSON=no. Closes #1938.
 

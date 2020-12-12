@@ -59,15 +59,15 @@ Contributors:
 static void loop_handle_reads_writes(struct pollfd *pollfds);
 
 static struct pollfd *pollfds = NULL;
-static size_t pollfd_max;
+static size_t pollfd_max, pollfd_current_max;
 #ifndef WIN32
 static sigset_t my_sigblock;
 #endif
 
 int mux_poll__init(struct mosquitto__listener_sock *listensock, int listensock_count)
 {
-	int i;
-	int pollfd_index = 0;
+	size_t i;
+	size_t pollfd_index = 0;
 
 #ifndef WIN32
 	sigemptyset(&my_sigblock);
@@ -101,6 +101,7 @@ int mux_poll__init(struct mosquitto__listener_sock *listensock, int listensock_c
 		pollfd_index++;
 	}
 
+	pollfd_current_max = pollfd_index-1;
 	return MOSQ_ERR_SUCCESS;
 }
 
@@ -120,6 +121,9 @@ int mux_poll__add_out(struct mosquitto *context)
 				pollfds[i].events = POLLIN | POLLOUT;
 				pollfds[i].revents = 0;
 				context->pollfd_index = i;
+				if(i > pollfd_current_max){
+					pollfd_current_max = (size_t )i;
+				}
 				break;
 			}
 		}
@@ -150,6 +154,9 @@ int mux_poll__add_in(struct mosquitto *context)
 				pollfds[i].events = POLLIN;
 				pollfds[i].revents = 0;
 				context->pollfd_index = i;
+				if(i > pollfd_current_max){
+					pollfd_current_max = (size_t )i;
+				}
 				break;
 			}
 		}
@@ -160,11 +167,24 @@ int mux_poll__add_in(struct mosquitto *context)
 
 int mux_poll__delete(struct mosquitto *context)
 {
+	size_t pollfd_index;
+
 	if(context->pollfd_index != -1){
 		pollfds[context->pollfd_index].fd = INVALID_SOCKET;
 		pollfds[context->pollfd_index].events = 0;
 		pollfds[context->pollfd_index].revents = 0;
+		pollfd_index = (size_t )context->pollfd_index;
 		context->pollfd_index = -1;
+
+		/* If this is the highest index, reduce the current max until we find
+		 * the next highest in use index. */
+		while(pollfd_index == pollfd_current_max
+				&& pollfd_index > 0
+				&& pollfds[pollfd_index].fd == INVALID_SOCKET){
+
+			pollfd_index--;
+			pollfd_current_max--;
+		}
 	}
 
 	return MOSQ_ERR_SUCCESS;
@@ -184,10 +204,10 @@ int mux_poll__handle(struct mosquitto__listener_sock *listensock, int listensock
 
 #ifndef WIN32
 	sigprocmask(SIG_SETMASK, &my_sigblock, &origsig);
-	fdcount = poll(pollfds, pollfd_max, 100);
+	fdcount = poll(pollfds, pollfd_current_max+1, 100);
 	sigprocmask(SIG_SETMASK, &origsig, NULL);
 #else
-	fdcount = WSAPoll(pollfds, pollfd_max, 100);
+	fdcount = WSAPoll(pollfds, pollfd_current_max+1, 100);
 #endif
 
 	db.now_s = mosquitto_time();
