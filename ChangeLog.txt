@@ -8,6 +8,7 @@ Apps:
 
 Build:
 - Fix `install` target when using WITH_CJSON=no. Closes #1938.
+- Fix `generic` docker build. Closes #1945.
 
 
 2.0.2 - 2020-12-10

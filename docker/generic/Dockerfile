@@ -1,4 +1,4 @@
-FROM alpine:latest AS build
+FROM alpine:edge AS build
 
 # A released dist version, like "1.2.3"
 ARG VERSION
@@ -6,14 +6,15 @@ RUN test -n "${VERSION}"
 
 RUN apk --no-cache add \
       build-base \
-      openssl-dev \
       c-ares-dev \
+      ca-certificates \
+      cjson-dev \
       curl \
-      util-linux-dev \
       libwebsockets-dev \
       libxslt \
+      openssl-dev \
       python2 \
-      ca-certificates
+      util-linux-dev
 
 # This build procedure is based on:
 # https://github.com/alpinelinux/aports/blob/master/main/mosquitto/APKBUILD
@@ -48,6 +49,7 @@ LABEL maintainer="Jonathan Hanson <jonathan@jonathan-hanson.org>" \
 RUN apk --no-cache add \
       busybox \
       ca-certificates \
+      cjson \
       openssl \
       libuuid \
       libwebsockets \
