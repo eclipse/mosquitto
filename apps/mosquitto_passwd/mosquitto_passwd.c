@@ -505,7 +505,7 @@ int main(int argc, char *argv[])
 	}else if(batch_mode == true && idx+3 == argc){
 		password_file_tmp = argv[idx];
 		username = argv[idx+1];
-		password_cmd = argv[idx+1];
+		password_cmd = argv[idx+2];
 	}else if(batch_mode == false && idx+2 == argc){
 		password_file_tmp = argv[idx];
 		username = argv[idx+1];

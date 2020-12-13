@@ -2,6 +2,10 @@ Broker:
 - Fix excessive CPU use on non-Linux systems when the open file limit is set
   high. Closes #1947.
 
+Apps:
+- Fix `mosquitto_passwd -b` using username as password (not if `-c` is also
+  used). Closes #1949.
+
 Build:
 - Fix `install` target when using WITH_CJSON=no. Closes #1938.
 
