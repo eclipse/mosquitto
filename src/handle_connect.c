@@ -165,6 +165,14 @@ int connect__on_authorised(struct mosquitto *context, void *auth_data_out, uint1
 		if(context->clean_start == true){
 			sub__clean_session(found_context);
 		}
+		if((found_context->protocol == mosq_p_mqtt5 && found_context->session_expiry_interval == 0)
+				|| (found_context->protocol != mosq_p_mqtt5 && found_context->clean_start == true)
+				|| (context->clean_start == true)
+				){
+
+			context__send_will(found_context);
+		}
+
 		session_expiry__remove(found_context);
 		will_delay__remove(found_context);
 		will__clear(found_context);
