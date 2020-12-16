@@ -869,7 +869,7 @@ log_timestamp_format %Y-%m-%dT%H:%M:%S
 					<para>If mosquitto is being automatically started by an
 						init script it will usually be required to write a pid
 						file. This should then be configured as e.g.
-						/var/run/mosquitto.pid</para>
+						/var/run/mosquitto/mosquitto.pid</para>
 					<para>Not reloaded on reload signal.</para>
 				</listitem>
 			</varlistentry>
