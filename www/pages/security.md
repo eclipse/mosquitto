@@ -19,6 +19,10 @@ follow the steps on [Eclipse Security] page to report it.
 Listed with most recent first. Further information on security related issues
 can be found in the [security category].
 
+* December 2020: Running mosquitto_passwd with the following arguments only
+  `mosquitto_passwd -b password_file username password` would cause the
+  username to be used as the password. Affecting versions **2.0.0** to
+  **2.0.2** inclusive, fixed in **2.0.3**.
 * September 2019: [CVE-2019-11779]. Affecting versions **1.5** to **1.6.5**
   inclusive, fixed in **1.6.6** and **1.5.9**. More details at [version-166-released].
 * September 2019: [CVE-2019-11778]. Affecting versions **1.6** to **1.6.4**
