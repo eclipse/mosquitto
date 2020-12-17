@@ -126,8 +126,8 @@ Broker features:
   to a v3.x only broker.
 - DLT logging is now configurable at runtime with `log_dest dlt`.
   Closes #1735.
-- Add `mosquitto_plugin_publish()` function, which can be used by plugins to
-  publish messages.
+- Add `mosquitto_broker_publish()` and `mosquitto_broker_publish_copy()`
+  functions, which can be used by plugins to publish messages.
 - Add `mosquitto_client_protocol_version()` function which can be used by
   plugins to determine which version of MQTT a client has connected with.
 - Add `mosquitto_kick_client_by_clientid()` and `mosquitto_kick_client_by_username()`
