@@ -4,6 +4,10 @@ Broker:
 - Fix LWT not being sent on client takeover when the existing session wasn't
   being continued. Closes #1946.
 
+Clients:
+- Fix mosquitto_sub being unable to terminate with Ctrl-C if a successful
+  connection is not made. Closes #1957.
+
 Apps:
 - Fix `mosquitto_passwd -b` using username as password (not if `-c` is also
   used). Closes #1949.

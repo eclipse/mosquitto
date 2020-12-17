@@ -45,13 +45,18 @@ struct mosquitto *mosq = NULL;
 int last_mid = 0;
 static bool timed_out = false;
 static int connack_result = 0;
+bool connack_received = false;
 
 #ifndef WIN32
 void my_signal_handler(int signum)
 {
 	if(signum == SIGALRM || signum == SIGTERM || signum == SIGINT){
-		process_messages = false;
-		mosquitto_disconnect_v5(mosq, MQTT_RC_DISCONNECT_WITH_WILL_MSG, cfg.disconnect_props);
+		if(connack_received){
+			process_messages = false;
+			mosquitto_disconnect_v5(mosq, MQTT_RC_DISCONNECT_WITH_WILL_MSG, cfg.disconnect_props);
+		}else{
+			exit(-1);
+		}
 	}
 	if(signum == SIGALRM){
 		timed_out = true;
@@ -122,6 +127,8 @@ void my_connect_callback(struct mosquitto *mosq, void *obj, int result, int flag
 	UNUSED(obj);
 	UNUSED(flags);
 	UNUSED(properties);
+
+	connack_received = true;
 
 	connack_result = result;
 	if(!result){
