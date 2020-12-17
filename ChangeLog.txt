@@ -8,6 +8,7 @@ Broker:
 - Fix QoS 0 messages not being delivered if max_queued_messages was set to 0.
   Closes #1956.
 - Fix local bridges being disconnected on SIGHUP. Closes #1942.
+- Fix slow initial bridge connections for WITH_ADNS=no.
 
 Clients:
 - Fix mosquitto_sub being unable to terminate with Ctrl-C if a successful
