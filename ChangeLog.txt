@@ -3,6 +3,8 @@ Broker:
   high. Closes #1947.
 - Fix LWT not being sent on client takeover when the existing session wasn't
   being continued. Closes #1946.
+- Fix bridges possibly not completing connections when WITH_ADNS is in use.
+  Closes #1960.
 
 Clients:
 - Fix mosquitto_sub being unable to terminate with Ctrl-C if a successful

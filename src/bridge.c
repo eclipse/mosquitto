@@ -776,6 +776,8 @@ void bridge_check(void)
 									mux__add_out(context);
 								}
 							}else if(rc == MOSQ_ERR_CONN_PENDING){
+								mux__add_in(context);
+								mux__add_out(context);
 								context->bridge->restart_t = 0;
 							}else{
 								context->bridge->cur_address++;
