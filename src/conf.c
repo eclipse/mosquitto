@@ -664,7 +664,11 @@ int config__read(struct mosquitto__config *config, bool reload)
 			len = strlen(config->persistence_location) + strlen(config->persistence_file) + 1;
 			config->persistence_filepath = mosquitto__malloc(len);
 			if(!config->persistence_filepath) return MOSQ_ERR_NOMEM;
-			snprintf(config->persistence_filepath, len, "%s%s", config->persistence_location, config->persistence_file);
+#ifdef WIN32
+			snprintf(config->persistence_filepath, len, "%s\\%s", config->persistence_location, config->persistence_file);
+#else
+			snprintf(config->persistence_filepath, len, "%s/%s", config->persistence_location, config->persistence_file);
+#endif
 		}else{
 			config->persistence_filepath = mosquitto__strdup(config->persistence_file);
 			if(!config->persistence_filepath) return MOSQ_ERR_NOMEM;
