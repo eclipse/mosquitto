@@ -57,7 +57,6 @@ parts:
   mosquitto:
     after:
       - lws
-      - cjson
     plugin: make
     make-parameters: ["prefix=/usr", "WITH_WEBSOCKETS=yes", "WITH_ADNS=yes", "CFLAGS=-Wall -ggdb -O2 -I$SNAPCRAFT_STAGE/include -D_GNU_SOURCE"]
     source: https://github.com/eclipse/mosquitto
@@ -89,6 +88,8 @@ parts:
       - usr/include/mqtt_protocol.h
 
   lws:
+    after:
+      - cjson
     plugin: cmake
     configflags: ["-DLWS_IPV6=ON", "-DLWS_WITHOUT_CLIENT=ON", "-DLWS_WITHOUT_EXTENSIONS=ON", "-DLWS_WITH_ZIP_FOPS=OFF", "-DLWS_WITH_ZLIB=OFF", "-DLWS_WITH_SHARED=OFF"]
     source: https://github.com/warmcat/libwebsockets/archive/v2.4.2.tar.gz
