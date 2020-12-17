@@ -50,6 +50,9 @@ bool db__ready_for_flight(struct mosquitto_msg_data *msgs, int qos)
 		 * There is no queueing option, unless the client is offline and
 		 * queue_qos0_messages is enabled.
 		 */
+		if(db.config->max_queued_messages == 0 && db.config->max_inflight_bytes == 0){
+			return true;
+		}
 		valid_bytes = msgs->msg_bytes - db.config->max_inflight_bytes < db.config->max_queued_bytes;
 		valid_count = msgs->msg_count - msgs->inflight_maximum < db.config->max_queued_messages;
 

@@ -5,6 +5,8 @@ Broker:
   being continued. Closes #1946.
 - Fix bridges possibly not completing connections when WITH_ADNS is in use.
   Closes #1960.
+- Fix QoS 0 messages not being delivered if max_queued_messages was set to 0.
+  Closes #1956.
 
 Clients:
 - Fix mosquitto_sub being unable to terminate with Ctrl-C if a successful
