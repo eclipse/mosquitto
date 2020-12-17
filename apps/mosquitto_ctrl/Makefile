@@ -38,7 +38,7 @@ endif
 
 all : ${TARGET}
 
-mosquitto_ctrl : ${OBJS}
+mosquitto_ctrl : ${OBJS} ${LIBMOSQ}
 	${CROSS_COMPILE}${CC} ${APP_LDFLAGS} $^ -o $@ $(PASSWD_LDADD) $(LOCAL_LDFLAGS) $(LIBMOSQ) -lcjson -ldl
 
 mosquitto_ctrl_example.so : ${EXAMPLE_OBJS}
@@ -82,6 +82,12 @@ misc_mosq.o : ../../lib/misc_mosq.c ../../lib/misc_mosq.h
 
 password_mosq.o : ../../src/password_mosq.c ../../src/password_mosq.h
 	${CROSS_COMPILE}${CC} $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@
+
+../../lib/libmosquitto.so.${SOVERSION} :
+	$(MAKE) -C ../../lib
+
+../../lib/libmosquitto.a :
+	$(MAKE) -C ../../lib libmosquitto.a
 
 install : all
 ifeq ($(WITH_TLS),yes)
