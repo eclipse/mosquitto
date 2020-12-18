@@ -824,8 +824,7 @@ log_timestamp_format %Y-%m-%dT%H:%M:%S
 				<term><option>persistence_location</option> <replaceable>path</replaceable></term>
 				<listitem>
 					<para>The path where the persistence database should be
-						stored. Must end in a trailing slash. If not given,
-						then the current directory is used.</para>
+						stored. If not given, then the current directory is used.</para>
 
 					<para>This option applies globally.</para>
 

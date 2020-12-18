@@ -661,7 +661,7 @@ int config__read(struct mosquitto__config *config, bool reload)
 		}
 		mosquitto__free(config->persistence_filepath);
 		if(config->persistence_location && strlen(config->persistence_location)){
-			len = strlen(config->persistence_location) + strlen(config->persistence_file) + 1;
+			len = strlen(config->persistence_location) + strlen(config->persistence_file) + 2;
 			config->persistence_filepath = mosquitto__malloc(len);
 			if(!config->persistence_filepath) return MOSQ_ERR_NOMEM;
 #ifdef WIN32
