@@ -20,8 +20,8 @@ test:
 
 install: ${PLUGIN_NAME}.so
 	# Don't install, these are examples only.
-	#$(INSTALL) -d "${DESTDIR}$(prefix)/lib"
-	#$(INSTALL) ${STRIP_OPTS} ${PLUGIN_NAME}.so "${DESTDIR}${prefix}/lib/${PLUGIN_NAME}.so"
+	#$(INSTALL) -d "${DESTDIR}$(libdir)"
+	#$(INSTALL) ${STRIP_OPTS} ${PLUGIN_NAME}.so "${DESTDIR}${libdir}/${PLUGIN_NAME}.so"
 
 uninstall :
-	-rm -f "${DESTDIR}${prefix}/lib/${PLUGIN_NAME}.so"
+	-rm -f "${DESTDIR}${libdir}/${PLUGIN_NAME}.so"
