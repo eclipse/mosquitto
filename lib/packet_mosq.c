@@ -294,6 +294,8 @@ int packet__write(struct mosquitto *mosq)
 			mosquitto__free(packet);
 			return MOSQ_ERR_SUCCESS;
 #endif
+		}else if(((packet->command)&0xF0) == CMD_PUBLISH){
+			G_PUB_MSGS_SENT_INC(1);
 		}
 
 		/* Free data and reset values */

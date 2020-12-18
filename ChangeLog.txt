@@ -1,3 +1,8 @@
+Broker:
+- Fix $SYS/broker/publish/messages/+ counters not being updated for QoS 1, 2
+  messages. Closes #1968.
+
+
 2.0.3 - 2020-12-17
 ==================
 
