@@ -96,8 +96,10 @@ int mosquitto_connect_bind_v5(struct mosquitto *mosq, const char *host, int port
 {
 	int rc;
 
-	rc = mosquitto_string_option(mosq, MOSQ_OPT_BIND_ADDRESS, bind_address);
-	if(rc) return rc;
+	if(bind_address){
+		rc = mosquitto_string_option(mosq, MOSQ_OPT_BIND_ADDRESS, bind_address);
+		if(rc) return rc;
+	}
 
 	mosquitto_property_free_all(&mosq->connect_properties);
 	if(properties){
@@ -128,8 +130,10 @@ int mosquitto_connect_bind_async(struct mosquitto *mosq, const char *host, int p
 {
 	int rc;
 
-	rc = mosquitto_string_option(mosq, MOSQ_OPT_BIND_ADDRESS, bind_address);
-	if(rc) return rc;
+	if(bind_address){
+		rc = mosquitto_string_option(mosq, MOSQ_OPT_BIND_ADDRESS, bind_address);
+		if(rc) return rc;
+	}
 
 	rc = mosquitto__connect_init(mosq, host, port, keepalive);
 	if(rc) return rc;
