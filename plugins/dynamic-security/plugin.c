@@ -346,8 +346,8 @@ static int dynsec__config_load(void)
 	char *json_str;
 	cJSON *tree;
 
-	/* Save to file */
-	fptr = fopen(config_file, "rt");
+	/* Load from file */
+	fptr = fopen(config_file, "rb");
 	if(fptr == NULL){
 		return 1;
 	}
