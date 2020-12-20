@@ -1,3 +1,24 @@
+if(NOT WIN32)
+	function(compile_manpage page)
+		add_custom_command(OUTPUT ${CMAKE_SOURCE_DIR}/man/${page}
+			COMMAND xsltproc ${CMAKE_SOURCE_DIR}/man/${page}.xml -o ${CMAKE_SOURCE_DIR}/man/
+			MAIN_DEPENDENCY ${CMAKE_SOURCE_DIR}/man/${page}.xml)
+		add_custom_target(${page} ALL DEPENDS ${CMAKE_SOURCE_DIR}/man/${page})
+	endfunction()
+
+	compile_manpage("mosquitto_ctrl.1")
+	compile_manpage("mosquitto_ctrl_dynsec.1")
+	compile_manpage("mosquitto_passwd.1")
+	compile_manpage("mosquitto_pub.1")
+	compile_manpage("mosquitto_sub.1")
+	compile_manpage("mosquitto_rr.1")
+	compile_manpage("libmosquitto.3")
+	compile_manpage("mosquitto.conf.5")
+	compile_manpage("mosquitto-tls.7")
+	compile_manpage("mqtt.7")
+	compile_manpage("mosquitto.8")
+endif()
+
 install(FILES mosquitto_ctrl.1 mosquitto_ctrl_dynsec.1 mosquitto_passwd.1 mosquitto_pub.1 mosquitto_sub.1 mosquitto_rr.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
 install(FILES libmosquitto.3 DESTINATION ${CMAKE_INSTALL_MANDIR}/man3)
 install(FILES mosquitto.conf.5 DESTINATION ${CMAKE_INSTALL_MANDIR}/man5)
