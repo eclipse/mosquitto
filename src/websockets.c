@@ -188,9 +188,6 @@ static int callback_mqtt(
 				if(mosq->sock != INVALID_SOCKET){
 					HASH_DELETE(hh_sock, db.contexts_by_sock, mosq);
 					mosq->sock = INVALID_SOCKET;
-#ifndef WITH_EPOLL
-					mosq->pollfd_index = -1;
-#endif
 					mux__delete(mosq);
 				}
 				mosq->wsi = NULL;

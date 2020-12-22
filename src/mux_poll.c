@@ -84,7 +84,7 @@ int mux_poll__init(struct mosquitto__listener_sock *listensock, int listensock_c
 	pollfd_max = (size_t)sysconf(_SC_OPEN_MAX);
 #endif
 
-	pollfds = mosquitto__malloc(sizeof(struct pollfd)*pollfd_max);
+	pollfds = mosquitto__calloc(pollfd_max, sizeof(struct pollfd));
 	if(!pollfds){
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 		return MOSQ_ERR_NOMEM;
@@ -145,7 +145,7 @@ int mux_poll__add_in(struct mosquitto *context)
 
 	if(context->pollfd_index != -1){
 		pollfds[context->pollfd_index].fd = context->sock;
-		pollfds[context->pollfd_index].events = POLLIN | POLLPRI;
+		pollfds[context->pollfd_index].events = POLLIN;
 		pollfds[context->pollfd_index].revents = 0;
 	}else{
 		for(i=0; i<pollfd_max; i++){
@@ -230,7 +230,7 @@ int mux_poll__handle(struct mosquitto__listener_sock *listensock, int listensock
 		loop_handle_reads_writes(pollfds);
 
 		for(i=0; i<listensock_count; i++){
-			if(pollfds[i].revents & (POLLIN | POLLPRI)){
+			if(pollfds[i].revents & POLLIN){
 #ifdef WITH_WEBSOCKETS
 				if(listensock[i].listener->ws_context){
 					/* Nothing needs to happen here, because we always call lws_service in the loop.

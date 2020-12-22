@@ -6,6 +6,8 @@ Broker:
 - Fix dynamic security configuration possibly not being reloaded on Windows
   only. Closes #1962.
 - Add more log messages for dynsec load/save error conditions.
+- Fix websockets connections blocking non-websockets connections on Windows.
+  Closes #1934.
 
 Build:
 - Fix man pages not being built when using CMake. Closes #1969.
