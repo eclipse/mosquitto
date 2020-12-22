@@ -19,6 +19,12 @@ Contributors:
 #ifndef MOSQUITTO_PLUGIN_H
 #define MOSQUITTO_PLUGIN_H
 
+/*
+ * File: mosquitto_plugin.h
+ *
+ * This header contains function declarations for use when writing a Mosquitto plugin.
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -108,7 +114,7 @@ struct mosquitto_acl_msg {
 
 /* =========================================================================
  *
- * Plugin Functions v5
+ * Section: Plugin Functions v5
  *
  * This is the plugin version 5 interface, which covers authentication, access
  * control, the $CONTROL topic space handling, and message inspection and
@@ -146,13 +152,13 @@ mosq_plugin_EXPORT int mosquitto_plugin_version(int supported_version_count, con
  *
  * Parameters:
  *
- *  identifier :     This is a pointer to an opaque structure which you must
+ *  identifier -     This is a pointer to an opaque structure which you must
  *                   save and use when registering/unregistering callbacks.
- *	user_data :      The pointer set here will be passed to the other plugin
+ *	user_data -      The pointer set here will be passed to the other plugin
  *	                 functions. Use to hold connection information for example.
- *	opts :           Pointer to an array of struct mosquitto_opt, which
+ *	opts -           Pointer to an array of struct mosquitto_opt, which
  *	                 provides the plugin options defined in the configuration file.
- *	opt_count :      The number of elements in the opts array.
+ *	opt_count -      The number of elements in the opts array.
  *
  * Return value:
  *	Return 0 on success
@@ -169,10 +175,10 @@ mosq_plugin_EXPORT int mosquitto_plugin_init(mosquitto_plugin_id_t *identifier, 
  *
  * Parameters:
  *
- *	user_data :      The pointer provided in <mosquitto_auth_plugin_init>.
- *	opts :           Pointer to an array of struct mosquitto_opt, which
+ *	user_data -      The pointer provided in <mosquitto_plugin_init>.
+ *	opts -           Pointer to an array of struct mosquitto_opt, which
  *	                 provides the plugin options defined in the configuration file.
- *	opt_count :      The number of elements in the opts array.
+ *	opt_count -      The number of elements in the opts array.
  *
  * Return value:
  *	Return 0 on success
@@ -184,7 +190,7 @@ mosq_plugin_EXPORT int mosquitto_plugin_cleanup(void *userdata, struct mosquitto
 
 /* =========================================================================
  *
- * Plugin Functions v4
+ * Section: Plugin Functions v4
  *
  * This is the plugin version 4 interface, which is exclusively for
  * authentication and access control, and which is still supported for existing
@@ -213,11 +219,11 @@ mosq_plugin_EXPORT int mosquitto_auth_plugin_version(void);
  *
  * Parameters:
  *
- *	user_data :      The pointer set here will be passed to the other plugin
+ *	user_data -      The pointer set here will be passed to the other plugin
  *	                 functions. Use to hold connection information for example.
- *	opts :           Pointer to an array of struct mosquitto_opt, which
+ *	opts -           Pointer to an array of struct mosquitto_opt, which
  *	                 provides the plugin options defined in the configuration file.
- *	opt_count :      The number of elements in the opts array.
+ *	opt_count -      The number of elements in the opts array.
  *
  * Return value:
  *	Return 0 on success
@@ -236,10 +242,10 @@ mosq_plugin_EXPORT int mosquitto_auth_plugin_init(void **user_data, struct mosqu
  *
  * Parameters:
  *
- *	user_data :      The pointer provided in <mosquitto_auth_plugin_init>.
- *	opts :           Pointer to an array of struct mosquitto_opt, which
+ *	user_data -      The pointer provided in <mosquitto_auth_plugin_init>.
+ *	opts -           Pointer to an array of struct mosquitto_opt, which
  *	                 provides the plugin options defined in the configuration file.
- *	opt_count :      The number of elements in the opts array.
+ *	opt_count -      The number of elements in the opts array.
  *
  * Return value:
  *	Return 0 on success
@@ -261,11 +267,11 @@ mosq_plugin_EXPORT int mosquitto_auth_plugin_cleanup(void *user_data, struct mos
  *
  * Parameters:
  *
- *	user_data :      The pointer provided in <mosquitto_auth_plugin_init>.
- *	opts :           Pointer to an array of struct mosquitto_opt, which
+ *	user_data -      The pointer provided in <mosquitto_auth_plugin_init>.
+ *	opts -           Pointer to an array of struct mosquitto_opt, which
  *	                 provides the plugin options defined in the configuration file.
- *	opt_count :      The number of elements in the opts array.
- *	reload :         If set to false, this is the first time the function has
+ *	opt_count -      The number of elements in the opts array.
+ *	reload -         If set to false, this is the first time the function has
  *	                 been called. If true, the broker has received a signal
  *	                 asking to reload its configuration.
  *
@@ -289,11 +295,11 @@ mosq_plugin_EXPORT int mosquitto_auth_security_init(void *user_data, struct mosq
  *
  * Parameters:
  *
- *	user_data :      The pointer provided in <mosquitto_auth_plugin_init>.
- *	opts :           Pointer to an array of struct mosquitto_opt, which
+ *	user_data -      The pointer provided in <mosquitto_auth_plugin_init>.
+ *	opts -           Pointer to an array of struct mosquitto_opt, which
  *	                 provides the plugin options defined in the configuration file.
- *	opt_count :      The number of elements in the opts array.
- *	reload :         If set to false, this is the first time the function has
+ *	opt_count -      The number of elements in the opts array.
+ *	reload -         If set to false, this is the first time the function has
  *	                 been called. If true, the broker has received a signal
  *	                 asking to reload its configuration.
  *
@@ -362,11 +368,11 @@ mosq_plugin_EXPORT int mosquitto_auth_unpwd_check(void *user_data, struct mosqui
  * hexadecimal string with no leading "0x") and copy this string into key.
  *
  * Parameters:
- *	user_data :   the pointer provided in <mosquitto_auth_plugin_init>.
- *	hint :        the psk_hint for the listener the client is connecting to.
- *	identity :    the identity string provided by the client
- *	key :         a string where the hex PSK should be copied
- *	max_key_len : the size of key
+ *	user_data -   the pointer provided in <mosquitto_auth_plugin_init>.
+ *	hint -        the psk_hint for the listener the client is connecting to.
+ *	identity -    the identity string provided by the client
+ *	key -         a string where the hex PSK should be copied
+ *	max_key_len - the size of key
  *
  * Return value:
  *	Return 0 on success.
@@ -382,17 +388,17 @@ mosq_plugin_EXPORT int mosquitto_auth_psk_key_get(void *user_data, struct mosqui
  * are making extended authentication checks.
  *
  * Parameters:
- *	user_data :   the pointer provided in <mosquitto_auth_plugin_init>.
- *	method : the authentication method
- *	reauth : this is set to false if this is the first authentication attempt
+ *	user_data -   the pointer provided in <mosquitto_auth_plugin_init>.
+ *	method - the authentication method
+ *	reauth - this is set to false if this is the first authentication attempt
  *	         on a connection, set to true if the client is attempting to
  *	         reauthenticate.
- *	data_in : pointer to authentication data, or NULL
- *	data_in_len : length of data_in, in bytes
- *	data_out : if your plugin wishes to send authentication data back to the
+ *	data_in - pointer to authentication data, or NULL
+ *	data_in_len - length of data_in, in bytes
+ *	data_out - if your plugin wishes to send authentication data back to the
  *	           client, allocate some memory using malloc or friends and set
  *	           data_out. The broker will free the memory after use.
- *	data_out_len : Set the length of data_out in bytes.
+ *	data_out_len - Set the length of data_out in bytes.
  *
  * Return value:
  *	Return MOSQ_ERR_SUCCESS if authentication was successful.

@@ -16,6 +16,11 @@ Contributors:
    Roger Light - initial implementation and documentation.
 */
 
+/*
+ * File: mosquitto_broker.h
+ *
+ * This header contains functions for use by plugins.
+ */
 #ifndef MOSQUITTO_BROKER_H
 #define MOSQUITTO_BROKER_H
 
@@ -44,7 +49,7 @@ enum mosquitto_protocol {
 
 /* =========================================================================
  *
- * Register callbacks.
+ * Section: Register callbacks.
  *
  * ========================================================================= */
 
@@ -172,6 +177,31 @@ typedef struct mosquitto_plugin_id_t mosquitto_plugin_id_t;
 
 /*
  * Function: mosquitto_callback_register
+ *
+ * Register a callback for an event.
+ *
+ * Parameters:
+ *  identifier - the plugin identifier, as provided by <mosquitto_plugin_init>.
+ *  event - the event to register a callback for. Can be one of:
+ *          * MOSQ_EVT_RELOAD
+ *          * MOSQ_EVT_ACL_CHECK
+ *          * MOSQ_EVT_BASIC_AUTH
+ *          * MOSQ_EVT_EXT_AUTH_START
+ *          * MOSQ_EVT_EXT_AUTH_CONTINUE
+ *          * MOSQ_EVT_CONTROL
+ *          * MOSQ_EVT_MESSAGE
+ *          * MOSQ_EVT_PSK_KEY
+ *          * MOSQ_EVT_TICK
+ *          * MOSQ_EVT_DISCONNECT
+ *  cb_func - the callback function
+ *  event_data - event specific data
+ *
+ * Returns:
+ *	MOSQ_ERR_SUCCESS - on success
+ *	MOSQ_ERR_INVAL - if cb_func is NULL
+ *	MOSQ_ERR_NOMEM - on out of memory
+ *	MOSQ_ERR_ALREADY_EXISTS - if cb_func has already been registered for this event
+ *	MOSQ_ERR_NOT_SUPPORTED - if the event is not supported
  */
 mosq_EXPORT int mosquitto_callback_register(
 		mosquitto_plugin_id_t *identifier,
@@ -182,6 +212,30 @@ mosq_EXPORT int mosquitto_callback_register(
 
 /*
  * Function: mosquitto_callback_unregister
+ *
+ * Unregister a previously registered callback function.
+ *
+ * Parameters:
+ *  identifier - the plugin identifier, as provided by <mosquitto_plugin_init>.
+ *  event - the event to register a callback for. Can be one of:
+ *          * MOSQ_EVT_RELOAD
+ *          * MOSQ_EVT_ACL_CHECK
+ *          * MOSQ_EVT_BASIC_AUTH
+ *          * MOSQ_EVT_EXT_AUTH_START
+ *          * MOSQ_EVT_EXT_AUTH_CONTINUE
+ *          * MOSQ_EVT_CONTROL
+ *          * MOSQ_EVT_MESSAGE
+ *          * MOSQ_EVT_PSK_KEY
+ *          * MOSQ_EVT_TICK
+ *          * MOSQ_EVT_DISCONNECT
+ *  cb_func - the callback function
+ *  event_data - event specific data
+ *
+ * Returns:
+ *	MOSQ_ERR_SUCCESS - on success
+ *	MOSQ_ERR_INVAL - if cb_func is NULL
+ *	MOSQ_ERR_NOT_FOUND - if cb_func was not registered for this event
+ *	MOSQ_ERR_NOT_SUPPORTED - if the event is not supported
  */
 mosq_EXPORT int mosquitto_callback_unregister(
 		mosquitto_plugin_id_t *identifier,
@@ -192,21 +246,41 @@ mosq_EXPORT int mosquitto_callback_unregister(
 
 /* =========================================================================
  *
- * Memory allocation.
+ * Section: Memory allocation.
  *
  * Use these functions when allocating or freeing memory to have your memory
  * included in the memory tracking on the broker.
  *
  * ========================================================================= */
+
+/*
+ * Function: mosquitto_calloc
+ */
 mosq_EXPORT void *mosquitto_calloc(size_t nmemb, size_t size);
+
+/*
+ * Function: mosquitto_free
+ */
 mosq_EXPORT void mosquitto_free(void *mem);
+
+/*
+ * Function: mosquitto_malloc
+ */
 mosq_EXPORT void *mosquitto_malloc(size_t size);
+
+/*
+ * Function: mosquitto_realloc
+ */
 mosq_EXPORT void *mosquitto_realloc(void *ptr, size_t size);
+
+/*
+ * Function: mosquitto_strdup
+ */
 mosq_EXPORT char *mosquitto_strdup(const char *s);
 
 /* =========================================================================
  *
- * Utility Functions
+ * Section: Utility Functions
  *
  * Use these functions from within your plugin.
  *
@@ -221,13 +295,13 @@ mosq_EXPORT char *mosquitto_strdup(const char *s);
  * Parameters:
  * 	level -    Log message priority. Can currently be one of:
  *
- *             MOSQ_LOG_INFO
- *             MOSQ_LOG_NOTICE
- *             MOSQ_LOG_WARNING
- *             MOSQ_LOG_ERR
- *             MOSQ_LOG_DEBUG
- *             MOSQ_LOG_SUBSCRIBE (not recommended for use by plugins)
- *             MOSQ_LOG_UNSUBSCRIBE (not recommended for use by plugins)
+ *             * MOSQ_LOG_INFO
+ *             * MOSQ_LOG_NOTICE
+ *             * MOSQ_LOG_WARNING
+ *             * MOSQ_LOG_ERR
+ *             * MOSQ_LOG_DEBUG
+ *             * MOSQ_LOG_SUBSCRIBE (not recommended for use by plugins)
+ *             * MOSQ_LOG_UNSUBSCRIBE (not recommended for use by plugins)
  *
  *             These values are defined in mosquitto.h.
  *
@@ -309,9 +383,10 @@ mosq_EXPORT int mosquitto_client_protocol(const struct mosquitto *client);
  *
  * Retrieve the MQTT protocol version with which the client has connected. Can be one of:
  *
- * 3 - for MQTT v3 / v3.1
- * 4 - for MQTT v3.1.1
- * 5 - for MQTT v5
+ * Returns:
+ *   3 - for MQTT v3 / v3.1
+ *   4 - for MQTT v3.1.1
+ *   5 - for MQTT v5
  */
 mosq_EXPORT int mosquitto_client_protocol_version(const struct mosquitto *client);
 
@@ -354,7 +429,7 @@ mosq_EXPORT int mosquitto_set_username(struct mosquitto *client, const char *use
 
 /* =========================================================================
  *
- * Client control
+ * Section: Client control
  *
  * ========================================================================= */
 
@@ -388,7 +463,7 @@ mosq_EXPORT int mosquitto_kick_client_by_username(const char *username, bool wit
 
 /* =========================================================================
  *
- * Publishing functions
+ * Section: Publishing functions
  *
  * ========================================================================= */
 
