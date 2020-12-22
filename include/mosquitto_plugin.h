@@ -138,7 +138,7 @@ struct mosquitto_acl_msg {
 mosq_plugin_EXPORT int mosquitto_plugin_version(int supported_version_count, const int *supported_versions);
 
 /*
- * Function: mosquitto_auth_plugin_init
+ * Function: mosquitto_plugin_init
  *
  * Called after the plugin has been loaded and <mosquitto_plugin_version>
  * has been called. This will only ever be called once and can be used to
