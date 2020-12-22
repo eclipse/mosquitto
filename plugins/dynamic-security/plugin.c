@@ -349,13 +349,14 @@ static int dynsec__config_load(void)
 	/* Load from file */
 	fptr = fopen(config_file, "rb");
 	if(fptr == NULL){
+		mosquitto_log_printf(MOSQ_LOG_ERR, "Error loading Dynamic security plugin config: File is not readable - check permissions.\n");
 		return 1;
 	}
 
 	fseek(fptr, 0, SEEK_END);
 	flen_l = ftell(fptr);
 	if(flen_l < 0){
-		mosquitto_log_printf(MOSQ_LOG_WARNING, "Error loading Dynamic security plugin config: %s\n", strerror(errno));
+		mosquitto_log_printf(MOSQ_LOG_ERR, "Error loading Dynamic security plugin config: %s\n", strerror(errno));
 		fclose(fptr);
 		return 1;
 	}else if(flen_l == 0){
@@ -366,10 +367,12 @@ static int dynsec__config_load(void)
 	fseek(fptr, 0, SEEK_SET);
 	json_str = mosquitto_calloc(flen+1, sizeof(char));
 	if(json_str == NULL){
+		mosquitto_log_printf(MOSQ_LOG_ERR, "Error: Out of memory.");
 		fclose(fptr);
 		return 1;
 	}
 	if(fread(json_str, 1, flen, fptr) != flen){
+		mosquitto_log_printf(MOSQ_LOG_WARNING, "Error loading Dynamic security plugin config: Unable to read file contents.\n");
 		mosquitto_free(json_str);
 		fclose(fptr);
 		return 1;
@@ -379,6 +382,7 @@ static int dynsec__config_load(void)
 	tree = cJSON_Parse(json_str);
 	mosquitto_free(json_str);
 	if(tree == NULL){
+		mosquitto_log_printf(MOSQ_LOG_ERR, "Error loading Dynamic security plugin config: File is not valid JSON.\n");
 		return 1;
 	}
 
@@ -422,6 +426,7 @@ void dynsec__config_save(void)
 	json_str = cJSON_Print(tree);
 	if(json_str == NULL){
 		cJSON_Delete(tree);
+		mosquitto_log_printf(MOSQ_LOG_ERR, "Error saving Dynamic security plugin config: Out of memory.\n");
 		return;
 	}
 	cJSON_Delete(tree);
@@ -432,6 +437,7 @@ void dynsec__config_save(void)
 	file_path = mosquitto_malloc(file_path_len);
 	if(file_path == NULL){
 		mosquitto_free(json_str);
+		mosquitto_log_printf(MOSQ_LOG_ERR, "Error saving Dynamic security plugin config: Out of memory.\n");
 		return;
 	}
 	snprintf(file_path, file_path_len, "%s.new", config_file);
@@ -440,6 +446,7 @@ void dynsec__config_save(void)
 	if(fptr == NULL){
 		mosquitto_free(json_str);
 		mosquitto_free(file_path);
+		mosquitto_log_printf(MOSQ_LOG_ERR, "Error saving Dynamic security plugin config: File is not writable - check permissions.\n");
 		return;
 	}
 	fwrite(json_str, 1, json_str_len, fptr);
