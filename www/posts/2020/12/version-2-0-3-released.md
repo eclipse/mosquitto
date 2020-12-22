@@ -1,6 +1,6 @@
 <!--
 .. title: Version 2.0.3 released.
-.. slug: version-2-0-1-released
+.. slug: version-2-0-3-released
 .. date: 2020-12-17 14:22:16 UTC+00:00
 .. tags: Releases
 .. category:
