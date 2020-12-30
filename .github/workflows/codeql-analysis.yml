@@ -50,7 +50,17 @@ jobs:
     # ℹ️ Command-line programs to run using the OS shell.
     # 📚 https://git.io/JvXDl
 
-    - run: sudo apt-get update && sudo apt-get install -y gcc g++ git libcjson-dev libssl-dev
+    - run: sudo apt-get update && sudo apt-get install -y gcc g++ git libssl-dev
+    # Install cJSON
+    - run: git clone https://github.com/DaveGamble/cJSON /tmp/cJSON
+    - run: wget https://github.com/DaveGamble/cJSON/archive/v1.7.14.tar.gz -O /tmp/cjson.tar.gz
+    - run: mkdir -p /tmp/build/cjson
+    - run: tar --strip=1 -xf /tmp/cjson.tar.gz -C /tmp/build/cjson
+    - run: rm /tmp/cjson.tar.gz
+    - run: cd /tmp/build/cjson && cmake .  -DCMAKE_BUILD_TYPE=MinSizeRel -DBUILD_SHARED_AND_STATIC_LIBS=OFF -DBUILD_SHARED_LIBS=OFF -DCJSON_BUILD_SHARED_LIBS=OFF -DCJSON_OVERRIDE_BUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=/usr
+    - run: sudo make -C /tmp/build/cjson install
+
+    # Now build Mosquitto
     - run: make binary
 
     - name: Perform CodeQL Analysis
