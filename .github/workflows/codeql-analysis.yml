@@ -57,7 +57,7 @@ jobs:
     - run: mkdir -p /tmp/build/cjson
     - run: tar --strip=1 -xf /tmp/cjson.tar.gz -C /tmp/build/cjson
     - run: rm /tmp/cjson.tar.gz
-    - run: cd /tmp/build/cjson && cmake .  -DCMAKE_BUILD_TYPE=MinSizeRel -DBUILD_SHARED_AND_STATIC_LIBS=OFF -DBUILD_SHARED_LIBS=OFF -DCJSON_BUILD_SHARED_LIBS=OFF -DCJSON_OVERRIDE_BUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=/usr
+    - run: cd /tmp/build/cjson && cmake .  -DCMAKE_BUILD_TYPE=MinSizeRel -DCJSON_BUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr
     - run: sudo make -C /tmp/build/cjson install
 
     # Now build Mosquitto
