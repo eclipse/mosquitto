@@ -1,3 +1,7 @@
+Client library:
+- Add `MOSQ_OPT_DELAYED_ACK` option to delaying the PUBACK message
+  until the on_message callback returns.
+
 2.0.0 - 2020-12-03
 ==================
 

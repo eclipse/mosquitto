@@ -131,6 +131,7 @@ enum mosq_opt_t {
 	MOSQ_OPT_TCP_NODELAY = 11,
 	MOSQ_OPT_BIND_ADDRESS = 12,
 	MOSQ_OPT_TLS_USE_OS_CERTS = 13,
+	MOSQ_OPT_DELAYED_ACK = 14,
 };
 
 
@@ -1467,6 +1468,9 @@ libmosq_EXPORT int mosquitto_opts_set(struct mosquitto *mosq, enum mosq_opt_t op
  *	MOSQ_OPT_TLS_USE_OS_CERTS - Set to 1 to instruct the client to load and
  *	          trust OS provided CA certificates for use with TLS connections.
  *	          Set to 0 (the default) to only use manually specified CA certs.
+ *
+ *	MOSQ_OPT_DELAYED_ACK - Set to 1 to instruct the client to acknowledge QoS 1
+ *            messages after the on_message callback is called.
  */
 libmosq_EXPORT int mosquitto_int_option(struct mosquitto *mosq, enum mosq_opt_t option, int value);
 

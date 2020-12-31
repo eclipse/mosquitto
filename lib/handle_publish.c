@@ -135,7 +135,9 @@ int handle__publish(struct mosquitto *mosq)
 			return MOSQ_ERR_SUCCESS;
 		case 1:
 			util__decrement_receive_quota(mosq);
-			rc = send__puback(mosq, mid, 0, NULL);
+			if(!mosq->delayed_ack){
+				rc = send__puback(mosq, mid, 0, NULL);
+			}
 			pthread_mutex_lock(&mosq->callback_mutex);
 			if(mosq->on_message){
 				mosq->in_callback = true;
@@ -148,6 +150,9 @@ int handle__publish(struct mosquitto *mosq)
 				mosq->in_callback = false;
 			}
 			pthread_mutex_unlock(&mosq->callback_mutex);
+			if(mosq->delayed_ack){
+				rc = send__puback(mosq, mid, 0, NULL);
+			}
 			message__cleanup(&message);
 			mosquitto_property_free_all(&properties);
 			return rc;
