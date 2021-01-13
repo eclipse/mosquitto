@@ -322,8 +322,11 @@ void do_disconnect(struct mosquitto *context, int reason)
 					case MOSQ_ERR_ADMINISTRATIVE_ACTION:
 						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s been disconnected by administrative action.", id);
 						break;
+					case MOSQ_ERR_ERRNO:
+						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s disconnected due to errno %d, %s.", id, errno, strerror(errno));
+						break;
 					default:
-						log__printf(NULL, MOSQ_LOG_NOTICE, "Bad socket read/write on client %s, disconnecting.", id);
+						log__printf(NULL, MOSQ_LOG_NOTICE, "Bad socket read/write on client %s, reason %d, disconnecting.", id, reason);
 						break;
 				}
 			}else{
