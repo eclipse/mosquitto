@@ -498,7 +498,7 @@ int cfg_add_topic(struct mosq_config *cfg, int type, char *topic, const char *ar
 		}
 		cfg->topic = strdup(topic);
 	}else if(type == CLIENT_RESPONSE_TOPIC){
-		if(mosquitto_pub_topic_check(topic) == MOSQ_ERR_INVAL){
+		if(mosquitto_sub_topic_check(topic) == MOSQ_ERR_INVAL){
 			fprintf(stderr, "Error: Invalid response topic '%s', does it contain '+' or '#'?\n", topic);
 			return 1;
 		}
