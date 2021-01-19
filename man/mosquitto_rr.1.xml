@@ -632,7 +632,7 @@
 						<option>31</option>, or the more verbose
 						<option>mqttv5</option>, <option>mqttv311</option>, or
 						<option>mqttv31</option>.
-						Defaults to <option>311</option>.</para>
+						Defaults to <option>5</option>.</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
