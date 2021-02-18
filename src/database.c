@@ -893,6 +893,32 @@ int db__message_reconnect_reset(struct mosquitto *context)
 }
 
 
+int db__message_remove_incoming(struct mosquitto* context, uint16_t mid)
+{
+	struct mosquitto_client_msg* tail, * tmp;
+	bool deleted = false;
+
+	if (!context) return MOSQ_ERR_INVAL;
+
+	DL_FOREACH_SAFE(context->msgs_in.inflight, tail, tmp) {
+		if (tail->mid == mid) {
+			if (tail->store->qos != 2) {
+				return MOSQ_ERR_PROTOCOL;
+			}
+			db__message_remove(&context->msgs_in, tail);
+			deleted = true;
+		}
+	}
+
+	if (deleted) {
+		return MOSQ_ERR_SUCCESS;
+	}
+	else {
+		return MOSQ_ERR_NOT_FOUND;
+	}
+}
+
+
 int db__message_release_incoming(struct mosquitto *context, uint16_t mid)
 {
 	struct mosquitto_client_msg *tail, *tmp;
