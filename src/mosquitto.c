@@ -445,9 +445,6 @@ int pid__write(void)
 int main(int argc, char *argv[])
 {
 	struct mosquitto__config config;
-#ifdef WITH_BRIDGE
-	int i;
-#endif
 	int rc;
 #ifdef WIN32
 	SYSTEMTIME st;
@@ -593,12 +590,7 @@ int main(int argc, char *argv[])
 		context__cleanup(ctxt, true);
 	}
 #ifdef WITH_BRIDGE
-	for(i=0; i<db.bridge_count; i++){
-		if(db.bridges[i]){
-			context__cleanup(db.bridges[i], true);
-		}
-	}
-	mosquitto__free(db.bridges);
+	bridge__db_cleanup();
 #endif
 	context__free_disused();
 

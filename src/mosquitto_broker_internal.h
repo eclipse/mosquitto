@@ -447,15 +447,13 @@ struct mosquitto_db{
 	struct mosquitto *contexts_for_free;
 #ifdef WITH_BRIDGE
 	struct mosquitto **bridges;
+	int bridge_count;
 #endif
 	struct clientid__index_hash *clientid_index_hash;
 	struct mosquitto_msg_store *msg_store;
 	struct mosquitto_msg_store_load *msg_store_load;
 	time_t now_s; /* Monotonic clock, where possible */
 	time_t now_real_s; /* Read clock, for measuring session/message expiry */
-#ifdef WITH_BRIDGE
-	int bridge_count;
-#endif
 	int msg_store_count;
 	unsigned long msg_store_bytes;
 	char *config_file;
@@ -716,14 +714,12 @@ void log__internal(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
  * ============================================================ */
 #ifdef WITH_BRIDGE
 void bridge__start_all(void);
-int bridge__new(struct mosquitto__bridge *bridge);
+void bridge__db_cleanup(void);
 void bridge__cleanup(struct mosquitto *context);
-int bridge__connect(struct mosquitto *context);
-int bridge__connect_step1(struct mosquitto *context);
-int bridge__connect_step2(struct mosquitto *context);
+#if defined(__GLIBC__) && defined(WITH_ADNS)
 int bridge__connect_step3(struct mosquitto *context);
+#endif
 int bridge__on_connect(struct mosquitto *context);
-void bridge__packet_cleanup(struct mosquitto *context);
 void bridge_check(void);
 int bridge__register_local_connections(void);
 int bridge__add_topic(struct mosquitto__bridge *bridge, const char *topic, enum mosquitto__bridge_direction direction, uint8_t qos, const char *local_prefix, const char *remote_prefix);

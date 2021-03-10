@@ -56,6 +56,13 @@ Contributors:
 
 static void bridge__backoff_step(struct mosquitto *context);
 static void bridge__backoff_reset(struct mosquitto *context);
+static int bridge__new(struct mosquitto__bridge *bridge);
+static int bridge__connect(struct mosquitto *context);
+static void bridge__packet_cleanup(struct mosquitto *context);
+#if defined(__GLIBC__) && defined(WITH_ADNS)
+static int bridge__connect_step1(struct mosquitto *context);
+static int bridge__connect_step2(struct mosquitto *context);
+#endif
 
 void bridge__start_all(void)
 {
@@ -70,7 +77,7 @@ void bridge__start_all(void)
 }
 
 
-int bridge__new(struct mosquitto__bridge *bridge)
+static int bridge__new(struct mosquitto__bridge *bridge)
 {
 	struct mosquitto *new_context = NULL;
 	struct mosquitto **bridges;
@@ -144,7 +151,7 @@ int bridge__new(struct mosquitto__bridge *bridge)
 }
 
 #if defined(__GLIBC__) && defined(WITH_ADNS)
-int bridge__connect_step1(struct mosquitto *context)
+static int bridge__connect_step1(struct mosquitto *context)
 {
 	int rc;
 	char *notification_topic;
@@ -259,7 +266,7 @@ int bridge__connect_step1(struct mosquitto *context)
 }
 
 
-int bridge__connect_step2(struct mosquitto *context)
+static int bridge__connect_step2(struct mosquitto *context)
 {
 	int rc;
 
@@ -332,7 +339,7 @@ int bridge__connect_step3(struct mosquitto *context)
 }
 #else
 
-int bridge__connect(struct mosquitto *context)
+static int bridge__connect(struct mosquitto *context)
 {
 	int rc, rc2;
 	int i;
@@ -583,6 +590,19 @@ int bridge__register_local_connections(void)
 }
 
 
+void bridge__db_cleanup(void)
+{
+	int i;
+
+	for(i=0; i<db.bridge_count; i++){
+		if(db.bridges[i]){
+			context__cleanup(db.bridges[i], true);
+		}
+	}
+	mosquitto__free(db.bridges);
+}
+
+
 void bridge__cleanup(struct mosquitto *context)
 {
 	int i;
@@ -624,7 +644,7 @@ void bridge__cleanup(struct mosquitto *context)
 }
 
 
-void bridge__packet_cleanup(struct mosquitto *context)
+static void bridge__packet_cleanup(struct mosquitto *context)
 {
 	struct mosquitto__packet *packet;
 	if(!context) return;
