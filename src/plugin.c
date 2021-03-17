@@ -177,6 +177,9 @@ int plugin__handle_message(struct mosquitto *context, struct mosquitto_msg_store
 	event_data.qos = stored->qos;
 	event_data.retain = stored->retain;
 	event_data.properties = stored->properties;
+	event_data.client_address = context->address;
+	event_data.client_id = context->id;
+	event_data.client_username = context->username;
 
 	DL_FOREACH(opts->plugin_callbacks.message, cb_base){
 		rc = cb_base->cb(MOSQ_EVT_MESSAGE, &event_data, cb_base->userdata);

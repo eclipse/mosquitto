@@ -151,6 +151,9 @@ struct mosquitto_evt_message {
 	uint8_t reason_code;
 	bool retain;
 	void *future2[4];
+	char *client_address;
+	char *client_id;
+	char *client_username;
 };
 
 
