@@ -33,6 +33,9 @@ option(WITH_TLS_PSK
 option(WITH_EC
 	"Include Elliptic Curve support (requires WITH_TLS)?" ON)
 if (WITH_TLS)
+	set(OPENSSL_ROOT_DIR /usr/local/opt/openssl)
+	set(OPENSSL_LIBRARIES /usr/local/opt/openssl/lib)
+
 	find_package(OpenSSL REQUIRED)
 	add_definitions("-DWITH_TLS")
 
