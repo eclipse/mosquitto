@@ -283,6 +283,7 @@ int mosquitto_string_option(struct mosquitto *mosq, enum mosq_opt_t option, cons
 			}
 			return MOSQ_ERR_SUCCESS;
 #endif
+            return MOSQ_ERR_NOT_SUPPORTED;
 #else
 			return MOSQ_ERR_NOT_SUPPORTED;
 #endif
