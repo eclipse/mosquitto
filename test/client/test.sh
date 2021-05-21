@@ -45,3 +45,23 @@ export SUB_PID=$!
 ${BASE_PATH}/client/mosquitto_pub -p ${PORT} -t 'file-publish' -l < ./test.sh
 kill ${SUB_PID} 2>/dev/null || true
 echo "stdin publish ok"
+
+# Publish a binary payload via stdin and subscribe. Do we find the string
+# "[0,255,0]" somewhere in there, indicating that we can receive a binary
+# payload?
+${BASE_PATH}/client/mosquitto_sub -p ${PORT} -W ${SUB_TIMEOUT} -C 1 -F %j -t 'binary-publish' > binary_file &
+export SUB_PID=$!
+echo -ne "\x00\xff\x00" | ${BASE_PATH}/client/mosquitto_pub -p ${PORT} -t 'binary-publish' --stdin-file
+kill ${SUB_PID} 2>/dev/null || true
+grep -q "[0,255,0]" binary_file
+rm binary_file
+echo "binary json publish ok"
+
+# Same as above, but check that compatible UTF-8 printing still works.
+# ${BASE_PATH}/client/mosquitto_sub -p ${PORT} -W ${SUB_TIMEOUT} -C 1 -F %j -t 'utf8-publish' > utf8_file &
+# export SUB_PID=$!
+# echo -n "Ċ" | ${BASE_PATH}/client/mosquitto_pub -p ${PORT} -t 'utf8-publish' --stdin-file
+# kill ${SUB_PID} 2>/dev/null || true
+# grep -q "\"Ċ\"" utf8_file
+# rm utf8_file
+# echo "utf-8 json publish ok"

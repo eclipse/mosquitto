@@ -37,6 +37,9 @@ Clients:
   that instance. This is useful for negating TLS options provided in a config
   file, or to disable the automatic use of TLS when using port 8883.
   Closes #2180.
+- When `mosquitto_sub` is instructed to print messages as JSON via `-F %j` it
+  will try to figure out whether the payload is printable into a string. If not,
+  it will print the payload into an array of unsigned integers.
 
 
 2.0.10 - 2021-04-03

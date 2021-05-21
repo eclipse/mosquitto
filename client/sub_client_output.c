@@ -24,6 +24,7 @@ Contributors:
 #endif
 
 #include <assert.h>
+#include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -51,6 +52,8 @@ Contributors:
 #include "sub_client_output.h"
 
 extern struct mosq_config cfg;
+
+static bool message_payload_is_json_printable(const struct mosquitto_message* message);
 
 static int get_time(struct tm **ti, long *ns)
 {
@@ -250,8 +253,10 @@ static int json_print(const struct mosquitto_message *message, const mosquitto_p
 {
 	char buf[100];
 #ifdef WITH_CJSON
+	int i;
 	cJSON *root;
 	cJSON *tmp;
+	cJSON *payload_byte;
 	char *json_str;
 	const char *return_parse_end;
 
@@ -320,7 +325,21 @@ static int json_print(const struct mosquitto_message *message, const mosquitto_p
 	/* Payload */
 	if(escaped){
 		if(message->payload){
-			tmp = cJSON_CreateString(message->payload);
+			if(message_payload_is_json_printable(message))
+			{
+				tmp = cJSON_CreateString(message->payload);
+			}else{
+				tmp = cJSON_CreateArray();
+				for(i=0;i<message->payloadlen;i++)
+				{
+					payload_byte = cJSON_CreateNumber(((unsigned char*)(message->payload) ) [i]) ;
+					if(payload_byte == NULL){
+						cJSON_Delete(root);
+						return MOSQ_ERR_NOMEM;
+					}
+					cJSON_AddItemToArray(tmp, payload_byte);
+				}
+			}
 		}else{
 			tmp = cJSON_CreateNull();
 		}
@@ -821,3 +840,27 @@ void print_message(struct mosq_config *lcfg, const struct mosquitto_message *mes
 	}
 }
 
+
+/*
+** Check whether a given message is printable into a json string.
+ */
+static bool message_payload_is_json_printable(const struct mosquitto_message* message)
+{
+	int i;
+
+	// Check for ASCII compatibility
+	for(i=0;i<message->payloadlen;i++) {
+		unsigned char b = ((unsigned char*)(message->payload) ) [i];
+		if(! isprint(b))
+		{
+			return false;
+		}
+	}
+
+	// TODO check also for UTF-8 compatibility
+	// For example the letter `Ċ` (U+010A) should be printable inside a json payload
+	// With only an ASCII check it gets printed as [196,138]
+	// ...
+
+	return true;
+}
