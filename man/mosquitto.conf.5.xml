@@ -1645,10 +1645,10 @@ openssl dhparam -out dhparam.pem 2048</programlisting>
 						<replaceable>mqttv311</replaceable>.</para>
 				</listitem>
 			</varlistentry>
-
 			<varlistentry>
 				<term><option>bridge_tcp_keepalive</option> <replaceable>idle</replaceable> <replaceable>interval</replaceable> <replaceable>counter</replaceable></term>
 				<listitem>
+
                     <para>
                         Set TCP keepalive parameters for this bridge connection.
                         Use this option to allow you to set a long MQTT
@@ -1660,6 +1660,29 @@ openssl dhparam -out dhparam.pem 2048</programlisting>
                         for PINGREQ messages.
 					</para>
 					<para>Disabled by default.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>bridge_tcp_user_timeout</option> <replaceable>timeout</replaceable></term>
+				<listitem>
+					<para>
+						It specifies the maximum amount of time (in milliseconds) that
+						transmitted data may remain unacknowledged at TCP level.
+						Popular Linux distributions seem to set this time to "up to 20
+						minutes with system defaults" (from Linux tcp man page).
+						The default time is related to tcp_retries2.
+						Reducing this value helps detecting dropped connections faster.
+					</para>
+					<para>
+						Be aware that when used in combination with TCP Keepalive, it might
+						change the latter's behavior.
+					</para>
+					<para>
+						You can find more details about this setting at:
+						<ulink url="https://blog.cloudflare.com/when-tcp-sockets-refuse-to-die/"/>
+					<para>
+						Only available on Linux.
+					</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>

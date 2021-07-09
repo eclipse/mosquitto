@@ -1262,6 +1262,22 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 #else
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Bridge support not available.");
 #endif
+				}else if(!strcmp(token, "bridge_tcp_user_timeout")){
+#if defined(WITH_BRIDGE) && defined(WITH_TCP_USER_TIMEOUT)
+					if(!cur_bridge){
+						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
+						return MOSQ_ERR_INVAL;
+					}
+
+					if(conf__parse_int(&token, "bridge_tcp_user_timeout", &tmp_int, &saveptr)) return MOSQ_ERR_INVAL;
+					if(tmp_int < 0) {
+						log__printf(NULL, MOSQ_LOG_ERR, "Error: invalid TCP user timeout value.");
+						return MOSQ_ERR_INVAL;
+					}
+					cur_bridge->tcp_user_timeout = (unsigned int) tmp_int;
+#else
+					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Bridge and/or TCP user timeout support not available.");
+#endif
 				}else if(!strcmp(token, "bridge_tls_version")){
 #if defined(WITH_BRIDGE) && defined(WITH_TLS)
 					if(!cur_bridge){
@@ -1404,6 +1420,9 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 						cur_bridge->clean_start_local = -1;
 						cur_bridge->reload_type = brt_lazy;
 						cur_bridge->max_topic_alias = 10;
+#ifdef WITH_TCP_USER_TIMEOUT
+						cur_bridge->tcp_user_timeout = -1;
+#endif
 					}else{
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty connection value in configuration.");
 						return MOSQ_ERR_INVAL;

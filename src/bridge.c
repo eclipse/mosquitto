@@ -177,7 +177,7 @@ static int bridge__set_tcp_keepalive(struct mosquitto *context)
 	unsigned int enabled = 1;
 	bool ret;
 
-	if (idle == 0 || interval == 0 || counter == 0) return MOSQ_ERR_SUCCESS;
+	if(idle == 0 || interval == 0 || counter == 0) return MOSQ_ERR_SUCCESS;
 
 #ifdef WIN32
 	ret =
@@ -193,10 +193,23 @@ static int bridge__set_tcp_keepalive(struct mosquitto *context)
 		setsockopt(context->sock, IPPROTO_TCP, TCP_KEEPCNT, (const void*)&counter, sizeof(counter));
 #endif
 
-	if (ret) return MOSQ_ERR_UNKNOWN;
+	if(ret) return MOSQ_ERR_UNKNOWN;
 
 	return MOSQ_ERR_SUCCESS;
 }
+
+#ifdef WITH_TCP_USER_TIMEOUT
+static int bridge__set_tcp_user_timeout(struct mosquitto *context) {
+	int timeout = context->bridge->tcp_user_timeout;
+	if(timeout >= 0) {
+		if(setsockopt(context->sock, IPPROTO_TCP, TCP_USER_TIMEOUT, (char *)&timeout, sizeof(timeout))) {
+			return MOSQ_ERR_UNKNOWN;
+		}
+	}
+
+	return MOSQ_ERR_SUCCESS;
+}
+#endif
 
 #if defined(__GLIBC__) && defined(WITH_ADNS)
 static int bridge__connect_step1(struct mosquitto *context)
@@ -373,6 +386,9 @@ int bridge__connect_step3(struct mosquitto *context)
 	}
 
 	if (bridge__set_tcp_keepalive(context) != MOSQ_ERR_SUCCESS) return MOSQ_ERR_UNKNOWN;
+#ifdef WITH_TCP_USER_TIMEOUT
+	if(bridge__set_tcp_user_timeout(context)) return MOSQ_ERR_UNKNOWN;
+#endif
 
 	if(context->bridge->max_topic_alias != 0){
 		topic_alias_max.next = NULL;
@@ -526,6 +542,9 @@ int bridge__connect(struct mosquitto *context)
 	HASH_ADD(hh_sock, db.contexts_by_sock, sock, sizeof(context->sock), context);
 
 	if (bridge__set_tcp_keepalive(context) != MOSQ_ERR_SUCCESS) return MOSQ_ERR_UNKNOWN;
+#ifdef WITH_TCP_USER_TIMEOUT
+	if(bridge__set_tcp_user_timeout(context)) return MOSQ_ERR_UNKNOWN;
+#endif
 
 	if(context->bridge->max_topic_alias){
 		topic_alias_max.next = NULL;

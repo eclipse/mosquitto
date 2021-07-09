@@ -30,6 +30,10 @@ Contributors:
 #  endif
 #endif
 
+#ifdef __linux__
+#define WITH_TCP_USER_TIMEOUT
+#endif
+
 #include "mosquitto_internal.h"
 #include "mosquitto_broker.h"
 #include "mosquitto_plugin.h"
@@ -531,6 +535,9 @@ struct mosquitto__bridge{
 	unsigned int tcp_keepalive_idle;
 	unsigned int tcp_keepalive_interval;
 	unsigned int tcp_keepalive_counter;
+#ifdef WITH_TCP_USER_TIMEOUT
+	unsigned int tcp_user_timeout;
+#endif
 	struct mosquitto__bridge_topic *topics;
 	int topic_count;
 	bool topic_remapping;
