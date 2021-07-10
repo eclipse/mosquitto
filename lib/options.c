@@ -183,6 +183,7 @@ int mosquitto_tls_set(struct mosquitto *mosq, const char *cafile, const char *ca
 		fptr = mosquitto__fopen(keyfile, "rt", false);
 		if(fptr){
 			fclose(fptr);
+		}else if (!strncmp(keyfile, "pkcs11:", strlen("pkcs11:"))){
 		}else{
 			mosquitto__free(mosq->tls_cafile);
 			mosq->tls_cafile = NULL;
