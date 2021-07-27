@@ -264,6 +264,9 @@ void config__cleanup(struct mosquitto__config *config)
 	mosquitto__free(config->pid_file);
 	mosquitto__free(config->user);
 	mosquitto__free(config->log_timestamp_format);
+#ifdef WITH_TLS
+	mosquitto__free(config->sslkeylogfile);
+#endif
 	if(config->listeners){
 		for(i=0; i<config->listener_count; i++){
 			mosquitto__free(config->listeners[i].host);
@@ -1280,6 +1283,12 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 #endif
 				}else if(!strcmp(token, "connection_messages")){
 					if(conf__parse_bool(&token, token, &config->connection_messages, saveptr)) return MOSQ_ERR_INVAL;
+				}else if(!strcmp(token, "sslkeylogfile")){
+#ifdef WITH_TLS
+					if(conf__parse_string(&token, "sslkeylogfile", &config->sslkeylogfile, saveptr)) return MOSQ_ERR_INVAL;
+#else
+					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: TLS support not available.");
+#endif
 				}else if(!strcmp(token, "crlfile")){
 #ifdef WITH_TLS
 					if(reload) continue; /* Listeners not valid for reloading. */

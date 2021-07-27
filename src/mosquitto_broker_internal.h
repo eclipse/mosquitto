@@ -295,6 +295,9 @@ struct mosquitto__config {
 	int sys_interval;
 	bool upgrade_outgoing_qos;
 	char *user;
+#ifdef WITH_TLS
+	char *sslkeylogfile;
+#endif
 #ifdef WITH_WEBSOCKETS
 	int websockets_log_level;
 	uint16_t websockets_headers_size;

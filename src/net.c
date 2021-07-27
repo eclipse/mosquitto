@@ -59,6 +59,7 @@ Contributors:
 #include "util_mosq.h"
 
 #ifdef WITH_TLS
+#include "misc_mosq.h"
 #include "tls_mosq.h"
 #include <openssl/err.h>
 static int tls_ex_index_context = -1;
@@ -104,6 +105,22 @@ static void net__print_error(unsigned int log, const char *format_str)
 	buf = strerror(errno);
 	log__printf(NULL, log, format_str, buf);
 #endif
+}
+
+
+static void key_callback(const SSL *ssl, const char *line)
+{
+	FILE *fptr = NULL;
+	UNUSED(ssl);
+
+	fptr = mosquitto__fopen(db.config->sslkeylogfile, "at", false);
+	if(!fptr){
+		log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to open sslkeylogfile file %s.", db.config->sslkeylogfile);
+		return;
+	}
+	fprintf(fptr, "%s\n", line);
+
+	fclose(fptr);
 }
 
 
@@ -205,6 +222,10 @@ struct mosquitto *net__socket_accept(struct mosquitto__listener_sock *listensock
 #ifdef WITH_TLS
 	/* TLS init */
 	if(new_context->listener->ssl_ctx){
+		if(db.config->sslkeylogfile){
+			SSL_CTX_set_keylog_callback(new_context->listener->ssl_ctx, key_callback);
+		}
+
 		new_context->ssl = SSL_new(new_context->listener->ssl_ctx);
 		if(!new_context->ssl){
 			context__cleanup(new_context, true);
