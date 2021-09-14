@@ -735,6 +735,8 @@ int db__message_reconnect_reset(struct mosquitto_db *db, struct mosquitto *conte
 	context->msg_bytes12 = 0;
 	context->msg_count = 0;
 	context->msg_count12 = 0;
+	context->last_inflight_msg = NULL;
+	context->last_queued_msg = NULL;
 	while(msg){
 		context->last_inflight_msg = msg;
 

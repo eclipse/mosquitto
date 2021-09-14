@@ -75,7 +75,7 @@ static char *client_id_gen(struct mosquitto_db *db, int *idlen, const char *auto
 
 /* Remove any queued messages that are no longer allowed through ACL,
  * assuming a possible change of username. */
-void connection_check_acl(struct mosquitto_db *db, struct mosquitto *context, struct mosquitto_client_msg **msgs)
+void connection_check_acl(struct mosquitto_db *db, struct mosquitto *context, struct mosquitto_client_msg **msgs, struct mosquitto_client_msg **last_msg)
 {
 	struct mosquitto_client_msg *msg_tail, *msg_prev;
 
@@ -96,7 +96,9 @@ void connection_check_acl(struct mosquitto_db *db, struct mosquitto *context, st
 					mosquitto__free(msg_tail);
 					msg_tail = (*msgs);
 				}
-				// XXX: why it does not update last_msg if msg_tail was the last message ?
+				if(msg_tail == NULL) {
+					*last_msg = msg_prev;
+				}
 			}else{
 				msg_prev = msg_tail;
 				msg_tail = msg_tail->next;
@@ -660,8 +662,8 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 		context->is_bridge = true;
 	}
 
-	connection_check_acl(db, context, &context->inflight_msgs);
-	connection_check_acl(db, context, &context->queued_msgs);
+	connection_check_acl(db, context, &context->inflight_msgs, &context->last_inflight_msg);
+	connection_check_acl(db, context, &context->queued_msgs, &context->last_queued_msg);
 
 	HASH_ADD_KEYPTR(hh_id, db->contexts_by_id, context->id, strlen(context->id), context);
 
