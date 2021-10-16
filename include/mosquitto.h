@@ -80,6 +80,7 @@ extern "C" {
 #define MOSQ_LOG_SUBSCRIBE		(1<<5)
 #define MOSQ_LOG_UNSUBSCRIBE	(1<<6)
 #define MOSQ_LOG_WEBSOCKETS		(1<<7)
+#define MOSQ_LOG_QUIC			(1<<8)
 #define MOSQ_LOG_INTERNAL		0x80000000U
 #define MOSQ_LOG_ALL			0xFFFFFFFFU
 

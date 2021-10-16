@@ -291,6 +291,10 @@ void config__cleanup(struct mosquitto__config *config)
 				SSL_CTX_free(config->listeners[i].ssl_ctx);
 				config->listeners[i].ssl_ctx = NULL;
 			}
+#ifdef WITH_QUIC
+			if(true) // free quick ssl context?
+			{}
+#endif
 #endif
 #ifdef WITH_WEBSOCKETS
 #  if WITH_WEBSOCKETS == WS_IS_LWS
@@ -300,6 +304,9 @@ void config__cleanup(struct mosquitto__config *config)
 				mosquitto__FREE(config->listeners[i].ws_origins[j]);
 			}
 			mosquitto__FREE(config->listeners[i].ws_origins);
+#endif
+#ifdef WITH_QUIC
+			mosquitto__free(config->listeners[i].test_quic_conf);
 #endif
 #ifdef WITH_UNIX_SOCKETS
 			mosquitto__FREE(config->listeners[i].unix_socket_path);
@@ -631,6 +638,10 @@ static void config__copy(struct mosquitto__config *src, struct mosquitto__config
 
 #if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
 	dest->websockets_log_level = src->websockets_log_level;
+#endif
+
+#ifdef WITH_QUIC
+	dest->quic_log_level = src->quic_log_level;
 #endif
 
 #ifdef WITH_BRIDGE
@@ -1567,6 +1578,13 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 #else
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Websockets support not available.");
 #endif
+				} else if(!strcmp(token, "test_quic_conf")) {
+#ifdef WITH_QUIC
+					if(reload) continue; /* Listeners not valid for reloading. */
+					if(conf__parse_string(&token, "test_quic_conf", &cur_listener->test_quic_conf, saveptr)) return MOS_ERR_INVAL;
+#else
+					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: QUIC support not available.");
+#endif
 				}else if(!strcmp(token, "idle_timeout")){
 #ifdef WITH_BRIDGE
 					if(!cur_bridge){
@@ -1885,6 +1903,10 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 						}else if(!strcmp(token, "websockets")){
 							cr->log_type |= MOSQ_LOG_WEBSOCKETS;
 #endif
+#ifdef WITH_QUIC
+						}else if(!strcmp(token, "websockets")){
+							cr->log_type |= MOSQ_LOG_QUIC
+#endif
 						}else if(!strcmp(token, "all")){
 							cr->log_type = MOSQ_LOG_ALL;
 						}else{
@@ -2098,6 +2120,13 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 							cur_listener->protocol = mp_websockets;
 #else
 							log__printf(NULL, MOSQ_LOG_ERR, "Error: Websockets support not available.");
+							return MOSQ_ERR_INVAL;
+#endif
+						}else if(!strcmp(token, "quic")){
+#ifdef WITH_QUIC
+							cur_listener->protocol = mp_quic;
+#else
+							log__printf(NULL, MOSQ_LOG_ERR, "Error: Quic support not available.");
 							return MOSQ_ERR_INVAL;
 #endif
 						}else{
@@ -2454,6 +2483,11 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 #  endif
 #else
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Websockets support not available.");
+				}else if(!strcmp(token, "quic_log_level")){
+#ifdef WITH_QUIC
+					if(conf__parse_int(&token, "quic_log_level", &config->quic_log_level, saveptr)) return MOSQ_ERR_INVAL;
+#else
+					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Quic support not available.");
 #endif
 				}else{
 					log__printf(NULL, MOSQ_LOG_ERR, "Error: Unknown configuration variable \"%s\".", token);

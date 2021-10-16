@@ -27,6 +27,9 @@ Contributors:
 #  if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
 #    include <libwebsockets.h>
 #  endif
+#  ifdef WITH_QUIC
+#    include <libmsquic.h>
+#  endif
 #else
 #  include "read_handle.h"
 #endif

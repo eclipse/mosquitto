@@ -72,6 +72,7 @@ static mosq_sock_t spare_sock = INVALID_SOCKET;
 
 void net__broker_init(void)
 {
+	// TODO: need change for quic?
 	spare_sock = socket(AF_INET, SOCK_STREAM, 0);
 	net__init();
 #ifdef WITH_TLS
@@ -717,6 +718,14 @@ static int net__bind_interface(struct mosquitto__listener *listener, struct addr
 }
 #endif
 
+#ifdef WITH_QUIC
+static int net__socket_listen_quic(struct mosquitto__listener *listener)
+{
+
+
+	return 0;
+}
+#endif
 
 static int net__socket_listen_tcp(struct mosquitto__listener *listener)
 {
@@ -912,6 +921,11 @@ int net__socket_listen(struct mosquitto__listener *listener)
 #ifdef WITH_UNIX_SOCKETS
 	if(listener->port == 0 && listener->unix_socket_path != NULL){
 		rc = net__socket_listen_unix(listener);
+	}else
+#endif
+#ifdef WITH_QUIC
+	if(true) {
+
 	}else
 #endif
 	{

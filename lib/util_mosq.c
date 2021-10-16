@@ -60,6 +60,9 @@ Contributors:
 #if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
 #include <libwebsockets.h>
 #endif
+#ifdef WITH_QUIC
+#  include <libmsquic.h>
+#endif
 
 int mosquitto__check_keepalive(struct mosquitto *mosq)
 {

@@ -45,6 +45,9 @@ Contributors:
 #if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
 #  include <libwebsockets.h>
 #endif
+#ifdef WITH_QUIC
+#  include <libmsquic.h>
+#endif
 
 #include "mosquitto_broker_internal.h"
 #include "memory_mosq.h"
@@ -134,6 +137,7 @@ static void queue_plugin_msgs(void)
 	struct mosquitto *context;
 	uint32_t message_expiry;
 
+	// TODO: might need to dig
 	DL_FOREACH_SAFE(db.plugin_msgs, msg, tmp){
 		DL_DELETE(db.plugin_msgs, msg);
 
@@ -290,6 +294,9 @@ void do_disconnect(struct mosquitto *context, int reason)
 			context__remove_from_by_id(context);
 		}
 	}else
+#endif
+#ifdef WITH_QUIC
+	// put in block bellow?
 #endif
 	{
 		if(db.config->connection_messages == true){

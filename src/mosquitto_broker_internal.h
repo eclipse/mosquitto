@@ -30,6 +30,10 @@ Contributors:
 #  endif
 #endif
 
+#ifdef WITH_QUIC
+#  include </usr/local/msquic/include/msquic.h>
+#endif
+
 #ifdef __linux__
 #define WITH_TCP_USER_TIMEOUT
 #endif
@@ -56,6 +60,9 @@ Contributors:
 #define MQTT3_LOG_TOPIC 0x10
 #define MQTT3_LOG_DLT 0x20
 #define MQTT3_LOG_ALL 0xFF
+
+#define WEBSOCKET_CLIENT -2
+#define QUIC_CLIENT -3
 
 #define CMD_PORT_LIMIT 10
 #define TOPIC_HIERARCHY_LIMIT 200
@@ -209,6 +216,7 @@ enum struct_ident{
 	id_listener = 1,
 	id_client = 2,
 	id_listener_ws = 3,
+	id_listener_quic = 4,
 };
 #endif
 
@@ -256,6 +264,16 @@ struct mosquitto__listener {
 #  endif
 	char **ws_origins;
 	int ws_origin_count;
+#endif
+#ifdef WITH_QUIC
+	char *test_quic_conf;
+	HQUIC Registration;
+	HQUIC Configuration;
+	//const QUIC_API_TABLE* MsQuic;
+	/*
+struct quic_context *quic_context;
+//...
+	*/
 #endif
 	struct mosquitto__security_options security_options;
 #ifdef WITH_UNIX_SOCKETS
@@ -344,6 +362,10 @@ struct mosquitto__config {
 #endif
 #ifdef WITH_WEBSOCKETS
 	uint16_t websockets_headers_size;
+#endif
+#ifdef WITH_QUIC
+	int quic_log_level;
+	uint16_t quic_headers_size; //??
 #endif
 #ifdef WITH_BRIDGE
 	struct mosquitto__bridge **bridges;
@@ -841,7 +863,9 @@ void listeners__add_websockets(struct lws_context *ws_context, mosq_sock_t fd);
 #endif
 int listeners__start(void);
 void listeners__stop(void);
-
+#ifdef WITH_QUIC
+void listeners__add_quic();
+#endif
 /* ============================================================
  * Plugin related functions
  * ============================================================ */
@@ -958,6 +982,9 @@ int http__context_cleanup(struct mosquitto *context);
 int http__read(struct mosquitto *context);
 int http__write(struct mosquitto *context);
 void ws__context_init(struct mosquitto *context);
+#endif
+#ifdef WITH_QUIC
+void mosq_quic_init(struct mosquitto__listener *listener, const struct mosquitto__config *conf);
 #endif
 void do_disconnect(struct mosquitto *context, int reason);
 

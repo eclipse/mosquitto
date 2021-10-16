@@ -274,6 +274,16 @@ static int log__vprintf(unsigned int priority, const char *fmt, va_list va)
 #endif
 				break;
 #endif
+#ifdef WITH_QUIC
+			case MOSQ_LOG_QUIC:
+				topic = "$SYS/broker/log/QUIC";
+#ifndef WIN32
+				syslog_priority = LOG_DEBUG;
+#else
+				syslog_priority = EVENTLOG_INFORMATION_TYPE;
+#endif
+				break;
+#endif
 			default:
 				topic = "$SYS/broker/log/E";
 #ifndef WIN32

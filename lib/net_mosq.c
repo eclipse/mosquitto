@@ -66,6 +66,9 @@ Contributors:
 #  if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
 #    include <libwebsockets.h>
 #  endif
+#  ifdef WITH_QUIC
+#    include <libmsquic.h>
+#  endif
 #else
 #  include "read_handle.h"
 #endif
@@ -243,6 +246,12 @@ int net__socket_close(struct mosquitto *mosq)
 			mosquitto__set_state(mosq, mosq_cs_disconnect_ws);
 		}
 		lws_callback_on_writable(mosq->wsi);
+	}else
+#endif
+#ifdef WITH_QUIC
+	if(mosq->qci)
+	{
+		// close quic connection?
 	}else
 #endif
 	{
