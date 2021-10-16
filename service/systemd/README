@@ -7,3 +7,19 @@ changed the default build settings.
 With WITH_SYSTEMD mosquitto will notify a complete startup after
 initialization. This means that follow-up units can be started after full
 initialization of mosquitto (i.e. sockets are opened).
+
+Use mosquitto.socket for socket activation. This functionality is
+always available (even if WITH_SYSTEMD is disabled) because it does not
+depend on any systemd includes or libraries.
+
+Mosquitto recognizes the environment variables
+LISTEN_FDS and LISTEN_PID as set by systemd.
+All sockets must be mentioned exactly
+the same way in the mosquitto.conf:
+
+listener 1883 127.0.0.1
+listener 1883 ::1
+listener 0 /run/mosquitto/s
+
+Other socket managing capable service managers like s6 can also
+use this mechanism.

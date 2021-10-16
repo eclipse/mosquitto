@@ -1,0 +1,16 @@
+#!/bin/execlineb -P
+
+fdmove 3 0
+s6-fdholder-retrieve /service/s6rc-fdholder/s pipe:s6rc-mosquitto:127.0.0.0:1883
+fdmove 4 0
+s6-fdholder-retrieve /service/s6rc-fdholder/s pipe:s6rc-mosquitto::1:1883
+fdmove 5 0
+s6-fdholder-retrieve /service/s6rc-fdholder/s pipe:s6rc-mosquitto:/run/mosquitto/s
+fdswap 3 0
+
+export LISTEN_FDS 3
+getpid LISTEN_PID
+
+s6-setuidgid mosquitto
+
+mosquitto -c /etc/mosquitto/mosquitto.conf
