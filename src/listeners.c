@@ -251,7 +251,8 @@ void listeners__stop(void)
 		mosquitto__free(db.config->listeners[i].ws_protocol);
 #endif
 #ifdef WITH_UNIX_SOCKETS
-		if(db.config->listeners[i].unix_socket_path != NULL){
+		if(db.config->listeners[i].unix_socket_path != NULL &&
+		   db.config->listeners[i].unlink_on_close){
 			unlink(db.config->listeners[i].unix_socket_path);
 		}
 #endif

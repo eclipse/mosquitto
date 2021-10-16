@@ -750,10 +750,11 @@ static int net__socket_listen_tcp(struct mosquitto__listener *listener)
 	listener->socks = NULL;
 
 	for(rp = ainfo; rp; rp = rp->ai_next){
+		const char *sname = listener->protocol == mp_websockets ? "web" : "";
 		if(rp->ai_family == AF_INET){
-			log__printf(NULL, MOSQ_LOG_INFO, "Opening ipv4 listen socket on port %d.", ntohs(((struct sockaddr_in *)rp->ai_addr)->sin_port));
+			log__printf(NULL, MOSQ_LOG_INFO, "Opening ipv4 listen %ssocket on port %d.", sname, ntohs(((struct sockaddr_in *)rp->ai_addr)->sin_port));
 		}else if(rp->ai_family == AF_INET6){
-			log__printf(NULL, MOSQ_LOG_INFO, "Opening ipv6 listen socket on port %d.", ntohs(((struct sockaddr_in6 *)rp->ai_addr)->sin6_port));
+			log__printf(NULL, MOSQ_LOG_INFO, "Opening ipv6 listen %ssocket on port %d.", sname, ntohs(((struct sockaddr_in6 *)rp->ai_addr)->sin6_port));
 		}else{
 			continue;
 		}
@@ -896,6 +897,124 @@ static int net__socket_listen_unix(struct mosquitto__listener *listener)
 }
 #endif
 
+#ifndef WIN32
+#define SD_LISTEN_FDS_START 3
+union sockaddr_all {
+	struct sockaddr_in in;
+	struct sockaddr_in6 in6;
+	struct sockaddr_un un;
+	struct sockaddr sa;
+};
+
+static int cmp_inet_socket(struct mosquitto__listener *listener,
+			struct sockaddr_in *inet)
+{
+	char dest[INET_ADDRSTRLEN];
+	const char *p;
+
+	p = inet_ntop(inet->sin_family, &inet->sin_addr, dest, sizeof dest);
+	return p && listener->host && strcmp(p, listener->host) == 0 &&
+		listener->port && listener->port == ntohs(inet->sin_port);
+}
+
+static int cmp_inet6_socket(struct mosquitto__listener *listener,
+			struct sockaddr_in6 *in6)
+{
+	char dest[INET6_ADDRSTRLEN];
+	const char *p;
+
+	p = inet_ntop(in6->sin6_family, &in6->sin6_addr, dest, sizeof dest);
+	return p && listener->host && strcmp(p, listener->host) == 0 &&
+		listener->port && listener->port == ntohs(in6->sin6_port);
+}
+
+
+#ifdef WITH_UNIX_SOCKETS
+static int cmp_unix_socket(struct mosquitto__listener *listener,
+			struct sockaddr_un *unx)
+{
+	int ret = unx->sun_path && listener->unix_socket_path &&
+		!strcmp(unx->sun_path, listener->unix_socket_path) &&
+		listener->port == 0;
+	if (ret)
+		listener->unlink_on_close = 0;
+	return ret;
+}
+#endif
+
+static int set_svc_mgr_fd(struct mosquitto__listener *listener, int sock)
+{
+	listener->sock_count++;
+	listener->socks = mosquitto__realloc(listener->socks, sizeof(mosq_sock_t)*(size_t)listener->sock_count);
+	if(!listener->socks){
+		log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
+		return MOSQ_ERR_NOMEM;
+	}
+	listener->socks[listener->sock_count-1] = sock;
+	if (listener->port)
+		log__printf(NULL, MOSQ_LOG_NOTICE,
+			"%ssocket for %s:%u provided by service manager",
+			listener->protocol == mp_websockets ?  "Web" : "IP ",
+			listener->host, listener->port);
+#ifdef WITH_UNIX_SOCKETS
+	else
+		log__printf(NULL, MOSQ_LOG_NOTICE,
+			"Unix socket '%s' provided by service manager",
+			listener->unix_socket_path);
+#endif
+	return !!net__socket_nonblock(&sock);
+}
+
+static int socket_from_svc_mgr(struct mosquitto__listener *listener)
+{
+	static int nfds = -1;
+	int i;
+
+	if (nfds == -1) {
+		const char *nfds_c, *listen_pid_c;
+		nfds_c = getenv("LISTEN_FDS");
+		listen_pid_c = getenv("LISTEN_PID");
+
+		if (nfds_c && listen_pid_c && atoi(listen_pid_c) == getpid())
+			nfds = atoi(nfds_c);
+		if (nfds < 1 || nfds > 256)
+			nfds = 0;
+        }
+	for (i = 0; i < nfds; i++) {
+		union sockaddr_all sa_all;
+		socklen_t addrlen = sizeof sa_all;
+		int found, fd = SD_LISTEN_FDS_START + i;
+
+		if (getsockname(fd, &sa_all.sa, &addrlen) == -1) {
+			log__printf(NULL, MOSQ_LOG_ERR,
+				"%s: getsockname(%d): %s", __func__,
+				fd, strerror(errno));
+			return MOSQ_ERR_INVAL;
+		}
+		switch (sa_all.sa.sa_family) {
+		case AF_INET:
+			found = cmp_inet_socket(listener, &sa_all.in);
+			break;
+		case AF_INET6:
+			found = cmp_inet6_socket(listener, &sa_all.in6);
+			break;
+#ifdef WITH_UNIX_SOCKETS
+		case AF_UNIX:
+			found = cmp_unix_socket(listener, &sa_all.un);
+			break;
+#endif
+		}
+		if (found) {
+			set_svc_mgr_fd(listener, fd);
+			return 0;
+		}
+	}
+	return 1;
+}
+
+#else
+#define socket_from_svc_mgr(l) (1)
+#endif
 
 /* Creates a socket and listens on port 'port'.
  * Returns 1 on failure
@@ -908,12 +1027,16 @@ int net__socket_listen(struct mosquitto__listener *listener)
 	if(!listener) return MOSQ_ERR_INVAL;
 
 #ifdef WITH_UNIX_SOCKETS
-	if(listener->port == 0 && listener->unix_socket_path != NULL){
-		rc = net__socket_listen_unix(listener);
-	}else
+	listener->unlink_on_close = 1;
 #endif
-	{
-		rc = net__socket_listen_tcp(listener);
+	rc = socket_from_svc_mgr(listener);
+	if(rc) {
+#ifdef WITH_UNIX_SOCKETS
+		if(listener->port == 0 && listener->unix_socket_path != NULL){
+			rc = net__socket_listen_unix(listener);
+		}else
+#endif
+			rc = net__socket_listen_tcp(listener);
 	}
 	if(rc) return rc;
 

@@ -245,6 +245,7 @@ struct mosquitto__listener {
 	struct mosquitto__security_options security_options;
 #ifdef WITH_UNIX_SOCKETS
 	char *unix_socket_path;
+	int unlink_on_close;
 #endif
 	bool disable_protocol_v3;
 	bool disable_protocol_v4;
