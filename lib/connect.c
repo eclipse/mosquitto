@@ -143,6 +143,78 @@ int mosquitto_connect_bind_async(struct mosquitto *mosq, const char *host, int p
 	return mosquitto__reconnect(mosq, false);
 }
 
+int mosquitto_connect_bind_async_v5(struct mosquitto *mosq, const char *host, int port, int keepalive, const char *bind_address, const mosquitto_property *properties)
+{
+    int rc;
+
+       if(bind_address){
+               rc = mosquitto_string_option(mosq, MOSQ_OPT_BIND_ADDRESS, bind_address);
+               if(rc) return rc;
+       }
+
+       mosquitto_property_free_all(&mosq->connect_properties);
+       if(properties){
+               rc = mosquitto_property_check_all(CMD_CONNECT, properties);
+               if(rc) return rc;
+
+               rc = mosquitto_property_copy_all(&mosq->connect_properties, properties);
+               if(rc) return rc;
+               mosq->connect_properties->client_generated = true;
+       }
+
+    rc = mosquitto__connect_init(mosq, host, port, keepalive);
+    if(rc) return rc;
+
+       mosquitto__set_state(mosq, mosq_cs_new);
+
+       return mosquitto__reconnect(mosq, false);
+}
+
+
+int mosquitto_send_connect(struct mosquitto *mosq)
+{
+	const mosquitto_property *outgoing_properties = NULL;
+	mosquitto_property local_property;
+	int rc;
+
+	if(!mosq) return MOSQ_ERR_INVAL;
+	if(!mosq->host) return MOSQ_ERR_INVAL;
+
+	if(mosq->connect_properties){
+		if(mosq->protocol != mosq_p_mqtt5) return MOSQ_ERR_NOT_SUPPORTED;
+
+		if(mosq->connect_properties->client_generated){
+			outgoing_properties = mosq->connect_properties;
+		}else{
+			memcpy(&local_property, mosq->connect_properties, sizeof(mosquitto_property));
+			local_property.client_generated = true;
+			local_property.next = NULL;
+			outgoing_properties = &local_property;
+		}
+		rc = mosquitto_property_check_all(CMD_CONNECT, outgoing_properties);
+		if(rc) return rc;
+	}
+	rc = net__finish_connect(mosq, mosq->host);
+	if(rc) return rc;
+
+#ifdef WITH_SOCKS
+	if(mosq->socks5_host){
+		mosquitto__set_state(mosq, mosq_cs_socks5_new);
+		return socks5__send(mosq);
+	}else
+#endif
+	{
+		mosquitto__set_state(mosq, mosq_cs_connected);
+		rc = send__connect(mosq, mosq->keepalive, mosq->clean_start, outgoing_properties);
+		if(rc){
+			packet__cleanup_all(mosq);
+			net__socket_close(mosq);
+			mosquitto__set_state(mosq, mosq_cs_new);
+		}
+		return rc;
+	}
+}
+
 
 int mosquitto_reconnect_async(struct mosquitto *mosq)
 {

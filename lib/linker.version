@@ -148,4 +148,6 @@ MOSQ_2.1 {
 		mosquitto_topic_matches_sub_with_pattern;
 		mosquitto_sub_matches_acl;
 		mosquitto_sub_matches_acl_with_pattern;
+		mosquitto_connect_bind_async_v5;
+		mosquitto_send_connect;
 } MOSQ_1.7;

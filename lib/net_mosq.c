@@ -371,7 +371,7 @@ int net__try_connect_step2(struct mosquitto *mosq, uint16_t port, mosq_sock_t *s
 #endif
 		if(rc == 0 || errno == EINPROGRESS || errno == COMPAT_EWOULDBLOCK){
 			if(rc < 0 && (errno == EINPROGRESS || errno == COMPAT_EWOULDBLOCK)){
-				rc = MOSQ_ERR_CONN_PENDING;
+				rc = MOSQ_ERR_CONN_INPROGRESS;
 			}
 
 			/* Set non-blocking */
@@ -471,7 +471,7 @@ static int net__try_connect_tcp(const char *host, uint16_t port, mosq_sock_t *so
 #endif
 		if(rc == 0 || errno == EINPROGRESS || errno == COMPAT_EWOULDBLOCK){
 			if(rc < 0 && (errno == EINPROGRESS || errno == COMPAT_EWOULDBLOCK)){
-				rc = MOSQ_ERR_CONN_PENDING;
+				rc = MOSQ_ERR_CONN_INPROGRESS;
 			}
 
 			if(blocking){
@@ -930,15 +930,8 @@ int net__socket_connect_step3(struct mosquitto *mosq, const char *host)
 	return MOSQ_ERR_SUCCESS;
 }
 
-/* Create a socket and connect it to 'ip' on port 'port'.  */
-int net__socket_connect(struct mosquitto *mosq, const char *host, uint16_t port, const char *bind_address, bool blocking)
-{
-	int rc, rc2;
-
-	if(!mosq || !host) return MOSQ_ERR_INVAL;
-
-	rc = net__try_connect(host, port, &mosq->sock, bind_address, blocking);
-	if(rc > 0) return rc;
+int net__finish_connect(struct mosquitto *mosq, const char *host) {
+	int rc;
 
 	if(mosq->tcp_nodelay){
 		int flag = 1;
@@ -951,13 +944,27 @@ int net__socket_connect(struct mosquitto *mosq, const char *host, uint16_t port,
 	if(!mosq->socks5_host)
 #endif
 	{
-		rc2 = net__socket_connect_step3(mosq, host);
-		if(rc2) return rc2;
+		rc = net__socket_connect_step3(mosq, host);
+		if(rc) return rc;
 	}
 
-	return rc;
+	return MOSQ_ERR_SUCCESS;
 }
 
+/* Create a socket and connect it to 'ip' on port 'port'.  */
+int net__socket_connect(struct mosquitto *mosq, const char *host, uint16_t port, const char *bind_address, bool blocking)
+{
+	mosq_sock_t sock = INVALID_SOCKET;
+	int rc;
+
+	if(!mosq || !host) return MOSQ_ERR_INVAL;
+
+	rc = net__try_connect(host, port, &sock, bind_address, blocking);
+	mosq->sock = sock;
+	if(rc > 0) return rc;
+
+	return net__finish_connect(mosq, host);
+}
 
 #ifdef WITH_TLS
 static int net__handle_ssl(struct mosquitto* mosq, int ret)
