@@ -242,7 +242,12 @@ ifeq ($(WITH_TLS),yes)
 	BROKER_LDADD:=$(BROKER_LDADD) -lssl -lcrypto
 	CLIENT_CPPFLAGS:=$(CLIENT_CPPFLAGS) -DWITH_TLS
 	LIB_CPPFLAGS:=$(LIB_CPPFLAGS) -DWITH_TLS
-	LIB_LIBADD:=$(LIB_LIBADD) -lssl -lcrypto
+	ifeq ($(QNX_TARGET), '' )
+		LIB_LIBADD:=$(LIB_LIBADD) -lssl -lcrypto
+	else
+		LIB_CFLAGS:=-I$(QNX_TARGET)/usr/include/openssl1_1 -DOPENSSL_API_COMPAT=0x10100000L $(LIB_CFLAGS) 
+		LIB_LIBADD:=$(LIB_LIBADD) -lssl1_1 -lcrypto1_1
+	endif
 	PASSWD_LDADD:=$(PASSWD_LDADD) -lcrypto
 	STATIC_LIB_DEPS:=$(STATIC_LIB_DEPS) -lssl -lcrypto
 
@@ -254,7 +259,9 @@ ifeq ($(WITH_TLS),yes)
 endif
 
 ifeq ($(WITH_THREADING),yes)
-	LIB_LIBADD:=$(LIB_LIBADD) -lpthread
+	ifeq ($(QNX_TARGET), '' )
+		LIB_LIBADD:=$(LIB_LIBADD) -lpthread
+	endif
 	LIB_CPPFLAGS:=$(LIB_CPPFLAGS) -DWITH_THREADING
 	CLIENT_CPPFLAGS:=$(CLIENT_CPPFLAGS) -DWITH_THREADING
 	STATIC_LIB_DEPS:=$(STATIC_LIB_DEPS) -lpthread
