@@ -88,7 +88,7 @@ int handle__pubrel(struct mosquitto *mosq)
 	}
 
 #ifdef WITH_BROKER
-	log__printf(NULL, MOSQ_LOG_DEBUG, "Received PUBREL from %s (Mid: %d)", mosq->id, mid);
+	log__printf(NULL, MOSQ_LOG_DEBUG, "Received PUBREL from %s (Mid: %d)", !(mosq->id)?"(null)":mosq->id, mid);
 
 	/* Immediately free, we don't do anything with Reason String or User Property at the moment */
 	mosquitto_property_free_all(&properties);
@@ -104,7 +104,7 @@ int handle__pubrel(struct mosquitto *mosq)
 	rc = send__pubcomp(mosq, mid, NULL);
 	if(rc) return rc;
 #else
-	log__printf(mosq, MOSQ_LOG_DEBUG, "Client %s received PUBREL (Mid: %d)", mosq->id, mid);
+	log__printf(mosq, MOSQ_LOG_DEBUG, "Client %s received PUBREL (Mid: %d)", !(mosq->id)?"(null)":mosq->id, mid);
 
 	rc = send__pubcomp(mosq, mid, NULL);
 	if(rc){

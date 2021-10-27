@@ -207,7 +207,7 @@ int send__connect(struct mosquitto *mosq, uint16_t keepalive, bool clean_session
 	log__printf(mosq, MOSQ_LOG_DEBUG, "Bridge %s sending CONNECT", clientid);
 # endif
 #else
-	log__printf(mosq, MOSQ_LOG_DEBUG, "Client %s sending CONNECT", clientid);
+	log__printf(mosq, MOSQ_LOG_DEBUG, "Client %s sending CONNECT", !clientid?"(null)":clientid);
 #endif
 	return packet__queue(mosq, packet);
 }

@@ -61,7 +61,7 @@ int handle__suback(struct mosquitto *mosq)
 	}
 	log__printf(NULL, MOSQ_LOG_DEBUG, "Received SUBACK from %s", mosq->id);
 #else
-	log__printf(mosq, MOSQ_LOG_DEBUG, "Client %s received SUBACK", mosq->id);
+	log__printf(mosq, MOSQ_LOG_DEBUG, "Client %s received SUBACK", !(mosq->id)?"(null)":mosq->id);
 #endif
 	rc = packet__read_uint16(&mosq->in_packet, &mid);
 	if(rc) return rc;

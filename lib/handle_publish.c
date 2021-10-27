@@ -115,7 +115,7 @@ int handle__publish(struct mosquitto *mosq)
 	}
 	log__printf(mosq, MOSQ_LOG_DEBUG,
 			"Client %s received PUBLISH (d%d, q%d, r%d, m%d, '%s', ... (%ld bytes))",
-			mosq->id, message->dup, message->msg.qos, message->msg.retain,
+			!(mosq->id)?"(null)":mosq->id, message->dup, message->msg.qos, message->msg.retain,
 			message->msg.mid, message->msg.topic,
 			(long)message->msg.payloadlen);
 

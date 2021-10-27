@@ -51,7 +51,7 @@ int send__disconnect(struct mosquitto *mosq, uint8_t reason_code, const mosquitt
 	}
 #  endif
 #else
-	log__printf(mosq, MOSQ_LOG_DEBUG, "Client %s sending DISCONNECT", mosq->id);
+	log__printf(mosq, MOSQ_LOG_DEBUG, "Client %s sending DISCONNECT", !(mosq->id)?"(null)":mosq->id);
 #endif
 	assert(mosq);
 	packet = mosquitto__calloc(1, sizeof(struct mosquitto__packet));
