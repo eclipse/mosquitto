@@ -21,6 +21,7 @@ apps/mosquitto_passwd/mosquitto_passwd
 
 build/
 build64/
+cmake-build-*/
 
 client/mosquitto_pub
 client/mosquitto_rr
@@ -85,3 +86,7 @@ test/unit/out/
 
 www/cache/
 __pycache__
+
+.clang-format
+
+.idea/
