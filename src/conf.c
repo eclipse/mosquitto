@@ -14,6 +14,7 @@ SPDX-License-Identifier: EPL-2.0 OR BSD-3-Clause
 
 Contributors:
    Roger Light - initial implementation and documentation.
+   Benjamin Hansmann - add support for bridge config reload and dynamic bridges
 */
 
 #include "config.h"
@@ -235,6 +236,45 @@ static void config__cleanup_plugins(struct mosquitto__config *config)
 	}
 }
 
+#ifdef WITH_BRIDGE
+void config__cleanup_bridge(struct mosquitto__bridge *bridge)
+{
+	int i;
+	mosquitto__free(bridge->name);
+	if(bridge->addresses){
+		for(i=0; i<bridge->address_count; i++){
+			mosquitto__free(bridge->addresses[i].address);
+		}
+		mosquitto__free(bridge->addresses);
+	}
+	mosquitto__free(bridge->local_clientid);
+	mosquitto__free(bridge->local_username);
+	mosquitto__free(bridge->local_password);
+	mosquitto__free(bridge->remote_clientid);
+	mosquitto__free(bridge->remote_username);
+	mosquitto__free(bridge->remote_password);
+	if(bridge->topics){
+		for(i=0; i<bridge->topic_count; i++){
+			mosquitto__free(bridge->topics[i].topic);
+			mosquitto__free(bridge->topics[i].local_prefix);
+			mosquitto__free(bridge->topics[i].remote_prefix);
+			mosquitto__free(bridge->topics[i].local_topic);
+			mosquitto__free(bridge->topics[i].remote_topic);
+		}
+		mosquitto__free(bridge->topics);
+	}
+	mosquitto__free(bridge->notification_topic);
+#ifdef WITH_TLS
+	mosquitto__free(bridge->tls_version);
+	mosquitto__free(bridge->tls_cafile);
+	mosquitto__free(bridge->tls_alpn);
+#ifdef FINAL_WITH_TLS_PSK
+	mosquitto__free(bridge->tls_psk_identity);
+	mosquitto__free(bridge->tls_psk);
+#endif
+#endif
+}
+#endif
 
 void config__init(struct mosquitto__config *config)
 {
@@ -250,7 +290,7 @@ void config__cleanup(struct mosquitto__config *config)
 {
 	int i;
 #ifdef WITH_BRIDGE
-	int j;
+	struct mosquitto__bridge *bridge, *tmp_bridge;
 #endif
 
 	mosquitto__free(config->clientid_prefixes);
@@ -304,44 +344,24 @@ void config__cleanup(struct mosquitto__config *config)
 		mosquitto__free(config->listeners);
 	}
 #ifdef WITH_BRIDGE
-	if(config->bridges){
-		for(i=0; i<config->bridge_count; i++){
-			mosquitto__free(config->bridges[i].name);
-			if(config->bridges[i].addresses){
-				for(j=0; j<config->bridges[i].address_count; j++){
-					mosquitto__free(config->bridges[i].addresses[j].address);
-				}
-				mosquitto__free(config->bridges[i].addresses);
-			}
-			mosquitto__free(config->bridges[i].remote_clientid);
-			mosquitto__free(config->bridges[i].remote_username);
-			mosquitto__free(config->bridges[i].remote_password);
-			mosquitto__free(config->bridges[i].local_clientid);
-			mosquitto__free(config->bridges[i].local_username);
-			mosquitto__free(config->bridges[i].local_password);
-			if(config->bridges[i].topics){
-				for(j=0; j<config->bridges[i].topic_count; j++){
-					mosquitto__free(config->bridges[i].topics[j].topic);
-					mosquitto__free(config->bridges[i].topics[j].local_prefix);
-					mosquitto__free(config->bridges[i].topics[j].remote_prefix);
-					mosquitto__free(config->bridges[i].topics[j].local_topic);
-					mosquitto__free(config->bridges[i].topics[j].remote_topic);
-				}
-				mosquitto__free(config->bridges[i].topics);
-			}
-			mosquitto__free(config->bridges[i].notification_topic);
-#ifdef WITH_TLS
-			mosquitto__free(config->bridges[i].tls_version);
-			mosquitto__free(config->bridges[i].tls_cafile);
-			mosquitto__free(config->bridges[i].tls_alpn);
-#ifdef FINAL_WITH_TLS_PSK
-			mosquitto__free(config->bridges[i].tls_psk_identity);
-			mosquitto__free(config->bridges[i].tls_psk);
-#endif
-#endif
-		}
-		mosquitto__free(config->bridges);
+	HASH_ITER(hh, config->bridges, bridge, tmp_bridge){
+		HASH_DEL(config->bridges, bridge);
+		config__cleanup_bridge(bridge);
+		mosquitto__free(bridge);
 	}
+	HASH_ITER(hh, config->dynamic_bridges, bridge, tmp_bridge){
+		HASH_DEL(config->dynamic_bridges, bridge);
+		config__cleanup_bridge(bridge);
+		mosquitto__free(bridge);
+	}
+	HASH_ITER(hh, config->invalidated_bridges, bridge, tmp_bridge){
+		HASH_DEL(config->invalidated_bridges, bridge);
+		config__cleanup_bridge(bridge);
+		mosquitto__free(bridge);
+	}
+	config->bridges = NULL;
+	config->dynamic_bridges = NULL;
+	config->invalidated_bridges = NULL;
 #endif
 	config__cleanup_plugins(config);
 
@@ -370,57 +390,8 @@ static void print_usage(void)
 	printf("\nSee https://mosquitto.org/ for more information.\n\n");
 }
 
-int config__parse_args(struct mosquitto__config *config, int argc, char *argv[])
+static int config__create_default_listener(struct mosquitto__config *config)
 {
-	int i;
-	int port_tmp;
-
-	for(i=1; i<argc; i++){
-		if(!strcmp(argv[i], "-c") || !strcmp(argv[i], "--config-file")){
-			if(i<argc-1){
-				db.config_file = argv[i+1];
-
-				if(config__read(config, false)){
-					return MOSQ_ERR_INVAL;
-				}
-			}else{
-				log__printf(NULL, MOSQ_LOG_ERR, "Error: -c argument given, but no config file specified.");
-				return MOSQ_ERR_INVAL;
-			}
-			i++;
-		}else if(!strcmp(argv[i], "-d") || !strcmp(argv[i], "--daemon")){
-			config->daemon = true;
-		}else if(!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")){
-			print_usage();
-			return MOSQ_ERR_INVAL;
-		}else if(!strcmp(argv[i], "-p") || !strcmp(argv[i], "--port")){
-			if(i<argc-1){
-				port_tmp = atoi(argv[i+1]);
-				if(port_tmp<1 || port_tmp>UINT16_MAX){
-					log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid port specified (%d).", port_tmp);
-					return MOSQ_ERR_INVAL;
-				}else{
-					if(config->cmd_port_count == CMD_PORT_LIMIT){
-						log__printf(NULL, MOSQ_LOG_ERR, "Error: Only %d ports can be specified on the command line.", CMD_PORT_LIMIT);
-						return MOSQ_ERR_INVAL;
-					}
-					config->cmd_port[config->cmd_port_count] = (uint16_t)port_tmp;
-					config->cmd_port_count++;
-				}
-			}else{
-				log__printf(NULL, MOSQ_LOG_ERR, "Error: -p argument given, but no port specified.");
-				return MOSQ_ERR_INVAL;
-			}
-			i++;
-		}else if(!strcmp(argv[i], "-v") || !strcmp(argv[i], "--verbose")){
-			db.verbose = true;
-		}else{
-			fprintf(stderr, "Error: Unknown option '%s'.\n",argv[i]);
-			print_usage();
-			return MOSQ_ERR_INVAL;
-		}
-	}
-
 	if(config->default_listener.bind_interface
 #ifdef WITH_TLS
 			|| config->default_listener.cafile
@@ -512,6 +483,67 @@ int config__parse_args(struct mosquitto__config *config, int argc, char *argv[])
 		config->listeners[config->listener_count-1].security_options.allow_anonymous = config->default_listener.security_options.allow_anonymous;
 		config->listeners[config->listener_count-1].security_options.allow_zero_length_clientid = config->default_listener.security_options.allow_zero_length_clientid;
 	}
+	return MOSQ_ERR_SUCCESS;
+}
+
+int config__parse_args(struct mosquitto__config *config, int argc, char *argv[])
+{
+	int i;
+	int rc;
+	int port_tmp;
+
+	for(i=1; i<argc; i++){
+		if(!strcmp(argv[i], "-c") || !strcmp(argv[i], "--config-file")){
+			if(i<argc-1){
+				db.config_file = argv[i+1];
+
+				if(config__read(config, false)){
+					return MOSQ_ERR_INVAL;
+				}
+			}else{
+				log__printf(NULL, MOSQ_LOG_ERR, "Error: -c argument given, but no config file specified.");
+				return MOSQ_ERR_INVAL;
+			}
+			i++;
+		}else if(!strcmp(argv[i], "-d") || !strcmp(argv[i], "--daemon")){
+			config->daemon = true;
+		}else if(!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")){
+			print_usage();
+			return MOSQ_ERR_INVAL;
+		}else if(!strcmp(argv[i], "-p") || !strcmp(argv[i], "--port")){
+			if(i<argc-1){
+				port_tmp = atoi(argv[i+1]);
+				if(port_tmp<1 || port_tmp>UINT16_MAX){
+					log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid port specified (%d).", port_tmp);
+					return MOSQ_ERR_INVAL;
+				}else{
+					if(config->cmd_port_count == CMD_PORT_LIMIT){
+						log__printf(NULL, MOSQ_LOG_ERR, "Error: Only %d ports can be specified on the command line.", CMD_PORT_LIMIT);
+						return MOSQ_ERR_INVAL;
+					}
+					config->cmd_port[config->cmd_port_count] = (uint16_t)port_tmp;
+					config->cmd_port_count++;
+				}
+			}else{
+				log__printf(NULL, MOSQ_LOG_ERR, "Error: -p argument given, but no port specified.");
+				return MOSQ_ERR_INVAL;
+			}
+			i++;
+		}else if(!strcmp(argv[i], "-v") || !strcmp(argv[i], "--verbose")){
+			db.verbose = true;
+		}else{
+			fprintf(stderr, "Error: Unknown option '%s'.\n",argv[i]);
+			print_usage();
+			return MOSQ_ERR_INVAL;
+		}
+	}
+
+	if(!db.config_file) {
+		rc = config__create_default_listener(config);
+		if (rc) return rc;
+		rc = config__check(config);
+		if (rc) return rc;
+	}
 
 	/* Default to drop to mosquitto user if we are privileged and no user specified. */
 	if(!config->user){
@@ -523,8 +555,130 @@ int config__parse_args(struct mosquitto__config *config, int argc, char *argv[])
 	if(db.verbose){
 		config->log_type = UINT_MAX;
 	}
-	return config__check(config);
+	return MOSQ_ERR_SUCCESS;
 }
+
+#ifdef WITH_BRIDGE
+static int config__strcmp(const char *s1, const char *s2){
+
+	if(!s1 || !s2) return (s1 != s2);
+	return strcmp(s1, s2);
+}
+
+static int config__bridge_cmp(struct mosquitto__bridge *bridge1, struct mosquitto__bridge *bridge2){
+	int i, rc;
+
+	rc = strcmp(bridge1->name, bridge2->name);
+	if (rc) return rc;
+	if(bridge1->address_count != bridge2->address_count) return 1;
+	if(bridge1->addresses){
+		for(i=0; i < bridge1->address_count; i++){
+			rc = strcmp(bridge1->addresses[i].address, bridge2->addresses[i].address);
+			if(rc) return rc;
+			if(bridge1->addresses[i].port != bridge2->addresses[i].port) return 1;
+		}
+	}
+	if(bridge1->topic_count != bridge2->topic_count) return 1;
+	if(bridge1->topics){
+		for(i=0; i < bridge1->topic_count; i++){
+			rc = strcmp(bridge1->topics[i].topic, bridge2->topics[i].topic);
+			if(rc) return rc;
+			rc = config__strcmp(bridge1->topics[i].local_prefix, bridge2->topics[i].local_prefix);
+			if(rc) return rc;
+			rc = config__strcmp(bridge1->topics[i].remote_prefix, bridge2->topics[i].remote_prefix);
+			if(rc) return rc;
+			if (bridge1->topics[i].direction != bridge2->topics[i].direction) return 1;
+			if (bridge1->topics[i].qos != bridge2->topics[i].qos) return 1;
+		}
+	}
+	rc = strcmp(bridge1->remote_clientid, bridge2->remote_clientid);
+	if(rc) return rc;
+	rc = config__strcmp(bridge1->remote_username, bridge2->remote_username);
+	if(rc) return rc;
+	rc = config__strcmp(bridge1->remote_password, bridge2->remote_password);
+	if(rc) return rc;
+	rc = strcmp(bridge1->local_clientid, bridge2->local_clientid);
+	if(rc) return rc;
+	rc = config__strcmp(bridge1->local_username, bridge2->local_username);
+	if(rc) return rc;
+	rc = config__strcmp(bridge1->local_password, bridge2->local_password);
+	if(rc) return rc;
+	rc = config__strcmp(bridge1->notification_topic, bridge2->notification_topic);
+	if(rc) return rc;
+	rc = config__strcmp(bridge1->bind_address, bridge2->bind_address);
+	if(rc) return rc;
+#ifdef WITH_TLS
+	if (bridge1->tls_insecure != bridge2->tls_insecure) return 1;
+	if (bridge1->tls_ocsp_required != bridge2->tls_ocsp_required) return 1;
+	rc = config__strcmp(bridge1->tls_cafile, bridge2->tls_cafile);
+	if(rc) return rc;
+	rc = config__strcmp(bridge1->tls_capath, bridge2->tls_capath);
+	if(rc) return rc;
+	rc = config__strcmp(bridge1->tls_certfile, bridge2->tls_certfile);
+	if(rc) return rc;
+	rc = config__strcmp(bridge1->tls_keyfile, bridge2->tls_keyfile);
+	if(rc) return rc;
+	rc = config__strcmp(bridge1->tls_version, bridge2->tls_version);
+	if(rc) return rc;
+	rc = config__strcmp(bridge1->tls_alpn, bridge2->tls_alpn);
+#ifdef FINAL_WITH_TLS_PSK
+	if (bridge1->tls_psk_identity != bridge2->tls_psk_identity) return 1;
+	if (bridge1->tls_psk != bridge2->tls_psk) return 1;
+#endif
+#endif
+	if(bridge1->clean_start_local != bridge2->clean_start_local
+	    && bridge1->clean_start_local != -1
+	    && bridge2->clean_start_local != -1
+	){
+		return 1;
+	}
+	if(bridge1->restart_timeout != bridge2->restart_timeout
+	    && bridge1->restart_timeout != 0
+	    && bridge2->restart_timeout != 0
+	){
+		return 1;
+	}
+	return bridge1->round_robin != bridge2->round_robin
+	    || bridge1->clean_start != bridge2->clean_start
+	    || bridge1->keepalive != bridge2->keepalive
+	    || bridge1->protocol_version != bridge2->protocol_version
+	    || bridge1->notifications != bridge2->notifications
+	    || bridge1->notifications_local_only != bridge2->notifications_local_only
+	    || bridge1->start_type != bridge2->start_type
+	    || bridge1->idle_timeout != bridge2->idle_timeout
+	    || bridge1->backoff_base != bridge2->backoff_base
+	    || bridge1->backoff_cap != bridge2->backoff_cap
+	    || bridge1->threshold != bridge2->threshold
+	    || bridge1->maximum_packet_size != bridge2->maximum_packet_size
+	    || bridge1->outgoing_retain != bridge2->outgoing_retain;
+}
+
+static void config__copy_merge_bridges(struct mosquitto__config *src, struct mosquitto__config *dest)
+{
+	struct mosquitto__bridge *bridge, *bridge_tmp, *bridge_found;
+	/* Cleanup bridges which have been removed/updated */
+	HASH_ITER(hh, dest->bridges, bridge, bridge_tmp){
+		HASH_FIND(hh, src->bridges, bridge->name, strlen(bridge->name), bridge_found);
+		if(bridge_found && !config__bridge_cmp(bridge, bridge_found)){
+			/* Bridge hasn't changed, so keep the old one */
+			/* Remove from old config before adding it to new config (uthash) */
+			HASH_DEL(src->bridges, bridge_found);
+			/* Remove from new config, we keep the existing object */
+			HASH_DEL(dest->bridges, bridge);
+			config__cleanup_bridge(bridge_found);
+			mosquitto__free(bridge_found);
+			/* Add the old bridge config to the new mosquitto__config */
+			HASH_ADD_KEYPTR(hh, src->bridges, bridge->name, strlen(bridge->name), bridge);
+		}else{
+			log__printf(NULL, MOSQ_LOG_INFO, "Bridge %s config was removed or has changed", bridge->name);
+			/* Bridge was removed or has changed, so mark it for cleanup */
+			HASH_DEL(dest->bridges, bridge);
+			HASH_ADD_KEYPTR(hh, src->invalidated_bridges, bridge->name, strlen(bridge->name), bridge);
+		}
+	}
+	dest->bridges = src->bridges;
+}
+#endif
 
 static void config__copy(struct mosquitto__config *src, struct mosquitto__config *dest)
 {
@@ -586,6 +740,9 @@ static void config__copy(struct mosquitto__config *src, struct mosquitto__config
 	dest->sys_interval = src->sys_interval;
 	dest->upgrade_outgoing_qos = src->upgrade_outgoing_qos;
 
+#ifdef WITH_BRIDGE
+	config__copy_merge_bridges(src, dest);
+#endif
 #ifdef WITH_WEBSOCKETS
 	dest->websockets_log_level = src->websockets_log_level;
 #endif
@@ -619,20 +776,46 @@ int config__read(struct mosquitto__config *config, bool reload)
 		config__init_reload(&config_reload);
 		config_reload.listeners = config->listeners;
 		config_reload.listener_count = config->listener_count;
+#ifdef WITH_BRIDGE
+		config_reload.dynamic_bridges = config->dynamic_bridges;
+		config_reload.invalidated_bridges = config->invalidated_bridges;
+#endif
 		cur_security_options = NULL;
 		rc = config__read_file(&config_reload, reload, db.config_file, &cr, 0, &lineno);
+		if(rc){
+			if(lineno <= 0) return rc;
+			log__printf(NULL, MOSQ_LOG_ERR,
+					"Failed to reload config: Error found at %s:%d.",
+					db.config_file, lineno);
+			return rc;
+		}
+		rc = config__check(&config_reload);
+		if(rc){
+			log__printf(NULL, MOSQ_LOG_ERR,
+					"Failed to reload config: Invalid configuration");
+			/* Protect listeners and bridges which the active config will continue to use
+			 * from being deleted, now that the invalid config will be cleaned up */
+			config_reload.listeners = NULL;
+#ifdef WITH_BRIDGE
+			config_reload.dynamic_bridges = NULL;
+			config_reload.invalidated_bridges = NULL;
+#endif
+			config__cleanup(&config_reload);
+			return rc;
+		}
+		config__copy(&config_reload, config);
 	}else{
 		rc = config__read_file(config, reload, db.config_file, &cr, 0, &lineno);
-	}
-	if(rc){
-		if(lineno > 0){
-			log__printf(NULL, MOSQ_LOG_ERR, "Error found at %s:%d.", db.config_file, lineno);
+		if(rc){
+			if(lineno > 0){
+				log__printf(NULL, MOSQ_LOG_ERR, "Error found at %s:%d.", db.config_file, lineno);
+			}
+			return rc;
 		}
-		return rc;
-	}
-
-	if(reload){
-		config__copy(&config_reload, config);
+		rc = config__create_default_listener(config);
+		if(rc) return rc;
+		rc = config__check(config);
+		if(rc) return rc;
 	}
 
 	/* If auth/access options are set and allow_anonymous not explicitly set, disallow anon. */
@@ -679,34 +862,10 @@ int config__read(struct mosquitto__config *config, bool reload)
 	 * function may be called on its own. */
 	if(!config->user){
 		config->user = mosquitto__strdup("mosquitto");
+		if(config->user == NULL){
+			return MOSQ_ERR_NOMEM;
+		}
 	}
-
-#ifdef WITH_BRIDGE
-	for(i=0; i<config->bridge_count; i++){
-		if(!config->bridges[i].name){
-			log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration: bridge name not defined.");
-			return MOSQ_ERR_INVAL;
-		}
-		if(config->bridges[i].addresses  == 0){
-			log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration: no remote addresses defined.");
-			return MOSQ_ERR_INVAL;
-		}
-		if(config->bridges[i].topic_count == 0){
-			log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration: no topics defined.");
-			return MOSQ_ERR_INVAL;
-		}
-#ifdef FINAL_WITH_TLS_PSK
-		if(config->bridges[i].tls_psk && !config->bridges[i].tls_psk_identity){
-			log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration: missing bridge_identity.");
-			return MOSQ_ERR_INVAL;
-		}
-		if(config->bridges[i].tls_psk_identity && !config->bridges[i].tls_psk){
-			log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration: missing bridge_psk.");
-			return MOSQ_ERR_INVAL;
-		}
-#endif
-	}
-#endif
 
 	if(cr.log_dest_set){
 		config->log_dest = cr.log_dest;
@@ -773,7 +932,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 					if(conf__parse_string(&token, "acl_file", &cur_security_options->acl_file, saveptr)) return MOSQ_ERR_INVAL;
 				}else if(!strcmp(token, "address") || !strcmp(token, "addresses")){
 #ifdef WITH_BRIDGE
-					if(reload) continue; /* FIXME */
 					if(!cur_bridge || cur_bridge->addresses){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
@@ -937,7 +1095,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 #endif
 				}else if(!strcmp(token, "bridge_attempt_unsubscribe")){
 #ifdef WITH_BRIDGE
-					if(reload) continue; /* FIXME */
 					if(!cur_bridge){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
@@ -948,7 +1105,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 #endif
 				}else if(!strcmp(token, "bridge_cafile")){
 #if defined(WITH_BRIDGE) && defined(WITH_TLS)
-					if(reload) continue; /* FIXME */
 					if(!cur_bridge){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
@@ -965,7 +1121,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 #endif
 				}else if(!strcmp(token, "bridge_alpn")){
 #if defined(WITH_BRIDGE) && defined(WITH_TLS)
-					if(reload) continue; /* FIXME */
 					if(!cur_bridge){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
@@ -976,7 +1131,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 #endif
 				}else if(!strcmp(token, "bridge_bind_address")){
 #if defined(WITH_BRIDGE) && defined(WITH_TLS)
-					if(reload) continue; /* FIXME */
 					if(!cur_bridge){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
@@ -987,7 +1141,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 #endif
 				}else if(!strcmp(token, "bridge_capath")){
 #if defined(WITH_BRIDGE) && defined(WITH_TLS)
-					if(reload) continue; /* FIXME */
 					if(!cur_bridge){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
@@ -1004,7 +1157,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 #endif
 				}else if(!strcmp(token, "bridge_certfile")){
 #if defined(WITH_BRIDGE) && defined(WITH_TLS)
-					if(reload) continue; /* FIXME */
 					if(!cur_bridge){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
@@ -1021,7 +1173,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 #endif
 				}else if(!strcmp(token, "bridge_identity")){
 #if defined(WITH_BRIDGE) && defined(FINAL_WITH_TLS_PSK)
-					if(reload) continue; /* FIXME */
 					if(!cur_bridge){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
@@ -1036,7 +1187,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 #endif
 				}else if(!strcmp(token, "bridge_insecure")){
 #if defined(WITH_BRIDGE) && defined(WITH_TLS)
-					if(reload) continue; /* FIXME */
 					if(!cur_bridge){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
@@ -1085,7 +1235,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 #endif
 				}else if(!strcmp(token, "bridge_keyfile")){
 #if defined(WITH_BRIDGE) && defined(WITH_TLS)
-					if(reload) continue; /* FIXME */
 					if(!cur_bridge){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
@@ -1102,7 +1251,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 #endif
 				}else if(!strcmp(token, "bridge_protocol_version")){
 #ifdef WITH_BRIDGE
-					if(reload) continue; /* FIXME */
 					if(!cur_bridge){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
@@ -1128,7 +1276,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 #endif
 				}else if(!strcmp(token, "bridge_psk")){
 #if defined(WITH_BRIDGE) && defined(FINAL_WITH_TLS_PSK)
-					if(reload) continue; /* FIXME */
 					if(!cur_bridge){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
@@ -1143,7 +1290,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 #endif
 				}else if(!strcmp(token, "bridge_tls_version")){
 #if defined(WITH_BRIDGE) && defined(WITH_TLS)
-					if(reload) continue; /* FIXME */
 					if(!cur_bridge){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
@@ -1200,7 +1346,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 #endif
 				}else if(!strcmp(token, "clientid") || !strcmp(token, "remote_clientid")){
 #ifdef WITH_BRIDGE
-					if(reload) continue; /* FIXME */
 					if(!cur_bridge){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
@@ -1211,7 +1356,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 #endif
 				}else if(!strcmp(token, "cleansession")){
 #ifdef WITH_BRIDGE
-					if(reload) continue; /* FIXME */
 					if(!cur_bridge){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
@@ -1222,7 +1366,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 #endif
 				}else if(!strcmp(token, "local_cleansession")){
 #ifdef WITH_BRIDGE
-					if(reload) continue; /* FIXME */
 					if(!cur_bridge){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
@@ -1240,45 +1383,16 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 					if(conf__parse_string(&token, "clientid_prefixes", &config->clientid_prefixes, saveptr)) return MOSQ_ERR_INVAL;
 				}else if(!strcmp(token, "connection")){
 #ifdef WITH_BRIDGE
-					if(reload) continue; /* FIXME */
 					token = strtok_r(NULL, " ", &saveptr);
 					if(token){
-						/* Check for existing bridge name. */
-						for(i=0; i<config->bridge_count; i++){
-							if(!strcmp(config->bridges[i].name, token)){
-								log__printf(NULL, MOSQ_LOG_ERR, "Error: Duplicate bridge name \"%s\".", token);
-								return MOSQ_ERR_INVAL;
-							}
-						}
-
-						config->bridge_count++;
-						config->bridges = mosquitto__realloc(config->bridges, (size_t)config->bridge_count*sizeof(struct mosquitto__bridge));
-						if(!config->bridges){
+						cur_bridge = mosquitto_calloc(1, sizeof(struct mosquitto__bridge));
+						if(!cur_bridge){
 							log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 							return MOSQ_ERR_NOMEM;
 						}
-						cur_bridge = &(config->bridges[config->bridge_count-1]);
-						memset(cur_bridge, 0, sizeof(struct mosquitto__bridge));
-						cur_bridge->name = mosquitto__strdup(token);
-						if(!cur_bridge->name){
-							log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
-							return MOSQ_ERR_NOMEM;
-						}
-						cur_bridge->keepalive = 60;
-						cur_bridge->notifications = true;
-						cur_bridge->notifications_local_only = false;
-						cur_bridge->start_type = bst_automatic;
-						cur_bridge->idle_timeout = 60;
-						cur_bridge->restart_timeout = 0;
-						cur_bridge->backoff_base = 5;
-						cur_bridge->backoff_cap = 30;
-						cur_bridge->threshold = 10;
-						cur_bridge->try_private = true;
-						cur_bridge->attempt_unsubscribe = true;
-						cur_bridge->protocol_version = mosq_p_mqtt311;
-						cur_bridge->primary_retry_sock = INVALID_SOCKET;
-						cur_bridge->outgoing_retain = true;
-						cur_bridge->clean_start_local = -1;
+						rc = config__init_bridge(cur_bridge, token);
+						if(rc) return rc;
+						HASH_ADD_KEYPTR(hh, config->bridges, cur_bridge->name, strlen(cur_bridge->name), cur_bridge);
 					}else{
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty connection value in configuration.");
 						return MOSQ_ERR_INVAL;
@@ -1311,7 +1425,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 #endif
 				}else if(!strcmp(token, "idle_timeout")){
 #ifdef WITH_BRIDGE
-					if(reload) continue; /* FIXME */
 					if(!cur_bridge){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
@@ -1356,7 +1469,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 					}
 				}else if(!strcmp(token, "keepalive_interval")){
 #ifdef WITH_BRIDGE
-					if(reload) continue; /* FIXME */
 					if(!cur_bridge){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
@@ -1485,7 +1597,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 					}
 				}else if(!strcmp(token, "local_clientid")){
 #ifdef WITH_BRIDGE
-					if(reload) continue; /* FIXME */
 					if(!cur_bridge){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
@@ -1496,7 +1607,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 #endif
 				}else if(!strcmp(token, "local_password")){
 #ifdef WITH_BRIDGE
-					if(reload) continue; /* FIXME */
 					if(!cur_bridge){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
@@ -1507,7 +1617,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 #endif
 				}else if(!strcmp(token, "local_username")){
 #ifdef WITH_BRIDGE
-					if(reload) continue; /* FIXME */
 					if(!cur_bridge){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
@@ -1725,7 +1834,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 					}
 				}else if(!strcmp(token, "notifications")){
 #ifdef WITH_BRIDGE
-					if(reload) continue; /* FIXME */
 					if(!cur_bridge){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
@@ -1736,7 +1844,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 #endif
 				}else if(!strcmp(token, "notifications_local_only")){
 #ifdef WITH_BRIDGE
-					if(reload) continue; /* FIXME */
 					if(!cur_bridge){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration");
 						return MOSQ_ERR_INVAL;
@@ -1747,7 +1854,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 #endif
 				}else if(!strcmp(token, "notification_topic")){
 #ifdef WITH_BRIDGE
-					if(reload) continue; /* FIXME */
 					if(!cur_bridge){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
@@ -1758,7 +1864,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 #endif
 				}else if(!strcmp(token, "password") || !strcmp(token, "remote_password")){
 #ifdef WITH_BRIDGE
-					if(reload) continue; /* FIXME */
 					if(!cur_bridge){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
@@ -1886,7 +1991,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 #endif
 				}else if(!strcmp(token, "restart_timeout")){
 #ifdef WITH_BRIDGE
-					if(reload) continue; /* FIXME */
 					if(!cur_bridge){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
@@ -1919,7 +2023,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: The retry_interval option is no longer available.");
 				}else if(!strcmp(token, "round_robin")){
 #ifdef WITH_BRIDGE
-					if(reload) continue; /* FIXME */
 					if(!cur_bridge){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
@@ -1932,7 +2035,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 					if(conf__parse_bool(&token, "set_tcp_nodelay", &config->set_tcp_nodelay, saveptr)) return MOSQ_ERR_INVAL;
 				}else if(!strcmp(token, "start_type")){
 #ifdef WITH_BRIDGE
-					if(reload) continue; /* FIXME */
 					if(!cur_bridge){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
@@ -1983,7 +2085,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 					}
 				}else if(!strcmp(token, "threshold")){
 #ifdef WITH_BRIDGE
-					if(reload) continue; /* FIXME */
 					if(!cur_bridge){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
@@ -2041,7 +2142,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 					uint8_t qos = 0;
 					char *local_prefix = NULL, *remote_prefix = NULL;
 
-					if(reload) continue; /* FIXME */
 					if(!cur_bridge){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
@@ -2122,7 +2222,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 					}
 				}else if(!strcmp(token, "try_private")){
 #ifdef WITH_BRIDGE
-					if(reload) continue; /* FIXME */
 					if(!cur_bridge){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
@@ -2156,7 +2255,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 					if(conf__parse_bool(&token, "use_username_as_clientid", &cur_listener->use_username_as_clientid, saveptr)) return MOSQ_ERR_INVAL;
 				}else if(!strcmp(token, "username") || !strcmp(token, "remote_username")){
 #ifdef WITH_BRIDGE
-					if(reload) continue; /* FIXME */
 					if(!cur_bridge){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration.");
 						return MOSQ_ERR_INVAL;
@@ -2232,6 +2330,60 @@ int config__read_file(struct mosquitto__config *config, bool reload, const char 
 	return rc;
 }
 
+#ifdef WITH_BRIDGE
+static int config__check_bridge_exists(struct mosquitto__bridge *bridge, struct mosquitto__bridge *bridges)
+{
+	struct mosquitto__bridge *b, *tmp_b;
+	HASH_ITER(hh, bridges, b, tmp_b){
+		if(b == bridge) continue;
+		if(!strcmp(b->name, bridge->name)){
+			log__printf(NULL, MOSQ_LOG_ERR, "Error: Duplicate bridge name \"%s\".",
+				    bridge->name);
+			return MOSQ_ERR_ALREADY_EXISTS;
+		}
+		if(!strcmp(b->local_clientid, bridge->local_clientid)){
+			log__printf(NULL, MOSQ_LOG_ERR, "Error: Bridge local_clientid "
+							"'%s' is not unique. Try changing or setting the "
+							"local_clientid value for one of the bridges.",
+					bridge->local_clientid);
+			return MOSQ_ERR_ALREADY_EXISTS;
+		}
+	}
+	return MOSQ_ERR_SUCCESS;
+}
+
+static int config__check_bridge(struct mosquitto__bridge *bridge, struct mosquitto__config *config)
+{
+	int rc;
+
+	if(!bridge->name){
+		log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration: bridge name not defined.");
+		return MOSQ_ERR_INVAL;
+	}
+	if(bridge->addresses  == 0){
+		log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration: no remote addresses defined.");
+		return MOSQ_ERR_INVAL;
+	}
+	if(bridge->topic_count == 0){
+		log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration: no topics defined.");
+		return MOSQ_ERR_INVAL;
+	}
+#ifdef FINAL_WITH_TLS_PSK
+	if(bridge->tls_psk && !bridge->tls_psk_identity){
+		log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration: missing bridge_identity.");
+		return MOSQ_ERR_INVAL;
+	}
+	if(bridge->tls_psk_identity && !bridge->tls_psk){
+		log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge configuration: missing bridge_psk.");
+		return MOSQ_ERR_INVAL;
+	}
+#endif
+
+	rc = config__check_bridge_exists(bridge, config->bridges);
+	if(rc != MOSQ_ERR_SUCCESS) return rc;
+	return config__check_bridge_exists(bridge, config->dynamic_bridges);
+}
+#endif
 
 static int config__check(struct mosquitto__config *config)
 {
@@ -2240,52 +2392,12 @@ static int config__check(struct mosquitto__config *config)
 	int i;
 
 #ifdef WITH_BRIDGE
-	int j;
-	struct mosquitto__bridge *bridge1, *bridge2;
-	char hostname[256];
-	size_t len;
+	int rc;
+	struct mosquitto__bridge *bridge, *tmp_bridge;
 
-	/* Check for bridge duplicate local_clientid, need to generate missing IDs
-	 * first. */
-	for(i=0; i<config->bridge_count; i++){
-		bridge1 = &config->bridges[i];
-
-		if(!bridge1->remote_clientid){
-			if(!gethostname(hostname, 256)){
-				len = strlen(hostname) + strlen(bridge1->name) + 2;
-				bridge1->remote_clientid = mosquitto__malloc(len);
-				if(!bridge1->remote_clientid){
-					return MOSQ_ERR_NOMEM;
-				}
-				snprintf(bridge1->remote_clientid, len, "%s.%s", hostname, bridge1->name);
-			}else{
-				return 1;
-			}
-		}
-
-		if(!bridge1->local_clientid){
-			len = strlen(bridge1->remote_clientid) + strlen("local.") + 2;
-			bridge1->local_clientid = mosquitto__malloc(len);
-			if(!bridge1->local_clientid){
-				log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
-				return MOSQ_ERR_NOMEM;
-			}
-			snprintf(bridge1->local_clientid, len, "local.%s", bridge1->remote_clientid);
-		}
-	}
-
-	for(i=0; i<config->bridge_count; i++){
-		bridge1 = &config->bridges[i];
-		for(j=i+1; j<config->bridge_count; j++){
-			bridge2 = &config->bridges[j];
-			if(!strcmp(bridge1->local_clientid, bridge2->local_clientid)){
-				log__printf(NULL, MOSQ_LOG_ERR, "Error: Bridge local_clientid "
-						"'%s' is not unique. Try changing or setting the "
-						"local_clientid value for one of the bridges.",
-						bridge1->local_clientid);
-				return MOSQ_ERR_INVAL;
-			}
-		}
+	HASH_ITER(hh, config->bridges, bridge, tmp_bridge){
+		rc = config__check_bridge(bridge, config);
+		if(rc != MOSQ_ERR_SUCCESS) return rc;
 	}
 #endif
 
@@ -2313,6 +2425,88 @@ static int config__check(struct mosquitto__config *config)
 	return MOSQ_ERR_SUCCESS;
 }
 
+#ifdef WITH_BRIDGE
+int config__init_bridge(struct mosquitto__bridge *bridge, const char* name)
+{
+	char hostname[256];
+	size_t len;
+
+	memset(bridge, 0, sizeof(struct mosquitto__bridge));
+
+	bridge->name = mosquitto__strdup(name);
+	if(!bridge->name){
+		log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
+		return MOSQ_ERR_NOMEM;
+	}
+	if(!gethostname(hostname, 256)){
+		len = strlen(hostname) + strlen(name) + 2;
+		bridge->remote_clientid = mosquitto__malloc(len);
+		if(!bridge->remote_clientid){
+			log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
+			return MOSQ_ERR_NOMEM;
+		}
+		snprintf(bridge->remote_clientid, len, "%s.%s", hostname, name);
+	}else{
+		return 1;
+	}
+
+	len = strlen(bridge->remote_clientid) + strlen("local.") + 2;
+	bridge->local_clientid = mosquitto__malloc(len);
+	if(!bridge->local_clientid){
+		log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
+		return MOSQ_ERR_NOMEM;
+	}
+	snprintf(bridge->local_clientid, len, "local.%s", bridge->remote_clientid);
+
+	bridge->keepalive = 60;
+	bridge->notifications = true;
+	bridge->notifications_local_only = false;
+	bridge->start_type = bst_automatic;
+	bridge->idle_timeout = 60;
+	bridge->restart_timeout = 0;
+	bridge->backoff_base = 5;
+	bridge->backoff_cap = 30;
+	bridge->threshold = 10;
+	bridge->try_private = true;
+	bridge->attempt_unsubscribe = true;
+	bridge->primary_retry_sock = INVALID_SOCKET;
+	bridge->outgoing_retain = true;
+	bridge->clean_start_local = -1;
+	return MOSQ_ERR_SUCCESS;
+}
+
+int config__check_dynamic_bridge(struct mosquitto__bridge *bridge)
+{
+	return config__check_bridge(bridge, db.config);
+}
+
+void config__add_dynamic_bridge(struct mosquitto__bridge *bridge)
+{
+	HASH_ADD_KEYPTR(hh, db.config->dynamic_bridges, bridge->name, strlen(bridge->name), bridge);
+}
+
+int config__invalidate_dynamic_bridge(const char* name)
+{
+	struct mosquitto__bridge *bridge;
+	HASH_FIND(hh, db.config->dynamic_bridges, name, strlen(name), bridge);
+	if(!bridge){
+		return MOSQ_ERR_NOT_FOUND;
+	}
+	HASH_DEL(db.config->dynamic_bridges, bridge);
+	HASH_ADD_KEYPTR(hh, db.config->invalidated_bridges, bridge->name, strlen(bridge->name), bridge);
+	return MOSQ_ERR_SUCCESS;
+}
+
+void config__visit_dynamic_bridges(FUNC_config__accept_bridge accept, void *userdata)
+{
+	struct mosquitto__bridge *bridge, *tmp_bridge;
+
+	HASH_ITER(hh, db.config->dynamic_bridges, bridge, tmp_bridge)
+	{
+		accept(bridge, userdata);
+	}
+}
+#endif
 
 static int conf__parse_bool(char **token, const char *name, bool *value, char *saveptr)
 {

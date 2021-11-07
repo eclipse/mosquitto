@@ -26,6 +26,10 @@ OBJS=	mosquitto_ctrl.o \
 		options.o \
 		password_mosq.o
 
+ifeq ($(WITH_BRIDGE),yes)
+OBJS+=  dynbridge.o
+endif
+
 EXAMPLE_OBJS= example.o
 
 ifeq ($(WITH_TLS),yes)
@@ -52,6 +56,11 @@ mosquitto_ctrl.o : mosquitto_ctrl.c mosquitto_ctrl.h
 
 client.o : client.c mosquitto_ctrl.h
 	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@
+
+ifeq ($(WITH_BRIDGE),yes)
+dynbridge.o : dynbridge.c mosquitto_ctrl.h
+	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@
+endif
 
 dynsec.o : dynsec.c mosquitto_ctrl.h
 	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@

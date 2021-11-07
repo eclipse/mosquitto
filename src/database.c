@@ -191,10 +191,6 @@ int db__open(struct mosquitto__config *config)
 	db.contexts_by_id = NULL;
 	db.contexts_by_sock = NULL;
 	db.contexts_for_free = NULL;
-#ifdef WITH_BRIDGE
-	db.bridges = NULL;
-	db.bridge_count = 0;
-#endif
 
 	/* Initialize the hashtable */
 	db.clientid_index_hash = NULL;

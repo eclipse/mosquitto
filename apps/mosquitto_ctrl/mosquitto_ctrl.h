@@ -116,6 +116,11 @@ int dynsec_role__list_all(int argc, char *argv[], cJSON *j_command);
 int dynsec_role__add_acl(int argc, char *argv[], cJSON *j_command);
 int dynsec_role__remove_acl(int argc, char *argv[], cJSON *j_command);
 
+#ifdef WITH_BRIDGE
+void dynbridge__print_usage(void);
+int dynbridge__main(int argc, char *argv[], struct mosq_ctrl *ctrl);
+#endif
+
 /* Functions to implement as an external module: */
 void ctrl_help(void);
 int ctrl_main(int argc, char *argv[], struct mosq_ctrl *ctrl);

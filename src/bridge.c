@@ -14,6 +14,7 @@ SPDX-License-Identifier: EPL-2.0 OR BSD-3-Clause
 
 Contributors:
    Roger Light - initial implementation and documentation.
+   Benjamin Hansmann - add support for bridge config reload and dynamic bridges
 */
 
 #include "config.h"
@@ -59,12 +60,29 @@ static void bridge__backoff_reset(struct mosquitto *context);
 
 void bridge__start_all(void)
 {
-	int i;
-
-	for(i=0; i<db.config->bridge_count; i++){
-		if(bridge__new(&(db.config->bridges[i])) > 0){
+	struct mosquitto__bridge *bridge, *tmp_bridge;
+	/* Cleanup context and config of invalidated bridge configurations */
+	HASH_ITER(hh, db.config->invalidated_bridges, bridge, tmp_bridge){
+		if(bridge__cleanup(bridge)){
+			log__printf(NULL, MOSQ_LOG_WARNING, "Failed to cleanup context of bridge %s.",
+					bridge->name);
+		}
+		HASH_DEL(bridge, db.config->invalidated_bridges);
+		config__cleanup_bridge(bridge);
+		mosquitto__free(bridge);
+	}
+	/* Start all configured bridges if not already running */
+	HASH_ITER(hh, db.config->bridges, bridge, tmp_bridge){
+		if(bridge__new(bridge) > 0){
 			log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Unable to connect to bridge %s.",
-					db.config->bridges[i].name);
+					bridge->name);
+		}
+	}
+	/* Start all dynamically configured bridges if not already running */
+	HASH_ITER(hh, db.config->dynamic_bridges, bridge, tmp_bridge){
+		if(bridge__new(bridge) > 0){
+			log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Unable to connect to bridge %s.",
+					bridge->name);
 		}
 	}
 }
@@ -73,7 +91,6 @@ void bridge__start_all(void)
 int bridge__new(struct mosquitto__bridge *bridge)
 {
 	struct mosquitto *new_context = NULL;
-	struct mosquitto **bridges;
 	char *local_id;
 
 	assert(bridge);
@@ -82,8 +99,10 @@ int bridge__new(struct mosquitto__bridge *bridge)
 
 	HASH_FIND(hh_id, db.contexts_by_id, local_id, strlen(local_id), new_context);
 	if(new_context){
-		/* (possible from persistent db) */
+		/* (possible from persistent db or after config reload) */
 		mosquitto__free(local_id);
+		/* bridge is already running (after config reload) */
+		if(new_context->bridge == bridge) return MOSQ_ERR_SUCCESS;
 	}else{
 		/* id wasn't found, so generate a new context */
 		new_context = context__init(INVALID_SOCKET);
@@ -126,15 +145,6 @@ int bridge__new(struct mosquitto__bridge *bridge)
 	}
 	new_context->retain_available = bridge->outgoing_retain;
 	new_context->protocol = bridge->protocol_version;
-
-	bridges = mosquitto__realloc(db.bridges, (size_t)(db.bridge_count+1)*sizeof(struct mosquitto *));
-	if(bridges){
-		db.bridges = bridges;
-		db.bridge_count++;
-		db.bridges[db.bridge_count-1] = new_context;
-	}else{
-		return MOSQ_ERR_NOMEM;
-	}
 
 #if defined(__GLIBC__) && defined(WITH_ADNS)
 	new_context->bridge->restart_t = 1; /* force quick restart of bridge */
@@ -589,47 +599,19 @@ int bridge__register_local_connections(void)
 	return MOSQ_ERR_SUCCESS;
 }
 
-
-void bridge__cleanup(struct mosquitto *context)
+int bridge__cleanup(struct mosquitto__bridge* bridge)
 {
-	int i;
-
-	for(i=0; i<db.bridge_count; i++){
-		if(db.bridges[i] == context){
-			db.bridges[i] = NULL;
-		}
+	struct mosquitto* context;
+	HASH_FIND(hh_id, db.contexts_by_id, bridge->local_clientid, strlen(bridge->local_clientid), context);
+	if(!context){
+		return MOSQ_ERR_NOT_FOUND;
 	}
-	mosquitto__free(context->bridge->local_clientid);
-	context->bridge->local_clientid = NULL;
-
-	mosquitto__free(context->bridge->local_username);
-	context->bridge->local_username = NULL;
-
-	mosquitto__free(context->bridge->local_password);
-	context->bridge->local_password = NULL;
-
-	if(context->bridge->remote_clientid != context->id){
-		mosquitto__free(context->bridge->remote_clientid);
-	}
-	context->bridge->remote_clientid = NULL;
-
-	if(context->bridge->remote_username != context->username){
-		mosquitto__free(context->bridge->remote_username);
-	}
-	context->bridge->remote_username = NULL;
-
-	if(context->bridge->remote_password != context->password){
-		mosquitto__free(context->bridge->remote_password);
-	}
-	context->bridge->remote_password = NULL;
-#ifdef WITH_TLS
-	if(context->ssl_ctx){
-		SSL_CTX_free(context->ssl_ctx);
-		context->ssl_ctx = NULL;
-	}
-#endif
+	log__printf(NULL, MOSQ_LOG_NOTICE, "Disconnecting bridge %s (%s:%d)", context->bridge->name,
+		    context->bridge->addresses[context->bridge->cur_address].address,
+		    context->bridge->addresses[context->bridge->cur_address].port);
+	context__cleanup(context, true);
+	return MOSQ_ERR_SUCCESS;
 }
-
 
 void bridge__packet_cleanup(struct mosquitto *context)
 {
@@ -704,7 +686,7 @@ static void bridge_check_pending(struct mosquitto *context)
 		if(!getsockopt(context->sock, SOL_SOCKET, SO_ERROR, (char *)&err, &len)){
 			if(err == 0){
 				mosquitto__set_state(context, mosq_cs_new);
-#if defined(WITH_ADNS) && defined(WITH_BRIDGE)
+#ifdef WITH_ADNS
 				if(context->bridge){
 					bridge__connect_step3(context);
 				}
@@ -720,153 +702,160 @@ static void bridge_check_pending(struct mosquitto *context)
 	}
 }
 
-void bridge_check(void)
+static void bridge_check(struct mosquitto__bridge* bridge)
 {
-	static time_t last_check = 0;
 	struct mosquitto *context = NULL;
 	socklen_t len;
-	int i;
 	int rc;
 	int err;
 
-	if(db.now_s <= last_check) return;
+	HASH_FIND(hh_id, db.contexts_by_id, bridge->local_clientid, strlen(bridge->local_clientid), context);
+	if(!context) return;
 
-	for(i=0; i<db.bridge_count; i++){
-		if(!db.bridges[i]) continue;
+	if(context->sock != INVALID_SOCKET){
+		mosquitto__check_keepalive(context);
+		bridge_check_pending(context);
 
-		context = db.bridges[i];
-
-		if(context->sock != INVALID_SOCKET){
-			mosquitto__check_keepalive(context);
-			bridge_check_pending(context);
-
-			/* Check for bridges that are not round robin and not currently
+		/* Check for bridges that are not round robin and not currently
 			 * connected to their primary broker. */
-			if(context->bridge->round_robin == false
-					&& context->bridge->cur_address != 0
-					&& context->bridge->primary_retry
-					&& db.now_s > context->bridge->primary_retry){
+		if(context->bridge->round_robin == false
+				&& context->bridge->cur_address != 0
+				&& context->bridge->primary_retry
+				&& db.now_s > context->bridge->primary_retry){
 
-				if(context->bridge->primary_retry_sock == INVALID_SOCKET){
-					rc = net__try_connect(context->bridge->addresses[0].address,
-							context->bridge->addresses[0].port,
-							&context->bridge->primary_retry_sock,
-							context->bridge->bind_address, false);
+			if(context->bridge->primary_retry_sock == INVALID_SOCKET){
+				rc = net__try_connect(context->bridge->addresses[0].address,
+						      context->bridge->addresses[0].port,
+						      &context->bridge->primary_retry_sock,
+						      context->bridge->bind_address, false);
 
-					if(rc == 0){
+				if(rc == 0){
+					COMPAT_CLOSE(context->bridge->primary_retry_sock);
+					context->bridge->primary_retry_sock = INVALID_SOCKET;
+					context->bridge->primary_retry = 0;
+					mux__delete(context);
+					net__socket_close(context);
+					context->bridge->cur_address = 0;
+				}
+			}else{
+				len = sizeof(int);
+				if(!getsockopt(context->bridge->primary_retry_sock, SOL_SOCKET, SO_ERROR, (char *)&err, &len)){
+					if(err == 0){
 						COMPAT_CLOSE(context->bridge->primary_retry_sock);
 						context->bridge->primary_retry_sock = INVALID_SOCKET;
 						context->bridge->primary_retry = 0;
 						mux__delete(context);
 						net__socket_close(context);
-						context->bridge->cur_address = 0;
-					}
-				}else{
-					len = sizeof(int);
-					if(!getsockopt(context->bridge->primary_retry_sock, SOL_SOCKET, SO_ERROR, (char *)&err, &len)){
-						if(err == 0){
-							COMPAT_CLOSE(context->bridge->primary_retry_sock);
-							context->bridge->primary_retry_sock = INVALID_SOCKET;
-							context->bridge->primary_retry = 0;
-							mux__delete(context);
-							net__socket_close(context);
-							context->bridge->cur_address = context->bridge->address_count-1;
-						}else{
-							COMPAT_CLOSE(context->bridge->primary_retry_sock);
-							context->bridge->primary_retry_sock = INVALID_SOCKET;
-							context->bridge->primary_retry = db.now_s+5;
-						}
+						context->bridge->cur_address = context->bridge->address_count-1;
 					}else{
 						COMPAT_CLOSE(context->bridge->primary_retry_sock);
 						context->bridge->primary_retry_sock = INVALID_SOCKET;
 						context->bridge->primary_retry = db.now_s+5;
 					}
+				}else{
+					COMPAT_CLOSE(context->bridge->primary_retry_sock);
+					context->bridge->primary_retry_sock = INVALID_SOCKET;
+					context->bridge->primary_retry = db.now_s+5;
 				}
 			}
 		}
+	}
 
 
-
-		if(context->sock == INVALID_SOCKET){
-			/* Want to try to restart the bridge connection */
-			if(!context->bridge->restart_t){
-				context->bridge->restart_t = db.now_s+context->bridge->restart_timeout;
-				context->bridge->cur_address++;
-				if(context->bridge->cur_address == context->bridge->address_count){
-					context->bridge->cur_address = 0;
-				}
-			}else{
-				if((context->bridge->start_type == bst_lazy && context->bridge->lazy_reconnect)
-						|| (context->bridge->start_type == bst_automatic && db.now_s > context->bridge->restart_t)){
+	if(context->sock == INVALID_SOCKET){
+		/* Want to try to restart the bridge connection */
+		if(!context->bridge->restart_t){
+			context->bridge->restart_t = db.now_s+context->bridge->restart_timeout;
+			context->bridge->cur_address++;
+			if(context->bridge->cur_address == context->bridge->address_count){
+				context->bridge->cur_address = 0;
+			}
+		}else{
+			if((context->bridge->start_type == bst_lazy && context->bridge->lazy_reconnect)
+					|| (context->bridge->start_type == bst_automatic && db.now_s > context->bridge->restart_t)){
 
 #if defined(__GLIBC__) && defined(WITH_ADNS)
-					if(context->adns){
-						/* Connection attempted, waiting on DNS lookup */
-						rc = gai_error(context->adns);
-						if(rc == EAI_INPROGRESS){
-							/* Just keep on waiting */
-						}else if(rc == 0){
-							rc = bridge__connect_step2(context);
-							if(rc == MOSQ_ERR_SUCCESS){
-								mux__add_in(context);
-								if(context->current_out_packet){
-									mux__add_out(context);
-								}
-							}else if(rc == MOSQ_ERR_CONN_PENDING){
-								mux__add_in(context);
-								mux__add_out(context);
-								context->bridge->restart_t = 0;
-							}else{
-								context->bridge->cur_address++;
-								if(context->bridge->cur_address == context->bridge->address_count){
-									context->bridge->cur_address = 0;
-								}
-								context->bridge->restart_t = 0;
-							}
-						}else{
-							/* Need to retry */
-							if(context->adns->ar_result){
-								freeaddrinfo(context->adns->ar_result);
-							}
-							mosquitto__free(context->adns);
-							context->adns = NULL;
-							context->bridge->restart_t = 0;
-						}
-					}else{
-						rc = bridge__connect_step1(context);
-						if(rc){
-							context->bridge->cur_address++;
-							if(context->bridge->cur_address == context->bridge->address_count){
-								context->bridge->cur_address = 0;
-							}
-						}else{
-							/* Short wait for ADNS lookup */
-							context->bridge->restart_t = 1;
-						}
-					}
-#else
-					{
-						rc = bridge__connect(context);
-						context->bridge->restart_t = 0;
-						if(rc == MOSQ_ERR_SUCCESS || rc == MOSQ_ERR_CONN_PENDING){
-							if(context->bridge->round_robin == false && context->bridge->cur_address != 0){
-								context->bridge->primary_retry = db.now_s + 5;
-							}
+				if(context->adns){
+					/* Connection attempted, waiting on DNS lookup */
+					rc = gai_error(context->adns);
+					if(rc == EAI_INPROGRESS){
+						/* Just keep on waiting */
+					}else if(rc == 0){
+						rc = bridge__connect_step2(context);
+						if(rc == MOSQ_ERR_SUCCESS){
 							mux__add_in(context);
 							if(context->current_out_packet){
 								mux__add_out(context);
 							}
+						}else if(rc == MOSQ_ERR_CONN_PENDING){
+							mux__add_in(context);
+							mux__add_out(context);
+							context->bridge->restart_t = 0;
 						}else{
 							context->bridge->cur_address++;
 							if(context->bridge->cur_address == context->bridge->address_count){
 								context->bridge->cur_address = 0;
 							}
+							context->bridge->restart_t = 0;
+						}
+					}else{
+						/* Need to retry */
+						if(context->adns->ar_result){
+							freeaddrinfo(context->adns->ar_result);
+						}
+						mosquitto__free(context->adns);
+						context->adns = NULL;
+						context->bridge->restart_t = 0;
+					}
+				}else{
+					rc = bridge__connect_step1(context);
+					if(rc){
+						context->bridge->cur_address++;
+						if(context->bridge->cur_address == context->bridge->address_count){
+							context->bridge->cur_address = 0;
+						}
+					}else{
+						/* Short wait for ADNS lookup */
+						context->bridge->restart_t = 1;
+					}
+				}
+#else
+				{
+					rc = bridge__connect(context);
+					context->bridge->restart_t = 0;
+					if(rc == MOSQ_ERR_SUCCESS || rc == MOSQ_ERR_CONN_PENDING){
+						if(context->bridge->round_robin == false && context->bridge->cur_address != 0){
+							context->bridge->primary_retry = db.now_s + 5;
+						}
+						mux__add_in(context);
+						if(context->current_out_packet){
+							mux__add_out(context);
+						}
+					}else{
+						context->bridge->cur_address++;
+						if(context->bridge->cur_address == context->bridge->address_count){
+							context->bridge->cur_address = 0;
 						}
 					}
-#endif
 				}
+#endif
 			}
 		}
+	}
+}
+
+void bridge_check_all(void)
+{
+	static time_t last_check = 0;
+	struct mosquitto__bridge *bridge, *tmp_bridge;
+
+	if(db.now_s <= last_check) return;
+
+	HASH_ITER(hh, db.config->bridges, bridge, tmp_bridge){
+		bridge_check(bridge);
+	}
+	HASH_ITER(hh, db.config->dynamic_bridges, bridge, tmp_bridge){
+		bridge_check(bridge);
 	}
 }
 

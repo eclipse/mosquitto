@@ -42,7 +42,11 @@ static void print_usage(void)
 	print_version();
 	printf("\nGeneral usage: mosquitto_ctrl <module> <module-command> <command-options>\n");
 	printf("For module specific help use: mosquitto_ctrl <module> help\n");
-	printf("\nModules available: dynsec\n");
+	printf("\nModules available: dynsec");
+#ifdef WITH_BRIDGE
+	printf(", dynbridge");
+#endif
+	printf("\n");
 	printf("\nFor more information see:\n");
 	printf("    https://mosquitto.org/man/mosquitto_ctrl-1.html\n\n");
 }
@@ -78,6 +82,10 @@ int main(int argc, char *argv[])
 	/* In built modules */
 	if(!strcasecmp(argv[0], "dynsec")){
 		l_ctrl_main = dynsec__main;
+#ifdef WITH_BRIDGE
+	}else if(!strcasecmp(argv[0], "dynbridge")){
+		l_ctrl_main = dynbridge__main;
+#endif
 	}else{
 		/* Attempt external module */
 		snprintf(lib_name, sizeof(lib_name), "mosquitto_ctrl_%s.so", argv[0]);

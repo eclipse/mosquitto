@@ -301,7 +301,8 @@ struct mosquitto__config {
 #endif
 #ifdef WITH_BRIDGE
 	struct mosquitto__bridge *bridges;
-	int bridge_count;
+	struct mosquitto__bridge *dynamic_bridges;
+	struct mosquitto__bridge *invalidated_bridges;
 #endif
 	struct mosquitto__security_options security_options;
 };
@@ -447,17 +448,11 @@ struct mosquitto_db{
 	struct mosquitto *contexts_by_id;
 	struct mosquitto *contexts_by_sock;
 	struct mosquitto *contexts_for_free;
-#ifdef WITH_BRIDGE
-	struct mosquitto **bridges;
-#endif
 	struct clientid__index_hash *clientid_index_hash;
 	struct mosquitto_msg_store *msg_store;
 	struct mosquitto_msg_store_load *msg_store_load;
 	time_t now_s; /* Monotonic clock, where possible */
 	time_t now_real_s; /* Read clock, for measuring session/message expiry */
-#ifdef WITH_BRIDGE
-	int bridge_count;
-#endif
 	int msg_store_count;
 	unsigned long msg_store_bytes;
 	char *config_file;
@@ -506,6 +501,7 @@ struct bridge_address{
 };
 
 struct mosquitto__bridge{
+	UT_hash_handle hh;
 	char *name;
 	struct bridge_address *addresses;
 	int cur_address;
@@ -596,6 +592,17 @@ int config__read(struct mosquitto__config *config, bool reload);
 /* Free all config data. */
 void config__cleanup(struct mosquitto__config *config);
 int config__get_dir_files(const char *include_dir, char ***files, int *file_count);
+
+#ifdef WITH_BRIDGE
+/* Config functions for dynamic bridge support */
+int config__init_bridge(struct mosquitto__bridge *bridge, const char* name);
+int config__check_dynamic_bridge(struct mosquitto__bridge *bridge);
+void config__add_dynamic_bridge(struct mosquitto__bridge *bridge);
+void config__cleanup_bridge(struct mosquitto__bridge *bridge);
+int config__invalidate_dynamic_bridge(const char* name);
+typedef void (*FUNC_config__accept_bridge)(const struct mosquitto__bridge *, void *);
+void config__visit_dynamic_bridges(FUNC_config__accept_bridge accept, void *userdata);
+#endif
 
 int drop_privileges(struct mosquitto__config *config);
 
@@ -722,14 +729,14 @@ void log__internal(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 #ifdef WITH_BRIDGE
 void bridge__start_all(void);
 int bridge__new(struct mosquitto__bridge *bridge);
-void bridge__cleanup(struct mosquitto *context);
 int bridge__connect(struct mosquitto *context);
 int bridge__connect_step1(struct mosquitto *context);
 int bridge__connect_step2(struct mosquitto *context);
 int bridge__connect_step3(struct mosquitto *context);
 int bridge__on_connect(struct mosquitto *context);
+int bridge__cleanup(struct mosquitto__bridge* bridge);
 void bridge__packet_cleanup(struct mosquitto *context);
-void bridge_check(void);
+void bridge_check_all(void);
 int bridge__register_local_connections(void);
 int bridge__add_topic(struct mosquitto__bridge *bridge, const char *topic, enum mosquitto__bridge_direction direction, uint8_t qos, const char *local_prefix, const char *remote_prefix);
 int bridge__remap_topic_in(struct mosquitto *context, char **topic);

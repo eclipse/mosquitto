@@ -115,9 +115,8 @@ void context__cleanup(struct mosquitto *context, bool force_free)
 	}
 
 #ifdef WITH_BRIDGE
-	if(context->bridge){
-		bridge__cleanup(context);
-	}
+	/* The bridge is still part of the config, so it is not freed */
+	context->bridge = NULL;
 #endif
 
 	alias__free_all(context);
@@ -160,6 +159,12 @@ void context__cleanup(struct mosquitto *context, bool force_free)
 		mosquitto__free(packet);
 	}
 	context->out_packet_count = 0;
+#ifdef WITH_TLS
+	if(context->ssl_ctx){
+		SSL_CTX_free(context->ssl_ctx);
+		context->ssl_ctx = NULL;
+	}
+#endif
 #if defined(WITH_BROKER) && defined(__GLIBC__) && defined(WITH_ADNS)
 	if(context->adns){
 		gai_cancel(context->adns);

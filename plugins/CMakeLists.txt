@@ -1,3 +1,4 @@
+add_subdirectory(dynamic-bridge)
 add_subdirectory(dynamic-security)
 if(NOT WIN32)
 	add_subdirectory(message-timestamp)

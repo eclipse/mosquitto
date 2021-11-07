@@ -199,7 +199,7 @@ int mosquitto_main_loop(struct mosquitto__listener_sock *listensock, int listens
 		keepalive__check();
 
 #ifdef WITH_BRIDGE
-		bridge_check();
+		bridge_check_all();
 #endif
 
 		rc = mux__handle(listensock, listensock_count);
@@ -238,6 +238,7 @@ int mosquitto_main_loop(struct mosquitto__listener_sock *listensock, int listens
 			mosquitto_security_apply();
 			log__close(db.config);
 			log__init(db.config);
+			bridge__start_all();
 			flag_reload = false;
 		}
 		if(flag_tree_print){

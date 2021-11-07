@@ -439,9 +439,6 @@ static int pid__write(void)
 int main(int argc, char *argv[])
 {
 	struct mosquitto__config config;
-#ifdef WITH_BRIDGE
-	int i;
-#endif
 	int rc;
 #ifdef WIN32
 	SYSTEMTIME st;
@@ -486,7 +483,10 @@ int main(int argc, char *argv[])
 
 	config__init(&config);
 	rc = config__parse_args(&config, argc, argv);
-	if(rc != MOSQ_ERR_SUCCESS) return rc;
+	if(rc != MOSQ_ERR_SUCCESS){
+		config__cleanup(&config);
+		return rc;
+	}
 	db.config = &config;
 
 	/* Drop privileges permanently immediately after the config is loaded.
@@ -589,14 +589,6 @@ int main(int argc, char *argv[])
 	HASH_ITER(hh_sock, db.contexts_by_sock, ctxt, ctxt_tmp){
 		context__cleanup(ctxt, true);
 	}
-#ifdef WITH_BRIDGE
-	for(i=0; i<db.bridge_count; i++){
-		if(db.bridges[i]){
-			context__cleanup(db.bridges[i], true);
-		}
-	}
-	mosquitto__free(db.bridges);
-#endif
 	context__free_disused();
 
 	db__close();

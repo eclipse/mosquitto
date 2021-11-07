@@ -1,5 +1,6 @@
 DIRS= \
 		auth-by-ip \
+		dynamic-bridge \
 		dynamic-security \
 		message-timestamp \
 		payload-modification
