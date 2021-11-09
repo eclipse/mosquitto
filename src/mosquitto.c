@@ -49,6 +49,7 @@ Contributors:
 #endif
 #ifdef WITH_QUIC
 #  include </usr/local/msquic/include/msquic.h>
+#  include "quic.h"
 #endif
 
 #include "mosquitto_broker_internal.h"

@@ -28,7 +28,7 @@ Contributors:
 #    include <libwebsockets.h>
 #  endif
 #  ifdef WITH_QUIC
-#    include <libmsquic.h>
+#    include </usr/local/msquic/include/msquic.h>
 #  endif
 #else
 #  include "read_handle.h"

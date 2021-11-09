@@ -28,7 +28,7 @@ Contributors:
 #    include <libwebsockets.h>
 #  endif
 #  ifdef WITH_QUIC
-#    include <libmsquic.h>
+#    include </usr/local/msquic/include/msquic.h>
 #  endif
 #else
 #  include "read_handle.h"
@@ -192,6 +192,8 @@ int packet__queue(struct mosquitto *mosq, struct mosquitto__packet *packet)
 #ifdef WITH_BROKER
 	return packet__write(mosq);
 #else
+
+#ifndef WITH_QUIC
 	/* Write a single byte to sockpairW (connected to sockpairR) to break out
 	 * of select() if in threaded mode. */
 	if(mosq->sockpairW != INVALID_SOCKET){
@@ -202,10 +204,10 @@ int packet__queue(struct mosquitto *mosq, struct mosquitto__packet *packet)
 		send(mosq->sockpairW, &sockpair_data, 1, 0);
 #  endif
 	}
-
 	if(mosq->callback_depth == 0 && mosq->threaded == mosq_ts_none){
 		return packet__write(mosq);
 	}else{
+		fprintf(stderr, "packet__queue failed\n");
 		return MOSQ_ERR_SUCCESS;
 	}
 #endif
@@ -275,8 +277,10 @@ int packet__write(struct mosquitto *mosq)
 
 	while(packet){
 		while(packet->to_process > 0){
+			//fprintf(stderr, "bef net__write\n");
 			write_length = net__write(mosq, &(packet->payload[packet->pos]), packet->to_process);
 			if(write_length > 0){
+				fprintf(stderr, "sent %d bytes\n", write_length);
 				G_BYTES_SENT_INC(write_length);
 				packet->to_process -= (uint32_t)write_length;
 				packet->pos += (uint32_t)write_length;
@@ -305,14 +309,17 @@ int packet__write(struct mosquitto *mosq)
 
 		G_MSGS_SENT_INC(1);
 		if(((packet->command)&0xF6) == CMD_PUBLISH){
+			fprintf(stderr, "CMD_PUBLISH 0xF6\n");
 			G_PUB_MSGS_SENT_INC(1);
 #ifndef WITH_BROKER
 			callback__on_publish(mosq, packet->mid, 0, NULL);
 		}else if(((packet->command)&0xF0) == CMD_DISCONNECT){
+			fprintf(stderr, "CMD_DISCONNECT\n");
 			do_client_disconnect(mosq, MOSQ_ERR_SUCCESS, NULL);
 			return MOSQ_ERR_SUCCESS;
 #endif
 		}else if(((packet->command)&0xF0) == CMD_PUBLISH){
+			fprintf(stderr, "CMD_PUBLISH 0xF0\n");
 			G_PUB_MSGS_SENT_INC(1);
 		}
 
@@ -339,6 +346,7 @@ int packet__write(struct mosquitto *mosq)
 
 int packet__read(struct mosquitto *mosq)
 {
+	fprintf(stderr, "packet__read\n");
 	uint8_t byte;
 	ssize_t read_length;
 	int rc = 0;
@@ -380,7 +388,12 @@ int packet__read(struct mosquitto *mosq)
 	 * Finally, free the memory and reset everything to starting conditions.
 	 */
 	if(!mosq->in_packet.command){
+<<<<<<< HEAD
 		read_length = local__read(mosq, &byte, 1);
+=======
+		fprintf(stderr, "packet__read read command\n");
+		read_length = net__read(mosq, &byte, 1);
+>>>>>>> tmporally for fixing degration
 		if(read_length == 1){
 			mosq->in_packet.command = byte;
 #ifdef WITH_BROKER
@@ -556,6 +569,7 @@ int packet__read(struct mosquitto *mosq)
 		G_PUB_MSGS_RECEIVED_INC(1);
 	}
 #endif
+	fprintf(stderr, "packet__read -> handle__packet\n");
 	rc = handle__packet(mosq);
 
 	/* Free data and reset values */

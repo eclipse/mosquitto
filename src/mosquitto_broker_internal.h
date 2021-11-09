@@ -365,7 +365,7 @@ struct mosquitto__config {
 #endif
 #ifdef WITH_QUIC
 	int quic_log_level;
-	uint16_t quic_headers_size; //??
+	HQUIC Configuration;
 #endif
 #ifdef WITH_BRIDGE
 	struct mosquitto__bridge **bridges;
@@ -658,6 +658,16 @@ struct libws_mqtt_hack {
 struct libws_mqtt_data {
 	struct mosquitto *mosq;
 };
+#endif
+
+#ifdef WITH_QUIC
+// struct libmsquic_mqtt_listener {
+// 	struct mosquitto__listener *listener;
+// };
+
+// struct libmsquic_mqtt {
+// 	struct mosquitto *mosq;
+// };
 #endif
 
 #include <net_mosq.h>
@@ -984,7 +994,7 @@ int http__write(struct mosquitto *context);
 void ws__context_init(struct mosquitto *context);
 #endif
 #ifdef WITH_QUIC
-void mosq_quic_init(struct mosquitto__listener *listener, const struct mosquitto__config *conf);
+//bool mosq_quic_init(struct mosquitto__listener *listener, const struct mosquitto__config *conf);
 #endif
 void do_disconnect(struct mosquitto *context, int reason);
 

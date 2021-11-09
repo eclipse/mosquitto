@@ -1454,7 +1454,7 @@ int client_connect(struct mosquitto *mosq, struct mosq_config *cfg)
 	}else{
 		port = cfg->port;
 	}
-
+	fprintf(stderr, "to port %d\n", port);
 #ifdef WITH_SRV
 	if(cfg->use_srv){
 		rc = mosquitto_connect_srv(mosq, cfg->host, cfg->keepalive, cfg->bind_address);

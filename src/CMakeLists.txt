@@ -75,7 +75,7 @@ set (MOSQ_SRCS
 	../lib/util_mosq.c ../lib/util_topic.c ../lib/util_mosq.h
 	../lib/utf8_mosq.c
 	websockets.c
-	quic.c
+	quic.c quic.h
 	will_delay.c
 	../lib/will_mosq.c ../lib/will_mosq.h
 )

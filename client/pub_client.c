@@ -114,11 +114,14 @@ void my_disconnect_callback(struct mosquitto *mosq, void *obj, int rc, const mos
 
 int my_publish(struct mosquitto *mosq, int *mid, const char *topic, int payloadlen, void *payload, int qos, bool retain)
 {
+	fprintf(stderr, "---------------> my_publish\n");
 	ready_for_repeat = false;
 	if(cfg.protocol_version == MQTT_PROTOCOL_V5 && cfg.have_topic_alias && first_publish == false){
+		fprintf(stderr, "my_publish up\n");
 		return mosquitto_publish_v5(mosq, mid, NULL, payloadlen, payload, qos, retain, cfg.publish_props);
 	}else{
 		first_publish = false;
+		fprintf(stderr, "my_publish down\n");
 		return mosquitto_publish_v5(mosq, mid, topic, payloadlen, payload, qos, retain, cfg.publish_props);
 	}
 }
@@ -139,9 +142,11 @@ void my_connect_callback(struct mosquitto *mosq, void *obj, int result, int flag
 			case MSGMODE_CMD:
 			case MSGMODE_FILE:
 			case MSGMODE_STDIN_FILE:
+				fprintf(stderr, "my_connect_callback MSGMODE_STDIN_FILE\n");
 				rc = my_publish(mosq, &mid_sent, cfg.topic, cfg.msglen, cfg.message, cfg.qos, cfg.retain);
 				break;
 			case MSGMODE_NULL:
+				fprintf(stderr, "my_connect_callback MSGMODE_NULL\n");
 				rc = my_publish(mosq, &mid_sent, cfg.topic, 0, NULL, cfg.qos, cfg.retain);
 				break;
 			case MSGMODE_STDIN_LINE:
@@ -195,6 +200,7 @@ void my_publish_callback(struct mosquitto *mosq, void *obj, int mid, int reason_
 	UNUSED(obj);
 	UNUSED(properties);
 
+	fprintf(stderr, "my_publish_callback\n");
 	last_mid_sent = mid;
 	if(reason_code > 127){
 		err_printf(&cfg, "Warning: Publish %d failed: %s.\n", mid, mosquitto_reason_string(reason_code));
@@ -269,6 +275,7 @@ static int pub_stdin_line_loop(struct mosquitto *mosq)
 				buf_len_actual = (int )strlen(line_buf);
 				if(line_buf[buf_len_actual-1] == '\n'){
 					line_buf[buf_len_actual-1] = '\0';
+					fprintf(stderr, "pub_stdin_line_loop STATUS_CONNACK_RECVD\n");
 					rc = my_publish(mosq, &mid_sent, cfg.topic, buf_len_actual-1, line_buf, cfg.qos, cfg.retain);
 					pos = 0;
 					if(rc != MOSQ_ERR_SUCCESS && rc != MOSQ_ERR_NO_CONN){
@@ -288,6 +295,7 @@ static int pub_stdin_line_loop(struct mosquitto *mosq)
 				}
 			}
 			if(pos != 0){
+				fprintf(stderr, "pub_stdin_line_loop pos!=0\n");
 				rc = my_publish(mosq, &mid_sent, cfg.topic, buf_len_actual, line_buf, cfg.qos, cfg.retain);
 				if(rc){
 					if(cfg.qos>0) return rc;
@@ -343,18 +351,21 @@ static int pub_other_loop(struct mosquitto *mosq)
 	if(cfg.repeat_count > 1 && (cfg.repeat_delay.tv_sec == 0 || cfg.repeat_delay.tv_usec != 0)){
 		loop_delay = (int )cfg.repeat_delay.tv_usec / 2000;
 	}
-
+	fprintf(stderr, "pub_other_loop\n");
 	do{
 		rc = mosquitto_loop(mosq, loop_delay, 1);
+		fprintf(stderr, "mosquitto_loop out rc=%d ready_for_repeate=%d check_repeat_time()=%d\n", rc, ready_for_repeat, check_repeat_time());
 		if(ready_for_repeat && check_repeat_time()){
 			rc = MOSQ_ERR_SUCCESS;
 			switch(cfg.pub_mode){
 				case MSGMODE_CMD:
 				case MSGMODE_FILE:
 				case MSGMODE_STDIN_FILE:
+					fprintf(stderr, "pub_other_loop MSGMODE_STDIN_FILE\n");
 					rc = my_publish(mosq, &mid_sent, cfg.topic, cfg.msglen, cfg.message, cfg.qos, cfg.retain);
 					break;
 				case MSGMODE_NULL:
+					fprintf(stderr, "pub_other_loop MSGMODE_NULL\n");
 					rc = my_publish(mosq, &mid_sent, cfg.topic, 0, NULL, cfg.qos, cfg.retain);
 					break;
 			}
@@ -375,8 +386,10 @@ static int pub_other_loop(struct mosquitto *mosq)
 int pub_shared_loop(struct mosquitto *mosq)
 {
 	if(cfg.pub_mode == MSGMODE_STDIN_LINE){
+		fprintf(stderr, "pub_shared_loop -> pub_stdin_line_loop\n");
 		return pub_stdin_line_loop(mosq);
 	}else{
+		fprintf(stderr, "pub_shared_loop -> pub_other_loop\n");
 		return pub_other_loop(mosq);
 	}
 }
@@ -572,6 +585,7 @@ int main(int argc, char *argv[])
 		goto cleanup;
 	}
 
+	fprintf(stderr, "Bef new mosquitto\n");
 	mosq = mosquitto_new(cfg.id, cfg.clean_session, NULL);
 	if(!mosq){
 		switch(errno){
@@ -584,6 +598,7 @@ int main(int argc, char *argv[])
 		}
 		goto cleanup;
 	}
+	fprintf(stderr, "Bef callback set\n");
 	if(cfg.debug){
 		mosquitto_log_callback_set(mosq, my_log_callback);
 	}
@@ -594,8 +609,9 @@ int main(int argc, char *argv[])
 	if(client_opts_set(mosq, &cfg)){
 		goto cleanup;
 	}
-
+	fprintf(stderr, "Bef connect\n");
 	rc = client_connect(mosq, &cfg);
+	fprintf(stderr, "Af connect rc=%d\n", rc);
 	if(rc){
 		goto cleanup;
 	}

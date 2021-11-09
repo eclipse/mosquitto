@@ -37,6 +37,7 @@ Contributors:
 int handle__packet(struct mosquitto *mosq)
 {
 	assert(mosq);
+	fprintf(stderr, "handle__packet\n");
 
 	switch((mosq->in_packet.command)&0xF0){
 		case CMD_PINGREQ:
@@ -54,6 +55,7 @@ int handle__packet(struct mosquitto *mosq)
 		case CMD_PUBREL:
 			return handle__pubrel(mosq);
 		case CMD_CONNACK:
+			fprintf(stderr, "handle__packet pandle_connack\n");
 			return handle__connack(mosq);
 		case CMD_SUBACK:
 			return handle__suback(mosq);

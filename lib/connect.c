@@ -97,27 +97,28 @@ int mosquitto_connect_bind(struct mosquitto *mosq, const char *host, int port, i
 int mosquitto_connect_bind_v5(struct mosquitto *mosq, const char *host, int port, int keepalive, const char *bind_address, const mosquitto_property *properties)
 {
 	int rc;
-
+	fprintf(stderr, "1\n");
 	if(bind_address){
 		rc = mosquitto_string_option(mosq, MOSQ_OPT_BIND_ADDRESS, bind_address);
 		if(rc) return rc;
 	}
-
+	fprintf(stderr, "2\n");
 	mosquitto_property_free_all(&mosq->connect_properties);
 	if(properties){
 		rc = mosquitto_property_check_all(CMD_CONNECT, properties);
 		if(rc) return rc;
-
+		fprintf(stderr, "3\n");
 		rc = mosquitto_property_copy_all(&mosq->connect_properties, properties);
 		if(rc) return rc;
 		mosq->connect_properties->client_generated = true;
 	}
 
+	fprintf(stderr, "4\n");
 	rc = mosquitto__connect_init(mosq, host, port, keepalive);
 	if(rc) return rc;
 
 	mosquitto__set_state(mosq, mosq_cs_new);
-
+	fprintf(stderr, "5\n");
 	return mosquitto__reconnect(mosq, true);
 }
 
@@ -162,10 +163,12 @@ static int mosquitto__reconnect(struct mosquitto *mosq, bool blocking)
 	mosquitto_property local_property;
 	int rc;
 
+	fprintf(stderr, "6\n");
 	if(!mosq) return MOSQ_ERR_INVAL;
 	if(!mosq->host) return MOSQ_ERR_INVAL;
 
 	if(mosq->connect_properties){
+		fprintf(stderr, "7\n");
 		if(mosq->protocol != mosq_p_mqtt5) return MOSQ_ERR_NOT_SUPPORTED;
 
 		if(mosq->connect_properties->client_generated){
@@ -177,6 +180,7 @@ static int mosquitto__reconnect(struct mosquitto *mosq, bool blocking)
 			outgoing_properties = &local_property;
 		}
 		rc = mosquitto_property_check_all(CMD_CONNECT, outgoing_properties);
+		fprintf(stderr, "8\n");
 		if(rc) return rc;
 	}
 
@@ -198,7 +202,6 @@ static int mosquitto__reconnect(struct mosquitto *mosq, bool blocking)
     }
 
 	callback__on_pre_connect(mosq);
-
 #ifdef WITH_SOCKS
 	if(mosq->socks5_host){
 		rc = net__socket_connect(mosq, mosq->socks5_host, mosq->socks5_port, mosq->bind_address, blocking);
@@ -213,6 +216,7 @@ static int mosquitto__reconnect(struct mosquitto *mosq, bool blocking)
 	}
 
 #ifdef WITH_SOCKS
+	fprintf(stderr, "10\n");
 	if(mosq->socks5_host){
 		mosquitto__set_state(mosq, mosq_cs_socks5_new);
 		return socks5__send(mosq);

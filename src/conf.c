@@ -1581,7 +1581,7 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 				} else if(!strcmp(token, "test_quic_conf")) {
 #ifdef WITH_QUIC
 					if(reload) continue; /* Listeners not valid for reloading. */
-					if(conf__parse_string(&token, "test_quic_conf", &cur_listener->test_quic_conf, saveptr)) return MOS_ERR_INVAL;
+					if(conf__parse_string(&token, "test_quic_conf", &cur_listener->test_quic_conf, saveptr)) return MOSQ_ERR_INVAL;
 #else
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: QUIC support not available.");
 #endif
@@ -1904,8 +1904,8 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 							cr->log_type |= MOSQ_LOG_WEBSOCKETS;
 #endif
 #ifdef WITH_QUIC
-						}else if(!strcmp(token, "websockets")){
-							cr->log_type |= MOSQ_LOG_QUIC
+						}else if(!strcmp(token, "quic")){
+							cr->log_type |= MOSQ_LOG_QUIC;
 #endif
 						}else if(!strcmp(token, "all")){
 							cr->log_type = MOSQ_LOG_ALL;
@@ -2124,7 +2124,7 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 #endif
 						}else if(!strcmp(token, "quic")){
 #ifdef WITH_QUIC
-							cur_listener->protocol = mp_quic;
+							//cur_listener->protocol = mp_quic;
 #else
 							log__printf(NULL, MOSQ_LOG_ERR, "Error: Quic support not available.");
 							return MOSQ_ERR_INVAL;
