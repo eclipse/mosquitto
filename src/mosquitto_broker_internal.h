@@ -238,8 +238,6 @@ struct mosquitto__listener {
 #ifdef WITH_TLS
 	char *cafile;
 	char *capath;
-	char *certfile;
-	char *keyfile;
 	char *tls_engine;
 	char *tls_engine_kpass_sha1;
 	char *ciphers;
@@ -255,6 +253,15 @@ struct mosquitto__listener {
 	bool disable_client_cert_date_checks;
 	enum mosquitto__keyform tls_keyform;
 #endif
+#ifdef WITH_TLS || WITH_QUIC
+	char *certfile;
+	char *keyfile;
+#endif
+#ifdef WITH_QUIC
+	char *test_quic_conf;
+	HQUIC Registration;
+	HQUIC Configuration;
+#endif
 #ifdef WITH_WEBSOCKETS
 #  if WITH_WEBSOCKETS == WS_IS_LWS
 	struct lws_context *ws_context;
@@ -264,16 +271,6 @@ struct mosquitto__listener {
 #  endif
 	char **ws_origins;
 	int ws_origin_count;
-#endif
-#ifdef WITH_QUIC
-	char *test_quic_conf;
-	HQUIC Registration;
-	HQUIC Configuration;
-	//const QUIC_API_TABLE* MsQuic;
-	/*
-struct quic_context *quic_context;
-//...
-	*/
 #endif
 	struct mosquitto__security_options security_options;
 #ifdef WITH_UNIX_SOCKETS

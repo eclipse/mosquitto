@@ -419,8 +419,10 @@ struct mosquitto {
 #ifdef WITH_QUIC
 	//struct lqc *qci;
 	HQUIC Connection;
+	HQUIC Stream;
+	HQUIC Configuration;
+	HQUIC Registration;
 #endif
-
 	uint8_t max_qos;
 	uint8_t retain_available;
 	bool tcp_nodelay;
