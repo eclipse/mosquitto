@@ -1,0 +1,1 @@
+LIBRARY_PATH=/usr/local/msquic/lib: make binary WITH_UNIX_SOCKETS=no WITH_BRIDGE=no WITH_WEBSOCKETS=no WITH_THREADING=no WITH_SOCKS=no WITH_QUIC=yes && sudo make install && LD_LIBRARY_PATH=:/usr/local/msquic/lib/ mosquitto -p 8883 --config-file ./mosquitto.conf
