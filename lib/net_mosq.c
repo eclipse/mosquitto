@@ -1084,7 +1084,7 @@ ssize_t net__write(struct mosquitto *mosq, const void *buf, size_t count)
 #  endif
 #else
 	ssize_t c = quic_send(mosq, buf, count);
-	sleep(1);
+	//sleep(1);
 	return c;
 #endif
 
