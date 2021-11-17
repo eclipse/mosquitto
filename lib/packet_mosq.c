@@ -165,12 +165,9 @@ int packet__queue(struct mosquitto *mosq, struct mosquitto__packet *packet)
 	if(mosq->wsi){
 		lws_callback_on_writable(mosq->wsi);
 		return MOSQ_ERR_SUCCESS;
-	}else{
-		return packet__write(mosq);
 	}
-#  else
-	return packet__write(mosq);
 #  endif
+	return packet__write(mosq);
 #else
 
 	/* Write a single byte to sockpairW (connected to sockpairR) to break out
