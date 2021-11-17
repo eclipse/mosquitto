@@ -61,9 +61,6 @@ Contributors:
 #define MQTT3_LOG_DLT 0x20
 #define MQTT3_LOG_ALL 0xFF
 
-#define WEBSOCKET_CLIENT -2
-#define QUIC_CLIENT -3
-
 #define CMD_PORT_LIMIT 10
 #define TOPIC_HIERARCHY_LIMIT 200
 

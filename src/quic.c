@@ -113,7 +113,7 @@ listener_callback(
             log__printf(NULL, MOSQ_LOG_WARNING, "CRITICAL: allocating stream_context failed");
             return;
         }
-        connection_context->mosq = context__init(QUIC_CLIENT);
+        connection_context->mosq = context__init();
         connection_context->mosq->listener = listener_context->listener;
         MsQuic->SetCallbackHandler(Event->NEW_CONNECTION.Connection, (void*)connection_callback, connection_context);
         Status = MsQuic->ConnectionSetConfiguration(Event->NEW_CONNECTION.Connection, listener_context->listener->Configuration);

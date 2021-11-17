@@ -210,6 +210,8 @@ bool net__is_connected(struct mosquitto *mosq)
 {
 #if defined(WITH_BROKER) && defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
 	return mosq->sock != INVALID_SOCKET || mosq->wsi != NULL;
+#elif defined(WITH_QUIC)
+	return mosq->Connection != NULL;
 #else
 	return mosq->sock != INVALID_SOCKET;
 #endif
@@ -253,10 +255,10 @@ int net__socket_close(struct mosquitto *mosq)
 	}else
 #endif
 #ifdef WITH_QUIC
-	//if(mosq->qci)
+	if(mosq->Connection)
 	{
 		// close quic connection?
-	}//else
+	}else
 #endif
 	{
 		if(net__is_connected(mosq)){

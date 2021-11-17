@@ -2483,6 +2483,7 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 #  endif
 #else
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Websockets support not available.");
+#endif
 				}else if(!strcmp(token, "quic_log_level")){
 #ifdef WITH_QUIC
 					if(conf__parse_int(&token, "quic_log_level", &config->quic_log_level, saveptr)) return MOSQ_ERR_INVAL;
