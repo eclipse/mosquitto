@@ -193,7 +193,6 @@ int packet__queue(struct mosquitto *mosq, struct mosquitto__packet *packet)
 	return packet__write(mosq);
 #else
 
-#ifndef WITH_QUIC
 	/* Write a single byte to sockpairW (connected to sockpairR) to break out
 	 * of select() if in threaded mode. */
 	if(mosq->sockpairW != INVALID_SOCKET){
@@ -388,12 +387,7 @@ int packet__read(struct mosquitto *mosq)
 	 * Finally, free the memory and reset everything to starting conditions.
 	 */
 	if(!mosq->in_packet.command){
-<<<<<<< HEAD
 		read_length = local__read(mosq, &byte, 1);
-=======
-		fprintf(stderr, "packet__read read command\n");
-		read_length = net__read(mosq, &byte, 1);
->>>>>>> tmporally for fixing degration
 		if(read_length == 1){
 			mosq->in_packet.command = byte;
 #ifdef WITH_BROKER
