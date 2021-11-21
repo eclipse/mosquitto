@@ -171,6 +171,11 @@ void net__cleanup(void)
 	cleanup_ui_method();
 #endif
 
+#ifdef WITH_QUIC
+	fprintf(stderr, "net__cleanup -> quic_cleanup\n");
+	quic_cleanup();
+#endif
+
 #ifdef WITH_SRV
 	ares_library_cleanup();
 #endif
@@ -257,7 +262,8 @@ int net__socket_close(struct mosquitto *mosq)
 #ifdef WITH_QUIC
 	if(mosq->Connection)
 	{
-		// close quic connection?
+		fprintf(stderr, "net__socket_close -> quic_disconnect\n");
+		quic_disconnect(mosq);
 	}else
 #endif
 	{

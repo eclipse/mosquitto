@@ -128,7 +128,6 @@ listener_callback(
 bool run_server(struct mosquitto__listener *listener)
 {
     QUIC_STATUS Status;
-    HQUIC Listener = NULL;
     struct libmsquic_mqtt_listener *context = mosquitto__calloc(1, sizeof(struct libmsquic_mqtt_listener));
     if(!context){
         return;
@@ -157,7 +156,7 @@ bool run_server(struct mosquitto__listener *listener)
     // Create/allocate a new listener object.
     //
     fprintf(stderr, "Doing ListenerOpen\n");
-    if (QUIC_FAILED(Status = MsQuic->ListenerOpen(listener->Registration, listener_callback, context, &Listener))) {
+    if (QUIC_FAILED(Status = MsQuic->ListenerOpen(listener->Registration, listener_callback, context, &listener->Listener))) {
         fprintf(stderr, "ListenerOpen failed, 0x%x!\n", Status);
         goto Error;
     }
@@ -165,7 +164,7 @@ bool run_server(struct mosquitto__listener *listener)
     //
     // Starts listening for incoming connections.
     //
-    if (QUIC_FAILED(Status = MsQuic->ListenerStart(Listener, &Alpn, 1, &Address))) {
+    if (QUIC_FAILED(Status = MsQuic->ListenerStart(listener->Listener, &Alpn, 1, &Address))) {
         fprintf(stderr, "ListenerStart failed, 0x%x!\n", Status);
         goto Error;
     }
@@ -173,8 +172,8 @@ bool run_server(struct mosquitto__listener *listener)
 
 Error:
 
-    if (Listener != NULL) {
-        MsQuic->ListenerClose(Listener);
+    if (listener->Listener != NULL) {
+        MsQuic->ListenerClose(listener->Listener);
     }
     return 1;
 }
@@ -193,6 +192,11 @@ bool mosq_quic_listen(struct mosquitto__listener *listener, const struct mosquit
     }
 
     return 0;
+}
+
+void mosq_quic_listener_stop(struct mosquitto__listener *listener)
+{
+    MsQuic->ListenerClose(listener->Listener);
 }
 
 #endif

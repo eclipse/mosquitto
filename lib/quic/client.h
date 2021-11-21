@@ -10,5 +10,6 @@
 bool Connected; // TODO: remove
 
 int quic_connect(const char *host, uint16_t port, struct mosquitto *mosq);
+int quic_disconnect(struct mosquitto *mosq);
 
 #endif // QUIC_CLIENT_H

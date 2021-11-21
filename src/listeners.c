@@ -254,6 +254,10 @@ void listeners__stop(void)
 			unlink(db.config->listeners[i].unix_socket_path);
 		}
 #endif
+#ifdef WITH_QUIC
+		fprintf(stderr, "listeners__stop -> quic_?\n");
+		mosq_quic_listener_stop(&db.config->listeners[i]);
+#endif
 	}
 
 	for(i=0; i<g_listensock_count; i++){

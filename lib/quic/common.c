@@ -1,3 +1,5 @@
+#ifdef WITH_QUIC
+
 #include "common.h"
 #include "mqtt_protocol.h"
 // To avoid segv on server
@@ -418,3 +420,5 @@ connection_callback(
     }
     return QUIC_STATUS_SUCCESS;
 }
+
+#endif

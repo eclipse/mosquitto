@@ -146,4 +146,45 @@ Error:
 }
 
 
+void quic_cleanup()
+{
+    fprintf(stderr, "QUIC close MsQuic\n");
+    if(MsQuic){
+        fprintf(stderr, "QUIC close MsQuic\n");
+        MsQuicClose(MsQuic);
+        MsQuic = NULL;
+    }
+}
+
+int quic_close_internal(HQUIC *Registration, HQUIC *Configuration, HQUIC *Connection, HQUIC *Stream)
+{
+    sleep(1);
+    fprintf(stderr, "QUIC start disconnecting\n");
+    if (*Stream) {
+        MsQuic->StreamShutdown(*Stream, QUIC_STREAM_SHUTDOWN_FLAG_GRACEFUL, 0);
+        *Stream = NULL;
+    }
+
+    if (*Connection) {
+        MsQuic->ConnectionShutdown(*Connection, QUIC_CONNECTION_SHUTDOWN_FLAG_NONE, 0);
+        *Connection = NULL;
+    }
+
+    if (*Configuration) {
+        MsQuic->ConfigurationClose(*Configuration);
+        *Configuration = NULL;
+    }
+
+    if (*Registration) {
+        MsQuic->RegistrationClose(*Registration);
+        *Registration = NULL;
+    }
+    return 0;
+}
+
+int quic_disconnect(struct mosquitto *mosq)
+{
+    return quic_close_internal(&mosq->Registration, &mosq->Configuration, &mosq->Connection, &mosq->Stream);
+}
+
 #endif

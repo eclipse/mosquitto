@@ -258,6 +258,7 @@ struct mosquitto__listener {
 	char *test_quic_conf;
 	HQUIC Registration;
 	HQUIC Configuration;
+	HQUIC Listener;
 #endif
 #ifdef WITH_WEBSOCKETS
 #  if WITH_WEBSOCKETS == WS_IS_LWS
