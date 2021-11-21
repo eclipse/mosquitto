@@ -1,6 +1,8 @@
+#ifdef WITH_QUIC
+
 #include "config.h"
-#include </usr/local/msquic/include/msquic.h>
-#include </usr/local/msquic/include/msquic_posix.h>
+#include <msquic.h>
+#include <msquic_posix.h>
 #include "quic/common.h"
 #include "memory_mosq.h"
 
@@ -143,3 +145,5 @@ Error:
     return 1;
 }
 
+
+#endif

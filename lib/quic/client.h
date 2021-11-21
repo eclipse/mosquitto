@@ -1,8 +1,8 @@
 #ifndef QUIC_CLIENT_H
 #define QUIC_CLIENT_H
 
-#include </usr/local/msquic/include/msquic.h>
-#include </usr/local/msquic/include/msquic_posix.h>
+#include <msquic.h>
+#include <msquic_posix.h>
 #include "common.h"
 #include "mosquitto_internal.h"
 

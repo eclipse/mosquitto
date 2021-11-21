@@ -48,8 +48,7 @@ Contributors:
 #include <tcpd.h>
 #endif
 #ifdef WITH_QUIC
-#  include </usr/local/msquic/include/msquic.h>
-#  include "quic.h"
+#  include <msquic.h>
 #endif
 
 #include "mosquitto_broker_internal.h"

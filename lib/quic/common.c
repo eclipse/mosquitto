@@ -10,8 +10,8 @@
 #  include "client.h"
 #endif
 
-#include </usr/local/msquic/include/msquic.h>
-#include </usr/local/msquic/include/msquic_posix.h>
+#include <msquic.h>
+#include <msquic_posix.h>
 
 const QUIC_BUFFER Alpn = { sizeof("sample") - 1, (uint8_t*)"sample" };
 

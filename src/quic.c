@@ -2,8 +2,8 @@
 
 #include "config.h"
 
-#include </usr/local/msquic/include/msquic.h>
-#include </usr/local/msquic/include/msquic_posix.h>
+#include <msquic.h>
+#include <msquic_posix.h>
 #include "mosquitto_internal.h"
 #include "mosquitto_broker_internal.h"
 #include "mqtt_protocol.h"

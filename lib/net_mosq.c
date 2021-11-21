@@ -62,8 +62,8 @@ Contributors:
 #endif
 
 #ifdef WITH_QUIC
-#  include </usr/local/msquic/include/msquic.h>
-#  include </usr/local/msquic/include/msquic_posix.h>
+#  include <msquic.h>
+#  include <msquic_posix.h>
 #  include "quic/common.h"
 #  include "quic/client.h"
 #endif

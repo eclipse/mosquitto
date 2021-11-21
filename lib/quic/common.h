@@ -3,8 +3,8 @@
 
 #include "config.h"
 #include "../mosquitto_internal.h"
-#include </usr/local/msquic/include/msquic.h>
-#include </usr/local/msquic/include/msquic_posix.h>
+#include <msquic.h>
+#include <msquic_posix.h>
 #include <stddef.h>
 
 const QUIC_API_TABLE* MsQuic;

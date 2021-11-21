@@ -61,7 +61,7 @@ Contributors:
 #endif
 
 #ifdef WITH_QUIC
-#  include </usr/local/msquic/include/msquic.h>
+#  include <msquic.h>
 //#  include </usr/local/msquic/include/msquic_posix.h>
 #endif
 
