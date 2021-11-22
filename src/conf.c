@@ -290,7 +290,7 @@ void config__cleanup(struct mosquitto__config *config)
 				config->listeners[i].ssl_ctx = NULL;
 			}
 #endif
-#ifdef WITH_TLS || WITH_QUIC
+#if defined(WITH_TLS) || defined(WITH_QUIC)
 			mosquitto__free(config->listeners[i].certfile);
 			mosquitto__free(config->listeners[i].keyfile);
 #endif
@@ -480,7 +480,7 @@ int config__parse_args(struct mosquitto__config *config, int argc, char *argv[])
 			|| config->default_listener.use_identity_as_username
 			|| config->default_listener.use_subject_as_username
 #endif
-#ifdef WITH_TLS || WITH_QUIC
+#if defined(WITH_TLS) || defined(WITH_QUIC)
 			|| config->default_listener.certfile
 			|| config->default_listener.keyfile
 #endif
@@ -548,7 +548,7 @@ int config__parse_args(struct mosquitto__config *config, int argc, char *argv[])
 		config->listeners[config->listener_count-1].use_identity_as_username = config->default_listener.use_identity_as_username;
 		config->listeners[config->listener_count-1].use_subject_as_username = config->default_listener.use_subject_as_username;
 #endif
-#ifdef WITH_TLS || WITH_QUIC
+#if defined(WITH_TLS) || defined(WITH_QUIC)
 		config->listeners[config->listener_count-1].certfile = config->default_listener.certfile;
 		config->listeners[config->listener_count-1].keyfile = config->default_listener.keyfile;
 #endif
@@ -1407,7 +1407,7 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: TLS support not available.");
 #endif
 				}else if(!strcmp(token, "certfile")){
-#ifdef WITH_TLS || WITH_QUIC
+#if defined(WITH_TLS) || defined(WITH_QUIC)
 					if(reload) continue; /* Listeners not valid for reloading. */
 					if(cur_listener->psk_hint){
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: Cannot use both certificate and psk encryption in a single listener.");
@@ -1649,7 +1649,7 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Bridge support not available.");
 #endif
 				}else if(!strcmp(token, "keyfile")){
-#ifdef WITH_TLS || WITH_QUIC
+#if defined(WITH_TLS) || defined(WITH_QUIC)
 					if(reload) continue; /* Listeners not valid for reloading. */
 					if(conf__parse_string(&token, "keyfile", &cur_listener->keyfile, &saveptr)) return MOSQ_ERR_INVAL;
 #else

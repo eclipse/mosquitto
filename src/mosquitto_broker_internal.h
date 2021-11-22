@@ -250,7 +250,7 @@ struct mosquitto__listener {
 	bool disable_client_cert_date_checks;
 	enum mosquitto__keyform tls_keyform;
 #endif
-#ifdef WITH_TLS || WITH_QUIC
+#if defined(WITH_TLS) || defined(WITH_QUIC)
 	char *certfile;
 	char *keyfile;
 #endif
