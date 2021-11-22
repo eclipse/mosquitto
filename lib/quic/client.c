@@ -6,8 +6,6 @@
 #include "quic/common.h"
 #include "memory_mosq.h"
 
-bool Connected = false;
-
 //
 // Helper function to load a client configuration.
 //

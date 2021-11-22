@@ -52,7 +52,7 @@ quic_send(struct mosquitto *mosq, const void *buf, size_t count)
     QUIC_BUFFER* SendBuffer;
 
     // WARN: when is this freed?
-	SendBufferRaw = (uint8_t*)malloc(sizeof(QUIC_BUFFER) + count);
+    SendBufferRaw = (uint8_t*)mosquitto__malloc(sizeof(QUIC_BUFFER) + count);
     if (SendBufferRaw == NULL) {
         // TODO: log warning
         printf("SendBuffer allocation failed!\n");
