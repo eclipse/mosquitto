@@ -317,7 +317,6 @@ connection_callback(
     _Inout_ QUIC_CONNECTION_EVENT* Event
     )
 {
-    struct libmsquic_mqtt *connection_context;
     switch (Event->Type) {
     case QUIC_CONNECTION_EVENT_CONNECTED:
         //

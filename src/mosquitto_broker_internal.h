@@ -655,16 +655,6 @@ struct libws_mqtt_data {
 };
 #endif
 
-#ifdef WITH_QUIC
-// struct libmsquic_mqtt_listener {
-// 	struct mosquitto__listener *listener;
-// };
-
-// struct libmsquic_mqtt {
-// 	struct mosquitto *mosq;
-// };
-#endif
-
 #include <net_mosq.h>
 
 
