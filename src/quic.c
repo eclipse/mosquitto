@@ -98,7 +98,7 @@ listener_callback(
     fprintf(stderr, "ListenerCallback");
     struct mosquitto *mosq;
     UNREFERENCED_PARAMETER(Listener);
-    struct libmsquic_mqtt_listener *listener_context = (struct libmsquic_mqtt_listener*)Context;
+    struct mosquitto__listener *listener_context = (struct mosquitto__listener*)Context;
     QUIC_STATUS Status = QUIC_STATUS_NOT_SUPPORTED;
     switch (Event->Type) {
     case QUIC_LISTENER_EVENT_NEW_CONNECTION:
@@ -108,9 +108,9 @@ listener_callback(
         // app MUST set the callback handler before returning.
         //
         mosq = context__init();
-        mosq->listener = listener_context->listener;
+        mosq->listener = listener_context;
         MsQuic->SetCallbackHandler(Event->NEW_CONNECTION.Connection, (void*)connection_callback, mosq);
-        Status = MsQuic->ConnectionSetConfiguration(Event->NEW_CONNECTION.Connection, listener_context->listener->Configuration);
+        Status = MsQuic->ConnectionSetConfiguration(Event->NEW_CONNECTION.Connection, listener_context->Configuration);
         break;
     default:
         break;
@@ -122,12 +122,6 @@ listener_callback(
 bool run_server(struct mosquitto__listener *listener)
 {
     QUIC_STATUS Status;
-    struct libmsquic_mqtt_listener *context = mosquitto__calloc(1, sizeof(struct libmsquic_mqtt_listener));
-    if(!context){
-        return;
-    }
-    context->listener = listener;
-
     // TODO: should be passed by argument
     QUIC_ADDR Address = {0};
     QUIC_ADDR_STR AddrStr = {0};
@@ -150,7 +144,7 @@ bool run_server(struct mosquitto__listener *listener)
     // Create/allocate a new listener object.
     //
     fprintf(stderr, "Doing ListenerOpen\n");
-    if (QUIC_FAILED(Status = MsQuic->ListenerOpen(listener->Registration, listener_callback, context, &listener->Listener))) {
+    if (QUIC_FAILED(Status = MsQuic->ListenerOpen(listener->Registration, listener_callback, listener, &listener->Listener))) {
         fprintf(stderr, "ListenerOpen failed, 0x%x!\n", Status);
         goto Error;
     }

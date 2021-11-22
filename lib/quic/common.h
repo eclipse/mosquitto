@@ -10,14 +10,6 @@
 const QUIC_API_TABLE* MsQuic;
 const QUIC_BUFFER Alpn;
 
-struct libmsquic_mqtt_listener {
-	struct mosquitto__listener *listener;
-};
-
-struct libmsquic_mqtt {
-	struct mosquitto *mosq;
-};
-
 #ifndef UNREFERENCED_PARAMETER
 #define UNREFERENCED_PARAMETER(P) (void)(P)
 #endif
