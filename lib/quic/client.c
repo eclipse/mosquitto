@@ -79,20 +79,12 @@ quic_connect(const char *host, uint16_t port, struct mosquitto *mosq)
 
     QUIC_STATUS Status;
     const char* ResumptionTicketString = NULL;
-	struct libmsquic_mqtt* connection_context = mosquitto__calloc(1, sizeof(struct libmsquic_mqtt));;
-	if(!connection_context){
-		// TODO: stream cancelation?
-		log__printf(NULL, MOSQ_LOG_WARNING, "CRITICAL: allocating stream_context failed");
-		return;
-	}
-	connection_context->mosq = mosq;
 
     //
     // Allocate a new connection object.
     //
 	fprintf(stderr, "9-2-2\n");
-	//if (QUIC_FAILED(Status = MsQuic->ConnectionOpen(mosq->Registration, client_connection_callback, connection_context, &mosq->Connection))) {
-    if (QUIC_FAILED(Status = MsQuic->ConnectionOpen(mosq->Registration, connection_callback, connection_context, &mosq->Connection))) {
+    if (QUIC_FAILED(Status = MsQuic->ConnectionOpen(mosq->Registration, connection_callback, mosq, &mosq->Connection))) {
         printf("ConnectionOpen failed, 0x%x!\n", Status);
         goto Error;
     }
@@ -110,16 +102,6 @@ quic_connect(const char *host, uint16_t port, struct mosquitto *mosq)
     //     }
     // }
 
-    //
-    // Get the target / server name or IP from the command line.
-    //
-    // const char* Target = "127.0.0.1:8883";
-    // if ((Target = GetValue(argc, argv, "target")) == NULL) {
-    //     printf("Must specify '-target' argument!\n");
-    //     Status = QUIC_STATUS_INVALID_PARAMETER;
-    //     goto Error;
-    // }
-
     printf("[conn][%p] Connecting...\n", mosq->Connection);
 
     //
@@ -130,10 +112,6 @@ quic_connect(const char *host, uint16_t port, struct mosquitto *mosq)
         fprintf(stderr, "ConnectionStart failed, 0x%x!\n", Status);
         goto Error;
     }
-	while(!Connected) {
-		sleep(1);
-		//fprintf(stderr, "Connected=%d\n", Connected);
-	}
 
     return 0;
 

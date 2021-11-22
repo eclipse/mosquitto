@@ -96,7 +96,7 @@ listener_callback(
     )
 {
     fprintf(stderr, "ListenerCallback");
-    struct libmsquic_mqtt* connection_context;
+    struct mosquitto *mosq;
     UNREFERENCED_PARAMETER(Listener);
     struct libmsquic_mqtt_listener *listener_context = (struct libmsquic_mqtt_listener*)Context;
     QUIC_STATUS Status = QUIC_STATUS_NOT_SUPPORTED;
@@ -107,15 +107,9 @@ listener_callback(
         // proceed, the server must provide a configuration for QUIC to use. The
         // app MUST set the callback handler before returning.
         //
-        connection_context = mosquitto__calloc(1, sizeof(struct libmsquic_mqtt));
-        if(!connection_context){
-            // TODO: stream cancelation?
-            log__printf(NULL, MOSQ_LOG_WARNING, "CRITICAL: allocating stream_context failed");
-            return;
-        }
-        connection_context->mosq = context__init();
-        connection_context->mosq->listener = listener_context->listener;
-        MsQuic->SetCallbackHandler(Event->NEW_CONNECTION.Connection, (void*)connection_callback, connection_context);
+        mosq = context__init();
+        mosq->listener = listener_context->listener;
+        MsQuic->SetCallbackHandler(Event->NEW_CONNECTION.Connection, (void*)connection_callback, mosq);
         Status = MsQuic->ConnectionSetConfiguration(Event->NEW_CONNECTION.Connection, listener_context->listener->Configuration);
         break;
     default:

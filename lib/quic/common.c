@@ -64,6 +64,29 @@ quic_send(struct mosquitto *mosq, const void *buf, size_t count)
     SendBuffer->Length = count;
     memcpy(SendBuffer->Buffer, buf, count);
 
+    if (!mosq->Stream) {
+		//
+		// Create/allocate a new bidirectional stream. The stream is just allocated
+		// and no QUIC stream identifier is assigned until it's started.
+		//
+        if (QUIC_FAILED(Status = MsQuic->StreamOpen(mosq->Connection, QUIC_STREAM_OPEN_FLAG_NONE, stream_callback, mosq, &mosq->Stream))) {
+			printf("StreamOpen failed, 0x%x!\n", Status);
+            goto Error;
+		}
+
+        printf("[strm][%p] Starting...\n", mosq->Stream);
+
+		//
+		// Starts the bidirectional stream. By default, the peer is not notified of
+		// the stream being started until data is sent on the stream.
+		//
+        if (QUIC_FAILED(Status = MsQuic->StreamStart(mosq->Stream, QUIC_STREAM_START_FLAG_NONE))) {
+			printf("StreamStart failed, 0x%x!\n", Status);
+            MsQuic->StreamClose(mosq->Stream);
+			goto Error;
+		}
+    }
+
     printf("[strm][%p] Sending data...\n", mosq->Stream);
 
 	fprintf(stderr, "quic_send [");
@@ -235,9 +258,7 @@ stream_callback(
     _Inout_ QUIC_STREAM_EVENT* Event
     )
 {
-
-	struct libmsquic_mqtt *connection_context = (struct libmsquic_mqtt *)Context;
-	struct mosquitto *mosq = connection_context->mosq;
+    struct mosquitto *mosq = (struct mosquitto*)Context;
     int rc;
     uint8_t *buf;
     switch (Event->Type) {
@@ -324,33 +345,6 @@ connection_callback(
         printf("[conn][%p] Connected\n", Connection);
 #ifdef WITH_BROKER
         MsQuic->ConnectionSendResumptionTicket(Connection, QUIC_SEND_RESUMPTION_FLAG_NONE, 0, NULL);
-#else
-		Connected = true;
-
-        // TODO: wrap as function for starting stream
-        connection_context = (struct libmsquic_mqtt*)Context;
-		QUIC_STATUS Status;
-
-		//
-		// Create/allocate a new bidirectional stream. The stream is just allocated
-		// and no QUIC stream identifier is assigned until it's started.
-		//
-        if (QUIC_FAILED(Status = MsQuic->StreamOpen(Connection, QUIC_STREAM_OPEN_FLAG_NONE, stream_callback, connection_context, &connection_context->mosq->Stream))) {
-			printf("StreamOpen failed, 0x%x!\n", Status);
-			return;
-		}
-
-		printf("[strm][%p] Starting...\n", connection_context->mosq->Stream);
-
-		//
-		// Starts the bidirectional stream. By default, the peer is not notified of
-		// the stream being started until data is sent on the stream.
-		//
-		if (QUIC_FAILED(Status = MsQuic->StreamStart(connection_context->mosq->Stream, QUIC_STREAM_START_FLAG_NONE))) {
-			printf("StreamStart failed, 0x%x!\n", Status);
-			MsQuic->StreamClose(connection_context->mosq->Stream);
-			return;
-		}
 #endif
         break;
     case QUIC_CONNECTION_EVENT_SHUTDOWN_INITIATED_BY_TRANSPORT:
@@ -389,9 +383,9 @@ connection_callback(
         // callback handler before returning.
         //
         printf("[strm][%p] Peer started\n", Event->PEER_STREAM_STARTED.Stream);
-        struct libmsquic_mqtt *connection_context = (struct libmsquic_mqtt*)Context;
-        connection_context->mosq->Connection = Connection;
-        connection_context->mosq->Stream = Event->PEER_STREAM_STARTED.Stream;
+        struct mosquitto *connection_context = (struct mosquitto*)Context;
+        connection_context->Connection = Connection;
+        connection_context->Stream = Event->PEER_STREAM_STARTED.Stream;
         MsQuic->SetCallbackHandler(Event->PEER_STREAM_STARTED.Stream, (void*)stream_callback, connection_context);
         break;
     case QUIC_CONNECTION_EVENT_RESUMED:
