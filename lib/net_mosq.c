@@ -172,7 +172,6 @@ void net__cleanup(void)
 #endif
 
 #ifdef WITH_QUIC
-	fprintf(stderr, "net__cleanup -> quic_cleanup\n");
 	quic_cleanup();
 #endif
 
@@ -262,7 +261,6 @@ int net__socket_close(struct mosquitto *mosq)
 #ifdef WITH_QUIC
 	if(mosq->Connection)
 	{
-		fprintf(stderr, "net__socket_close -> quic_disconnect\n");
 		quic_disconnect(mosq);
 	}else
 #endif
@@ -563,12 +561,10 @@ static int net__try_connect_unix(const char *host, mosq_sock_t *sock)
 
 int net__try_connect(const char *host, uint16_t port, mosq_sock_t *sock, const char *bind_address, bool blocking)
 {
-	fprintf(stderr, "9-2-00\n");
 	if(port == 0){
 #ifdef WITH_UNIX_SOCKETS
 		return net__try_connect_unix(host, sock);
 #else
-		fprintf(stderr, "9-2-01\n");
 		return MOSQ_ERR_NOT_SUPPORTED;
 #endif
 	}else{
@@ -966,13 +962,10 @@ int net__socket_connect(struct mosquitto *mosq, const char *host, uint16_t port,
 {
 	int rc, rc2;
 
-	fprintf(stderr, "9-1\n");
 	if(!mosq || !host) return MOSQ_ERR_INVAL;
-	fprintf(stderr, "9-2 ======\n");
 	// TODO: move to net__try_connect
 #ifdef WITH_QUIC
 	rc = net__try_connect_quic(host, port, mosq, bind_address, blocking);
-	fprintf(stderr, "connect rc=%d\n", rc);
 	mosq->sock = 1; // DUMMY sock
 #else
 	rc = net__try_connect(host, port, &mosq->sock, bind_address, blocking);
@@ -990,13 +983,11 @@ int net__socket_connect(struct mosquitto *mosq, const char *host, uint16_t port,
 	if(!mosq->socks5_host)
 #endif
 	{
-		fprintf(stderr, "9-3\n");
 #ifndef WITH_QUIC // QUIC doesn't need additional TLS setting
 		rc2 = net__socket_connect_step3(mosq, host);
 		if(rc2) return rc2;
 #endif
 	}
-	fprintf(stderr, "9-4\n");
 	return rc;
 }
 

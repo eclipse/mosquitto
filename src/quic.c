@@ -50,14 +50,9 @@ load_configuration(struct mosquitto__listener *listener)
     memset(&Config, 0, sizeof(Config));
     Config.CredConfig.Flags = QUIC_CREDENTIAL_FLAG_NONE;
 
-    // TODO: use "if(listener->certfile && listener->keyfile)"
-    fprintf(stderr, "certfile: %s\n", listener->certfile);
-    fprintf(stderr, "keyfile: %s\n", listener->keyfile);
 
     Config.CertFile.CertificateFile = listener->certfile;
     Config.CertFile.PrivateKeyFile = listener->keyfile;
-    // Config.CertFile.CertificateFile = "/home/daiki/workspace/mosquitto/key_cert/server.cert";
-    // Config.CertFile.PrivateKeyFile = "/home/daiki/workspace/mosquitto/key_cert/server.key";
     Config.CredConfig.Type = QUIC_CREDENTIAL_TYPE_CERTIFICATE_FILE;
     Config.CredConfig.CertificateFile = &Config.CertFile;
 
@@ -95,7 +90,6 @@ listener_callback(
     _Inout_ QUIC_LISTENER_EVENT* Event
     )
 {
-    fprintf(stderr, "ListenerCallback");
     struct mosquitto *mosq;
     UNREFERENCED_PARAMETER(Listener);
     struct mosquitto__listener *listener_context = (struct mosquitto__listener*)Context;
@@ -130,7 +124,6 @@ bool run_server(struct mosquitto__listener *listener)
     }
     QuicAddrFromString(listener->host, listener->port, &Address);
     QuicAddrToString(&Address, &AddrStr);
-    fprintf(stderr, "trying to listen on address:[%s]\n", AddrStr.Address);
 
     //
     // Load the server configuration based on the command line.
@@ -143,7 +136,6 @@ bool run_server(struct mosquitto__listener *listener)
     //
     // Create/allocate a new listener object.
     //
-    fprintf(stderr, "Doing ListenerOpen\n");
     if (QUIC_FAILED(Status = MsQuic->ListenerOpen(listener->Registration, listener_callback, listener, &listener->Listener))) {
         fprintf(stderr, "ListenerOpen failed, 0x%x!\n", Status);
         goto Error;

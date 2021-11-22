@@ -89,11 +89,6 @@ quic_send(struct mosquitto *mosq, const void *buf, size_t count)
 
     printf("[strm][%p] Sending data...\n", mosq->Stream);
 
-	fprintf(stderr, "quic_send [");
-	for(int i = 0; i < count; i++) {
-		fprintf(stderr, "%d, ", (SendBuffer->Buffer)[i]);
-	}
-	fprintf(stderr, "]\n");
     if (QUIC_FAILED(Status = MsQuic->StreamSend(mosq->Stream, SendBuffer, 1, QUIC_SEND_FLAG_NONE, SendBuffer))) {
         printf("StreamSend failed, 0x%x!\n", Status);
         free(SendBufferRaw);
@@ -116,7 +111,6 @@ int stream_packet__read(struct mosquitto *mosq, uint8_t* buf, size_t len) {
 	uint8_t byte;
     enum mosquitto_client_state state;
 	while (pos < len) {
-		fprintf(stderr, "[strm] 1 pos=%d/%d\n", pos, len);
 		if (!mosq->in_packet.command){
             if (pos == len) {
                 // TODO: WARNING?
@@ -133,7 +127,6 @@ int stream_packet__read(struct mosquitto *mosq, uint8_t* buf, size_t len) {
 #endif
             mosq->in_packet.command = byte;
 		}
-		fprintf(stderr, "[strm] 2 pos=%d/%d\n", pos, len);
 		if (mosq->in_packet.remaining_count <= 0){
 			do{
 				if(pos == len){
@@ -150,7 +143,6 @@ int stream_packet__read(struct mosquitto *mosq, uint8_t* buf, size_t len) {
                 mosq->in_packet.remaining_length += (byte & 127) * mosq->in_packet.remaining_mult;
 				mosq->in_packet.remaining_mult *= 128;
 			}while((byte & 128) != 0);
-			fprintf(stderr, "[strm] 3 pos=%d/%d\n", pos, len);
 			mosq->in_packet.remaining_count = (int8_t)(mosq->in_packet.remaining_count * -1);
 
 #ifdef WITH_BROKER
@@ -210,13 +202,11 @@ int stream_packet__read(struct mosquitto *mosq, uint8_t* buf, size_t len) {
 				mosq->in_packet.pos += mosq->in_packet.to_process;
 				pos += mosq->in_packet.to_process;
 				mosq->in_packet.to_process = 0;
-			    fprintf(stderr, "[strm] 4 pos=%d/%d\n", pos, len);
             }else{
                 // TODO: compare with packet_mosq.c
 				memcpy(&mosq->in_packet.payload[mosq->in_packet.pos], &buf[pos], len-pos);
 				mosq->in_packet.pos += (uint32_t)(len-pos);
 				mosq->in_packet.to_process -= (uint32_t)(len-pos);
-				fprintf(stderr, "[strm] 4 pos=%d/%d early return\n", pos, len);
 				return 0;
 			}
 		}
@@ -228,7 +218,6 @@ int stream_packet__read(struct mosquitto *mosq, uint8_t* buf, size_t len) {
             G_PUB_MSGS_RECEIVED_INC(1);
         }
 #endif
-        fprintf(stderr, "[strm] handle__packet\n");
         rc = handle__packet(mosq);
 
         /* Free data and reset values */
@@ -278,16 +267,9 @@ stream_callback(
         printf("[strm][%p] Data received\n", Stream);
         for (int i = 0; i < Event->RECEIVE.BufferCount; i++) {
 			int len =Event->RECEIVE.Buffers[i].Length;
-            printf("[strm][%p] (%d/%d): %d[%s]\n", Stream, i+1, Event->RECEIVE.BufferCount, len, (char*)Event->RECEIVE.Buffers[i].Buffer);
             buf = (uint8_t*)Event->RECEIVE.Buffers[i].Buffer;
-            fprintf(stderr, "Received len=%d [", len);
-            for (int j = 0; j < len; j++) {
-                fprintf(stderr, "%d, ", buf[j]);
-            }
-			fprintf(stderr, "] after\n");
             stream_packet__read(mosq, buf, len);
         }
-        fprintf(stderr, "[strm] handle command end\n");
         break;
     case QUIC_STREAM_EVENT_PEER_SEND_SHUTDOWN:
         //
@@ -336,7 +318,6 @@ connection_callback(
     )
 {
     struct libmsquic_mqtt *connection_context;
-    fprintf(stderr, "ConnectionCallback\n");
     switch (Event->Type) {
     case QUIC_CONNECTION_EVENT_CONNECTED:
         //

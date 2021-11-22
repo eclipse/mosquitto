@@ -26,7 +26,6 @@ client_load_configuration(
     // Configures a default client configuration, optionally disabling
     // server certificate validation.
     //
-	fprintf(stderr, "9-2-1-1\n");
     QUIC_CREDENTIAL_CONFIG CredConfig;
     memset(&CredConfig, 0, sizeof(CredConfig));
     CredConfig.Type = QUIC_CREDENTIAL_TYPE_NONE;
@@ -39,8 +38,6 @@ client_load_configuration(
     // Allocate/initialize the configuration object, with the configured ALPN
     // and settings.
     //
-	fprintf(stderr, "9-2-1-2\n");
-	//HQUIC Registration;
     QUIC_STATUS Status = QUIC_STATUS_SUCCESS;
     if (QUIC_FAILED(Status = MsQuic->ConfigurationOpen(mosq->Registration, &Alpn, 1, &Settings_, sizeof(Settings_), NULL, &mosq->Configuration))) {
         fprintf(stderr, "ConfigurationOpen failed, 0x%x!\n", Status);
@@ -51,7 +48,6 @@ client_load_configuration(
     // Loads the TLS credential part of the configuration. This is required even
     // on client side, to indicate if a certificate is required or not.
     //
-	fprintf(stderr, "9-2-1-3\n");
     if (QUIC_FAILED(Status = MsQuic->ConfigurationLoadCredential(mosq->Configuration, &CredConfig))) {
         fprintf(stderr, "ConfigurationLoadCredential failed, 0x%x!\n", Status);
         return FALSE;
@@ -69,7 +65,6 @@ quic_connect(const char *host, uint16_t port, struct mosquitto *mosq)
     //
     // Load the client configuration based on the "unsecure" command line option.
     // TODO: change to secure flag
-	fprintf(stderr, "9-2-1\n");
     if (!client_load_configuration(1, mosq)) {
 		fprintf(stderr, "failed to do ClientLoadConfiguration\n");
         return 1;
@@ -81,7 +76,6 @@ quic_connect(const char *host, uint16_t port, struct mosquitto *mosq)
     //
     // Allocate a new connection object.
     //
-	fprintf(stderr, "9-2-2\n");
     if (QUIC_FAILED(Status = MsQuic->ConnectionOpen(mosq->Registration, connection_callback, mosq, &mosq->Connection))) {
         printf("ConnectionOpen failed, 0x%x!\n", Status);
         goto Error;
@@ -105,7 +99,6 @@ quic_connect(const char *host, uint16_t port, struct mosquitto *mosq)
     //
     // Start the connection to the server.
     //
-	fprintf(stderr, "9-2-3 connect to %s:%d\n", host, port);
     if (QUIC_FAILED(Status = MsQuic->ConnectionStart(mosq->Connection, mosq->Configuration, QUIC_ADDRESS_FAMILY_UNSPEC, host, port))) {
         fprintf(stderr, "ConnectionStart failed, 0x%x!\n", Status);
         goto Error;
@@ -124,9 +117,7 @@ Error:
 
 void quic_cleanup()
 {
-    fprintf(stderr, "QUIC close MsQuic\n");
     if(MsQuic){
-        fprintf(stderr, "QUIC close MsQuic\n");
         MsQuicClose(MsQuic);
         MsQuic = NULL;
     }
@@ -135,7 +126,6 @@ void quic_cleanup()
 int quic_close_internal(HQUIC *Registration, HQUIC *Configuration, HQUIC *Connection, HQUIC *Stream)
 {
     sleep(1);
-    fprintf(stderr, "QUIC start disconnecting\n");
     if (*Stream) {
         MsQuic->StreamShutdown(*Stream, QUIC_STREAM_SHUTDOWN_FLAG_GRACEFUL, 0);
         *Stream = NULL;

@@ -53,7 +53,6 @@ int mosquitto_loop(struct mosquitto *mosq, int timeout, int max_packets)
 	time_t now;
 	time_t timeout_ms;
 
-	fprintf(stderr, "mosquitto_loop\n");
 	if(!mosq || max_packets < 1) return MOSQ_ERR_INVAL;
 #ifndef WIN32
 	if(mosq->sock >= FD_SETSIZE || mosq->sockpairR >= FD_SETSIZE){
@@ -91,17 +90,14 @@ int mosquitto_loop(struct mosquitto *mosq, int timeout, int max_packets)
 			}
 		}
 #else
-		fprintf(stderr, "mosquitto_loop 102\n");
 		return MOSQ_ERR_NO_CONN;
 #endif
 	}
 	if(mosq->sockpairR != INVALID_SOCKET){
-		fprintf(stderr, "mosquitto_loop 107\n");
 		/* sockpairR is used to break out of select() before the timeout, on a
 		 * call to publish() etc. */
 		FD_SET(mosq->sockpairR, &readfds);
 		if((int)mosq->sockpairR > maxfd){
-			fprintf(stderr, "mosquitto_loop 112\n");
 			maxfd = mosq->sockpairR;
 		}
 	}
@@ -134,29 +130,24 @@ int mosquitto_loop(struct mosquitto *mosq, int timeout, int max_packets)
 #else
 	fdcount = select(maxfd+1, &readfds, &writefds, NULL, &local_timeout);
 #endif
-	fprintf(stderr, "mosquitto_loop 145 fdcount=%d\n", fdcount);
 	if(fdcount == -1){
 #ifdef WIN32
 		errno = WSAGetLastError();
 #endif
 		if(errno == EINTR){
-			fprintf(stderr, "mosquitto_loop 150\n");
 			return MOSQ_ERR_SUCCESS;
 		}else{
-			fprintf(stderr, "mosquitto_loop 153\n");
 			return MOSQ_ERR_ERRNO;
 		}
 	}else{
 		if(net__is_connected(mosq)){
 			if(FD_ISSET(mosq->sock, &readfds)){
-				fprintf(stderr, "mosquitto_loop -> mosquitto_loop_read\n");
 				rc = mosquitto_loop_read(mosq, max_packets);
 				if(rc || mosq->sock == INVALID_SOCKET){
 					return rc;
 				}
 			}
 			if(mosq->sockpairR != INVALID_SOCKET && FD_ISSET(mosq->sockpairR, &readfds)){
-				fprintf(stderr, "mosquitto_loop 167\n");
 #ifndef WIN32
 				if(read(mosq->sockpairR, &pairbuf, 1) == 0){
 				}
@@ -183,7 +174,6 @@ int mosquitto_loop(struct mosquitto *mosq, int timeout, int max_packets)
 		}
 #endif
 	}
-	fprintf(stderr, "mosquitto_loop 202\n");
 	return mosquitto_loop_misc(mosq);
 }
 
@@ -353,7 +343,6 @@ static int mosquitto__loop_rc_handle(struct mosquitto *mosq, int rc)
 
 int mosquitto_loop_read(struct mosquitto *mosq, int max_packets)
 {
-	fprintf(stderr, "mosquitto_loop_read\n");
 	int rc = MOSQ_ERR_SUCCESS;
 	int i;
 	if(max_packets < 1) return MOSQ_ERR_INVAL;
@@ -406,7 +395,6 @@ int mosquitto_loop_write(struct mosquitto *mosq, int max_packets)
 	if(max_packets < 1) return MOSQ_ERR_INVAL;
 
 	for(i=0; i<max_packets; i++){
-		fprintf(stderr, "mosquitto_loop_write %d\n", i);
 		rc = packet__write(mosq);
 		if(rc || errno == EAGAIN || errno == COMPAT_EWOULDBLOCK){
 			return mosquitto__loop_rc_handle(mosq, rc);

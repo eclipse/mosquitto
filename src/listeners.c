@@ -255,7 +255,6 @@ void listeners__stop(void)
 		}
 #endif
 #ifdef WITH_QUIC
-		fprintf(stderr, "listeners__stop -> quic_?\n");
 		mosq_quic_listener_stop(&db.config->listeners[i]);
 #endif
 	}
