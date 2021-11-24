@@ -20,6 +20,9 @@ Contributors:
 #include "memory_mosq.h"
 #include "net_mosq.h"
 #include "mosquitto_broker_internal.h"
+#ifdef WITH_QUIC
+#  include "quic.h"
+#endif
 
 static int listensock_index = 0;
 extern int g_run;

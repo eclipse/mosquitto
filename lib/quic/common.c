@@ -8,17 +8,20 @@
 #ifdef WITH_BROKER
 #  include "sys_tree.h"
 #  include "mosquitto_broker_internal.h"
+#  include "send_mosq.h"
 #else
 #  include "client.h"
 #endif
+#include "logging_mosq.h"
+#include "packet_mosq.h"
+#include "read_handle.h"
 
 #include <msquic.h>
 #include <msquic_posix.h>
 
 const QUIC_BUFFER Alpn = { sizeof("sample") - 1, (uint8_t*)"sample" };
 
-int
-quic_init(HQUIC *Registration, const struct mosquitto__config *conf)
+QUIC_STATUS quic_init(HQUIC *Registration)
 {
     // TODO: load config from conf.
     QUIC_STATUS Status = QUIC_STATUS_SUCCESS;
@@ -39,12 +42,11 @@ quic_init(HQUIC *Registration, const struct mosquitto__config *conf)
         return Status;
     }
 
-	return 0;
+	return Status;
 }
 
 
-int
-quic_send(struct mosquitto *mosq, const void *buf, size_t count)
+ssize_t quic_send(struct mosquitto *mosq, const void *buf, size_t count)
 {
 
     QUIC_STATUS Status;
@@ -61,7 +63,7 @@ quic_send(struct mosquitto *mosq, const void *buf, size_t count)
     }
     SendBuffer = (QUIC_BUFFER*)SendBufferRaw;
     SendBuffer->Buffer = SendBufferRaw + sizeof(QUIC_BUFFER);
-    SendBuffer->Length = count;
+    SendBuffer->Length = (uint16_t)count;
     memcpy(SendBuffer->Buffer, buf, count);
 
     if (!mosq->Stream) {
@@ -94,7 +96,7 @@ quic_send(struct mosquitto *mosq, const void *buf, size_t count)
         free(SendBufferRaw);
         goto Error;
     }
-	return SendBuffer->Length;
+	return (ssize_t)count;
 
 Error:
 
@@ -105,11 +107,13 @@ Error:
 }
 
 
-int stream_packet__read(struct mosquitto *mosq, uint8_t* buf, size_t len) {
+int stream_packet__read(struct mosquitto *mosq, uint8_t* buf, uint64_t len) {
 	size_t pos = 0;
 	int rc;
 	uint8_t byte;
+#ifdef WITH_BROKER
     enum mosquitto_client_state state;
+#endif
 	while (pos < len) {
 		if (!mosq->in_packet.command){
             if (pos == len) {
@@ -248,8 +252,6 @@ stream_callback(
     )
 {
     struct mosquitto *mosq = (struct mosquitto*)Context;
-    int rc;
-    uint8_t *buf;
     switch (Event->Type) {
     case QUIC_STREAM_EVENT_SEND_COMPLETE:
         //
@@ -265,10 +267,8 @@ stream_callback(
         // Data was received from the peer on the stream.
         //
         log__printf(mosq, MOSQ_LOG_QUIC, "[strm][%p] Data received", Stream);
-        for (int i = 0; i < Event->RECEIVE.BufferCount; i++) {
-			int len =Event->RECEIVE.Buffers[i].Length;
-            buf = (uint8_t*)Event->RECEIVE.Buffers[i].Buffer;
-            stream_packet__read(mosq, buf, len);
+        for (size_t i = 0; i < Event->RECEIVE.BufferCount; i++) {
+            stream_packet__read(mosq, (uint8_t*)Event->RECEIVE.Buffers[i].Buffer, (uint64_t)Event->RECEIVE.Buffers[i].Length);
         }
         break;
     case QUIC_STREAM_EVENT_PEER_SEND_SHUTDOWN:
@@ -382,7 +382,7 @@ connection_callback(
         // received from the server.
         //
         //log__printf(mosq, MOSQ_LOG_QUIC, "[conn][%p] Resumption ticket received (%u bytes):", Connection, Event->RESUMPTION_TICKET_RECEIVED.ResumptionTicketLength);
-		log__printf(mosq, MOSQ_LOG_QUIC, "[conn][%p] Skip resumption binary");
+		log__printf(mosq, MOSQ_LOG_QUIC, "[conn][%p] Skip resumption binary", Connection);
         for (uint32_t i = 0; i < Event->RESUMPTION_TICKET_RECEIVED.ResumptionTicketLength; i++) {
             //log__printf(mosq, MOSQ_LOG_QUIC, "%.2X", (uint8_t)Event->RESUMPTION_TICKET_RECEIVED.ResumptionTicket[i]);
         }

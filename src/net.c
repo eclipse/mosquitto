@@ -54,6 +54,7 @@ Contributors:
 
 #ifdef WITH_QUIC
 #  include "../lib/quic/common.h"
+#  include "quic.h"
 #endif
 
 #include "mosquitto_broker_internal.h"
@@ -725,7 +726,7 @@ static int net__bind_interface(struct mosquitto__listener *listener, struct addr
 #ifdef WITH_QUIC
 static int net__socket_listen_quic(struct mosquitto__listener *listener)
 {
-	return mosq_quic_listen(listener, NULL);
+	return mosq_quic_listen(listener);
 }
 #endif
 

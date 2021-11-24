@@ -158,11 +158,11 @@ Error:
     return 1;
 }
 
-bool mosq_quic_listen(struct mosquitto__listener *listener, const struct mosquitto__config *conf)
+bool mosq_quic_listen(struct mosquitto__listener *listener)
 {
     QUIC_STATUS Status = QUIC_STATUS_SUCCESS;
     if (!MsQuic) {
-        if(QUIC_FAILED(Status = quic_init(&listener->Registration, conf))) {
+        if(QUIC_FAILED(Status = quic_init(&listener->Registration))) {
             log__printf(NULL, MOSQ_LOG_ERR, "Error: quic_init_failed");
             return Status;
         }

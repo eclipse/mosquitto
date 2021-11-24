@@ -416,10 +416,11 @@ int net__try_connect_step2(struct mosquitto *mosq, uint16_t port, mosq_sock_t *s
 
 #ifdef WITH_QUIC
 
-static int net__try_connect_quic(const char *host, uint16_t port, struct mosquitto *mosq, const char *bind_address, bool blocking)
+// TODO: make use of bind_address and blocking
+static int net__try_connect_quic(const char *host, uint16_t port, struct mosquitto *mosq/*, const char *bind_address, bool blocking*/)
 {
 	//TODO: init should be called from initializatin phase
-	if (quic_init(&mosq->Registration, NULL)) {
+	if (quic_init(&mosq->Registration)) {
 		return 1;
 	}
 
@@ -960,12 +961,15 @@ int net__socket_connect_step3(struct mosquitto *mosq, const char *host)
 /* Create a socket and connect it to 'ip' on port 'port'.  */
 int net__socket_connect(struct mosquitto *mosq, const char *host, uint16_t port, const char *bind_address, bool blocking)
 {
-	int rc, rc2;
+	int rc;
+#ifndef WITH_QUIC
+	int rc2;
+#endif
 
 	if(!mosq || !host) return MOSQ_ERR_INVAL;
 	// TODO: move to net__try_connect
 #ifdef WITH_QUIC
-	rc = net__try_connect_quic(host, port, mosq, bind_address, blocking);
+	rc = net__try_connect_quic(host, port, mosq/*, bind_address, blocking*/);
 	mosq->sock = 1; // DUMMY sock
 #else
 	rc = net__try_connect(host, port, &mosq->sock, bind_address, blocking);
@@ -1082,9 +1086,7 @@ ssize_t net__write(struct mosquitto *mosq, const void *buf, size_t count)
 	return send(mosq->sock, buf, count, 0);
 #  endif
 #else
-	ssize_t c = quic_send(mosq, buf, count);
-	//sleep(1);
-	return c;
+	return quic_send(mosq, buf, count);
 #endif
 
 #ifdef WITH_TLS

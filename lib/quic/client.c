@@ -4,7 +4,9 @@
 #include <msquic.h>
 #include <msquic_posix.h>
 #include "quic/common.h"
+#include "quic/client.h"
 #include "memory_mosq.h"
+#include "logging_mosq.h"
 
 //
 // Helper function to load a client configuration.
@@ -71,7 +73,7 @@ quic_connect(const char *host, uint16_t port, struct mosquitto *mosq)
     }
 
     QUIC_STATUS Status;
-    const char* ResumptionTicketString = NULL;
+    //const char* ResumptionTicketString = NULL;
 
     //
     // Allocate a new connection object.
