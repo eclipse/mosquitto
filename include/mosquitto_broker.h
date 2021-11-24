@@ -47,7 +47,12 @@ typedef struct mqtt5__property mosquitto_property;
 enum mosquitto_protocol {
 	mp_mqtt,
 	mp_mqttsn,
-	mp_websockets,
+	mp_websockets
+};
+
+enum mosquitto_transport_protocol {
+	mp_tcp,
+	// mp_udp,
 	mp_quic
 };
 

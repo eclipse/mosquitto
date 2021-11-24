@@ -926,15 +926,14 @@ int net__socket_listen(struct mosquitto__listener *listener)
 	}else
 #endif
 #ifdef WITH_QUIC
-	{
-		//WARN: return earlier, need to consider sock_count increment
+	if(listener->transport_protocol == mp_quic){ // TODO: add if else
+		//WARN: return earlier, need to consider sock_count increment, and handle tls etc
 		return net__socket_listen_quic(listener);
-	}
-#else
-	{
+	}else
+#endif
+	if(listener->transport_protocol == mp_tcp){
 		rc = net__socket_listen_tcp(listener);
 	}
-#endif
 	if(rc) return rc;
 
 	/* We need to have at least one working socket. */
