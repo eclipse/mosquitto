@@ -40,7 +40,7 @@ client_load_configuration(
     //
     QUIC_STATUS Status = QUIC_STATUS_SUCCESS;
     if (QUIC_FAILED(Status = MsQuic->ConfigurationOpen(mosq->Registration, &Alpn, 1, &Settings_, sizeof(Settings_), NULL, &mosq->Configuration))) {
-        fprintf(stderr, "ConfigurationOpen failed, 0x%x!\n", Status);
+        log__printf(mosq, MOSQ_LOG_ERR, "Error: ConfigurationOpen failed, 0x%x!", Status);
         return FALSE;
     }
 
@@ -49,7 +49,7 @@ client_load_configuration(
     // on client side, to indicate if a certificate is required or not.
     //
     if (QUIC_FAILED(Status = MsQuic->ConfigurationLoadCredential(mosq->Configuration, &CredConfig))) {
-        fprintf(stderr, "ConfigurationLoadCredential failed, 0x%x!\n", Status);
+        log__printf(mosq, MOSQ_LOG_ERR, "Error: ConfigurationLoadCredential failed, 0x%x!", Status);
         return FALSE;
     }
 
@@ -66,7 +66,7 @@ quic_connect(const char *host, uint16_t port, struct mosquitto *mosq)
     // Load the client configuration based on the "unsecure" command line option.
     // TODO: change to secure flag
     if (!client_load_configuration(1, mosq)) {
-		fprintf(stderr, "failed to do ClientLoadConfiguration\n");
+		log__printf(mosq, MOSQ_LOG_ERR, "Error: client_load_configuration failed");
         return 1;
     }
 
@@ -77,7 +77,7 @@ quic_connect(const char *host, uint16_t port, struct mosquitto *mosq)
     // Allocate a new connection object.
     //
     if (QUIC_FAILED(Status = MsQuic->ConnectionOpen(mosq->Registration, connection_callback, mosq, &mosq->Connection))) {
-        printf("ConnectionOpen failed, 0x%x!\n", Status);
+        log__printf(mosq, MOSQ_LOG_ERR, "Error: ConnectionOpen failed, 0x%x!", Status);
         goto Error;
     }
 
@@ -94,13 +94,13 @@ quic_connect(const char *host, uint16_t port, struct mosquitto *mosq)
     //     }
     // }
 
-    printf("[conn][%p] Connecting...\n", mosq->Connection);
+    log__printf(mosq, MOSQ_LOG_QUIC, "[conn][%p] Connecting...", mosq->Connection);
 
     //
     // Start the connection to the server.
     //
     if (QUIC_FAILED(Status = MsQuic->ConnectionStart(mosq->Connection, mosq->Configuration, QUIC_ADDRESS_FAMILY_UNSPEC, host, port))) {
-        fprintf(stderr, "ConnectionStart failed, 0x%x!\n", Status);
+        log__printf(mosq, MOSQ_LOG_ERR, "Error: ConnectionStart failed, 0x%x!\n", Status);
         goto Error;
     }
 

@@ -26,7 +26,7 @@ quic_init(HQUIC *Registration, const struct mosquitto__config *conf)
     // Open a handle to the library and get the API function table.
     //
     if (QUIC_FAILED(Status = MsQuicOpen(&MsQuic))) {
-        printf("MsQuicOpen failed, 0x%x!\n", Status);
+        log__printf(NULL, MOSQ_LOG_ERR, "Error: MsQuicOpen failed, 0x%x!", Status);
         return Status;
     }
 
@@ -35,7 +35,7 @@ quic_init(HQUIC *Registration, const struct mosquitto__config *conf)
     //
 	const QUIC_REGISTRATION_CONFIG RegConfig = { "quicsample", QUIC_EXECUTION_PROFILE_LOW_LATENCY };
     if (QUIC_FAILED(Status = MsQuic->RegistrationOpen(&RegConfig, Registration))) {
-        printf("RegistrationOpen failed, 0x%x!\n", Status);
+        log__printf(NULL, MOSQ_LOG_ERR, "Error: RegistrationOpen failed, 0x%x!", Status);
         return Status;
     }
 
@@ -55,7 +55,7 @@ quic_send(struct mosquitto *mosq, const void *buf, size_t count)
     SendBufferRaw = (uint8_t*)mosquitto__malloc(sizeof(QUIC_BUFFER) + count);
     if (SendBufferRaw == NULL) {
         // TODO: log warning
-        printf("SendBuffer allocation failed!\n");
+        log__printf(mosq, MOSQ_LOG_ERR, "Error: SendBuffer allocation failed!");
         Status = QUIC_STATUS_OUT_OF_MEMORY;
         goto Error;
     }
@@ -70,27 +70,27 @@ quic_send(struct mosquitto *mosq, const void *buf, size_t count)
 		// and no QUIC stream identifier is assigned until it's started.
 		//
         if (QUIC_FAILED(Status = MsQuic->StreamOpen(mosq->Connection, QUIC_STREAM_OPEN_FLAG_NONE, stream_callback, mosq, &mosq->Stream))) {
-			printf("StreamOpen failed, 0x%x!\n", Status);
+			log__printf(mosq, MOSQ_LOG_ERR, "Error: StreamOpen failed, 0x%x!", Status);
             goto Error;
 		}
 
-        printf("[strm][%p] Starting...\n", mosq->Stream);
+        log__printf(mosq, MOSQ_LOG_QUIC, "[strm][%p] Starting...", mosq->Stream);
 
 		//
 		// Starts the bidirectional stream. By default, the peer is not notified of
 		// the stream being started until data is sent on the stream.
 		//
         if (QUIC_FAILED(Status = MsQuic->StreamStart(mosq->Stream, QUIC_STREAM_START_FLAG_NONE))) {
-			printf("StreamStart failed, 0x%x!\n", Status);
+			log__printf(mosq, MOSQ_LOG_ERR, "Error: StreamStart failed, 0x%x!", Status);
             MsQuic->StreamClose(mosq->Stream);
 			goto Error;
 		}
     }
 
-    printf("[strm][%p] Sending data...\n", mosq->Stream);
+    log__printf(mosq, MOSQ_LOG_QUIC, "[strm][%p] Sending data...", mosq->Stream);
 
     if (QUIC_FAILED(Status = MsQuic->StreamSend(mosq->Stream, SendBuffer, 1, QUIC_SEND_FLAG_NONE, SendBuffer))) {
-        printf("StreamSend failed, 0x%x!\n", Status);
+        log__printf(mosq, MOSQ_LOG_ERR, "Error: StreamSend failed, 0x%x!", Status);
         free(SendBufferRaw);
         goto Error;
     }
@@ -257,14 +257,14 @@ stream_callback(
         // returned back to the app.
         //
         free(Event->SEND_COMPLETE.ClientContext);
-        printf("[strm][%p] Data sent\n", Stream);
+        log__printf(mosq, MOSQ_LOG_QUIC, "[strm][%p] Data sent", Stream);
         break;
     case QUIC_STREAM_EVENT_RECEIVE:
         // TODO: use loop, then unify with websockets ?
         //
         // Data was received from the peer on the stream.
         //
-        printf("[strm][%p] Data received\n", Stream);
+        log__printf(mosq, MOSQ_LOG_QUIC, "[strm][%p] Data received", Stream);
         for (int i = 0; i < Event->RECEIVE.BufferCount; i++) {
 			int len =Event->RECEIVE.Buffers[i].Length;
             buf = (uint8_t*)Event->RECEIVE.Buffers[i].Buffer;
@@ -275,7 +275,7 @@ stream_callback(
         //
         // The peer gracefully shut down its send direction of the stream.
         //
-        printf("[strm][%p] Peer shut down\n", Stream);
+        log__printf(mosq, MOSQ_LOG_QUIC, "[strm][%p] Peer shut down", Stream);
 #ifdef WITH_BORKER
         //ServerSend(Stream);
 #endif
@@ -284,7 +284,7 @@ stream_callback(
         //
         // The peer aborted its send direction of the stream.
         //
-        printf("[strm][%p] Peer aborted\n", Stream);
+        log__printf(mosq, MOSQ_LOG_QUIC, "[strm][%p] Peer aborted", Stream);
 #ifdef WITH_BORKER
         MsQuic->StreamShutdown(Stream, QUIC_STREAM_SHUTDOWN_FLAG_ABORT, 0);
 #endif
@@ -294,7 +294,7 @@ stream_callback(
         // Both directions of the stream have been shut down and MsQuic is done
         // with the stream. It can now be safely cleaned up.
         //
-        printf("[strm][%p] All done\n", Stream);
+        log__printf(mosq, MOSQ_LOG_QUIC, "[strm][%p] All done", Stream);
         MsQuic->StreamClose(Stream);
         break;
     default:
@@ -317,12 +317,13 @@ connection_callback(
     _Inout_ QUIC_CONNECTION_EVENT* Event
     )
 {
+    struct mosquitto *mosq = (struct mosquitto*)Context;
     switch (Event->Type) {
     case QUIC_CONNECTION_EVENT_CONNECTED:
         //
         // The handshake has completed for the connection.
         //
-        printf("[conn][%p] Connected\n", Connection);
+        log__printf(mosq, MOSQ_LOG_QUIC, "[conn][%p] Connected", Connection);
 #ifdef WITH_BROKER
         MsQuic->ConnectionSendResumptionTicket(Connection, QUIC_SEND_RESUMPTION_FLAG_NONE, 0, NULL);
 #endif
@@ -334,23 +335,23 @@ connection_callback(
         // protocol, since we let idle timeout kill the connection.
         //
         if (Event->SHUTDOWN_INITIATED_BY_TRANSPORT.Status == QUIC_STATUS_CONNECTION_IDLE) {
-            printf("[conn][%p] Successfully shut down on idle.\n", Connection);
+            log__printf(mosq, MOSQ_LOG_QUIC, "[conn][%p] Successfully shut down on idle.", Connection);
         } else {
-            printf("[conn][%p] Shut down by transport, 0x%x\n", Connection, Event->SHUTDOWN_INITIATED_BY_TRANSPORT.Status);
+            log__printf(mosq, MOSQ_LOG_QUIC, "[conn][%p] Shut down by transport, 0x%x", Connection, Event->SHUTDOWN_INITIATED_BY_TRANSPORT.Status);
         }
         break;
     case QUIC_CONNECTION_EVENT_SHUTDOWN_INITIATED_BY_PEER:
         //
         // The connection was explicitly shut down by the peer.
         //
-        printf("[conn][%p] Shut down by peer, 0x%llu\n", Connection, (unsigned long long)Event->SHUTDOWN_INITIATED_BY_PEER.ErrorCode);
+        log__printf(mosq, MOSQ_LOG_QUIC, "[conn][%p] Shut down by peer, 0x%llu", Connection, (unsigned long long)Event->SHUTDOWN_INITIATED_BY_PEER.ErrorCode);
         break;
     case QUIC_CONNECTION_EVENT_SHUTDOWN_COMPLETE:
         //
         // The connection has completed the shutdown process and is ready to be
         // safely cleaned up.
         //
-        printf("[conn][%p] All done\n", Connection);
+        log__printf(mosq, MOSQ_LOG_QUIC, "[conn][%p] All done", Connection);
 #ifndef WITH_BROKER
         if (!Event->SHUTDOWN_COMPLETE.AppCloseInProgress)
 #endif
@@ -362,18 +363,17 @@ connection_callback(
         // The peer has started/created a new stream. The app MUST set the
         // callback handler before returning.
         //
-        printf("[strm][%p] Peer started\n", Event->PEER_STREAM_STARTED.Stream);
-        struct mosquitto *connection_context = (struct mosquitto*)Context;
-        connection_context->Connection = Connection;
-        connection_context->Stream = Event->PEER_STREAM_STARTED.Stream;
-        MsQuic->SetCallbackHandler(Event->PEER_STREAM_STARTED.Stream, (void*)stream_callback, connection_context);
+        log__printf(mosq, MOSQ_LOG_QUIC, "[strm][%p] Peer started", Event->PEER_STREAM_STARTED.Stream);
+        mosq->Connection = Connection;
+        mosq->Stream = Event->PEER_STREAM_STARTED.Stream;
+        MsQuic->SetCallbackHandler(Event->PEER_STREAM_STARTED.Stream, (void*)stream_callback, mosq);
         break;
     case QUIC_CONNECTION_EVENT_RESUMED:
         //
         // The connection succeeded in doing a TLS resumption of a previous
         // connection's session.
         //
-        printf("[conn][%p] Connection resumed!\n", Connection);
+        log__printf(mosq, MOSQ_LOG_QUIC, "[conn][%p] Connection resumed!", Connection);
         break;
 #else
     case QUIC_CONNECTION_EVENT_RESUMPTION_TICKET_RECEIVED:
@@ -381,12 +381,11 @@ connection_callback(
         // A resumption ticket (also called New Session Ticket or NST) was
         // received from the server.
         //
-        printf("[conn][%p] Resumption ticket received (%u bytes):\n", Connection, Event->RESUMPTION_TICKET_RECEIVED.ResumptionTicketLength);
-		printf("[conn][%p] Skip resumption binary");
+        //log__printf(mosq, MOSQ_LOG_QUIC, "[conn][%p] Resumption ticket received (%u bytes):", Connection, Event->RESUMPTION_TICKET_RECEIVED.ResumptionTicketLength);
+		log__printf(mosq, MOSQ_LOG_QUIC, "[conn][%p] Skip resumption binary");
         for (uint32_t i = 0; i < Event->RESUMPTION_TICKET_RECEIVED.ResumptionTicketLength; i++) {
-            //printf("%.2X", (uint8_t)Event->RESUMPTION_TICKET_RECEIVED.ResumptionTicket[i]);
+            //log__printf(mosq, MOSQ_LOG_QUIC, "%.2X", (uint8_t)Event->RESUMPTION_TICKET_RECEIVED.ResumptionTicket[i]);
         }
-        printf("\n");
         break;
 #endif
     default:
