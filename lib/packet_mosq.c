@@ -33,6 +33,9 @@ Contributors:
 #else
 #  include "read_handle.h"
 #endif
+#  ifdef WITH_QUIC
+#    include "quic/common.h"
+#  endif
 
 #include "callbacks.h"
 #include "memory_mosq.h"
@@ -359,6 +362,11 @@ int packet__read(struct mosquitto *mosq)
 #if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_BUILTIN
 	if(mosq->transport == mosq_t_ws){
 		local__read = net__read_ws;
+	}else
+#endif
+#ifdef WITH_QUIC
+	if(mosq->transport == mosq_t_quic){
+		local__read = stream_packet__read;
 	}else
 #endif
 	{

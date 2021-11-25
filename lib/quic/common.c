@@ -107,7 +107,7 @@ Error:
 }
 
 
-int stream_packet__read(struct mosquitto *mosq, uint8_t* buf, uint64_t len) {
+int stream_packet__read(struct mosquitto *mosq, uint8_t* buf, size_t len) {
 	size_t pos = 0;
 	int rc;
 	uint8_t byte;

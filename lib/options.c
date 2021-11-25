@@ -504,8 +504,8 @@ int mosquitto_int_option(struct mosquitto *mosq, enum mosq_opt_t option, int val
 			break;
 
 		case MOSQ_OPT_TRANSPORT:
-#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == LWS_IS_BUILTIN
-			if(value == mosq_t_tcp || value == mosq_t_ws){
+#if (defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == LWS_IS_BUILTIN) || defined(WITH_QUIC)
+			if(value == mosq_t_tcp || value == mosq_t_ws || value == mosq_t_quic){
 				mosq->transport = (uint8_t)value;
 			}else{
 				return MOSQ_ERR_INVAL;

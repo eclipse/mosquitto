@@ -25,8 +25,7 @@ typedef struct QUIC_CREDENTIAL_CONFIG_HELPER {
 
 QUIC_STATUS quic_init(HQUIC *Registration);
 ssize_t quic_send(struct mosquitto *mosq, const void *buf, size_t count);
-// TODO remove
-//int stream_packet__read(struct mosquitto *mosq, uint8_t* buf, size_t len);
+int stream_packet__read(struct mosquitto *mosq, uint8_t* buf, size_t len);
 QUIC_STATUS
 QUIC_API
 stream_callback(

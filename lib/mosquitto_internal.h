@@ -154,6 +154,7 @@ enum mosquitto__transport {
 	mosq_t_ws = 2,
 	mosq_t_sctp = 3,
 	mosq_t_http = 4, /* not valid for MQTT, just as a ws precursor */
+	mosq_t_quic = 5,
 };
 
 /* Alias direction - local <-> remote */

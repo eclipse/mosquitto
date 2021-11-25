@@ -165,6 +165,7 @@ enum mosq_opt_t {
 enum mosq_transport_t {
 	MOSQ_T_TCP = 1,
 	MOSQ_T_WEBSOCKETS = 2,
+	MOSQ_T_QUIC = 5,
 };
 
 /* MQTT specification restricts client ids to a maximum of 23 characters */

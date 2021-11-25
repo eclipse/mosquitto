@@ -969,11 +969,14 @@ int net__socket_connect(struct mosquitto *mosq, const char *host, uint16_t port,
 	if(!mosq || !host) return MOSQ_ERR_INVAL;
 	// TODO: move to net__try_connect
 #ifdef WITH_QUIC
-	rc = net__try_connect_quic(host, port, mosq/*, bind_address, blocking*/);
-	mosq->sock = 1; // DUMMY sock
-#else
-	rc = net__try_connect(host, port, &mosq->sock, bind_address, blocking);
+	if(mosq->transport == mosq_t_quic){
+		rc = net__try_connect_quic(host, port, mosq/*, bind_address, blocking*/);
+		mosq->sock = 1; // DUMMY sock
+	}else
 #endif
+	{
+		rc = net__try_connect(host, port, &mosq->sock, bind_address, blocking);
+	}
 	if(rc > 0) return rc;
 
 	if(mosq->tcp_nodelay){

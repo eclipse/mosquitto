@@ -1259,6 +1259,8 @@ int client_config_line_proc(struct mosq_config *cfg, int pub_or_sub, int argc, c
 			i++;
 		}else if(!strcmp(argv[i], "--ws")){
 			cfg->transport = MOSQ_T_WEBSOCKETS;
+		}else if(!strcmp(argv[i], "--quic")){
+			cfg->transport = MOSQ_T_QUIC;
 		}else if(!strcmp(argv[i], "-x")){
 			if(i==argc-1){
 				fprintf(stderr, "Error: -x argument given but no session expiry interval specified.\n\n");

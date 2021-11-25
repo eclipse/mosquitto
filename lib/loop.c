@@ -367,6 +367,7 @@ int mosquitto_loop_read(struct mosquitto *mosq, int max_packets)
 #endif
 		{
 			switch(mosq->transport){
+				case mosq_t_quic:
 				case mosq_t_tcp:
 				case mosq_t_ws:
 					rc = packet__read(mosq);
