@@ -64,8 +64,6 @@ Contributors:
 #ifdef WITH_QUIC
 #  include <msquic.h>
 #  include <msquic_posix.h>
-#  include "quic/common.h"
-#  include "quic/client.h"
 #endif
 
 #ifdef WITH_BROKER

@@ -11,7 +11,6 @@
 #include "packet_mosq.h"
 #include "sys_tree.h"
 #include "util_mosq.h"
-#include "../lib/quic/common.h"
 
 #include <stdlib.h>
 #include <errno.h>

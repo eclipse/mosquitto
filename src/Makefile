@@ -99,8 +99,7 @@ OBJS=	mosquitto.o \
 		util_topic.o \
 		websockets.o \
 		quic.o \
-		quic_common.o \
-		quic_client.o \
+		net_quic.o \
 		will_delay.o \
 		will_mosq.o \
 		xtreport.o
@@ -233,6 +232,9 @@ net_mosq.o : ../lib/net_mosq.c ../lib/net_mosq.h
 	${CROSS_COMPILE}${CC} $(BROKER_CPPFLAGS) $(BROKER_CFLAGS) -c $< -o $@
 
 net_ws.o : ../lib/net_ws.c ../lib/net_mosq.h
+	${CROSS_COMPILE}${CC} $(BROKER_CPPFLAGS) $(BROKER_CFLAGS) -c $< -o $@
+
+net_quic.o : ../lib/net_quic.c ../lib/net_mosq.h
 	${CROSS_COMPILE}${CC} $(BROKER_CPPFLAGS) $(BROKER_CFLAGS) -c $< -o $@
 
 password_mosq.o : password_mosq.c password_mosq.h mosquitto_broker_internal.h
@@ -398,12 +400,6 @@ websockets.o : websockets.c mosquitto_broker_internal.h
 	${CROSS_COMPILE}${CC} $(BROKER_CPPFLAGS) $(BROKER_CFLAGS) -c $< -o $@
 
 quic.o : quic.c mosquitto_broker_internal.h quic.h
-	${CROSS_COMPILE}${CC} $(BROKER_CPPFLAGS) $(BROKER_CFLAGS) -c $< -o $@
-
-quic_common.o: ../lib/quic/common.c ../lib/quic/common.h
-	${CROSS_COMPILE}${CC} $(BROKER_CPPFLAGS) $(BROKER_CFLAGS) -c $< -o $@
-
-quic_client.o: ../lib/quic/client.c ../lib/quic/client.h
 	${CROSS_COMPILE}${CC} $(BROKER_CPPFLAGS) $(BROKER_CFLAGS) -c $< -o $@
 
 will_delay.o : will_delay.c mosquitto_broker_internal.h

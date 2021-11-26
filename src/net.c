@@ -53,7 +53,6 @@ Contributors:
 #endif
 
 #ifdef WITH_QUIC
-#  include "../lib/quic/common.h"
 #  include "quic.h"
 #endif
 

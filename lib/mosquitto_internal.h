@@ -62,7 +62,23 @@ Contributors:
 
 #ifdef WITH_QUIC
 #  include <msquic.h>
-//#  include </usr/local/msquic/include/msquic_posix.h>
+#  include <msquic_posix.h>
+
+const QUIC_API_TABLE* MsQuic;
+const QUIC_BUFFER Alpn;
+
+#ifndef UNREFERENCED_PARAMETER
+#define UNREFERENCED_PARAMETER(P) (void)(P)
+#endif
+typedef struct QUIC_CREDENTIAL_CONFIG_HELPER {
+    QUIC_CREDENTIAL_CONFIG CredConfig;
+    union {
+        QUIC_CERTIFICATE_HASH CertHash;
+        QUIC_CERTIFICATE_HASH_STORE CertHashStore;
+        QUIC_CERTIFICATE_FILE CertFile;
+        QUIC_CERTIFICATE_FILE_PROTECTED CertFileProtected;
+    };
+} QUIC_CREDENTIAL_CONFIG_HELPER;
 #endif
 
 #include "mosquitto.h"

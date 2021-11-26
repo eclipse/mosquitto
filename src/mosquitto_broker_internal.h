@@ -980,7 +980,15 @@ int http__write(struct mosquitto *context);
 void ws__context_init(struct mosquitto *context);
 #endif
 #ifdef WITH_QUIC
-//bool mosq_quic_init(struct mosquitto__listener *listener, const struct mosquitto__config *conf);
+_IRQL_requires_max_(DISPATCH_LEVEL)
+_Function_class_(QUIC_CONNECTION_CALLBACK)
+QUIC_STATUS
+QUIC_API
+connection_callback(
+    _In_ HQUIC Connection,
+    _In_opt_ void* Context,
+    _Inout_ QUIC_CONNECTION_EVENT* Event
+    );
 #endif
 void do_disconnect(struct mosquitto *context, int reason);
 

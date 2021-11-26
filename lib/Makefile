@@ -28,6 +28,7 @@ MOSQ_OBJS=mosquitto.o \
 		  net_mosq_ocsp.o \
 		  net_mosq.o \
 		  net_ws.o \
+		  net_quic.o \
 		  options.o \
 		  password_mosq.o \
 		  packet_datatypes.o \
@@ -49,9 +50,7 @@ MOSQ_OBJS=mosquitto.o \
 		  utf8_mosq.o \
 		  util_mosq.o \
 		  util_topic.o \
-		  will_mosq.o \
-		  quic_common.o \
-		  quic_client.o
+		  will_mosq.o
 
 ifeq ($(WITH_WEBSOCKETS),yes)
 	MOSQ_OBJS+=picohttpparser.o
@@ -193,10 +192,7 @@ picohttpparser.o : ../deps/picohttpparser/picohttpparser.c ../deps/picohttpparse
 net_ws.o : net_ws.c net_mosq.h
 	${CROSS_COMPILE}$(CC) $(LIB_CPPFLAGS) $(LIB_CFLAGS) -c $< -o $@
 
-quic_common.o : quic/common.c quic/common.h
-	${CROSS_COMPILE}$(CC) $(LIB_CPPFLAGS) $(LIB_CFLAGS) -c $< -o $@
-
-quic_client.o : quic/client.c quic/client.h
+net_quic.o : net_quic.c net_mosq.h
 	${CROSS_COMPILE}$(CC) $(LIB_CPPFLAGS) $(LIB_CFLAGS) -c $< -o $@
 
 options.o : options.c ../include/mosquitto.h mosquitto_internal.h

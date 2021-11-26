@@ -33,9 +33,6 @@ Contributors:
 #else
 #  include "read_handle.h"
 #endif
-#  ifdef WITH_QUIC
-#    include "quic/common.h"
-#  endif
 
 #include "callbacks.h"
 #include "memory_mosq.h"
@@ -366,7 +363,7 @@ int packet__read(struct mosquitto *mosq)
 #endif
 #ifdef WITH_QUIC
 	if(mosq->transport == mosq_t_quic){
-		local__read = stream_packet__read;
+		local__read = net__read_quic;
 	}else
 #endif
 	{
