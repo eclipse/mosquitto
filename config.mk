@@ -72,7 +72,7 @@ WITH_SRV:=no
 # Set to no to disable
 WITH_WEBSOCKETS:=yes
 
-WITH_QUIC:=yes
+WITH_QUIC:=no
 
 # Use elliptic keys in broker
 WITH_EC:=yes

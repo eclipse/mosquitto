@@ -11,6 +11,9 @@ else
 LIBMOSQ:=../../lib/libmosquitto.a
 endif
 endif
+ifeq ($(WITH_QUIC),yes)
+LIBMOSQ+= -lmsquic
+endif
 
 LOCAL_CPPFLAGS:=-I../mosquitto_passwd -I../../plugins/dynamic-security -DWITH_CJSON
 ifeq ($(WITH_BUNDLED_DEPS),yes)
@@ -48,7 +51,7 @@ endif
 all : ${TARGET}
 
 mosquitto_ctrl : ${OBJS} ${LIBMOSQ}
-	${CROSS_COMPILE}${CC} ${APP_LDFLAGS} $^ -o $@ $(PASSWD_LDADD) $(LOCAL_LDFLAGS) $(LIBMOSQ) -lcjson -ldl -lmsquic
+	${CROSS_COMPILE}${CC} ${APP_LDFLAGS} $^ -o $@ $(PASSWD_LDADD) $(LOCAL_LDFLAGS) $(LIBMOSQ) -lcjson -ldl
 
 mosquitto_ctrl_example.so : ${EXAMPLE_OBJS}
 	$(CROSS_COMPILE)$(CC) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) $(PLUGIN_LDFLAGS) -shared $< -o $@

@@ -16,11 +16,7 @@
 #include <errno.h>
 #include <sys/stat.h>
 
-
-bool done_initialize = false;
-const uint16_t UdpPort = 8883;
 const uint64_t IdleTimeoutMs = 10000;
-const uint32_t SendBufferLength = 100;
 
 BOOLEAN
 load_configuration(struct mosquitto__listener *listener)
