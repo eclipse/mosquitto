@@ -438,11 +438,12 @@ struct mosquitto {
 #  endif
 #endif
 #ifdef WITH_QUIC
-	//struct lqc *qci;
 	HQUIC Connection;
 	HQUIC Stream;
 	HQUIC Configuration;
 	HQUIC Registration;
+	uint32_t ResumptionTicketLength;
+	uint8_t* ResumptionTicket;
 #endif
 	uint8_t max_qos;
 	uint8_t retain_available;

@@ -391,11 +391,9 @@ connection_callback(
         // A resumption ticket (also called New Session Ticket or NST) was
         // received from the server.
         //
-        //log__printf(mosq, MOSQ_LOG_QUIC, "[conn][%p] Resumption ticket received (%u bytes):", Connection, Event->RESUMPTION_TICKET_RECEIVED.ResumptionTicketLength);
-		log__printf(mosq, MOSQ_LOG_QUIC, "[conn][%p] Skip resumption binary", Connection);
-        for (uint32_t i = 0; i < Event->RESUMPTION_TICKET_RECEIVED.ResumptionTicketLength; i++) {
-            //log__printf(mosq, MOSQ_LOG_QUIC, "%.2X", (uint8_t)Event->RESUMPTION_TICKET_RECEIVED.ResumptionTicket[i]);
-        }
+        mosq->ResumptionTicketLength = Event->RESUMPTION_TICKET_RECEIVED.ResumptionTicketLength;
+        mosq->ResumptionTicket = (uint8_t*)mosquitto__strdup((char*)Event->RESUMPTION_TICKET_RECEIVED.ResumptionTicket);
+		fprintf(stderr, "[conn][%p] receive resumption ticket len:%d, ", Connection, mosq->ResumptionTicketLength);
         break;
 #endif
     default:
@@ -491,20 +489,13 @@ quic_connect(const char *host, uint16_t port, struct mosquitto *mosq)
         goto Error;
     }
 
-    // if ((ResumptionTicketString = GetValue(argc, argv, "ticket")) != NULL) {
-    //     //
-    //     // If provided at the command line, set the resumption ticket that can
-    //     // be used to resume a previous session.
-    //     //
-    //     uint8_t ResumptionTicket[1024];
-    //     uint16_t TicketLength = (uint16_t)DecodeHexBuffer(ResumptionTicketString, sizeof(ResumptionTicket), ResumptionTicket);
-    //     if (QUIC_FAILED(Status = MsQuic->SetParam(Connection, QUIC_PARAM_LEVEL_CONNECTION, QUIC_PARAM_CONN_RESUMPTION_TICKET, TicketLength, ResumptionTicket))) {
-    //         printf("SetParam(QUIC_PARAM_CONN_RESUMPTION_TICKET) failed, 0x%x!\n", Status);
-    //         goto Error;
-    //     }
-    // }
-
-    log__printf(mosq, MOSQ_LOG_QUIC, "[conn][%p] Connecting...", mosq->Connection);
+    // TODO: support connection resumption
+    if (false && mosq->ResumptionTicket != NULL) {
+        if (QUIC_FAILED(Status = MsQuic->SetParam(mosq->Connection, QUIC_PARAM_LEVEL_CONNECTION, QUIC_PARAM_CONN_RESUMPTION_TICKET, mosq->ResumptionTicketLength, mosq->ResumptionTicket))) {
+            log_printf(mosq, MOSQ_LOG_ERR, "SetParam(QUIC_PARAM_CONN_RESUMPTION_TICKET) failed, 0x%x!", Status);
+            goto Error;
+        }
+    }
 
     //
     // Start the connection to the server.
