@@ -62,19 +62,6 @@ ssize_t quic_send(struct mosquitto *mosq, const void *buf, size_t count)
     uint8_t* SendBufferRaw;
     QUIC_BUFFER* SendBuffer;
 
-    // WARN: when is this freed?
-    SendBufferRaw = (uint8_t*)mosquitto__malloc(sizeof(QUIC_BUFFER) + count);
-    if (SendBufferRaw == NULL) {
-        // TODO: log warning
-        log__printf(mosq, MOSQ_LOG_ERR, "Error: SendBuffer allocation failed!");
-        Status = QUIC_STATUS_OUT_OF_MEMORY;
-        goto Error;
-    }
-    SendBuffer = (QUIC_BUFFER*)SendBufferRaw;
-    SendBuffer->Buffer = SendBufferRaw + sizeof(QUIC_BUFFER);
-    SendBuffer->Length = (uint16_t)count;
-    memcpy(SendBuffer->Buffer, buf, count);
-
     if (!mosq->Stream) {
 		//
 		// Create/allocate a new bidirectional stream. The stream is just allocated
@@ -97,6 +84,17 @@ ssize_t quic_send(struct mosquitto *mosq, const void *buf, size_t count)
 			goto Error;
 		}
     }
+    SendBufferRaw = (uint8_t*)mosquitto__malloc(sizeof(QUIC_BUFFER) + count);
+    if (SendBufferRaw == NULL) {
+        // TODO: log warning
+        fprintf(stderr,  "Error: SendBuffer allocation failed!\n");
+        Status = QUIC_STATUS_OUT_OF_MEMORY;
+        goto Error;
+    }
+    SendBuffer = (QUIC_BUFFER*)SendBufferRaw;
+    SendBuffer->Buffer = SendBufferRaw + sizeof(QUIC_BUFFER);
+    SendBuffer->Length = (uint16_t)count;
+    memcpy(SendBuffer->Buffer, buf, count);
 
     log__printf(mosq, MOSQ_LOG_QUIC, "[strm][%p] Sending data...", mosq->Stream);
 
