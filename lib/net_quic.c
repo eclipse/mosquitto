@@ -393,7 +393,6 @@ connection_callback(
         //
         mosq->ResumptionTicketLength = Event->RESUMPTION_TICKET_RECEIVED.ResumptionTicketLength;
         mosq->ResumptionTicket = (uint8_t*)mosquitto__strdup((char*)Event->RESUMPTION_TICKET_RECEIVED.ResumptionTicket);
-		fprintf(stderr, "[conn][%p] receive resumption ticket len:%d, ", Connection, mosq->ResumptionTicketLength);
         break;
 #endif
     default:
@@ -492,7 +491,7 @@ quic_connect(const char *host, uint16_t port, struct mosquitto *mosq)
     // TODO: support connection resumption
     if (false && mosq->ResumptionTicket != NULL) {
         if (QUIC_FAILED(Status = MsQuic->SetParam(mosq->Connection, QUIC_PARAM_LEVEL_CONNECTION, QUIC_PARAM_CONN_RESUMPTION_TICKET, mosq->ResumptionTicketLength, mosq->ResumptionTicket))) {
-            log_printf(mosq, MOSQ_LOG_ERR, "SetParam(QUIC_PARAM_CONN_RESUMPTION_TICKET) failed, 0x%x!", Status);
+            log__printf(mosq, MOSQ_LOG_ERR, "SetParam(QUIC_PARAM_CONN_RESUMPTION_TICKET) failed, 0x%x!", Status);
             goto Error;
         }
     }
