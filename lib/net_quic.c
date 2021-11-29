@@ -19,6 +19,7 @@
 #endif
 
 const QUIC_BUFFER Alpn = { sizeof("sample") - 1, (uint8_t*)"sample" };
+const uint64_t IdleTimeoutMs = 0; // disable timeout
 
 _IRQL_requires_max_(DISPATCH_LEVEL)
 _Function_class_(QUIC_STREAM_CALLBACK)
@@ -403,55 +404,58 @@ connection_callback(
     return QUIC_STATUS_SUCCESS;
 }
 
-
 //
 // Helper function to load a client configuration.
 //
-BOOLEAN
-client_load_configuration(
-    BOOLEAN Unsecure,
-	struct mosquitto* mosq
+QUIC_STATUS
+load_configuration(
+    HQUIC *Configuration,
+    HQUIC *Registration,
+    QUIC_CREDENTIAL_CONFIG *CredConfig
     )
 {
-    QUIC_SETTINGS Settings_ = {0};
+    QUIC_SETTINGS Settings = {0};
     //
     // Configures the client's idle timeout.
     //
-    Settings_.IdleTimeoutMs = 10000;
-    Settings_.IsSet.IdleTimeoutMs = TRUE;
+    Settings.IdleTimeoutMs = IdleTimeoutMs; // disable timeout
+    Settings.IsSet.IdleTimeoutMs = TRUE;
 
+#ifdef WITH_BROKER
     //
-    // Configures a default client configuration, optionally disabling
-    // server certificate validation.
+    // Configures the server's resumption level to allow for resumption and
+    // 0-RTT.
     //
-    QUIC_CREDENTIAL_CONFIG CredConfig;
-    memset(&CredConfig, 0, sizeof(CredConfig));
-    CredConfig.Type = QUIC_CREDENTIAL_TYPE_NONE;
-    CredConfig.Flags = QUIC_CREDENTIAL_FLAG_CLIENT;
-    if (Unsecure) {
-        CredConfig.Flags |= QUIC_CREDENTIAL_FLAG_NO_CERTIFICATE_VALIDATION;
-    }
-
+    Settings.ServerResumptionLevel = QUIC_SERVER_RESUME_AND_ZERORTT;
+    Settings.IsSet.ServerResumptionLevel = TRUE;
+    //
+    // Configures the server's settings to allow for the peer to open a single
+    // bidirectional stream. By default connections are not configured to allow
+    // any streams from the peer.
+    //
+    Settings.PeerBidiStreamCount = 1;
+    Settings.IsSet.PeerBidiStreamCount = TRUE;
+#endif
     //
     // Allocate/initialize the configuration object, with the configured ALPN
     // and settings.
     //
     QUIC_STATUS Status = QUIC_STATUS_SUCCESS;
-    if (QUIC_FAILED(Status = MsQuic->ConfigurationOpen(mosq->Registration, &Alpn, 1, &Settings_, sizeof(Settings_), NULL, &mosq->Configuration))) {
-        log__printf(mosq, MOSQ_LOG_ERR, "Error: ConfigurationOpen failed, 0x%x!", Status);
-        return FALSE;
+    if (QUIC_FAILED(Status = MsQuic->ConfigurationOpen(*Registration, &Alpn, 1, &Settings, sizeof(Settings), NULL, Configuration))) {
+        fprintf(stderr,  "Error: ConfigurationOpen failed, 0x%x!\n", Status);
+        return Status;
     }
 
     //
     // Loads the TLS credential part of the configuration. This is required even
     // on client side, to indicate if a certificate is required or not.
     //
-    if (QUIC_FAILED(Status = MsQuic->ConfigurationLoadCredential(mosq->Configuration, &CredConfig))) {
-        log__printf(mosq, MOSQ_LOG_ERR, "Error: ConfigurationLoadCredential failed, 0x%x!", Status);
-        return FALSE;
+    if (QUIC_FAILED(Status = MsQuic->ConfigurationLoadCredential(*Configuration, CredConfig))) {
+        fprintf(stderr,  "Error: ConfigurationLoadCredential failed, 0x%x!\n", Status);
+        return Status;
     }
 
-    return TRUE;
+    return Status;
 }
 
 //
@@ -460,16 +464,24 @@ client_load_configuration(
 int
 quic_connect(const char *host, uint16_t port, struct mosquitto *mosq)
 {
+    QUIC_STATUS Status;
     //
     // Load the client configuration based on the "unsecure" command line option.
     // TODO: change to secure flag
-    if (!client_load_configuration(1, mosq)) {
-		log__printf(mosq, MOSQ_LOG_ERR, "Error: client_load_configuration failed");
+    //
+    // Configures a default client configuration
+    //
+    QUIC_CREDENTIAL_CONFIG CredConfig;
+    memset(&CredConfig, 0, sizeof(CredConfig));
+    CredConfig.Type = QUIC_CREDENTIAL_TYPE_NONE;
+    CredConfig.Flags = QUIC_CREDENTIAL_FLAG_CLIENT;
+    if (1) { // optionally disabling server certificate validation.
+        CredConfig.Flags |= QUIC_CREDENTIAL_FLAG_NO_CERTIFICATE_VALIDATION;
+    }
+    if(QUIC_FAILED(Status = load_configuration(&mosq->Configuration, &mosq->Registration, &CredConfig))){
+		fprintf(stderr,  "Error: load_configuration failed 0x%x!\n", Status);
         return 1;
     }
-
-    QUIC_STATUS Status;
-    //const char* ResumptionTicketString = NULL;
 
     //
     // Allocate a new connection object.

@@ -980,15 +980,15 @@ int http__write(struct mosquitto *context);
 void ws__context_init(struct mosquitto *context);
 #endif
 #ifdef WITH_QUIC
-_IRQL_requires_max_(DISPATCH_LEVEL)
-_Function_class_(QUIC_CONNECTION_CALLBACK)
-QUIC_STATUS
-QUIC_API
-connection_callback(
-    _In_ HQUIC Connection,
-    _In_opt_ void* Context,
-    _Inout_ QUIC_CONNECTION_EVENT* Event
-    );
+typedef struct QUIC_CREDENTIAL_CONFIG_HELPER {
+    QUIC_CREDENTIAL_CONFIG CredConfig;
+    union {
+        QUIC_CERTIFICATE_HASH CertHash;
+        QUIC_CERTIFICATE_HASH_STORE CertHashStore;
+        QUIC_CERTIFICATE_FILE CertFile;
+        QUIC_CERTIFICATE_FILE_PROTECTED CertFileProtected;
+    };
+} QUIC_CREDENTIAL_CONFIG_HELPER;
 #endif
 void do_disconnect(struct mosquitto *context, int reason);
 

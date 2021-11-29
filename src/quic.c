@@ -16,61 +16,6 @@
 #include <errno.h>
 #include <sys/stat.h>
 
-const uint64_t IdleTimeoutMs = 10000;
-
-BOOLEAN
-load_configuration(struct mosquitto__listener *listener)
-{
-    QUIC_SETTINGS Settings = {0};
-    //
-    // Configures the server's idle timeout.
-    //
-    Settings.IdleTimeoutMs = IdleTimeoutMs;
-    Settings.IsSet.IdleTimeoutMs = TRUE;
-    //
-    // Configures the server's resumption level to allow for resumption and
-    // 0-RTT.
-    //
-    Settings.ServerResumptionLevel = QUIC_SERVER_RESUME_AND_ZERORTT;
-    Settings.IsSet.ServerResumptionLevel = TRUE;
-    //
-    // Configures the server's settings to allow for the peer to open a single
-    // bidirectional stream. By default connections are not configured to allow
-    // any streams from the peer.
-    //
-    Settings.PeerBidiStreamCount = 1;
-    Settings.IsSet.PeerBidiStreamCount = TRUE;
-
-    QUIC_CREDENTIAL_CONFIG_HELPER Config;
-    memset(&Config, 0, sizeof(Config));
-    Config.CredConfig.Flags = QUIC_CREDENTIAL_FLAG_NONE;
-
-
-    Config.CertFile.CertificateFile = listener->certfile;
-    Config.CertFile.PrivateKeyFile = listener->keyfile;
-    Config.CredConfig.Type = QUIC_CREDENTIAL_TYPE_CERTIFICATE_FILE;
-    Config.CredConfig.CertificateFile = &Config.CertFile;
-
-    //
-    // Allocate/initialize the configuration object, with the configured ALPN
-    // and settings.
-    //
-    QUIC_STATUS Status = QUIC_STATUS_SUCCESS;
-    if (QUIC_FAILED(Status = MsQuic->ConfigurationOpen(listener->Registration, &Alpn, 1, &Settings, sizeof(Settings), NULL, &listener->Configuration))) {
-        log__printf(NULL, MOSQ_LOG_ERR, "Error: ConfigurationOpen failed, 0x%x!", Status);
-        return FALSE;
-    }
-
-    //
-    // Loads the TLS credential part of the configuration.
-    //
-    if (QUIC_FAILED(Status = MsQuic->ConfigurationLoadCredential(listener->Configuration, &Config.CredConfig))) {
-        log__printf(NULL, MOSQ_LOG_ERR, "Error: ConfigurationLoadCredential failed, 0x%x!", Status);
-        return FALSE;
-    }
-
-    return TRUE;
-}
 
 //
 // The server's callback for listener events from MsQuic.
@@ -108,7 +53,7 @@ listener_callback(
 }
 
 
-bool run_server(struct mosquitto__listener *listener)
+QUIC_STATUS run_server(struct mosquitto__listener *listener)
 {
     QUIC_STATUS Status;
     // TODO: should be passed by argument
@@ -123,8 +68,15 @@ bool run_server(struct mosquitto__listener *listener)
     //
     // Load the server configuration based on the command line.
     //
-    if (!load_configuration(listener)) {
-        log__printf(NULL, MOSQ_LOG_ERR, "Error: load_configuration failed");
+    QUIC_CREDENTIAL_CONFIG_HELPER Config;
+    memset(&Config, 0, sizeof(Config));
+    Config.CredConfig.Flags = QUIC_CREDENTIAL_FLAG_NONE;
+    Config.CertFile.CertificateFile = listener->certfile;
+    Config.CertFile.PrivateKeyFile = listener->keyfile;
+    Config.CredConfig.Type = QUIC_CREDENTIAL_TYPE_CERTIFICATE_FILE;
+    Config.CredConfig.CertificateFile = &Config.CertFile;
+    if (QUIC_FAILED(Status = load_configuration(&listener->Configuration, &listener->Registration, &Config.CredConfig))){
+        log__printf(NULL, MOSQ_LOG_ERR, "Error: load_configuration failed 0x%x!", Status);
         return 1;
     }
 
@@ -143,28 +95,29 @@ bool run_server(struct mosquitto__listener *listener)
         log__printf(NULL, MOSQ_LOG_ERR, "Error: ListenerStart failed, 0x%x!", Status);
         goto Error;
     }
-    return 0;
+    return Status;
 
 Error:
 
     if (listener->Listener != NULL) {
         MsQuic->ListenerClose(listener->Listener);
     }
-    return 1;
+    return Status;
 }
 
 bool mosq_quic_listen(struct mosquitto__listener *listener)
 {
     QUIC_STATUS Status = QUIC_STATUS_SUCCESS;
     if (!MsQuic) {
-        if(QUIC_FAILED(Status = quic_init(&listener->Registration))) {
-            log__printf(NULL, MOSQ_LOG_ERR, "Error: quic_init_failed");
-            return Status;
+        if(QUIC_FAILED(Status = quic_init(&listener->Registration))){
+            log__printf(NULL, MOSQ_LOG_ERR, "Error: quic_init_failed 0x%x!", Status);
+            return 1;
         }
     }
 
-    if(run_server(listener)) {
-        log__printf(NULL, MOSQ_LOG_ERR, "Error: run_server failed");
+    if(QUIC_FAILED(Status = run_server(listener))){
+        log__printf(NULL, MOSQ_LOG_ERR, "Error: run_server failed 0x%x!", Status);
+        return 1;
     }
     log__printf(NULL, MOSQ_LOG_QUIC, "Start server on port %d", listener->port);
 

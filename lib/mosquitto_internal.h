@@ -66,19 +66,23 @@ Contributors:
 
 const QUIC_API_TABLE* MsQuic;
 const QUIC_BUFFER Alpn;
+const uint64_t IdleTimeoutMs;
 
 #ifndef UNREFERENCED_PARAMETER
 #define UNREFERENCED_PARAMETER(P) (void)(P)
 #endif
-typedef struct QUIC_CREDENTIAL_CONFIG_HELPER {
-    QUIC_CREDENTIAL_CONFIG CredConfig;
-    union {
-        QUIC_CERTIFICATE_HASH CertHash;
-        QUIC_CERTIFICATE_HASH_STORE CertHashStore;
-        QUIC_CERTIFICATE_FILE CertFile;
-        QUIC_CERTIFICATE_FILE_PROTECTED CertFileProtected;
-    };
-} QUIC_CREDENTIAL_CONFIG_HELPER;
+
+_IRQL_requires_max_(DISPATCH_LEVEL)
+_Function_class_(QUIC_CONNECTION_CALLBACK)
+QUIC_STATUS
+QUIC_API
+connection_callback(
+    _In_ HQUIC Connection,
+    _In_opt_ void* Context,
+    _Inout_ QUIC_CONNECTION_EVENT* Event
+    );
+QUIC_STATUS load_configuration(HQUIC *Configuration, HQUIC *Registration, QUIC_CREDENTIAL_CONFIG *CredConfig);
+QUIC_STATUS quic_init(HQUIC *Registration);
 #endif
 
 #include "mosquitto.h"
