@@ -32,7 +32,6 @@ void listener__set_defaults(struct mosquitto__listener *listener)
 	listener->security_options.allow_anonymous = -1;
 	listener->security_options.allow_zero_length_clientid = true;
 	listener->protocol = mp_mqtt;
-	listener->transport_protocol = mp_tcp;
 	listener->max_connections = -1;
 	listener->max_qos = 2;
 	listener->max_topic_alias = 10;
@@ -208,7 +207,7 @@ int listeners__start(void)
 	}
 
 	for(i=0; i<db.config->listener_count; i++){
-		if(db.config->listeners[i].protocol == mp_mqtt){
+		if(db.config->listeners[i].protocol == mp_mqtt || db.config->listeners[i].protocol == mp_quic){
 			if(listeners__start_single_mqtt(&db.config->listeners[i])){
 				db__close();
 				if(db.config->pid_file){

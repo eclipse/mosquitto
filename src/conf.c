@@ -2106,29 +2106,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 						return MOSQ_ERR_INVAL;
 					}
 					config->default_listener.port = (uint16_t)tmp_int;
-				}else if(!strcmp(token, "transport_protocol")){
-					token = strtok_r(NULL, " ", &saveptr);
-					if(token){
-						if(!strcmp(token, "tcp")){
-							cur_listener->transport_protocol = mp_tcp;
-						/*
-						}else if(!strcmp(token, "udp")){
-
-						*/
-						}else if(!strcmp(token, "quic")){
-#ifdef WITH_QUIC
-							cur_listener->transport_protocol = mp_quic;
-#else
-							log__printf(NULL, MOSQ_LOG_ERR, "Error: Quic support not available.");
-							return MOSQ_ERR_INVAL;
-#endif
-						}else{
-							log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid transport protocol value (%s).", token);
-							return MOSQ_ERR_INVAL;
-						}
-					}else{
-						log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty protocol value in configuration.");
-					}
 				}else if(!strcmp(token, "protocol")){
 					token = strtok_r(NULL, " ", &saveptr);
 					if(token){
@@ -2143,6 +2120,13 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 							cur_listener->protocol = mp_websockets;
 #else
 							log__printf(NULL, MOSQ_LOG_ERR, "Error: Websockets support not available.");
+							return MOSQ_ERR_INVAL;
+#endif
+						}else if(!strcmp(token, "quic")){
+#ifdef WITH_QUIC
+							cur_listener->protocol = mp_quic;
+#else
+							log__printf(NULL, MOSQ_LOG_ERR, "Error: QUIC support not available.");
 							return MOSQ_ERR_INVAL;
 #endif
 						}else{
