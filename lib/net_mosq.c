@@ -959,10 +959,7 @@ int net__socket_connect_step3(struct mosquitto *mosq, const char *host)
 /* Create a socket and connect it to 'ip' on port 'port'.  */
 int net__socket_connect(struct mosquitto *mosq, const char *host, uint16_t port, const char *bind_address, bool blocking)
 {
-	int rc;
-#ifndef WITH_QUIC
-	int rc2;
-#endif
+	int rc, rc2;
 
 	if(!mosq || !host) return MOSQ_ERR_INVAL;
 	// TODO: move to net__try_connect
@@ -984,14 +981,17 @@ int net__socket_connect(struct mosquitto *mosq, const char *host, uint16_t port,
 		}
 	}
 
+	if(1
 #if defined(WITH_SOCKS) && !defined(WITH_BROKER)
-	if(!mosq->socks5_host)
+	&& !mosq->socks5_host
 #endif
+#ifdef WITH_QUIC
+	&& mosq->transport != mosq_t_quic
+#endif
+	)
 	{
-#ifndef WITH_QUIC // QUIC doesn't need additional TLS setting
 		rc2 = net__socket_connect_step3(mosq, host);
 		if(rc2) return rc2;
-#endif
 	}
 
 	return rc;
