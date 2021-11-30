@@ -255,7 +255,6 @@ struct mosquitto__listener {
 	char *keyfile;
 #endif
 #ifdef WITH_QUIC
-	char *test_quic_conf;
 	HQUIC Registration;
 	HQUIC Configuration;
 	HQUIC Listener;
@@ -360,7 +359,6 @@ struct mosquitto__config {
 #endif
 #ifdef WITH_QUIC
 	int quic_log_level;
-	HQUIC Configuration;
 #endif
 #ifdef WITH_BRIDGE
 	struct mosquitto__bridge **bridges;

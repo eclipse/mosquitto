@@ -1578,13 +1578,6 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 #else
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Websockets support not available.");
 #endif
-				} else if(!strcmp(token, "test_quic_conf")) {
-#ifdef WITH_QUIC
-					if(reload) continue; /* Listeners not valid for reloading. */
-					if(conf__parse_string(&token, "test_quic_conf", &cur_listener->test_quic_conf, saveptr)) return MOSQ_ERR_INVAL;
-#else
-					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: QUIC support not available.");
-#endif
 				}else if(!strcmp(token, "idle_timeout")){
 #ifdef WITH_BRIDGE
 					if(!cur_bridge){
