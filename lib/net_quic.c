@@ -118,7 +118,7 @@ Error:
 ssize_t net__read_quic(struct mosquitto *mosq, void* buff, size_t len) {
     uint8_t* buf = (uint8_t*)buff;
 	size_t pos = 0;
-	int rc;
+	int rc = 0;
 	uint8_t byte;
 #ifdef WITH_BROKER
     enum mosquitto_client_state state;

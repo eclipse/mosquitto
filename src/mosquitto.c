@@ -47,9 +47,6 @@ Contributors:
 #ifdef WITH_WRAP
 #include <tcpd.h>
 #endif
-#ifdef WITH_QUIC
-#  include <msquic.h>
-#endif
 
 #include "mosquitto_broker_internal.h"
 #include "memory_mosq.h"

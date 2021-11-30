@@ -45,9 +45,6 @@ Contributors:
 #if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
 #  include <libwebsockets.h>
 #endif
-#ifdef WITH_QUIC
-#  include <msquic.h>
-#endif
 
 #include "mosquitto_broker_internal.h"
 #include "memory_mosq.h"

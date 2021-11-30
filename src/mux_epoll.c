@@ -27,9 +27,6 @@ Contributors:
 #include <errno.h>
 #include <signal.h>
 #include <sys/epoll.h>
-#ifdef WITH_QUIC
-#  include <msquic.h>
-#endif
 
 #include "mosquitto_broker_internal.h"
 #include "mux.h"
