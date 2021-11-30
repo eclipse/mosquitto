@@ -655,6 +655,18 @@ struct libws_mqtt_data {
 };
 #endif
 
+#ifdef WITH_QUIC
+typedef struct QUIC_CREDENTIAL_CONFIG_HELPER {
+    QUIC_CREDENTIAL_CONFIG CredConfig;
+    union {
+        QUIC_CERTIFICATE_HASH CertHash;
+        QUIC_CERTIFICATE_HASH_STORE CertHashStore;
+        QUIC_CERTIFICATE_FILE CertFile;
+        QUIC_CERTIFICATE_FILE_PROTECTED CertFileProtected;
+    };
+} QUIC_CREDENTIAL_CONFIG_HELPER;
+#endif
+
 #include <net_mosq.h>
 
 
@@ -856,11 +868,13 @@ void listeners__reload_all_certificates(void);
 #if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
 void listeners__add_websockets(struct lws_context *ws_context, mosq_sock_t fd);
 #endif
+#ifdef WITH_QUIC
+bool mosq_quic_listen(struct mosquitto__listener *listener);
+void mosq_quic_listener_stop(struct mosquitto__listener *listener);
+#endif
 int listeners__start(void);
 void listeners__stop(void);
-#ifdef WITH_QUIC
-void listeners__add_quic();
-#endif
+
 /* ============================================================
  * Plugin related functions
  * ============================================================ */
@@ -977,17 +991,6 @@ int http__context_cleanup(struct mosquitto *context);
 int http__read(struct mosquitto *context);
 int http__write(struct mosquitto *context);
 void ws__context_init(struct mosquitto *context);
-#endif
-#ifdef WITH_QUIC
-typedef struct QUIC_CREDENTIAL_CONFIG_HELPER {
-    QUIC_CREDENTIAL_CONFIG CredConfig;
-    union {
-        QUIC_CERTIFICATE_HASH CertHash;
-        QUIC_CERTIFICATE_HASH_STORE CertHashStore;
-        QUIC_CERTIFICATE_FILE CertFile;
-        QUIC_CERTIFICATE_FILE_PROTECTED CertFileProtected;
-    };
-} QUIC_CREDENTIAL_CONFIG_HELPER;
 #endif
 void do_disconnect(struct mosquitto *context, int reason);
 
