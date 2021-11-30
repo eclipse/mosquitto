@@ -993,6 +993,7 @@ int net__socket_connect(struct mosquitto *mosq, const char *host, uint16_t port,
 		if(rc2) return rc2;
 #endif
 	}
+
 	return rc;
 }
 

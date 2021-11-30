@@ -56,6 +56,7 @@ int handle__connack(struct mosquitto *mosq)
 			/* This could occur because we are connecting to a v3.x broker and
 			 * it has replied with "unacceptable protocol version", but with a
 			 * v3 CONNACK. */
+
 			log__printf(mosq, MOSQ_LOG_DEBUG, "Client %s received CONNACK (%d)", mosq->id, reason_code);
 			callback__on_connect(mosq, MQTT_RC_UNSUPPORTED_PROTOCOL_VERSION, connect_flags, NULL);
 			return rc;

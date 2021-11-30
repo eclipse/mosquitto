@@ -52,10 +52,6 @@ Contributors:
 #include <net/netbyte.h>
 #endif
 
-#ifdef WITH_QUIC
-#  include "quic.h"
-#endif
-
 #include "mosquitto_broker_internal.h"
 #include "mqtt_protocol.h"
 #include "memory_mosq.h"
@@ -76,7 +72,6 @@ static mosq_sock_t spare_sock = INVALID_SOCKET;
 
 void net__broker_init(void)
 {
-	// TODO: need change for quic?
 	spare_sock = socket(AF_INET, SOCK_STREAM, 0);
 	net__init();
 #ifdef WITH_TLS
@@ -926,7 +921,7 @@ int net__socket_listen(struct mosquitto__listener *listener)
 	}else
 #endif
 #ifdef WITH_QUIC
-	if(listener->protocol == mp_quic){ // TODO: add if else
+	if(listener->protocol == mp_quic){
 		//WARN: return earlier, need to consider sock_count increment, and handle tls etc
 		return net__socket_listen_quic(listener);
 	}else

@@ -37,7 +37,6 @@ Contributors:
 #if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
 #  include <libwebsockets.h>
 #endif
-//?
 
 static char nibble_to_hex(uint8_t value)
 {

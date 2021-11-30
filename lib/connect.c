@@ -97,14 +97,17 @@ int mosquitto_connect_bind(struct mosquitto *mosq, const char *host, int port, i
 int mosquitto_connect_bind_v5(struct mosquitto *mosq, const char *host, int port, int keepalive, const char *bind_address, const mosquitto_property *properties)
 {
 	int rc;
+
 	if(bind_address){
 		rc = mosquitto_string_option(mosq, MOSQ_OPT_BIND_ADDRESS, bind_address);
 		if(rc) return rc;
 	}
+
 	mosquitto_property_free_all(&mosq->connect_properties);
 	if(properties){
 		rc = mosquitto_property_check_all(CMD_CONNECT, properties);
 		if(rc) return rc;
+
 		rc = mosquitto_property_copy_all(&mosq->connect_properties, properties);
 		if(rc) return rc;
 		mosq->connect_properties->client_generated = true;
@@ -114,6 +117,7 @@ int mosquitto_connect_bind_v5(struct mosquitto *mosq, const char *host, int port
 	if(rc) return rc;
 
 	mosquitto__set_state(mosq, mosq_cs_new);
+
 	return mosquitto__reconnect(mosq, true);
 }
 
@@ -194,6 +198,7 @@ static int mosquitto__reconnect(struct mosquitto *mosq, bool blocking)
     }
 
 	callback__on_pre_connect(mosq);
+
 #ifdef WITH_SOCKS
 	if(mosq->socks5_host){
 		rc = net__socket_connect(mosq, mosq->socks5_host, mosq->socks5_port, mosq->bind_address, blocking);

@@ -287,7 +287,7 @@ stream_callback(
         //
         log__printf(mosq, MOSQ_LOG_QUIC, "[strm][%p] Peer shut down", Stream);
 #ifdef WITH_BORKER
-        //ServerSend(Stream);
+        // TODO: response?
 #endif
         break;
     case QUIC_STREAM_EVENT_PEER_SEND_ABORTED:

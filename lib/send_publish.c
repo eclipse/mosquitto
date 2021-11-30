@@ -54,7 +54,6 @@ int send__publish(struct mosquitto *mosq, uint16_t mid, const char *topic, uint3
 #endif
 	assert(mosq);
 
-
 	if(!net__is_connected(mosq)) return MOSQ_ERR_NO_CONN;
 
 	if(!mosq->retain_available){

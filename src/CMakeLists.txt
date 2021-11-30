@@ -75,7 +75,6 @@ set (MOSQ_SRCS
 	../lib/util_mosq.c ../lib/util_topic.c ../lib/util_mosq.h
 	../lib/utf8_mosq.c
 	websockets.c
-	quic.c quic.h
 	will_delay.c
 	../lib/will_mosq.c ../lib/will_mosq.h
 )
@@ -139,13 +138,6 @@ if(WITH_WEBSOCKETS)
 	find_package(libwebsockets)
 	add_definitions("-DWITH_WEBSOCKETS")
 endif()
-
-option(WITH_QUIC "Include quic support?" OFF)
-option(STATIC_QUIC "Use the static libmsquic library?" OFF)
-if (WITH_QUIC)
-	find_package(libmsquic)
-	add_definitions("-DWITH_QUIC")
-endif(WITH_QUIC)
 
 option(WITH_CONTROL "Include $CONTROL topic support?" ON)
 if(WITH_CONTROL)
@@ -211,18 +203,6 @@ if(WITH_WEBSOCKETS)
 		set (MOSQ_LIBS ${MOSQ_LIBS} websockets)
 	endif()
 endif()
-
-if (WITH_QUIC)
-	if (STATIC_QUIC)
-		set (MOSQ_LIBS ${MOSQ_LIBS} quic_static)
-		if (WIN32)
-			set (MOSQ_LIBS ${MOSQ_LIBS} iphlpapi) #?
-			link_directories(${mosquitto_SOURCE_DIR})
-		endif (WIN32)
-	else (STATIC_QUIC)
-		set (MOSQ_LIBS ${MOSQ_LIBS} msquic)
-	endif (STATIC_QUIC)
-endif (WITH_QUIC)
 
 add_executable(mosquitto ${MOSQ_SRCS})
 

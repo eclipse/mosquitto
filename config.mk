@@ -72,6 +72,9 @@ WITH_SRV:=no
 # Set to no to disable
 WITH_WEBSOCKETS:=yes
 
+# Build with quic support on the broker.
+# Set to yes to build with libmsquic
+# Set to no to disable
 WITH_QUIC:=no
 
 # Use elliptic keys in broker

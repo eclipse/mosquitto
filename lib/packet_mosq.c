@@ -203,6 +203,7 @@ int packet__queue(struct mosquitto *mosq, struct mosquitto__packet *packet)
 		send(mosq->sockpairW, &sockpair_data, 1, 0);
 #  endif
 	}
+
 	if(mosq->callback_depth == 0 && mosq->threaded == mosq_ts_none){
 		return packet__write(mosq);
 	}else{
