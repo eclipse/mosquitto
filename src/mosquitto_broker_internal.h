@@ -232,9 +232,11 @@ struct mosquitto__listener {
 	uint8_t max_qos;
 	uint16_t max_topic_alias;
 	uint16_t max_topic_alias_broker;
-#ifdef WITH_TLS
+#if defined(WITH_TLS) || defined(WITH_QUIC)
 	char *cafile;
 	char *capath;
+	char *certfile;
+	char *keyfile;
 	char *tls_engine;
 	char *tls_engine_kpass_sha1;
 	char *ciphers;
@@ -249,10 +251,6 @@ struct mosquitto__listener {
 	bool require_certificate;
 	bool disable_client_cert_date_checks;
 	enum mosquitto__keyform tls_keyform;
-#endif
-#if defined(WITH_TLS) || defined(WITH_QUIC)
-	char *certfile;
-	char *keyfile;
 #endif
 #ifdef WITH_QUIC
 	HQUIC Registration;
@@ -457,7 +455,7 @@ struct mosquitto__unpwd{
 	char *username;
 	char *password;
 	char *clientid;
-#ifdef WITH_TLS
+#if defined(WITH_TLS) || defined(WITH_QUIC)
 	unsigned char *salt;
 	unsigned int password_len;
 	unsigned int salt_len;
@@ -533,7 +531,7 @@ struct mosquitto_db{
 	int kqueuefd;
 #endif
 	struct mosquitto__message_v5 *plugin_msgs;
-#ifdef WITH_TLS
+#if defined(WITH_TLS) || defined(WITH_QUIC)
 	char *tls_keylog; /* This can't be in the config struct because it is used
 						 before the config is allocated. Config probably
 						 shouldn't be separately allocated. */
@@ -624,7 +622,7 @@ struct mosquitto__bridge{
 	bool outgoing_retain;
 	enum mosquitto_bridge_reload_type reload_type;
 	uint16_t max_topic_alias;
-#ifdef WITH_TLS
+#if defined(WITH_TLS) || defined(WITH_QUIC)
 	bool tls_insecure;
 	bool tls_ocsp_required;
 	char *tls_cafile;
