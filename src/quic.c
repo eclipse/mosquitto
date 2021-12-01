@@ -43,6 +43,29 @@ listener_callback(
         //
         mosq = context__init();
         mosq->listener = listener_context;
+        mosq->transport = mosq_t_quic;
+        mosq->listener->client_count++;
+        // TODO: ipv6
+        struct sockaddr_in *sin = (struct sockaddr_in*)Event->NEW_CONNECTION.Info->RemoteAddress;
+        mosq->address = (char*)mosquitto__malloc(INET_ADDRSTRLEN);
+        if(!mosq->address){
+            break;
+        }
+        inet_ntop(AF_INET, &sin->sin_addr, mosq->address, INET_ADDRSTRLEN);
+        mosq->remote_port = htons(sin->sin_port);
+
+        if((mosq->listener->max_connections > 0 && mosq->listener->client_count > mosq->listener->max_connections)
+                || (db.config->global_max_connections > 0 && HASH_CNT(hh_sock, db.contexts_by_sock) > (unsigned int)db.config->global_max_connections)){
+            if(db.config->connection_messages == true){
+                log__printf(NULL, MOSQ_LOG_NOTICE, "Client connection from %s denied: max_connections exceeded.", mosq->address);
+            }
+            mosquitto__free(mosq->address);
+            mosquitto__free(mosq);
+            mosq = NULL;
+            break;
+        }
+        mux__new(mosq);
+
         MsQuic->SetCallbackHandler(Event->NEW_CONNECTION.Connection, (void*)connection_callback, mosq);
         Status = MsQuic->ConnectionSetConfiguration(Event->NEW_CONNECTION.Connection, listener_context->Configuration);
         break;

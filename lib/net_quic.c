@@ -334,6 +334,7 @@ connection_callback(
         // The handshake has completed for the connection.
         //
         log__printf(mosq, MOSQ_LOG_QUIC, "[conn][%p] Connected", Connection);
+        mosq->Connection = Connection;
 #ifdef WITH_BROKER
         MsQuic->ConnectionSendResumptionTicket(Connection, QUIC_SEND_RESUMPTION_FLAG_NONE, 0, NULL);
 #endif
