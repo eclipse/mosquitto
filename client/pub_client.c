@@ -401,7 +401,7 @@ static void print_usage(void)
 	mosquitto_lib_version(&major, &minor, &revision);
 	printf("mosquitto_pub is a simple mqtt client that will publish a message on a single topic and exit.\n");
 	printf("mosquitto_pub version %s running on libmosquitto %d.%d.%d.\n\n", VERSION, major, minor, revision);
-	printf("Usage: mosquitto_pub {[-h host] [--unix path] [-p port] [-u username] [-P password] [--ws] -t topic | -L URL}\n");
+	printf("Usage: mosquitto_pub {[-h host] [--unix path] [-p port] [-u username] [-P password] [--ws] [--quic] -t topic | -L URL}\n");
 	printf("                     {-f file | -l | -n | -m message}\n");
 	printf("                     [-c] [-k keepalive] [-q qos] [-r] [--repeat N] [--repeat-delay time] [-x session-expiry]\n");
 #ifdef WITH_SRV
@@ -487,6 +487,7 @@ static void print_usage(void)
 	printf(" --will-retain : if given, make the client Will retained.\n");
 	printf(" --will-topic : the topic on which to publish the client Will.\n");
 	printf(" --ws : connect using WebSockets.\n");
+	printf(" --quic : connect using quic.\n");
 #ifdef WITH_TLS
 	printf(" --cafile : path to a file containing trusted CA certificates to enable encrypted\n");
 	printf("            communication.\n");

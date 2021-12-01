@@ -213,7 +213,7 @@ static void print_usage(void)
 	mosquitto_lib_version(&major, &minor, &revision);
 	printf("mosquitto_sub is a simple mqtt client that will subscribe to a set of topics and print all messages it receives.\n");
 	printf("mosquitto_sub version %s running on libmosquitto %d.%d.%d.\n\n", VERSION, major, minor, revision);
-	printf("Usage: mosquitto_sub {[-h host] [--unix path] [-p port] [-u username] [-P password] {-t topic | -U topic} [--ws] | -L URL [-t topic]}\n");
+	printf("Usage: mosquitto_sub {[-h host] [--unix path] [-p port] [-u username] [-P password] {-t topic | -U topic} [--ws] [--quic] | -L URL [-t topic]}\n");
 	printf("                     [-c] [-k keepalive] [-q qos] [-x session-expiry-interval]\n");
 	printf("                     [-C msg_count] [-E] [-R] [--retained-only] [--remove-retained] [-T filter_out]\n");
 	printf("                     [-F format]\n");
@@ -314,6 +314,7 @@ static void print_usage(void)
 	printf(" --will-retain : if given, make the client Will retained.\n");
 	printf(" --will-topic : the topic on which to publish the client Will.\n");
 	printf(" --ws : connect using WebSockets.\n");
+	printf(" --quic : connect using quic.\n");
 #ifdef WITH_TLS
 	printf(" --cafile : path to a file containing trusted CA certificates to enable encrypted\n");
 	printf("            certificate based communication.\n");
