@@ -212,9 +212,12 @@ bool net__is_connected(struct mosquitto *mosq)
 {
 #if defined(WITH_BROKER) && defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
 	return mosq->sock != INVALID_SOCKET || mosq->wsi != NULL;
-#elif defined(WITH_QUIC)
-	return mosq->Connection != NULL;
 #else
+#  if defined(WITH_QUIC)
+	if (mosq->transport == mosq_t_quic){
+		return mosq->Connection != NULL;
+	}else
+#  endif
 	return mosq->sock != INVALID_SOCKET;
 #endif
 }
