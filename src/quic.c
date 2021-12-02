@@ -64,7 +64,6 @@ listener_callback(
             mosq = NULL;
             break;
         }
-        mux__new(mosq);
 
         MsQuic->SetCallbackHandler(Event->NEW_CONNECTION.Connection, (void*)connection_callback, mosq);
         Status = MsQuic->ConnectionSetConfiguration(Event->NEW_CONNECTION.Connection, listener_context->Configuration);
