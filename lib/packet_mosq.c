@@ -189,7 +189,6 @@ int packet__queue(struct mosquitto *mosq, struct mosquitto__packet *packet)
 #ifdef WITH_BROKER
 	return packet__write(mosq);
 #else
-
 	/* Write a single byte to sockpairW (connected to sockpairR) to break out
 	 * of select() if in threaded mode. */
 	if(mosq->sockpairW != INVALID_SOCKET){

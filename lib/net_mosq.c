@@ -1084,15 +1084,11 @@ ssize_t net__write(struct mosquitto *mosq, const void *buf, size_t count)
 		/* Call normal write/send */
 #endif
 
-#ifdef WITH_BROKER
-	if(mosq->listener->protocol == mp_quic){
-#else
-	if(mosq->transport == mosq_t_quic){
-#endif
 #ifdef WITH_QUIC
+	if(mosq->transport == mosq_t_quic){
 		return quic_send(mosq, buf, count);
-#endif
 	}
+#endif
 #ifndef WIN32
 	return write(mosq->sock, buf, count);
 #else
