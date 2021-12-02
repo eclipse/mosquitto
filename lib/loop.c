@@ -160,8 +160,8 @@ int mosquitto_loop(struct mosquitto *mosq, int timeout, int max_packets)
 				if(net__is_connected(mosq)){
 					FD_SET(mosq->sock, &writefds);
 				}
-
 			}
+
 			if(net__is_connected(mosq) && FD_ISSET(mosq->sock, &writefds)){
 				rc = mosquitto_loop_write(mosq, max_packets);
 				if(rc || !net__is_connected(mosq)){

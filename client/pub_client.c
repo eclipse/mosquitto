@@ -197,6 +197,7 @@ void my_publish_callback(struct mosquitto *mosq, void *obj, int mid, int reason_
 
 	last_mid_sent = mid;
 	if(reason_code > 127){
+		err_printf(&cfg, "Warning: Publish %d failed: %s.\n", mid, mosquitto_reason_string(reason_code));
 		mosquitto_property_read_string(properties, MQTT_PROP_REASON_STRING, &reason_string, false);
 		if(reason_string){
 			err_printf(&cfg, "%s\n", reason_string);
@@ -342,6 +343,7 @@ static int pub_other_loop(struct mosquitto *mosq)
 	if(cfg.repeat_count > 1 && (cfg.repeat_delay.tv_sec == 0 || cfg.repeat_delay.tv_usec != 0)){
 		loop_delay = (int )cfg.repeat_delay.tv_usec / 2000;
 	}
+
 	do{
 		rc = mosquitto_loop(mosq, loop_delay, 1);
 		if(ready_for_repeat && check_repeat_time()){
@@ -593,6 +595,7 @@ int main(int argc, char *argv[])
 	if(client_opts_set(mosq, &cfg)){
 		goto cleanup;
 	}
+
 	rc = client_connect(mosq, &cfg);
 	if(rc){
 		goto cleanup;

@@ -38,6 +38,7 @@ Contributors:
 #  include <libwebsockets.h>
 #endif
 
+
 static char nibble_to_hex(uint8_t value)
 {
 	if(value < 0x0A){
