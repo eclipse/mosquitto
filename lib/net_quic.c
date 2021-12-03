@@ -18,7 +18,7 @@
 #  include "send_mosq.h"
 #endif
 
-const QUIC_BUFFER Alpn = { sizeof("sample") - 1, (uint8_t*)"sample" };
+const QUIC_BUFFER Alpn = { sizeof("mqtt") - 1, (uint8_t*)"mqtt" };
 const uint64_t IdleTimeoutMs = 0; // disable timeout
 
 _IRQL_requires_max_(DISPATCH_LEVEL)
