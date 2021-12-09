@@ -1209,6 +1209,7 @@ int mosquitto_property_copy_all(mosquitto_property **dest, const mosquitto_prope
 		plast = pnew;
 
 		pnew->identifier = src->identifier;
+		pnew->client_generated = src->client_generated;
 		switch(pnew->identifier){
 			case MQTT_PROP_PAYLOAD_FORMAT_INDICATOR:
 			case MQTT_PROP_REQUEST_PROBLEM_INFORMATION:
