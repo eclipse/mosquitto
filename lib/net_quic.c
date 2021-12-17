@@ -46,7 +46,7 @@ QUIC_STATUS quic_init(HQUIC *Registration)
     //
     // Create a registration for the app's connections.
     //
-	const QUIC_REGISTRATION_CONFIG RegConfig = { "quicsample", QUIC_EXECUTION_PROFILE_LOW_LATENCY };
+	const QUIC_REGISTRATION_CONFIG RegConfig = { "mosquitto", QUIC_EXECUTION_PROFILE_LOW_LATENCY };
     if (QUIC_FAILED(Status = MsQuic->RegistrationOpen(&RegConfig, Registration))) {
         log__printf(NULL, MOSQ_LOG_ERR, "Error: RegistrationOpen failed, 0x%x!", Status);
         return Status;
