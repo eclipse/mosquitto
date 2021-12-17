@@ -86,7 +86,6 @@ listener_callback(
 QUIC_STATUS run_server(struct mosquitto__listener *listener)
 {
     QUIC_STATUS Status;
-    // TODO: should be passed by argument
     QUIC_ADDR Address = {0};
     QUIC_ADDR_STR AddrStr = {0};
     if (!listener->host){

@@ -417,10 +417,8 @@ int net__try_connect_step2(struct mosquitto *mosq, uint16_t port, mosq_sock_t *s
 
 #ifdef WITH_QUIC
 
-// TODO: make use of bind_address and blocking
-static int net__try_connect_quic(const char *host, uint16_t port, struct mosquitto *mosq/*, const char *bind_address, bool blocking*/)
+static int net__try_connect_quic(struct mosquitto *mosq, const char *host, uint16_t port)
 {
-	//TODO: init should be called from initializatin phase
 	if (quic_init(&mosq->Registration)) {
 		return 1;
 	}
@@ -965,10 +963,9 @@ int net__socket_connect(struct mosquitto *mosq, const char *host, uint16_t port,
 	int rc, rc2;
 
 	if(!mosq || !host) return MOSQ_ERR_INVAL;
-	// TODO: move to net__try_connect
 #ifdef WITH_QUIC
 	if(mosq->transport == mosq_t_quic){
-		rc = net__try_connect_quic(host, port, mosq/*, bind_address, blocking*/);
+		rc = net__try_connect_quic(mosq, host, port);
 		mosq->sock = 1; // DUMMY sock
 	}else
 #endif

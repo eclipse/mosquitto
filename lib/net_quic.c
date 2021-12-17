@@ -33,7 +33,6 @@ stream_callback(
 
 QUIC_STATUS quic_init(HQUIC *Registration)
 {
-    // TODO: load config from conf.
     QUIC_STATUS Status = QUIC_STATUS_SUCCESS;
     //
     // Open a handle to the library and get the API function table.
@@ -87,7 +86,6 @@ ssize_t quic_send(struct mosquitto *mosq, const void *buf, size_t count)
     }
     SendBufferRaw = (uint8_t*)mosquitto__malloc(sizeof(QUIC_BUFFER) + count);
     if (SendBufferRaw == NULL) {
-        // TODO: log warning
         fprintf(stderr,  "Error: SendBuffer allocation failed!\n");
         Status = QUIC_STATUS_OUT_OF_MEMORY;
         goto Error;
@@ -126,10 +124,8 @@ ssize_t net__read_quic(struct mosquitto *mosq, void* buff, size_t len) {
 	while (pos < len) {
 		if (!mosq->in_packet.command){
             if (pos == len) {
-                // TODO: WARNING?
                 return 0;
             }
-            // TODO: check boundary ?
 			byte = buf[pos++];
 #ifdef WITH_BROKER
 			G_BYTES_RECEIVED_INC(1);
@@ -207,7 +203,6 @@ ssize_t net__read_quic(struct mosquitto *mosq, void* buff, size_t len) {
                 mosq->in_packet.to_process = mosq->in_packet.remaining_length;
 			}
 		}
-        //TODO: while?
 		if(mosq->in_packet.to_process > 0) {
 			if((uint32_t)len - pos >= mosq->in_packet.to_process){
                 //G_BYTES_RECEIVED_INC(read_length);
@@ -216,7 +211,6 @@ ssize_t net__read_quic(struct mosquitto *mosq, void* buff, size_t len) {
 				pos += mosq->in_packet.to_process;
 				mosq->in_packet.to_process = 0;
             }else{
-                // TODO: compare with packet_mosq.c
 				memcpy(&mosq->in_packet.payload[mosq->in_packet.pos], &buf[pos], len-pos);
 				mosq->in_packet.pos += (uint32_t)(len-pos);
 				mosq->in_packet.to_process -= (uint32_t)(len-pos);
@@ -271,13 +265,11 @@ stream_callback(
         log__printf(mosq, MOSQ_LOG_QUIC, "[strm][%p] Data sent", Stream);
         break;
     case QUIC_STREAM_EVENT_RECEIVE:
-        // TODO: use loop, then unify with websockets ?
         //
         // Data was received from the peer on the stream.
         //
         log__printf(mosq, MOSQ_LOG_QUIC, "[strm][%p] Data received", Stream);
         for (size_t i = 0; i < Event->RECEIVE.BufferCount; i++) {
-            //stream_packet__read(mosq, (uint8_t*)Event->RECEIVE.Buffers[i].Buffer, (uint64_t)Event->RECEIVE.Buffers[i].Length);
             net__read_quic(mosq, (void*)Event->RECEIVE.Buffers[i].Buffer, (uint64_t)Event->RECEIVE.Buffers[i].Length);
         }
         break;
@@ -286,9 +278,6 @@ stream_callback(
         // The peer gracefully shut down its send direction of the stream.
         //
         log__printf(mosq, MOSQ_LOG_QUIC, "[strm][%p] Peer shut down", Stream);
-#ifdef WITH_BORKER
-        // TODO: response?
-#endif
         break;
     case QUIC_STREAM_EVENT_PEER_SEND_ABORTED:
         //
@@ -466,7 +455,6 @@ quic_connect(const char *host, uint16_t port, struct mosquitto *mosq)
     QUIC_STATUS Status;
     //
     // Load the client configuration based on the "unsecure" command line option.
-    // TODO: change to secure flag
     //
     // Configures a default client configuration
     //
