@@ -42,18 +42,26 @@ listener_callback(
         // app MUST set the callback handler before returning.
         //
         mosq = context__init();
-        mosq->listener = listener_context;
-        mosq->transport = mosq_t_quic;
-        mosq->listener->client_count++;
-        // TODO: ipv6
-        struct sockaddr_in *sin = (struct sockaddr_in*)Event->NEW_CONNECTION.Info->RemoteAddress;
-        mosq->address = (char*)mosquitto__malloc(INET_ADDRSTRLEN);
+        const QUIC_ADDR* Addr = Event->NEW_CONNECTION.Info->RemoteAddress;
+        mosq->address = (char*)mosquitto__malloc(Addr->Ip.sa_family == QUIC_ADDRESS_FAMILY_INET ? INET_ADDRSTRLEN : INET6_ADDRSTRLEN);
         if(!mosq->address){
             break;
         }
-        inet_ntop(AF_INET, &sin->sin_addr, mosq->address, INET_ADDRSTRLEN);
-        mosq->remote_port = htons(sin->sin_port);
+        if (inet_ntop(
+                Addr->Ip.sa_family == QUIC_ADDRESS_FAMILY_INET ? AF_INET : AF_INET6,
+                Addr->Ip.sa_family == QUIC_ADDRESS_FAMILY_INET ? (void*)&Addr->Ipv4.sin_addr : (void*)&Addr->Ipv6.sin6_addr,
+                mosq->address,
+                INET_ADDRSTRLEN) == NULL) {
+            Status = QUIC_STATUS_OUT_OF_MEMORY;
+            break;
+        }
+        if (Addr->Ipv4.sin_port != 0) {
+            mosq->remote_port = htons(Addr->Ipv4.sin_port);
+        }
 
+        mosq->listener = listener_context;
+        mosq->transport = mosq_t_quic;
+        mosq->listener->client_count++;
         if((mosq->listener->max_connections > 0 && mosq->listener->client_count > mosq->listener->max_connections)
                 || (db.config->global_max_connections > 0 && HASH_CNT(hh_sock, db.contexts_by_sock) > (unsigned int)db.config->global_max_connections)){
             if(db.config->connection_messages == true){
