@@ -148,7 +148,17 @@ bool mosq_quic_listen(struct mosquitto__listener *listener)
         log__printf(NULL, MOSQ_LOG_ERR, "Error: run_server failed 0x%x!", Status);
         return 1;
     }
-    log__printf(NULL, MOSQ_LOG_QUIC, "Start server on port %d", listener->port);
+    // program doesn't arrive here if listener->host is invalid address format
+    bool is_ipv4 = true;
+    for (int i = 0; listener->host[i] != '\0'; i++) {
+        if (listener->host[i] == '.'){
+            break;
+        } else if (listener->host[i] == ':'){
+            is_ipv4 = false;
+            break;
+        }
+    }
+    log__printf(NULL, MOSQ_LOG_INFO, "Opening ipv%d listen quic socket on port %d.", is_ipv4 ? 4 : 6, listener->port);
 
     return 0;
 }
