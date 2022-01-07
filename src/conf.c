@@ -272,18 +272,18 @@ void config__cleanup(struct mosquitto__config *config)
 			mosquitto__FREE(config->listeners[i].security_options.password_file);
 			mosquitto__FREE(config->listeners[i].security_options.psk_file);
 #if defined(WITH_TLS) || defined(WITH_QUIC)
-			mosquitto__free(config->listeners[i].cafile);
-			mosquitto__free(config->listeners[i].capath);
-			mosquitto__free(config->listeners[i].certfile);
-			mosquitto__free(config->listeners[i].keyfile);
-			mosquitto__free(config->listeners[i].ciphers);
-			mosquitto__free(config->listeners[i].ciphers_tls13);
-			mosquitto__free(config->listeners[i].psk_hint);
-			mosquitto__free(config->listeners[i].crlfile);
-			mosquitto__free(config->listeners[i].dhparamfile);
-			mosquitto__free(config->listeners[i].tls_version);
-			mosquitto__free(config->listeners[i].tls_engine);
-			mosquitto__free(config->listeners[i].tls_engine_kpass_sha1);
+			mosquitto__FREE(config->listeners[i].cafile);
+			mosquitto__FREE(config->listeners[i].capath);
+			mosquitto__FREE(config->listeners[i].certfile);
+			mosquitto__FREE(config->listeners[i].keyfile);
+			mosquitto__FREE(config->listeners[i].ciphers);
+			mosquitto__FREE(config->listeners[i].ciphers_tls13);
+			mosquitto__FREE(config->listeners[i].psk_hint);
+			mosquitto__FREE(config->listeners[i].crlfile);
+			mosquitto__FREE(config->listeners[i].dhparamfile);
+			mosquitto__FREE(config->listeners[i].tls_version);
+			mosquitto__FREE(config->listeners[i].tls_engine);
+			mosquitto__FREE(config->listeners[i].tls_engine_kpass_sha1);
 #if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
 			if(!config->listeners[i].ws_context) /* libwebsockets frees its own SSL_CTX */
 #endif
