@@ -36,6 +36,7 @@ Contributors:
 static mosquitto_plugin_id_t *plg_id = NULL;
 static char *config_file = NULL;
 struct dynsec__acl_default_access default_access = {false, false, false, false};
+bool allow_empty_passwords = false;
 
 void dynsec__command_reply(cJSON *j_responses, struct mosquitto *context, const char *command, const char *error, const char *correlation_data)
 {
@@ -288,7 +289,7 @@ int mosquitto_plugin_version(int supported_version_count, const int *supported_v
 
 static int dynsec__general_config_load(cJSON *tree)
 {
-	cJSON *j_default_access, *jtmp;
+	cJSON *j_default_access, *jtmp, *j_allow_empty_passwords;
 
 	j_default_access = cJSON_GetObjectItem(tree, "defaultACLAccess");
 	if(j_default_access && cJSON_IsObject(j_default_access)){
@@ -319,6 +320,12 @@ static int dynsec__general_config_load(cJSON *tree)
 		}else{
 			default_access.unsubscribe = false;
 		}
+	}
+	j_allow_empty_passwords = cJSON_GetObjectItem(tree, "allowEmptyPasswords");
+	if(j_allow_empty_passwords && cJSON_IsBool(j_allow_empty_passwords)){
+		allow_empty_passwords = cJSON_IsTrue(j_allow_empty_passwords);
+	}else{
+		allow_empty_passwords = false;
 	}
 	return MOSQ_ERR_SUCCESS;
 }
