@@ -181,7 +181,7 @@ int dynsec_auth__basic_auth_callback(int event, void *event_data, void *userdata
 	UNUSED(event);
 	UNUSED(userdata);
 
-	if(ed->username == NULL || ed->password == NULL) return MOSQ_ERR_PLUGIN_DEFER;
+	if(ed->username == NULL || (!allow_empty_passwords && ed->password == NULL)) return MOSQ_ERR_PLUGIN_DEFER;
 
 	client = dynsec_clients__find(ed->username);
 	if(client){
@@ -194,11 +194,19 @@ int dynsec_auth__basic_auth_callback(int event, void *event_data, void *userdata
 				return MOSQ_ERR_AUTH;
 			}
 		}
-		if(client->pw.valid && dynsec_auth__pw_hash(client, ed->password, password_hash, sizeof(password_hash), false) == MOSQ_ERR_SUCCESS){
-			if(memcmp_const(client->pw.password_hash, password_hash, sizeof(password_hash)) == 0){
+		if(client->pw.valid){
+			if (allow_empty_passwords && client->pw.password_hash[0] == 0 && ed->password == NULL){
 				return MOSQ_ERR_SUCCESS;
-			}else{
-				return MOSQ_ERR_AUTH;
+			}
+			else if (dynsec_auth__pw_hash(client, ed->password, password_hash, sizeof(password_hash), false) == MOSQ_ERR_SUCCESS){
+				if(memcmp_const(client->pw.password_hash, password_hash, sizeof(password_hash)) == 0){
+					return MOSQ_ERR_SUCCESS;
+				}else{
+					return MOSQ_ERR_AUTH;
+				}
+			}
+			else{
+				return MOSQ_ERR_PLUGIN_DEFER;
 			}
 		}else{
 			return MOSQ_ERR_PLUGIN_DEFER;
