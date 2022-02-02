@@ -185,7 +185,12 @@ int dynsec_clients__config_load(cJSON *tree)
 				mosquitto_free(buf);
 				client->pw.valid = true;
 			}else{
-				client->pw.valid = false;
+				client->pw.valid = allow_empty_passwords && !j_salt && !j_password && !j_iterations;
+				if (allow_empty_passwords){
+					memset(client->pw.password_hash, 0, sizeof(client->pw.password_hash));
+					memset(client->pw.salt, 0, sizeof(client->pw.salt));
+					client->pw.iterations = 0;
+				}
 			}
 
 			/* Client id */

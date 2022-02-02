@@ -140,6 +140,7 @@ struct dynsec__data{
 
 extern struct dynsec__data g_dynsec_data;
 extern char *g_config_file;
+extern bool allow_empty_passwords;
 
 /* ################################################################
  * #

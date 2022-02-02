@@ -33,9 +33,11 @@ Contributors:
 
 #include "dynamic_security.h"
 
+bool allow_empty_passwords = false;
+
 static int dynsec__general_config_load(cJSON *tree)
 {
-	cJSON *j_default_access, *jtmp;
+	cJSON *j_default_access, *jtmp, *j_allow_empty_passwords;
 
 	j_default_access = cJSON_GetObjectItem(tree, "defaultACLAccess");
 	if(j_default_access && cJSON_IsObject(j_default_access)){
@@ -66,6 +68,12 @@ static int dynsec__general_config_load(cJSON *tree)
 		}else{
 			g_dynsec_data.default_access.unsubscribe = false;
 		}
+	}
+	j_allow_empty_passwords = cJSON_GetObjectItem(tree, "allowEmptyPasswords");
+	if(j_allow_empty_passwords && cJSON_IsBool(j_allow_empty_passwords)){
+		allow_empty_passwords = cJSON_IsTrue(j_allow_empty_passwords);
+	}else{
+		allow_empty_passwords = false;
 	}
 	return MOSQ_ERR_SUCCESS;
 }
