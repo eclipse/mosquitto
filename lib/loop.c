@@ -161,7 +161,7 @@ int mosquitto_loop(struct mosquitto *mosq, int timeout, int max_packets)
 					FD_SET(mosq->sock, &writefds);
 				}
 			}
-			
+
 			if(net__is_connected(mosq) && FD_ISSET(mosq->sock, &writefds)){
 				rc = mosquitto_loop_write(mosq, max_packets);
 				if(rc || !net__is_connected(mosq)){
@@ -368,6 +368,7 @@ int mosquitto_loop_read(struct mosquitto *mosq, int max_packets)
 #endif
 		{
 			switch(mosq->transport){
+				case mosq_t_quic:
 				case mosq_t_tcp:
 				case mosq_t_ws:
 					rc = packet__read(mosq);

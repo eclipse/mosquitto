@@ -204,7 +204,7 @@ int listeners__start(void)
 	}
 
 	for(i=0; i<db.config->listener_count; i++){
-		if(db.config->listeners[i].protocol == mp_mqtt){
+		if(db.config->listeners[i].protocol == mp_mqtt || db.config->listeners[i].protocol == mp_quic){
 			if(listeners__start_single_mqtt(&db.config->listeners[i])){
 				db__close();
 				if(db.config->pid_file){
@@ -253,6 +253,9 @@ void listeners__stop(void)
 		if(db.config->listeners[i].unix_socket_path != NULL){
 			unlink(db.config->listeners[i].unix_socket_path);
 		}
+#endif
+#ifdef WITH_QUIC
+		mosq_quic_listener_stop(&db.config->listeners[i]);
 #endif
 	}
 

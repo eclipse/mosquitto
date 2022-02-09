@@ -13,6 +13,9 @@ else
 LIBMOSQ:=${R}/lib/libmosquitto.a
 endif
 endif
+ifeq ($(WITH_QUIC),yes)
+LIBMOSQ+= -lmsquic
+endif
 
 LOCAL_CPPFLAGS:=-I${R}/apps/mosquitto_passwd -I${R}/plugins/dynamic-security -DWITH_CJSON -I${R}/plugins/shared
 ifeq ($(WITH_BUNDLED_DEPS),yes)

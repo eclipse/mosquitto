@@ -51,6 +51,12 @@ typedef SSIZE_T ssize_t;
 #define INVALID_SOCKET -1
 #endif
 
+#ifdef WITH_QUIC
+#  include <msquic.h>
+#  include <msquic_posix.h>
+#endif
+
+
 /* Macros for accessing the MSB and LSB of a uint16_t */
 #define MOSQ_MSB(A) (uint8_t)((A & 0xFF00) >> 8)
 #define MOSQ_LSB(A) (uint8_t)(A & 0x00FF)
@@ -71,6 +77,15 @@ int net__socket_connect_step3(struct mosquitto *mosq, const char *host);
 int net__socket_nonblock(mosq_sock_t *sock);
 int net__socketpair(mosq_sock_t *sp1, mosq_sock_t *sp2);
 bool net__is_connected(struct mosquitto *mosq);
+
+#ifdef WITH_QUIC
+int quic_connect(const char *host, uint16_t port, struct mosquitto *mosq);
+void quic_cleanup();
+int quic_disconnect();
+QUIC_STATUS quic_init(HQUIC *Registration);
+ssize_t quic_send(struct mosquitto *mosq, const void *buf, size_t count);
+ssize_t net__read_quic(struct mosquitto *mosq, void* buf, size_t len);
+#endif
 
 ssize_t net__read(struct mosquitto *mosq, void *buf, size_t count);
 ssize_t net__read_ws(struct mosquitto *mosq, void *buf, size_t count);

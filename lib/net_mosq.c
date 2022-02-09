@@ -61,6 +61,11 @@ Contributors:
 #include <tls_mosq.h>
 #endif
 
+#ifdef WITH_QUIC
+#  include <msquic.h>
+#  include <msquic_posix.h>
+#endif
+
 #ifdef WITH_BROKER
 #  include "mosquitto_broker_internal.h"
 #  if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
@@ -164,6 +169,10 @@ void net__cleanup(void)
 	cleanup_ui_method();
 #endif
 
+#ifdef WITH_QUIC
+	quic_cleanup();
+#endif
+
 #ifdef WITH_SRV
 	ares_library_cleanup();
 #endif
@@ -204,6 +213,11 @@ bool net__is_connected(struct mosquitto *mosq)
 #if defined(WITH_BROKER) && defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
 	return mosq->sock != INVALID_SOCKET || mosq->wsi != NULL;
 #else
+#  if defined(WITH_QUIC)
+	if (mosq->transport == mosq_t_quic){
+		return mosq->Connection != NULL;
+	}else
+#  endif
 	return mosq->sock != INVALID_SOCKET;
 #endif
 }
@@ -243,6 +257,12 @@ int net__socket_close(struct mosquitto *mosq)
 			mosquitto__set_state(mosq, mosq_cs_disconnect_ws);
 		}
 		lws_callback_on_writable(mosq->wsi);
+	}else
+#endif
+#ifdef WITH_QUIC
+	if(mosq->Connection)
+	{
+		quic_disconnect(mosq);
 	}else
 #endif
 	{
@@ -400,6 +420,19 @@ int net__try_connect_step2(struct mosquitto *mosq, uint16_t port, mosq_sock_t *s
 
 #endif
 
+
+#ifdef WITH_QUIC
+
+static int net__try_connect_quic(struct mosquitto *mosq, const char *host, uint16_t port)
+{
+	if (quic_init(&mosq->Registration)) {
+		return 1;
+	}
+
+	return quic_connect(host, port, mosq);
+}
+
+#endif
 
 static int net__try_connect_tcp(const char *host, uint16_t port, mosq_sock_t *sock, const char *bind_address, bool blocking)
 {
@@ -936,8 +969,15 @@ int net__socket_connect(struct mosquitto *mosq, const char *host, uint16_t port,
 	int rc, rc2;
 
 	if(!mosq || !host) return MOSQ_ERR_INVAL;
-
-	rc = net__try_connect(host, port, &mosq->sock, bind_address, blocking);
+#ifdef WITH_QUIC
+	if(mosq->transport == mosq_t_quic){
+		rc = net__try_connect_quic(mosq, host, port);
+		mosq->sock = 1; // DUMMY sock
+	}else
+#endif
+	{
+		rc = net__try_connect(host, port, &mosq->sock, bind_address, blocking);
+	}
 	if(rc > 0) return rc;
 
 	if(mosq->tcp_nodelay){
@@ -947,9 +987,14 @@ int net__socket_connect(struct mosquitto *mosq, const char *host, uint16_t port,
 		}
 	}
 
+	if(1
 #if defined(WITH_SOCKS) && !defined(WITH_BROKER)
-	if(!mosq->socks5_host)
+	&& !mosq->socks5_host
 #endif
+#ifdef WITH_QUIC
+	&& mosq->transport != mosq_t_quic
+#endif
+	)
 	{
 		rc2 = net__socket_connect_step3(mosq, host);
 		if(rc2) return rc2;
@@ -1042,6 +1087,11 @@ ssize_t net__write(struct mosquitto *mosq, const void *buf, size_t count)
 		/* Call normal write/send */
 #endif
 
+#ifdef WITH_QUIC
+	if(mosq->transport == mosq_t_quic){
+		return quic_send(mosq, buf, count);
+	}
+#endif
 #ifndef WIN32
 	return write(mosq->sock, buf, count);
 #else

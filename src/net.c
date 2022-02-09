@@ -717,6 +717,12 @@ static int net__bind_interface(struct mosquitto__listener *listener, struct addr
 }
 #endif
 
+#ifdef WITH_QUIC
+static int net__socket_listen_quic(struct mosquitto__listener *listener)
+{
+	return mosq_quic_listen(listener);
+}
+#endif
 
 static int net__socket_listen_tcp(struct mosquitto__listener *listener)
 {
@@ -912,6 +918,12 @@ int net__socket_listen(struct mosquitto__listener *listener)
 #ifdef WITH_UNIX_SOCKETS
 	if(listener->port == 0 && listener->unix_socket_path != NULL){
 		rc = net__socket_listen_unix(listener);
+	}else
+#endif
+#ifdef WITH_QUIC
+	if(listener->protocol == mp_quic){
+		//WARN: return earlier, need to consider sock_count increment, and handle tls etc
+		return net__socket_listen_quic(listener);
 	}else
 #endif
 	{

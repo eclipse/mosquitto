@@ -358,6 +358,11 @@ int packet__read(struct mosquitto *mosq)
 		local__read = net__read_ws;
 	}else
 #endif
+#ifdef WITH_QUIC
+	if(mosq->transport == mosq_t_quic){
+		local__read = net__read_quic;
+	}else
+#endif
 	{
 		local__read = net__read;
 	}

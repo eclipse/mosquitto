@@ -30,6 +30,10 @@ Contributors:
 #  endif
 #endif
 
+#ifdef WITH_QUIC
+#  include <msquic.h>
+#endif
+
 #ifdef __linux__
 #define WITH_TCP_USER_TIMEOUT
 #endif
@@ -209,6 +213,7 @@ enum struct_ident{
 	id_listener = 1,
 	id_client = 2,
 	id_listener_ws = 3,
+	id_listener_quic = 4,
 };
 #endif
 
@@ -227,7 +232,7 @@ struct mosquitto__listener {
 	uint8_t max_qos;
 	uint16_t max_topic_alias;
 	uint16_t max_topic_alias_broker;
-#ifdef WITH_TLS
+#if defined(WITH_TLS) || defined(WITH_QUIC)
 	char *cafile;
 	char *capath;
 	char *certfile;
@@ -246,6 +251,11 @@ struct mosquitto__listener {
 	bool require_certificate;
 	bool disable_client_cert_date_checks;
 	enum mosquitto__keyform tls_keyform;
+#endif
+#ifdef WITH_QUIC
+	HQUIC Registration;
+	HQUIC Configuration;
+	HQUIC Listener;
 #endif
 #ifdef WITH_WEBSOCKETS
 #  if WITH_WEBSOCKETS == WS_IS_LWS
@@ -345,6 +355,9 @@ struct mosquitto__config {
 #ifdef WITH_WEBSOCKETS
 	uint16_t websockets_headers_size;
 #endif
+#ifdef WITH_QUIC
+	int quic_log_level;
+#endif
 #ifdef WITH_BRIDGE
 	struct mosquitto__bridge **bridges;
 	int bridge_count;
@@ -442,7 +455,7 @@ struct mosquitto__unpwd{
 	char *username;
 	char *password;
 	char *clientid;
-#ifdef WITH_TLS
+#if defined(WITH_TLS) || defined(WITH_QUIC)
 	unsigned char *salt;
 	unsigned int password_len;
 	unsigned int salt_len;
@@ -518,7 +531,7 @@ struct mosquitto_db{
 	int kqueuefd;
 #endif
 	struct mosquitto__message_v5 *plugin_msgs;
-#ifdef WITH_TLS
+#if defined(WITH_TLS) || defined(WITH_QUIC)
 	char *tls_keylog; /* This can't be in the config struct because it is used
 						 before the config is allocated. Config probably
 						 shouldn't be separately allocated. */
@@ -609,7 +622,7 @@ struct mosquitto__bridge{
 	bool outgoing_retain;
 	enum mosquitto_bridge_reload_type reload_type;
 	uint16_t max_topic_alias;
-#ifdef WITH_TLS
+#if defined(WITH_TLS) || defined(WITH_QUIC)
 	bool tls_insecure;
 	bool tls_ocsp_required;
 	char *tls_cafile;
@@ -636,6 +649,18 @@ struct libws_mqtt_hack {
 struct libws_mqtt_data {
 	struct mosquitto *mosq;
 };
+#endif
+
+#ifdef WITH_QUIC
+typedef struct QUIC_CREDENTIAL_CONFIG_HELPER {
+    QUIC_CREDENTIAL_CONFIG CredConfig;
+    union {
+        QUIC_CERTIFICATE_HASH CertHash;
+        QUIC_CERTIFICATE_HASH_STORE CertHashStore;
+        QUIC_CERTIFICATE_FILE CertFile;
+        QUIC_CERTIFICATE_FILE_PROTECTED CertFileProtected;
+    };
+} QUIC_CREDENTIAL_CONFIG_HELPER;
 #endif
 
 #include <net_mosq.h>
@@ -838,6 +863,10 @@ void listener__set_defaults(struct mosquitto__listener *listener);
 void listeners__reload_all_certificates(void);
 #if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
 void listeners__add_websockets(struct lws_context *ws_context, mosq_sock_t fd);
+#endif
+#ifdef WITH_QUIC
+bool mosq_quic_listen(struct mosquitto__listener *listener);
+void mosq_quic_listener_stop(struct mosquitto__listener *listener);
 #endif
 int listeners__start(void);
 void listeners__stop(void);

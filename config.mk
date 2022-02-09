@@ -72,6 +72,11 @@ WITH_SRV:=no
 # Set to no to disable
 WITH_WEBSOCKETS:=yes
 
+# Build with quic support on the broker.
+# Set to yes to build with libmsquic
+# Set to no to disable
+WITH_QUIC:=no
+
 # Use elliptic keys in broker
 WITH_EC:=yes
 
@@ -363,6 +368,22 @@ endif
 ifeq ($(WITH_WEBSOCKETS),lws)
 	BROKER_CPPFLAGS:=$(BROKER_CPPFLAGS) -DWITH_WEBSOCKETS=WS_IS_LWS
 	BROKER_LDADD:=$(BROKER_LDADD) -lwebsockets
+endif
+
+ifeq ($(WITH_QUIC),yes)
+	BROKER_CPPFLAGS:=$(BROKER_CPPFLAGS) -DWITH_QUIC
+	LIB_CPPFLAGS:=$(LIB_CPPFLAGS) -DWITH_QUIC
+	CLIENT_CPPFLAGS:=$(CLIENT_CPPFLAGS) -DWITH_QUIC
+	CLIENT_LDADD+=$(CLIENT_LDADD) -lmsquic
+	BROKER_LDADD:=$(BROKER_LDADD) -lmsquic
+endif
+
+ifeq ($(WITH_QUIC),static)
+	BROKER_CPPFLAGS:=$(BROKER_CPPFLAGS) -DWITH_QUIC
+	LIB_CPPFLAGS:=$(LIB_CPPFLAGS) -DWITH_QUIC
+	CLIENT_CPPFLAGS:=$(CLIENT_CPPFLAGS) -DWITH_QUIC
+	CLIENT_LDADD+=$(CLIENT_LDADD) -static -lmsquic
+	BROKER_LDADD:=$(BROKER_LDADD) -static -lmsquic
 endif
 
 INSTALL?=install

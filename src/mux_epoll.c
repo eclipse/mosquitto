@@ -236,6 +236,7 @@ static void loop_handle_reads_writes(struct mosquitto *context, uint32_t events)
 			}
 		}
 		switch(context->transport){
+			case mosq_t_quic:
 			case mosq_t_tcp:
 				rc = packet__write(context);
 				break;
@@ -265,6 +266,7 @@ static void loop_handle_reads_writes(struct mosquitto *context, uint32_t events)
 
 		do{
 			switch(context->transport){
+				case mosq_t_quic:
 				case mosq_t_tcp:
 				case mosq_t_ws:
 					rc = packet__read(context);

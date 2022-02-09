@@ -80,6 +80,7 @@ extern "C" {
 #define MOSQ_LOG_SUBSCRIBE		(1<<5)
 #define MOSQ_LOG_UNSUBSCRIBE	(1<<6)
 #define MOSQ_LOG_WEBSOCKETS		(1<<7)
+#define MOSQ_LOG_QUIC			(1<<8)
 #define MOSQ_LOG_INTERNAL		0x80000000U
 #define MOSQ_LOG_ALL			0xFFFFFFFFU
 
@@ -164,6 +165,7 @@ enum mosq_opt_t {
 enum mosq_transport_t {
 	MOSQ_T_TCP = 1,
 	MOSQ_T_WEBSOCKETS = 2,
+	MOSQ_T_QUIC = 5,
 };
 
 /* MQTT specification restricts client ids to a maximum of 23 characters */

@@ -194,7 +194,7 @@ static void print_usage(void)
 	printf("             Defaults to MQTT v5, where the Request-Response feature will be used, but v3.1.1 can also be used\n");
 	printf("             with v3.1.1 brokers.\n");
 	printf("mosquitto_rr version %s running on libmosquitto %d.%d.%d.\n\n", VERSION, major, minor, revision);
-	printf("Usage: mosquitto_rr {[-h host] [--unix path] [-p port] [-u username] [-P password] [--ws] -t topic | -L URL} -e response-topic\n");
+	printf("Usage: mosquitto_rr {[-h host] [--unix path] [-p port] [-u username] [-P password] [--ws] [--quic] -t topic | -L URL} -e response-topic\n");
 	printf("                    [-c] [-k keepalive] [-q qos] [-R] [-x session-expiry-interval\n");
 	printf("                    [-F format]\n");
 #ifndef WIN32
@@ -279,6 +279,7 @@ static void print_usage(void)
 	printf(" --will-retain : if given, make the client Will retained.\n");
 	printf(" --will-topic : the topic on which to publish the client Will.\n");
 	printf(" --ws : connect using WebSockets.\n");
+	printf(" --quic : connect using quic.\n");
 #ifdef WITH_TLS
 	printf(" --cafile : path to a file containing trusted CA certificates to enable encrypted\n");
 	printf("            certificate based communication.\n");

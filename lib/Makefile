@@ -30,6 +30,7 @@ MOSQ_OBJS=mosquitto.o \
 		  net_mosq_ocsp.o \
 		  net_mosq.o \
 		  net_ws.o \
+		  net_quic.o \
 		  options.o \
 		  password_mosq.o \
 		  packet_datatypes.o \
@@ -197,6 +198,9 @@ picohttpparser.o : ../deps/picohttpparser/picohttpparser.c ../deps/picohttpparse
 	${CROSS_COMPILE}${CC} $(LIB_CPPFLAGS) $(LIB_CFLAGS) -c $< -o $@
 
 net_ws.o : net_ws.c net_mosq.h
+	${CROSS_COMPILE}$(CC) $(LIB_CPPFLAGS) $(LIB_CFLAGS) -c $< -o $@
+
+net_quic.o : net_quic.c net_mosq.h
 	${CROSS_COMPILE}$(CC) $(LIB_CPPFLAGS) $(LIB_CFLAGS) -c $< -o $@
 
 options.o : options.c ../include/mosquitto.h mosquitto_internal.h

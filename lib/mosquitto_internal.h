@@ -60,6 +60,31 @@ Contributors:
 #	include <stdint.h>
 #endif
 
+#ifdef WITH_QUIC
+#  include <msquic.h>
+#  include <msquic_posix.h>
+
+const QUIC_API_TABLE* MsQuic;
+const QUIC_BUFFER Alpn;
+const uint64_t IdleTimeoutMs;
+
+#ifndef UNREFERENCED_PARAMETER
+#define UNREFERENCED_PARAMETER(P) (void)(P)
+#endif
+
+_IRQL_requires_max_(DISPATCH_LEVEL)
+_Function_class_(QUIC_CONNECTION_CALLBACK)
+QUIC_STATUS
+QUIC_API
+connection_callback(
+    _In_ HQUIC Connection,
+    _In_opt_ void* Context,
+    _Inout_ QUIC_CONNECTION_EVENT* Event
+    );
+QUIC_STATUS load_configuration(HQUIC *Configuration, HQUIC *Registration, QUIC_CREDENTIAL_CONFIG *CredConfig);
+QUIC_STATUS quic_init(HQUIC *Registration);
+#endif
+
 #include "mosquitto.h"
 #include "time_mosq.h"
 #ifdef WITH_BROKER
@@ -149,6 +174,7 @@ enum mosquitto__transport {
 	mosq_t_ws = 2,
 	mosq_t_sctp = 3,
 	mosq_t_http = 4, /* not valid for MQTT, just as a ws precursor */
+	mosq_t_quic = 5,
 };
 
 /* Alias direction - local <-> remote */
@@ -411,6 +437,14 @@ struct mosquitto {
 #  ifdef WITH_SRV
 	ares_channel achan;
 #  endif
+#endif
+#ifdef WITH_QUIC
+	HQUIC Connection;
+	HQUIC Stream;
+	HQUIC Configuration;
+	HQUIC Registration;
+	uint32_t ResumptionTicketLength;
+	uint8_t* ResumptionTicket;
 #endif
 	uint8_t max_qos;
 	uint8_t retain_available;
