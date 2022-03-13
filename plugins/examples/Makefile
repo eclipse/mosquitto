@@ -6,6 +6,7 @@ DIRS= \
 		connection-state \
 		delayed-auth \
 		force-retain \
+		limit-subscription-qos \
 		message-timestamp \
 		payload-modification \
 		payload-size-stats \
