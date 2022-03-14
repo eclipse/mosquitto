@@ -13,6 +13,7 @@ DIRS= \
 		plugin-event-stats \
 		print-ip-on-publish \
 		topic-modification \
+		topic-jail \
 		wildcard-temp
 
 .PHONY : all binary check clean reallyclean test install uninstall
