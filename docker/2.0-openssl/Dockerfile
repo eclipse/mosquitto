@@ -97,6 +97,18 @@ RUN set -x && \
 
 VOLUME ["/mosquitto/data", "/mosquitto/log"]
 
+# copy the health-check script into place
+ENV HEALTHCHECK_SCRIPT "healthcheck.sh"
+COPY ${HEALTHCHECK_SCRIPT} /usr/local/bin/${HEALTHCHECK_SCRIPT}
+
+# define the health check
+HEALTHCHECK \
+   --start-period=30s \
+   --interval=30s \
+   --timeout=10s \
+   --retries=3 \
+   CMD ${HEALTHCHECK_SCRIPT} || exit 1
+
 # Set up the entry point script and default command
 COPY docker-entrypoint.sh mosquitto-no-auth.conf /
 EXPOSE 1883
