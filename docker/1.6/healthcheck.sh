@@ -14,7 +14,7 @@ HEALTHCHECK_USER="$(eval echo $HEALTHCHECK_USER)"
 HEALTHCHECK_PASSWORD="$(eval echo $HEALTHCHECK_PASSWORD)"
 
 # set a default for the topic
-HEALTHCHECK_TOPIC="${HEALTHCHECK_TOPIC:-iotstack/mosquitto/healthcheck}"
+HEALTHCHECK_TOPIC="${HEALTHCHECK_TOPIC:-mosquitto/healthcheck}"
 HEALTHCHECK_TOPIC="$(eval echo $HEALTHCHECK_TOPIC)"
 
 # record the current date and time for the test payload
