@@ -954,7 +954,7 @@ log_timestamp_format %Y-%m-%dT%H:%M:%S
 				<listitem>
 					<para>Set to <replaceable>true</replaceable> to queue
 						messages with QoS 0 when a persistent client is
-						disconnected. When bridges resp. their topics are configured with QoS level 1 incoming 
+						disconnected. When bridges resp. their topics are configured with QoS level 1 or 2 incoming 
 						QoS 0 messages for these topics are also queued.
 						These messages are included in the limit
 						imposed by max_queued_messages.  Defaults to
