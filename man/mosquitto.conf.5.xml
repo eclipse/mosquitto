@@ -954,7 +954,8 @@ log_timestamp_format %Y-%m-%dT%H:%M:%S
 				<listitem>
 					<para>Set to <replaceable>true</replaceable> to queue
 						messages with QoS 0 when a persistent client is
-						disconnected. These messages are included in the limit
+						disconnected. When bridges are configured QoS 0 messages for other brokers are also queued.
+						These messages are included in the limit
 						imposed by max_queued_messages.  Defaults to
 						<replaceable>false</replaceable>.</para>
 					<para>Note that the MQTT v3.1.1 spec states that only QoS 1
