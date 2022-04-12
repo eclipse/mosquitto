@@ -24,6 +24,8 @@ def do_test(unsubscribe_packet, reason_code, error_string, port):
 
 
 def all_tests(start_broker=False):
+    global rc
+
     port = mosq_test.get_port()
     if start_broker:
         broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port)
@@ -66,7 +68,9 @@ def all_tests(start_broker=False):
     finally:
         if start_broker:
             broker.terminate()
-            broker.wait()
+            if mosq_test.wait_for_subprocess(broker):
+                print("broker not terminated")
+                if rc == 0: rc=1
             (stdo, stde) = broker.communicate()
             if rc:
                 print(stde.decode('utf-8'))

@@ -94,7 +94,10 @@ try:
 
     # Kill broker and restart, checking whether our changes were saved.
     broker.terminate()
-    broker.wait()
+    broker_terminate_rc = 0
+    if mosq_test.wait_for_subprocess(broker):
+        print("broker not terminated")
+        broker_terminate_rc = 1
     broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port)
 
     sock = mosq_test.do_client_connect(connect_packet, connack_packet, timeout=5, port=port)
@@ -118,7 +121,7 @@ try:
     # Delete client
     command_check(sock, delete_client_command, delete_client_response)
 
-    rc = 0
+    rc = broker_terminate_rc
 
     sock.close()
 except mosq_test.TestError:
@@ -131,7 +134,9 @@ finally:
         pass
     os.rmdir(f"{port}")
     broker.terminate()
-    broker.wait()
+    if mosq_test.wait_for_subprocess(broker):
+        print("broker not terminated")
+        if rc == 0: rc=1
     (stdo, stde) = broker.communicate()
     if rc:
         print(stde.decode('utf-8'))

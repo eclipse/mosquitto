@@ -141,6 +141,7 @@ def do_test(proto_ver, cs, lcs=None):
     pub_b3r = make_pub("br_in/test-queued3", mid=2, proto=proto_ver) # without queueing, there is no b2
 
     success = False
+    broker_termination_success = True
     stde_a1 = stde_b1 = None
     try:
         # b must start first, as it's the destination of a
@@ -162,7 +163,9 @@ def do_test(proto_ver, cs, lcs=None):
         tprint("Normal bi-dir bridging works. continuing")
 
         broker_b.terminate()
-        broker_b.wait()
+        if mosq_test.wait_for_subprocess(broker_b):
+            print("broker_b not terminated")
+            broker_termination_success = False
         (stdo_b1, stde_b1) = broker_b.communicate()
 
         # as we're _terminating_ the connections should close ~straight away
@@ -197,7 +200,9 @@ def do_test(proto_ver, cs, lcs=None):
 
         # ok, now repeat in the other direction...
         broker_a.terminate()
-        broker_a.wait()
+        if mosq_test.wait_for_subprocess(broker_a):
+            print("broker_a not terminated")
+            broker_termination_success = False
         (stdo_a1, stde_a1) = broker_a.communicate()
         time.sleep(0.5)
 
@@ -221,7 +226,7 @@ def do_test(proto_ver, cs, lcs=None):
             tprint("not expecting message b->a_2")
             mosq_test.do_receive_send(client_a, pub_b3r.p, pub_b3r.ack, "b->a_3(r)")
 
-        success = True
+        success = broker_termination_success
 
     except mosq_test.TestError:
         pass
@@ -230,8 +235,12 @@ def do_test(proto_ver, cs, lcs=None):
         os.remove(conf_file_b)
         broker_a.terminate()
         broker_b.terminate()
-        broker_a.wait()
-        broker_b.wait()
+        if mosq_test.wait_for_subprocess(broker_a):
+            print("broker_a not terminated")
+            success = False
+        if mosq_test.wait_for_subprocess(broker_b):
+            print("broker_b not terminated")
+            success = False
         (stdo_a, stde_a) = broker_a.communicate()
         (stdo_b, stde_b) = broker_b.communicate()
         # Must be after terminating!

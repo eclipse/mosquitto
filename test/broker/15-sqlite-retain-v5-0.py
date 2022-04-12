@@ -59,7 +59,10 @@ try:
 
     # Kill broker
     broker.terminate()
-    broker.wait()
+    broker_terminate_rc = 0
+    if mosq_test.wait_for_subprocess(broker):
+        print("broker not terminated")
+        broker_terminate_rc = 1
 
     # Restart broker
     broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port)
@@ -72,11 +75,13 @@ try:
     mosq_test.receive_unordered(sock, publish1_packet, publish3_packet, "publish 1 / 3")
     mosq_test.do_ping(sock)
 
-    rc = 0
+    rc = broker_terminate_rc
 finally:
     if broker is not None:
         broker.terminate()
-        broker.wait()
+        if mosq_test.wait_for_subprocess(broker):
+            print("broker not terminated (2)")
+            if rc == 0: rc=1
         (stdo, stde) = broker.communicate()
     os.remove(conf_file)
     rc += sqlite_help.cleanup(port)

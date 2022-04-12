@@ -48,12 +48,16 @@ try:
     mosq_test.do_send_receive(sock, subscribe_packet, suback_packet, "suback")
 
     pub = subprocess.Popen(['./c/08-tls-psk-pub.test', str(port1)], env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if pub.wait():
+    pub_terminate_rc = 0
+    if mosq_test.wait_for_subprocess(pub):
+        print("pub not terminated")
+        pub_terminate_rc = 1
+    if pub.returncode != 0:
         raise ValueError
     (stdo, stde) = pub.communicate()
 
     mosq_test.expect_packet(sock, "publish", publish_packet)
-    rc = 0
+    rc = pub_terminate_rc
 
     sock.close()
 except mosq_test.TestError:
@@ -61,7 +65,9 @@ except mosq_test.TestError:
 finally:
     os.remove(conf_file)
     broker.terminate()
-    broker.wait()
+    if mosq_test.wait_for_subprocess(broker):
+        print("broker not terminated")
+        if rc == 0: rc=1
     (stdo, stde) = broker.communicate()
     if rc:
         print(stde.decode('utf-8'))

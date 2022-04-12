@@ -75,8 +75,12 @@ try:
 except mosq_test.TestError:
     pass
 finally:
-    client1.wait()
-    client2.wait()
+    if mosq_test.wait_for_subprocess(client1):
+        print("client1 not terminated")
+        if rc == 0: rc=1
+    if mosq_test.wait_for_subprocess(client2):
+        print("client2 not terminated")
+        if rc == 0: rc=1
     if rc:
         (stdo, stde) = client1.communicate()
         print(stde)

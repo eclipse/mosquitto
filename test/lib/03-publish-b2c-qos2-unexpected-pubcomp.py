@@ -49,7 +49,9 @@ finally:
             break
         time.sleep(0.1)
 
-    client.wait()
+    if mosq_test.wait_for_subprocess(client):
+        print("test client not finished")
+        rc=1
     sock.close()
     if rc != 0 or client.returncode != 0:
         exit(1)

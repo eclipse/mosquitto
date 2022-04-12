@@ -16,7 +16,9 @@ def do_test(args, stderr_expected, rc_expected):
     cmd = ['../../client/mosquitto_pub'] + args
 
     pub = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
-    pub.wait()
+    if mosq_test.wait_for_subprocess(pub):
+        print("pub not terminated")
+        raise mosq_test.TestError(1)
     (stdo, stde) = pub.communicate()
     if pub.returncode != rc_expected:
         raise mosq_test.TestError(pub.returncode)

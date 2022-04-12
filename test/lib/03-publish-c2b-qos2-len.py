@@ -50,7 +50,9 @@ def len_test(test, pubrec_packet, pubcomp_packet):
     except mosq_test.TestError:
         pass
     finally:
-        client.wait()
+        if mosq_test.wait_for_subprocess(client):
+            print("test client not finished")
+            rc=1
         sock.close()
 
     if rc != 0:

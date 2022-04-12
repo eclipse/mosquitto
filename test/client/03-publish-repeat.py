@@ -39,11 +39,14 @@ def do_test(proto_ver):
         sock = mosq_test.sub_helper(port=port, topic="#", qos=0, proto_ver=proto_ver)
 
         pub = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
-        pub.wait()
+        pub_terminate_rc = 0
+        if mosq_test.wait_for_subprocess(pub):
+            print("pub not terminated")
+            pub_terminate_rc = 1
 
         mosq_test.expect_packet(sock, "publish 1", publish_packet)
         mosq_test.expect_packet(sock, "publish 2", publish_packet)
-        rc = 0
+        rc = pub_terminate_rc
         sock.close()
     except mosq_test.TestError:
         pass
@@ -51,7 +54,9 @@ def do_test(proto_ver):
         print(e)
     finally:
         broker.terminate()
-        broker.wait()
+        if mosq_test.wait_for_subprocess(broker):
+            print("broker not terminated")
+            if rc == 0: rc=1
         (stdo, stde) = broker.communicate()
         if rc:
             print(stde.decode('utf-8'))

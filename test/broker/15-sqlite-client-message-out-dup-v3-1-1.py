@@ -79,7 +79,10 @@ try:
     #con = None
 
     broker.terminate()
-    broker.wait()
+    broker_terminate_rc = 0
+    if mosq_test.wait_for_subprocess(broker):
+        print("broker not terminated")
+        broker_terminate_rc = 1
     (stdo, stde) = broker.communicate()
     broker = None
 
@@ -99,11 +102,13 @@ try:
     # Check client msg
     sqlite_help.check_client_msg(cur, client_id, store_id, 1, sqlite_help.dir_out, 1, qos, 0, sqlite_help.ms_wait_for_pubrec)
 
-    rc = 0
+    rc = broker_terminate_rc
 finally:
     if broker is not None:
         broker.terminate()
-        broker.wait()
+        if mosq_test.wait_for_subprocess(broker):
+            print("broker not terminated (2)")
+            if rc == 0: rc=1
         (stdo, stde) = broker.communicate()
     if con is not None:
         con.close()

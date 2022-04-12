@@ -1,0 +1,28 @@
+name: Mosquitto - Make
+
+on:
+  push:
+    branches: [ develop ]
+  pull_request:
+    branches: [ develop ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-20.04
+
+    steps:
+    -
+      name: Install third party dependencies
+      run: sudo apt-get install -y debhelper libc-ares-dev libssl-dev libwrap0-dev python-all python3-all xsltproc docbook-xsl libcunit1-dev libjwt-dev libcjson-dev libcjson1
+    -
+      uses: actions/checkout@v3
+      with:
+        submodules: 'true'
+    -
+      name: make
+      run: make
+    -
+      name: make test
+      run: |
+        make test

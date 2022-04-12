@@ -55,10 +55,13 @@ def do_test(format_str, expected_output, proto_ver=4):
         sub = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
         time.sleep(0.1)
         sock.send(publish_packet)
-        sub.wait()
+        sub_terminate_rc = 0
+        if mosq_test.wait_for_subprocess(sub):
+            print("sub not terminated")
+            sub_terminate_rc = 1
         (stdo, stde) = sub.communicate()
         if stdo.decode('utf-8') == expected_output:
-            rc = 0
+            rc = sub_terminate_rc
         else:
             print("expected: (%d) %s" % (len(expected_output), expected_output))
             print("actual:   (%d) %s"  % (len(stdo.decode('utf-8')), stdo.decode('utf-8')))
@@ -69,7 +72,9 @@ def do_test(format_str, expected_output, proto_ver=4):
         print(e)
     finally:
         broker.terminate()
-        broker.wait()
+        if mosq_test.wait_for_subprocess(broker):
+            print("broker not terminated")
+            if rc == 0: rc=1
         (stdo, stde) = broker.communicate()
         if rc:
             print(stde.decode('utf-8'))

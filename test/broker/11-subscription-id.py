@@ -57,7 +57,9 @@ try:
     sock.close()
 
     broker.terminate()
-    broker.wait()
+    if mosq_test.wait_for_subprocess(broker):
+        print("broker not terminated")
+        if rc == 0: rc=1
     (stdo1, stde1) = broker.communicate()
     broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port)
 
@@ -72,7 +74,9 @@ except mosq_test.TestError:
 finally:
     os.remove(conf_file)
     broker.terminate()
-    broker.wait()
+    if mosq_test.wait_for_subprocess(broker):
+        print("broker not terminated")
+        if rc == 0: rc=1
     (stdo, stde) = broker.communicate()
     if rc:
         print(stde.decode('utf-8'))

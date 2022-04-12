@@ -42,13 +42,16 @@ def do_test(proto_ver):
         sub = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
         time.sleep(0.1)
         sock.send(publish_packet)
-        sub.wait()
+        sub_terminate_rc = 0
+        if mosq_test.wait_for_subprocess(sub):
+            print("sub not terminated")
+            sub_terminate_rc = 1
         (stdo, stde) = sub.communicate()
         j = json.loads(stdo.decode('utf-8'))
         j['tst'] = ""
 
         if j == expected:
-            rc = 0
+            rc = sub_terminate_rc
         else:
             print(json.dumps(expected))
             print(json.dumps(j))
@@ -59,7 +62,9 @@ def do_test(proto_ver):
         print(e)
     finally:
         broker.terminate()
-        broker.wait()
+        if mosq_test.wait_for_subprocess(broker):
+            print("broker not terminated")
+            if rc == 0: rc=1
         (stdo, stde) = broker.communicate()
         if rc:
             print(stde.decode('utf-8'))

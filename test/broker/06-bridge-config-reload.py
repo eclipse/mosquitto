@@ -101,7 +101,9 @@ def do_test():
     finally:
         try:
             broker.terminate()
-            broker.wait()
+            if mosq_test.wait_for_subprocess(broker):
+                print("broker not terminated")
+                if rc == 0: rc=1
             _, stde = broker.communicate()
             if rc:
                 print(stde.decode('utf-8'))

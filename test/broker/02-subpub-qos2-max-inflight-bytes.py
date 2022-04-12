@@ -97,7 +97,9 @@ def do_test(proto_ver):
         for i in range(0, 12):
             helper(port)
             #pub = subprocess.Popen(['./02-subpub-qos2-receive-maximum-helper.py', str(port)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            #pub.wait()
+            #if mosq_test.wait_for_subprocess(pub):
+            #    print("pub not terminated")
+            #    if rc == 0: rc=1
             #(stdo, stde) = pub.communicate()
 
             mid += 1
@@ -187,7 +189,9 @@ def do_test(proto_ver):
     finally:
         os.remove(conf_file)
         broker.terminate()
-        broker.wait()
+        if mosq_test.wait_for_subprocess(broker):
+            print("broker not terminated")
+            if rc == 0: rc=1
         (stdo, stde) = broker.communicate()
         if rc:
             #print(stde.decode('utf-8'))

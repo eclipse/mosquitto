@@ -55,7 +55,9 @@ def do_test(proto_ver):
     else:
         time.sleep(0.5)
     local_broker.terminate()
-    local_broker.wait()
+    if mosq_test.wait_for_subprocess(local_broker):
+        print("local_broker not terminated")
+        if rc == 0: rc=1
     if os.environ.get('MOSQ_USE_VALGRIND') is not None:
         time.sleep(5)
     else:
@@ -95,12 +97,16 @@ def do_test(proto_ver):
         os.remove(conf_file)
         time.sleep(1)
         broker.terminate()
-        broker.wait()
+        if mosq_test.wait_for_subprocess(broker):
+            print("broker not terminated")
+            if rc == 0: rc=1
         (stdo, stde) = broker.communicate()
         if rc:
             print(stde.decode('utf-8'))
         local_broker.terminate()
-        local_broker.wait()
+        if mosq_test.wait_for_subprocess(local_broker):
+            print("local_broker not terminated")
+            if rc == 0: rc=1
         try:
             os.remove('mosquitto-%d.db' % (port1))
         except OSError:

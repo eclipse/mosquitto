@@ -42,6 +42,29 @@ static void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_cou
 	should_run = false;
 }
 
+
+static const char* loglevel_as_str(int level)
+{
+    switch (level){
+	    case MOSQ_LOG_INFO:
+			return "INFO";
+	    case MOSQ_LOG_NOTICE:
+			return "NOTICE";
+	    case MOSQ_LOG_WARNING:
+			return "WARNING";
+	    case MOSQ_LOG_ERR:
+			return "ERROR";
+	    case MOSQ_LOG_DEBUG:
+			return "DEBUG";
+	}
+	return "UNKNOWN";
+}
+
+static void on_log(struct mosquitto *mosq, void *user_data, int level, const char *msg)
+{
+	fprintf(stderr, "%s: %s\n", loglevel_as_str(level), msg);
+}
+
 int main(int argc, char *argv[])
 {
 	int rc;
@@ -59,6 +82,7 @@ int main(int argc, char *argv[])
 	if(mosq == NULL){
 		return 1;
 	}
+	mosquitto_log_callback_set(mosq, &on_log);
 	mosquitto_connect_callback_set(mosq, on_connect);
 	mosquitto_disconnect_callback_set(mosq, on_disconnect);
 	mosquitto_subscribe_callback_set(mosq, on_subscribe);
@@ -84,5 +108,6 @@ int main(int argc, char *argv[])
 	mosquitto_destroy(mosq);
 
 	mosquitto_lib_cleanup();
+
 	return run;
 }

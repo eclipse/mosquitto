@@ -45,11 +45,14 @@ def do_test(proto_ver):
         time.sleep(0.1)
         sock.send(publish_packet_s)
         mosq_test.expect_packet(sock, "puback", puback_packet_s)
-        sub.wait()
+        sub_terminate_rc = 0
+        if mosq_test.wait_for_subprocess(sub):
+            print("sub not terminated")
+            sub_terminate_rc = 1
         (stdo, stde) = sub.communicate()
         expected_output = topic + ' ' + payload + '\n'
         if stdo.decode('utf-8') == expected_output:
-            rc = 0
+            rc = sub_terminate_rc
         else:
             print("expected: %s" % expected_output)
             print("actual:   %s"  % stdo.decode('utf-8'))
@@ -60,7 +63,9 @@ def do_test(proto_ver):
         print(e)
     finally:
         broker.terminate()
-        broker.wait()
+        if mosq_test.wait_for_subprocess(broker):
+            print("broker not terminated")
+            if rc == 0: rc=1
         (stdo, stde) = broker.communicate()
         if rc:
             print(stde.decode('utf-8'))

@@ -51,11 +51,14 @@ try:
     bridge.send(suback_packet)
 
     pub = subprocess.Popen(['./08-ssl-bridge-helper.py', str(port2)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    pub.wait()
+    pub_terminated = 0
+    if mosq_test.wait_for_subprocess(pub):
+        print("pub not terminated")
+        pub_terminated = 1
     (stdo, stde) = pub.communicate()
 
     mosq_test.expect_packet(bridge, "publish", publish_packet)
-    rc = 0
+    rc = pub_terminated
 
     bridge.close()
 except mosq_test.TestError:
@@ -68,7 +71,9 @@ finally:
         pass
 
     broker.terminate()
-    broker.wait()
+    if mosq_test.wait_for_subprocess(broker):
+        print("broker not terminated")
+        if rc == 0: rc=1
     (stdo, stde) = broker.communicate()
     if rc:
         print(stde.decode('utf-8'))

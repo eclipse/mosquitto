@@ -39,7 +39,10 @@ try:
     sock.close()
 
     broker.terminate()
-    broker.wait()
+    broker_terminate_rc = 0
+    if mosq_test.wait_for_subprocess(broker):
+        print("broker not terminated")
+        broker_terminate_rc = 1
     (stdo, stde) = broker.communicate()
     broker = None
 
@@ -52,11 +55,13 @@ try:
     sqlite_help.check_client(cur, "sqlite-client-v5-0", None, 0, 1, port, 10000, 2, 1, 60, 0)
 
     con.close()
-    rc = 0
+    rc = broker_terminate_rc
 finally:
     if broker is not None:
         broker.terminate()
-        broker.wait()
+        if mosq_test.wait_for_subprocess(broker):
+            print("broker not terminated (2)")
+            if rc == 0: rc=1
         (stdo, stde) = broker.communicate()
     if con is not None:
         con.close()

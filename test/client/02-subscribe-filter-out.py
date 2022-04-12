@@ -43,10 +43,13 @@ def do_test(proto_ver):
         sock.send(publish_packet2)
         sock.send(publish_packet1)
         sock.send(publish_packet2)
-        sub.wait()
+        sub_terminate_rc = 0
+        if mosq_test.wait_for_subprocess(sub):
+            print("sub not terminated")
+            sub_terminate_rc = 1
         (stdo, stde) = sub.communicate()
         if stdo.decode('utf-8') == 'recv\nrecv\n':
-            rc = 0
+            rc = sub_terminate_rc
         else:
             print(stdo.decode('utf-8'))
         sock.close()
@@ -56,7 +59,9 @@ def do_test(proto_ver):
         print(e)
     finally:
         broker.terminate()
-        broker.wait()
+        if mosq_test.wait_for_subprocess(broker):
+            print("broker not terminated")
+            if rc == 0: rc=1
         (stdo, stde) = broker.communicate()
         if rc:
             print(stde.decode('utf-8'))

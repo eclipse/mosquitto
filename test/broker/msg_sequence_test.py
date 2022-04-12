@@ -191,18 +191,23 @@ def do_test(hostname, port):
                     this_test.process_all(sock)
                     print("\033[32m" + tname + "\033[0m")
                     succeeded += 1
+                    sock.close()
                 except ValueError as e:
                     print("\033[31m" + tname + " failed: " + str(e) + "\033[0m")
                     rc = 1
+                    sock.close()
                 except ConnectionResetError as e:
                     print("\033[31m" + tname + " failed: " + str(e) + "\033[0m")
                     rc = 1
+                    sock.close()
                 except socket.timeout as e:
                     print("\033[31m" + tname + " failed: " + str(e) + "\033[0m")
                     rc = 1
+                    sock.close()
                 except mosq_test.TestError as e:
                     print("\033[31m" + tname + " failed: " + str(e) + "\033[0m")
                     rc = 1
+                    sock.close()
 
     print("%d tests total\n%d tests succeeded" % (total, succeeded))
     return rc
@@ -216,7 +221,9 @@ try:
     rc = do_test(hostname=hostname, port=port)
 finally:
     broker.terminate()
-    broker.wait()
+    if mosq_test.wait_for_subprocess(broker):
+        print("broker not terminated")
+        if rc == 0: rc=1
     (stdo, stde) = broker.communicate()
 if rc:
     #print(stde.decode('utf-8'))

@@ -44,7 +44,9 @@ try:
 except mosq_test.TestError:
     pass
 finally:
-    client.wait()
+    if mosq_test.wait_for_subprocess(client):
+        print("test client not finished")
+        rc=1
     if rc:
         (stdo, stde) = client.communicate()
         print(stde)

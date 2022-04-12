@@ -18,8 +18,10 @@ except KeyError:
 env['PYTHONPATH'] = '../../lib/python:'+pp
 
 client = mosq_test.start_client(filename=sys.argv[1].replace('/', '-'), cmd=client_args, env=env)
-client.wait()
-
-rc = client.returncode
+if mosq_test.wait_for_subprocess(client):
+    print("test client not finished")
+    rc=1
+else:
+    rc=client.returncode
 
 exit(rc)

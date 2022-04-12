@@ -80,7 +80,9 @@ def do_test(proto_ver, per_listener, username):
         # Remove "write" ability
         write_acl_2(acl_file, username)
         broker.terminate()
-        broker.wait()
+        if mosq_test.wait_for_subprocess(broker):
+            print("broker not terminated")
+            if rc == 0: rc=1
         if os.path.isfile(persistence_file) == False:
             raise FileNotFoundError("Persistence file not written")
 
@@ -97,7 +99,9 @@ def do_test(proto_ver, per_listener, username):
         pass
     finally:
         broker.terminate()
-        broker.wait()
+        if mosq_test.wait_for_subprocess(broker):
+            print("broker not terminated")
+            if rc == 0: rc=1
         os.remove(conf_file)
         os.remove(acl_file)
         try:

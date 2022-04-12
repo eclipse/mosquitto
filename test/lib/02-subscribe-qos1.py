@@ -56,7 +56,10 @@ try:
 except mosq_test.TestError:
     pass
 finally:
-    client.wait()
+    if mosq_test.wait_for_subprocess(client):
+        print("test client not finished")
+        print(client.stdout.read().decode('utf-8'))
+        rc=1
     sock.close()
 
 exit(rc)

@@ -35,7 +35,9 @@ def do_test(start_broker, proto_ver_connect, proto_ver_msgs, sub_opts):
     finally:
         if start_broker:
             broker.terminate()
-            broker.wait()
+            if mosq_test.wait_for_subprocess(broker):
+                print("broker not terminated")
+                if rc == 0: rc=1
             (stdo, stde) = broker.communicate()
             if rc:
                 print(stde.decode('utf-8'))
