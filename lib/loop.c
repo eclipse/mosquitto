@@ -114,9 +114,11 @@ int mosquitto_loop(struct mosquitto *mosq, int timeout, int max_packets)
 	}
 
 	now = mosquitto_time();
+	pthread_mutex_lock(&mosq->msgtime_mutex);
 	if(mosq->next_msg_out && now + timeout_ms/1000 > mosq->next_msg_out){
 		timeout_ms = (mosq->next_msg_out - now)*1000;
 	}
+	pthread_mutex_unlock(&mosq->msgtime_mutex);
 
 	if(timeout_ms < 0){
 		/* There has been a delay somewhere which means we should have already
