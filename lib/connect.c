@@ -230,7 +230,6 @@ static int mosquitto__reconnect(struct mosquitto *mosq, bool blocking)
 			if(rc){
 				packet__cleanup_all(mosq);
 				net__socket_close(mosq);
-				mosquitto__set_state(mosq, mosq_cs_new);
 			}
 		}
 		return rc;

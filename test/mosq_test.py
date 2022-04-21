@@ -14,7 +14,6 @@ import atexit
 vg_index = 1
 vg_logfiles = []
 
-
 class TestError(Exception):
     def __init__(self, message="Mismatched packets"):
         self.message = message
