@@ -52,7 +52,7 @@ if os.path.exists('mosquitto-%d.db' % (port)):
 
 broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port)
 
-(stdo1, stde1) = ("", "")
+(stdo1, stde1) = (None, None)
 try:
     sock = mosq_test.do_client_connect(connect_packet, connack_packet, timeout=20, port=port)
     mosq_test.do_send_receive(sock, subscribe1_packet, suback1_packet, "suback1")
@@ -63,6 +63,9 @@ try:
     mosq_test.receive_unordered(sock, puback2s_packet, publish2a_packet, "puback2a/publish2a")
 
     sock.send(puback2a_packet)
+
+    # Send a ping and wait for the the response to make sure the puback2a_packet was processed by the broker
+    mosq_test.do_ping(sock)
 
     broker.terminate()
     broker.wait()
@@ -84,6 +87,9 @@ except mosq_test.TestError:
     pass
 finally:
     os.remove(conf_file)
+    if rc and stde1:
+        print(stde1.decode('utf-8'))
+
     broker.terminate()
     broker.wait()
     (stdo, stde) = broker.communicate()
