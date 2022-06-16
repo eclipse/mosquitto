@@ -1,6 +1,6 @@
 include ../config.mk
 
-.PHONY: all check test ptest clean
+.PHONY: all check test ptest clean fuzz
 
 all :
 
@@ -19,8 +19,12 @@ ptest : utest
 utest :
 	$(MAKE) -C unit test
 
+fuzz :
+	$(MAKE) -C fuzz fuzz
+
 reallyclean : clean
 clean :
 	$(MAKE) -C lib clean
 	$(MAKE) -C broker clean
 	$(MAKE) -C unit clean
+	$(MAKE) -C fuzz clean

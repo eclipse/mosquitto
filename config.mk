@@ -120,6 +120,9 @@ WITH_JEMALLOC:=no
 # probably of no particular interest to end users.
 WITH_XTREPORT=no
 
+#The Fuzzer Support
+WITH_Fuzzer:=no
+
 # =============================================================================
 # End of user configuration
 # =============================================================================
@@ -366,6 +369,18 @@ ifeq ($(WITH_COVERAGE),yes)
 	LIB_LDFLAGS:=$(LIB_LDFLAGS) -coverage
 	CLIENT_CFLAGS:=$(CLIENT_CFLAGS) -coverage
 	CLIENT_LDFLAGS:=$(CLIENT_LDFLAGS) -coverage
+endif
+
+ifeq ($(WITH_Fuzzer),yes)
+	BROKER_CFLAGS:=$(BROKER_CFLAGS) -fsanitize=address,undefined,fuzzer
+	BROKER_LDFLAGS:=$(BROKER_LDFLAGS) -fsanitize=address,undefined
+	PLUGIN_CFLAGS:=$(PLUGIN_CFLAGS) -fsanitize=address,undefined,fuzzer
+	PLUGIN_LDFLAGS:=$(PLUGIN_LDFLAGS) -fsanitize=address,undefined,fuzzer
+	LIB_CFLAGS:=$(LIB_CFLAGS) -fsanitize=address,undefined,fuzzer
+	LIB_LDFLAGS:=$(LIB_LDFLAGS) -fsanitize=address,undefined,fuzzer
+	CLIENT_CFLAGS:=$(CLIENT_CFLAGS) -fsanitize=address,undefined,fuzzer
+	CLIENT_LDFLAGS:=$(CLIENT_LDFLAGS) -fsanitize=address,undefined
+	APP_LDFLAGS:=$(APP_LDFLAGS) -fsanitize=address,undefined
 endif
 
 ifeq ($(WITH_CJSON),yes)

@@ -44,7 +44,7 @@ DISTFILES= \
 	README-windows.txt \
 	README.md
 
-.PHONY : all mosquitto api docs binary check clean reallyclean test install uninstall dist sign copy localdocker
+.PHONY : all mosquitto api docs binary check clean reallyclean test install uninstall dist sign copy localdocker fuzz
 
 all : $(MAKE_ALL)
 
@@ -86,6 +86,9 @@ ptest : mosquitto
 
 utest : mosquitto
 	$(MAKE) -C test utest
+
+fuzz : mosquitto
+	$(MAKE) -C test fuzz
 
 install : all
 	set -e; for d in ${DIRS}; do $(MAKE) -C $${d} install; done
