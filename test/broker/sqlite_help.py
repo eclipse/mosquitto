@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 dir_in = 0
 dir_out = 1
@@ -40,7 +41,12 @@ def cleanup(port):
     try:
         os.rmdir(f"{port}")
         rc = 0
-    except OSError:
+    except OSError as e:
+        print(f"ERROR sqlite3 file not removed after shutdown")
+        if Path(str(port), "mosquitto.sqlite3-wal").stat().st_size == 0:
+            # some versions of sqlite3 do not remove the wal file
+            # thus we make sure that the file is at least empty (no pending db transactions)
+            rc = 0
         os.remove(f"{port}/mosquitto.sqlite3-shm")
         os.remove(f"{port}/mosquitto.sqlite3-wal")
         os.rmdir(f"{port}")
