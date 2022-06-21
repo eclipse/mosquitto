@@ -148,7 +148,9 @@ endif()
 
 add_definitions (-DWITH_BROKER)
 
-set (MOSQ_LIBS ${MOSQ_LIBS} ${OPENSSL_LIBRARIES})
+if(WITH_TLS)
+	set (MOSQ_LIBS ${MOSQ_LIBS} OpenSSL::SSL)
+endif()
 # Check for getaddrinfo_a
 include(CheckLibraryExists)
 check_library_exists(anl getaddrinfo_a  "" HAVE_GETADDRINFO_A)
@@ -225,11 +227,9 @@ endif()
 target_include_directories(mosquitto
 	PUBLIC
 		"${mosquitto_SOURCE_DIR}/include"
-		"${OPENSSL_INCLUDE_DIR}"
 	PRIVATE
 		"${STDBOOL_H_PATH}"
 		"${STDINT_H_PATH}"
-		"${mosquitto_SOURCE_DIR}"
 		"${mosquitto_SOURCE_DIR}/common"
 		"${mosquitto_SOURCE_DIR}/lib"
 		"${mosquitto_SOURCE_DIR}/src"

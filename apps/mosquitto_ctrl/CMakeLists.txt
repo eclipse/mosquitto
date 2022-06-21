@@ -17,7 +17,6 @@ if(WITH_TLS AND CJSON_FOUND)
 	)
 
 	target_include_directories(mosquitto_ctrl PRIVATE
-		"${OPENSSL_INCLUDE_DIR}"
 		"${STDBOOL_H_PATH}"
 		"${STDINT_H_PATH}"
 		"${mosquitto_SOURCE_DIR}"
@@ -57,7 +56,7 @@ if(WITH_TLS AND CJSON_FOUND)
 
 	target_link_libraries(mosquitto_ctrl
 	  PRIVATE
-		${OPENSSL_LIBRARIES}
+		OpenSSL::SSL
 		cJSON
 	)
 

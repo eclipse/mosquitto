@@ -10,7 +10,6 @@ if(WITH_TLS)
 	)
 
 	target_include_directories(mosquitto_passwd PRIVATE
-		"${OPENSSL_INCLUDE_DIR}"
 		"${STDBOOL_H_PATH}"
 		"${STDINT_H_PATH}"
 		"${mosquitto_SOURCE_DIR}"
@@ -22,7 +21,7 @@ if(WITH_TLS)
 
     target_link_libraries(mosquitto_passwd
 	  PRIVATE
-		${OPENSSL_LIBRARIES}
+		OpenSSL::SSL
 	)
 
 	install(TARGETS mosquitto_passwd

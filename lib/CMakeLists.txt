@@ -58,7 +58,9 @@ if (WITH_THREADING AND WIN32)
 	list(APPEND C_SRC "../common/winthread_mosq.c" "../common/winthread_mosq.h")
 endif()
 
-set (LIBRARIES ${OPENSSL_LIBRARIES})
+if(WITH_TLS)
+	set (LIBRARIES OpenSSL::SSL)
+endif()
 
 if(UNIX AND NOT APPLE AND NOT ANDROID)
 	find_library(LIBRT rt)
@@ -104,7 +106,6 @@ endif()
 target_include_directories(libmosquitto
 	PUBLIC
 		"${mosquitto_SOURCE_DIR}/include"
-		"${OPENSSL_INCLUDE_DIR}"
 	PRIVATE
 		"${STDBOOL_H_PATH}"
 		"${STDINT_H_PATH}"
@@ -152,7 +153,6 @@ if(WITH_STATIC_LIBRARIES)
 	target_link_libraries(libmosquitto_static PRIVATE ${LIBRARIES})
 
 	target_include_directories(libmosquitto_static PRIVATE
-		"${OPENSSL_INCLUDE_DIR}"
 		"${STDBOOL_H_PATH}"
 		"${STDINT_H_PATH}"
 		"${mosquitto_SOURCE_DIR}"
