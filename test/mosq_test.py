@@ -1,3 +1,4 @@
+import atexit
 import errno
 import os
 import socket
@@ -5,6 +6,8 @@ import subprocess
 import struct
 import sys
 import time
+
+import traceback
 
 import mqtt5_props
 
@@ -141,6 +144,7 @@ def packet_matches(name, recvd, expected):
             print("Expected: "+to_string(expected))
         except struct.error:
             print("Expected (not decoded, len=%d): %s" % (len(expected), expected))
+        traceback.print_stack(file=sys.stdout)
 
         return False
     else:
