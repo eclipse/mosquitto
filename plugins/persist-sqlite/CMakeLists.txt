@@ -2,7 +2,6 @@ if(SQLITE3_FOUND AND CJSON_FOUND)
 	set(CLIENT_INC
 		"${STDBOOL_H_PATH}"
 		"${STDINT_H_PATH}"
-		"${mosquitto_SOURCE_DIR}"
 		"${mosquitto_SOURCE_DIR}/deps"
 		"${mosquitto_SOURCE_DIR}/include"
 		"${mosquitto_SOURCE_DIR}/src"

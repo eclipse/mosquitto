@@ -104,6 +104,23 @@ option(WITH_APPS "Build apps?" ON)
 option(WITH_PLUGINS "Build plugins?" ON)
 option(DOCUMENTATION "Build documentation?" ON)
 
+add_library(config-header
+	INTERFACE
+		config.h
+)
+target_include_directories(config-header
+	INTERFACE
+		${mosquitto_SOURCE_DIR}
+)
+
+if(WITH_TLS)
+	target_include_directories(config-header
+		INTERFACE
+			"${OPENSSL_INCLUDE_DIR}"
+	)
+endif()
+
+
 add_subdirectory(lib)
 if(WITH_CLIENTS)
 	add_subdirectory(client)

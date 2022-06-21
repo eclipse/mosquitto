@@ -241,8 +241,10 @@ if(WITH_BUNDLED_DEPS)
 endif()
 
 target_link_libraries(mosquitto
-  PRIVATE
-	${MOSQ_LIBS}
+	PUBLIC
+		config-header
+  	PRIVATE
+		${MOSQ_LIBS}
 )
 
 if (WITH_THREADING AND NOT WIN32)
