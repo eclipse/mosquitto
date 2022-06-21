@@ -13,9 +13,9 @@ def write_config(filename, port1, port2):
         f.write("listener %d\n" % (port2))
         f.write("\n")
         f.write("listener %d\n" % (port1))
-        f.write("cafile ../ssl/all-ca.crt\n")
-        f.write("certfile ../ssl/server.crt\n")
-        f.write("keyfile ../ssl/server.key\n")
+        f.write(f"cafile {ssl_dir}/all-ca.crt\n")
+        f.write(f"certfile {ssl_dir}/server.crt\n")
+        f.write(f"keyfile {ssl_dir}/server.key\n")
 
 (port1, port2) = mosq_test.get_port(2)
 conf_file = os.path.basename(__file__).replace('.py', '.conf')
@@ -28,7 +28,7 @@ connack_packet = mosq_test.gen_connack(rc=0)
 broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port2, use_conf=True)
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-ssock = ssl.wrap_socket(sock, ca_certs="../ssl/test-alt-ca.crt", cert_reqs=ssl.CERT_REQUIRED)
+ssock = ssl.wrap_socket(sock, ca_certs=f"{ssl_dir}/test-alt-ca.crt", cert_reqs=ssl.CERT_REQUIRED)
 ssock.settimeout(20)
 try:
     ssock.connect(("localhost", port1))

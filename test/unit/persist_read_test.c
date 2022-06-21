@@ -5,6 +5,7 @@
 
 #include <CUnit/CUnit.h>
 #include <CUnit/Basic.h>
+#include "path_helper.h"
 
 #define WITH_BROKER
 #define WITH_PERSISTENCE
@@ -44,7 +45,10 @@ static void TEST_empty_file(void)
 
 	config.persistence = true;
 
-	config.persistence_filepath = "files/persist_read/empty.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/empty.test-db");
+	config.persistence_filepath = persistence_filepath;
+
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 }
@@ -61,11 +65,14 @@ static void TEST_corrupt_header(void)
 
 	config.persistence = true;
 
-	config.persistence_filepath = "files/persist_read/corrupt-header-short.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/corrupt-header-short.test-db");
+	config.persistence_filepath = persistence_filepath;
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, 1);
 
-	config.persistence_filepath = "files/persist_read/corrupt-header-long.test-db";
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/corrupt-header-long.test-db");
+	config.persistence_filepath = persistence_filepath;
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, 1);
 }
@@ -80,7 +87,9 @@ static void TEST_unsupported_version(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/unsupported-version.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/unsupported-version.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, 1);
@@ -97,7 +106,9 @@ static void TEST_v3_config_ok(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v3-cfg.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v3-cfg.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
@@ -115,7 +126,9 @@ static void TEST_v4_config_ok(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v4-cfg.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v4-cfg.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
@@ -133,7 +146,9 @@ static void TEST_v3_config_truncated(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v3-cfg-truncated.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v3-cfg-truncated.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, 1);
@@ -151,7 +166,9 @@ static void TEST_v3_config_bad_dbid(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v3-cfg-bad-dbid.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v3-cfg-bad-dbid.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, 1);
@@ -169,7 +186,9 @@ static void TEST_v3_bad_chunk(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v3-bad-chunk.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v3-bad-chunk.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
@@ -187,7 +206,9 @@ static void TEST_v3_message_store(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v3-message-store.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v3-message-store.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
@@ -222,7 +243,9 @@ static void TEST_v3_client(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v3-client.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v3-client.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
@@ -248,7 +271,9 @@ static void TEST_v3_client_message(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v3-client-message.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v3-client-message.test-db");
+	config.persistence_filepath = persistence_filepath;
 	config.max_inflight_messages = 20;
 
 	rc = persist__restore();
@@ -299,7 +324,9 @@ static void TEST_v3_retain(void)
 
 	retain__init();
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v3-retain.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v3-retain.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
@@ -349,7 +376,9 @@ static void TEST_v3_sub(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v3-sub.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v3-sub.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
@@ -377,7 +406,9 @@ static void TEST_v4_message_store(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v4-message-store.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v4-message-store.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
@@ -411,7 +442,9 @@ static void TEST_v6_config_ok(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v6-cfg.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v6-cfg.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
@@ -429,7 +462,9 @@ static void TEST_v5_config_truncated(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v5-cfg-truncated.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v5-cfg-truncated.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, 1);
@@ -447,7 +482,9 @@ static void TEST_v5_bad_chunk(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v5-bad-chunk.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v5-bad-chunk.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
@@ -465,7 +502,9 @@ static void TEST_v6_message_store(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v6-message-store.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v6-message-store.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
@@ -504,7 +543,9 @@ static void TEST_v6_message_store_props(void)
 	config.listener_count = 1;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v6-message-store-props.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v6-message-store-props.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
@@ -542,7 +583,9 @@ static void TEST_v5_client(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v5-client.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v5-client.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
@@ -574,7 +617,9 @@ static void TEST_v6_client(void)
 	config.listeners = &listener;
 	config.listener_count = 1;
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v6-client.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v6-client.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
@@ -605,7 +650,9 @@ static void TEST_v6_client_message(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v6-client-message.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v6-client-message.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
@@ -652,7 +699,9 @@ static void TEST_v6_client_message_props(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v6-client-message-props.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v6-client-message-props.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
@@ -698,7 +747,9 @@ static void TEST_v6_retain(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v6-retain.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v6-retain.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	retain__init();
 	rc = persist__restore();
@@ -746,7 +797,9 @@ static void TEST_v6_sub(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v6-sub.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v6-sub.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);

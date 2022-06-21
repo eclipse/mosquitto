@@ -2,6 +2,9 @@
 
 from mosq_test_helper import *
 
+source_dir = Path(__file__).resolve().parent
+ssl_dir = source_dir.parent / "ssl"
+
 def write_config(filename, port1, port2):
     with open(filename, 'w') as f:
         f.write("listener %d\n" % (port2))
@@ -13,7 +16,7 @@ def write_config(filename, port1, port2):
         f.write("notifications false\n")
         f.write("restart_timeout 2\n")
         f.write("\n")
-        f.write("bridge_cafile ../ssl/all-ca.crt\n")
+        f.write(f"bridge_cafile {ssl_dir}/all-ca.crt\n")
         f.write("bridge_insecure true\n")
 
 (port1, port2) = mosq_test.get_port(2)
@@ -33,7 +36,13 @@ publish_packet = mosq_test.gen_publish("bridge/ssl/test", qos=0, payload="messag
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-ssock = ssl.wrap_socket(sock, ca_certs="../ssl/all-ca.crt", keyfile="../ssl/server.key", certfile="../ssl/server.crt", server_side=True)
+ssock = ssl.wrap_socket(
+    sock,
+    ca_certs=ssl_dir / "all-ca.crt",
+    keyfile=ssl_dir / "server.key",
+    certfile=ssl_dir / "server.crt",
+    server_side=True
+)
 ssock.settimeout(20)
 ssock.bind(('', port1))
 ssock.listen(5)
@@ -50,7 +59,7 @@ try:
     mosq_test.expect_packet(bridge, "subscribe", subscribe_packet)
     bridge.send(suback_packet)
 
-    pub = subprocess.Popen(['./08-ssl-bridge-helper.py', str(port2)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    pub = subprocess.Popen([f'{source_dir}/08-ssl-bridge-helper.py', str(port2)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     pub.wait()
     (stdo, stde) = pub.communicate()
 
@@ -75,4 +84,3 @@ finally:
     ssock.close()
 
 exit(rc)
-

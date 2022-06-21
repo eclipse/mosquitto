@@ -10,7 +10,7 @@ if sys.version < '2.7':
 def write_config(filename, port1, port2):
     with open(filename, 'w') as f:
         f.write("allow_anonymous true\n")
-        f.write("psk_file 08-tls-psk-pub.psk\n")
+        f.write(f"psk_file {str(source_dir/'08-tls-psk-pub.psk')}\n")
         f.write("\n")
         f.write("listener %d\n" % (port1))
         f.write("psk_hint hint\n")
@@ -23,12 +23,12 @@ conf_file = os.path.basename(__file__).replace('.py', '.conf')
 write_config(conf_file, port1, port2)
 
 env = dict(os.environ)
-env['LD_LIBRARY_PATH'] = '../../lib:../../lib/cpp'
+env['LD_LIBRARY_PATH'] = mosq_test.get_build_root() + '/lib:' + mosq_test.get_build_root() + '/lib/cpp'
 try:
     pp = env['PYTHONPATH']
 except KeyError:
     pp = ''
-env['PYTHONPATH'] = '../../lib/python:'+pp
+env['PYTHONPATH'] = mosq_test.get_build_root() + '/lib/python:'+pp
 
 
 rc = 1

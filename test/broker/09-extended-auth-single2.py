@@ -54,7 +54,7 @@ def do_test(suffix):
     connack5_packet = mosq_test.gen_connack(rc=0, proto_ver=5, properties=props)
 
 
-    broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port)
+    broker = mosq_test.start_broker(filename=conf_file, use_conf=True, port=port)
 
     try:
         sock = mosq_test.do_client_connect(connect1_packet, b"", timeout=20, port=port)

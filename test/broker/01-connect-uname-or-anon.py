@@ -12,7 +12,7 @@ def write_config(filename, port, allow_anonymous, password_file):
         else:
             f.write("allow_anonymous false\n")
         if password_file:
-            f.write("password_file %s\n" % (filename.replace('.conf', '.pwfile')))
+            f.write("password_file %s/%s\n" % (Path(__file__).resolve().parent, filename.replace('.conf', '.pwfile')))
 
 def do_test(allow_anonymous, password_file, username, expect_success):
     port = mosq_test.get_port()

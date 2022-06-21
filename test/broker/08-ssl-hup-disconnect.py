@@ -15,9 +15,9 @@ if sys.version < '2.7':
 def write_config(filename, pw_file, port, option):
     with open(filename, 'w') as f:
         f.write("listener %d\n" % (port))
-        f.write("cafile ../ssl/all-ca.crt\n")
-        f.write("certfile ../ssl/server.crt\n")
-        f.write("keyfile ../ssl/server.key\n")
+        f.write(f"cafile {ssl_dir}/all-ca.crt\n")
+        f.write(f"certfile {ssl_dir}/server.crt\n")
+        f.write(f"keyfile {ssl_dir}/server.key\n")
         f.write("require_certificate true\n")
         f.write("%s true\n" % (option))
         f.write("password_file %s\n" % (pw_file))
@@ -42,7 +42,7 @@ def do_test(option):
 
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        ssock = ssl.wrap_socket(sock, ca_certs="../ssl/test-root-ca.crt", certfile="../ssl/client.crt", keyfile="../ssl/client.key", cert_reqs=ssl.CERT_REQUIRED)
+        ssock = ssl.wrap_socket(sock, ca_certs=f"{ssl_dir}/test-root-ca.crt", certfile=f"{ssl_dir}/client.crt", keyfile=f"{ssl_dir}/client.key", cert_reqs=ssl.CERT_REQUIRED)
         ssock.settimeout(20)
         ssock.connect(("localhost", port))
         mosq_test.do_send_receive(ssock, connect_packet, connack_packet, "connack")

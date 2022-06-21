@@ -5,6 +5,8 @@
 #include <string.h>
 #include <mosquitto.h>
 
+#include "path_helper.h"
+
 static int run = -1;
 
 static void on_connect(struct mosquitto *mosq, void *obj, int rc)
@@ -54,7 +56,15 @@ int main(int argc, char *argv[])
 	if(mosq == NULL){
 		return 1;
 	}
-	mosquitto_tls_set(mosq, "../ssl/test-root-ca.crt", "../ssl/certs", "../ssl/client-encrypted.crt", "../ssl/client-encrypted.key", password_callback);
+	char cafile[4096];
+	cat_sourcedir_with_relpath(cafile, "/../../ssl/test-root-ca.crt");
+	char capath[4096];
+	cat_sourcedir_with_relpath(capath, "/../../ssl/certs");
+	char certfile[4096];
+	cat_sourcedir_with_relpath(certfile, "/../../ssl/client-encrypted.crt");
+	char keyfile[4096];
+	cat_sourcedir_with_relpath(keyfile, "/../../ssl/client-encrypted.key");
+	mosquitto_tls_set(mosq, cafile, capath, certfile, keyfile, password_callback);
 	mosquitto_connect_callback_set(mosq, on_connect);
 	mosquitto_disconnect_callback_set(mosq, on_disconnect);
 

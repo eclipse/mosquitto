@@ -10,7 +10,7 @@ def write_config(filename, port):
     with open(filename, 'w') as f:
         f.write("listener %d\n" % (port))
         f.write("allow_anonymous false\n")
-        f.write("plugin ../../plugins/dynamic-security/mosquitto_dynamic_security.so\n")
+        f.write(f"plugin {mosq_test.get_build_root()}/plugins/dynamic-security/mosquitto_dynamic_security.so\n")
         f.write("plugin_opt_config_file %d/dynamic-security.json\n" % (port))
 
 def command_check(sock, command_payload, expected_response):
@@ -81,7 +81,7 @@ disconnect_kick_packet = mosq_test.gen_disconnect(reason_code=mqtt5_rc.MQTT_RC_A
 
 try:
     os.mkdir(str(port))
-    shutil.copyfile("dynamic-security-init.json", "%d/dynamic-security.json" % (port))
+    shutil.copyfile(str(Path(__file__).resolve().parent / "dynamic-security-init.json"), "%d/dynamic-security.json" % (port))
 except FileExistsError:
     pass
 
@@ -128,7 +128,7 @@ finally:
         os.remove(f"{port}/dynamic-security.json")
     except FileNotFoundError:
         pass
-    os.rmdir(f"{port}")
+    shutil.rmtree(f"{port}")
     broker.terminate()
     broker.wait()
     (stdo, stde) = broker.communicate()

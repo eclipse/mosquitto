@@ -13,7 +13,7 @@ import mqtt5_props
 
 import __main__
 
-import atexit
+from pathlib import Path
 vg_index = 1
 vg_logfiles = []
 
@@ -22,23 +22,29 @@ class TestError(Exception):
     def __init__(self, message="Mismatched packets"):
         self.message = message
 
+def get_build_root():
+    result = os.getenv("BUILD_ROOT")
+    if result is None:
+        result = str(Path(__file__).resolve().parents[1])
+    return result
+
 def start_broker(filename, cmd=None, port=0, use_conf=False, expect_fail=False, nolog=False, checkhost="localhost"):
     global vg_index
     global vg_logfiles
 
     delay = 0.1
 
-    if use_conf == True:
-        cmd = ['../../src/mosquitto', '-v', '-c', filename.replace('.py', '.conf')]
+    if use_conf:
+        cmd = [get_build_root() + '/src/mosquitto', '-v', '-c', filename.replace('.py', '.conf')]
 
         if port == 0:
             port = 1888
     else:
         if cmd is None and port != 0:
-            cmd = ['../../src/mosquitto', '-v', '-p', str(port)]
+            cmd = [get_build_root() + '/src/mosquitto', '-v', '-p', str(port)]
         elif cmd is None and port == 0:
             port = 1888
-            cmd = ['../../src/mosquitto', '-v', '-c', filename.replace('.py', '.conf')]
+            cmd = [get_build_root() + '/src/mosquitto', '-v', '-c', filename.replace('.py', '.conf')]
         elif cmd is not None and port == 0:
             port = 1888
 
@@ -89,7 +95,7 @@ def start_client(filename, cmd, env, port=1888):
         cmd = ['valgrind', '-q', '--log-file='+filename+'.vglog'] + cmd
 
     cmd = cmd + [str(port)]
-    return subprocess.Popen(cmd, env=env)
+    return subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 def pub_helper(port, proto_ver=4):
     connect_packet = gen_connect("pub-helper", proto_ver=proto_ver)

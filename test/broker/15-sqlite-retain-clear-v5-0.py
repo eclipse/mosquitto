@@ -27,6 +27,7 @@ publish1_packet = mosq_test.gen_publish(topic1, qos=qos, payload=payload1, retai
 publish2_packet = mosq_test.gen_publish(topic2, qos=qos, payload=payload2, retain=True, proto_ver=proto_ver)
 
 publish2_clear_packet = mosq_test.gen_publish(topic2, qos=qos, payload="", retain=True, proto_ver=proto_ver)
+publish2_clear_echo = mosq_test.gen_publish(topic2, qos=qos, payload="", retain=False, proto_ver=proto_ver)
 
 mid = 1
 subscribe_packet = mosq_test.gen_subscribe(mid, "#", 0, proto_ver=proto_ver)
@@ -63,8 +64,8 @@ try:
     mosq_test.receive_unordered(sock, publish1_packet, publish2_packet, "publish 1 / 2")
     mosq_test.do_ping(sock)
 
-    # Clear retained
-    sock.send(publish2_clear_packet)
+    # Clear retained (and wait for the publish to avoid race condition)
+    mosq_test.do_send_receive(sock, publish2_clear_packet, publish2_clear_echo, "clear retain flag")
 
     # Kill broker
     broker.terminate()

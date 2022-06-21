@@ -25,19 +25,19 @@ disconnect_packet = mosq_test.gen_disconnect()
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-ssock = ssl.wrap_socket(sock, ca_certs="../ssl/all-ca.crt", keyfile="../ssl/server.key", certfile="../ssl/server.crt", server_side=True)
+ssock = ssl.wrap_socket(sock, ca_certs=f"{ssl_dir}/all-ca.crt", keyfile=f"{ssl_dir}/server.key", certfile=f"{ssl_dir}/server.crt", server_side=True)
 ssock.settimeout(10)
 ssock.bind(('', port))
 ssock.listen(5)
 
 client_args = sys.argv[1:]
 env = dict(os.environ)
-env['LD_LIBRARY_PATH'] = '../../lib:../../lib/cpp'
+env['LD_LIBRARY_PATH'] = mosq_test.get_build_root() + '/lib:' + mosq_test.get_build_root() + '/lib/cpp'
 try:
     pp = env['PYTHONPATH']
 except KeyError:
     pp = ''
-env['PYTHONPATH'] = '../../lib/python:'+pp
+env['PYTHONPATH'] = mosq_test.get_build_root() + '/lib/python:'+pp
 client = mosq_test.start_client(filename=sys.argv[1].replace('/', '-'), cmd=client_args, env=env, port=port)
 
 try:

@@ -83,7 +83,7 @@ def do_test(proto_ver):
         (bridge, address) = ssock.accept()
         bridge.settimeout(20)
 
-        mosq_test.expect_packet(bridge, "connect", connect_packet)
+        mosq_test.expect_packet(bridge, "2nd connect", connect_packet)
         bridge.send(connack_packet)
 
         mosq_test.expect_packet(bridge, "2nd subscribe", subscribe2_packet)

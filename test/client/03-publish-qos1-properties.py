@@ -10,7 +10,7 @@ def do_test(proto_ver):
     port = mosq_test.get_port()
 
     env = {
-            'LD_LIBRARY_PATH':'../../lib',
+            'LD_LIBRARY_PATH': mosq_test.get_build_root() + '/lib',
             'XDG_CONFIG_HOME':'/tmp/missing'
             }
     if proto_ver == 5:

@@ -10,7 +10,7 @@ def do_test(args, stderr_expected, rc_expected):
     port = mosq_test.get_port()
 
     env = {
-            'LD_LIBRARY_PATH':'../../lib',
+            'LD_LIBRARY_PATH': mosq_test.get_build_root() + '/lib',
             'XDG_CONFIG_HOME':'/tmp/missing'
             }
     cmd = ['../../client/mosquitto_sub'] + args

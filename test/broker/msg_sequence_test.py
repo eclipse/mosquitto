@@ -127,9 +127,10 @@ class MsgSequence(object):
 
 
 def do_test(hostname, port):
+    data_path=Path(__file__).resolve().parent/"data"
     rc = 0
     sequences = []
-    for (_, _, filenames) in walk("data"):
+    for (_, _, filenames) in walk(data_path):
         sequences.extend(filenames)
         break
 
@@ -140,7 +141,7 @@ def do_test(hostname, port):
         if seq[-5:] != ".json":
             continue
 
-        with open("data/"+seq, "r") as f:
+        with open(data_path/seq, "r") as f:
             test_file = json.load(f)
 
         for g in test_file:

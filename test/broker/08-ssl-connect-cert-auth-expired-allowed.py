@@ -13,9 +13,9 @@ def write_config(filename, port1, port2):
         f.write("listener %d\n" % (port2))
         f.write("\n")
         f.write("listener %d\n" % (port1))
-        f.write("cafile ../ssl/all-ca.crt\n")
-        f.write("certfile ../ssl/server.crt\n")
-        f.write("keyfile ../ssl/server.key\n")
+        f.write(f"cafile {ssl_dir}/all-ca.crt\n")
+        f.write(f"certfile {ssl_dir}/server.crt\n")
+        f.write(f"keyfile {ssl_dir}/server.key\n")
         f.write("require_certificate true\n")
         f.write("disable_client_cert_date_checks true\n")
         f.write("allow_anonymous true\n")
@@ -32,7 +32,7 @@ broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port2,
 
 try:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    ssock = ssl.wrap_socket(sock, ca_certs="../ssl/test-root-ca.crt", certfile="../ssl/client-expired.crt", keyfile="../ssl/client-expired.key", cert_reqs=ssl.CERT_REQUIRED)
+    ssock = ssl.wrap_socket(sock, ca_certs=f"{ssl_dir}/test-root-ca.crt", certfile=f"{ssl_dir}/client-expired.crt", keyfile=f"{ssl_dir}/client-expired.key", cert_reqs=ssl.CERT_REQUIRED)
     ssock.settimeout(20)
     ssock.connect(("localhost", port1))
     mosq_test.do_send_receive(ssock, connect_packet, connack_packet, "connack")

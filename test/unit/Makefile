@@ -3,12 +3,12 @@ include ${R}/config.mk
 
 .PHONY: all check test test-broker test-lib clean coverage
 
-CPPFLAGS:=$(CPPFLAGS) -I${R} -I${R}/include -I${R}/lib -I${R}/src -I${R}/common
+CPPFLAGS:=$(CPPFLAGS) -I${R} -I${R}/include -I${R}/lib -I${R}/src -I${R}/common -I${R}/test
 ifeq ($(WITH_BUNDLED_DEPS),yes)
         CPPFLAGS:=$(CPPFLAGS) -I${R}/deps
 endif
 
-CFLAGS:=$(CFLAGS) -coverage -Wall -ggdb
+CFLAGS:=$(CFLAGS) -coverage -Wall -ggdb -D TEST_SOURCE_DIR='"$(realpath .)"'
 LDFLAGS:=$(LDFLAGS) -coverage
 LDADD:=$(LDADD) -lcunit
 

@@ -1,7 +1,7 @@
 R=../../..
 .PHONY: all clean reallyclean
 
-CFLAGS=-I${R}/include -Werror
+CFLAGS=-I${R}/include -I${R}/test -Werror
 LIBS=${R}/lib/libmosquitto.so.1
 
 SRC = \
@@ -65,8 +65,8 @@ TESTS = ${SRC:.c=.test}
 
 all : ${TESTS}
 
-${TESTS} : %.test: %.c
-	$(CC) $< -o $@ $(CFLAGS) $(LIBS)
+${TESTS} : %.test: %.c ${R}/test/path_helper.h
+	$(CC) $< -o $@ -D TEST_SOURCE_DIR='"$(realpath .)"' $(CFLAGS) $(LIBS)
 
 reallyclean : clean
 	-rm -f *.orig

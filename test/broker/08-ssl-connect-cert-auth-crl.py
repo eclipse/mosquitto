@@ -12,11 +12,11 @@ def write_config(filename, port1, port2):
         f.write("allow_anonymous true\n")
         f.write("listener %d\n" % (port1))
         f.write("allow_anonymous true\n")
-        f.write("cafile ../ssl/all-ca.crt\n")
-        f.write("certfile ../ssl/server.crt\n")
-        f.write("keyfile ../ssl/server.key\n")
+        f.write(f"cafile {ssl_dir}/all-ca.crt\n")
+        f.write(f"certfile {ssl_dir}/server.crt\n")
+        f.write(f"keyfile {ssl_dir}/server.key\n")
         f.write("require_certificate true\n")
-        f.write("crlfile ../ssl/crl.pem\n")
+        f.write(f"crlfile {ssl_dir}/crl.pem\n")
 
 (port1, port2) = mosq_test.get_port(2)
 conf_file = os.path.basename(__file__).replace('.py', '.conf')
@@ -30,7 +30,7 @@ broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port2,
 
 try:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    ssock = ssl.wrap_socket(sock, ca_certs="../ssl/test-root-ca.crt", certfile="../ssl/client.crt", keyfile="../ssl/client.key", cert_reqs=ssl.CERT_REQUIRED)
+    ssock = ssl.wrap_socket(sock, ca_certs=f"{ssl_dir}/test-root-ca.crt", certfile=f"{ssl_dir}/client.crt", keyfile=f"{ssl_dir}/client.key", cert_reqs=ssl.CERT_REQUIRED)
     ssock.settimeout(20)
     ssock.connect(("localhost", port1))
 

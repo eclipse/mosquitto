@@ -8,7 +8,7 @@ vg_index = 0
 
 def start_broker(filename):
     global vg_index
-    cmd = ['../../src/mosquitto', '-v', '-c', filename]
+    cmd = [mosq_test.get_build_root() + '/src/mosquitto', '-v', '-c', filename]
 
     if os.environ.get('MOSQ_USE_VALGRIND') is not None:
         logfile = os.path.basename(__file__)+'.'+str(vg_index)+'.vglog'
@@ -148,18 +148,18 @@ do_test("sys_interval 65536\n", 3) # Invalid value
 do_test("listener 1888\ncertfile\n", 3) # empty certfile
 do_test("listener 1888\nkeyfile\n", 3) # empty keyfile
 
-do_test("listener 1888\ncertfile ./16-config-parse-errors.py\nkeyfile ../ssl/server.key\n", 1) # invalid certfile
-do_test("listener 1888\ncertfile ../ssl/server.crt\nkeyfile ./16-config-parse-errors.py\n", 1) # invalid keyfile
-do_test("listener 1888\ncertfile ../ssl/server.crt\nkeyfile ../ssl/client.key\n", 1) # mismatched certfile / keyfile
+do_test(f"listener 1888\ncertfile {source_dir}/16-config-parse-errors.py\nkeyfile {ssl_dir}/server.key\n", 1) # invalid certfile
+do_test(f"listener 1888\ncertfile {ssl_dir}/server.crt\nkeyfile {source_dir}/16-config-parse-errors.py\n", 1) # invalid keyfile
+do_test(f"listener 1888\ncertfile {ssl_dir}/server.crt\nkeyfile {ssl_dir}/client.key\n", 1) # mismatched certfile / keyfile
 
-do_test("listener 1888\ncertfile ../ssl/server.crt\nkeyfile ../ssl/server.key\ntls_version invalid\n", 1) # invalid tls_version
+do_test(f"listener 1888\ncertfile {ssl_dir}/server.crt\nkeyfile {ssl_dir}/server.key\ntls_version invalid", 1) # invalid tls_version
 
-do_test("listener 1888\ncertfile ../ssl/server.crt\nkeyfile ../ssl/server.key\ncrlfile invalid\n", 1) # missing crl file
-do_test("listener 1888\ncertfile ../ssl/server.crt\nkeyfile ../ssl/server.key\ndhparamfile invalid\n", 1) # missing dh param file
-do_test("listener 1888\ncertfile ../ssl/server.crt\nkeyfile ../ssl/server.key\ndhparamfile ./16-config-parse-errors.py\n", 1) # invalid dh param file
+do_test(f"listener 1888\ncertfile {ssl_dir}/server.crt\nkeyfile {ssl_dir}/server.key\ncrlfile invalid", 1) # missing crl file
+do_test(f"listener 1888\ncertfile {ssl_dir}/server.crt\nkeyfile {ssl_dir}/server.key\ndhparamfile invalid", 1) # missing dh param file
+do_test(f"listener 1888\ncertfile {ssl_dir}/server.crt\nkeyfile {ssl_dir}/server.key\ndhparamfile {source_dir}/16-config-parse-errors.py", 1) # invalid dh param file
 
-do_test("listener 1888\ncertfile ../ssl/server.crt\nkeyfile ../ssl/server.key\nciphers invalid\n", 1) # invalid ciphers
-do_test("listener 1888\ncertfile ../ssl/server.crt\nkeyfile ../ssl/server.key\nciphers_tls1.3 invalid\n", 1) # invalid ciphers_tls1.3
+do_test(f"listener 1888\ncertfile {ssl_dir}/server.crt\nkeyfile {ssl_dir}/server.key\nciphers invalid", 1) # invalid ciphers
+do_test(f"listener 1888\ncertfile {ssl_dir}/server.crt\nkeyfile {ssl_dir}/server.key\nciphers_tls1.3 invalid", 1) # invalid ciphers_tls1.3
 
 
 exit(0)

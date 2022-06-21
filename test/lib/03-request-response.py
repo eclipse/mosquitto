@@ -33,12 +33,12 @@ sock.bind(('', port))
 sock.listen(5)
 
 env = dict(os.environ)
-env['LD_LIBRARY_PATH'] = '../../lib:../../lib/cpp'
+env['LD_LIBRARY_PATH'] = mosq_test.get_build_root() + '/lib:' + mosq_test.get_build_root() + '/lib/cpp'
 try:
     pp = env['PYTHONPATH']
 except KeyError:
     pp = ''
-env['PYTHONPATH'] = '../../lib/python:'+pp
+env['PYTHONPATH'] = mosq_test.get_build_root() + '/lib/python:'+pp
 client1 = mosq_test.start_client(filename="03-request-response-1.log", cmd=["c/03-request-response-1.test"], env=env, port=port)
 
 try:

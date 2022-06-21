@@ -1,3 +1,4 @@
+#include "path_helper.h"
 #include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -42,7 +43,9 @@ int main(int argc, char *argv[])
 	if(mosq == NULL){
 		return 1;
 	}
-	mosquitto_tls_set(mosq, "../ssl/all-ca.crt", NULL, NULL, NULL, NULL);
+	char cafile[4096];
+	cat_sourcedir_with_relpath(cafile, "/../../ssl/test-root-ca.crt");
+	mosquitto_tls_set(mosq, cafile, NULL, NULL, NULL, NULL);
 	mosquitto_connect_callback_set(mosq, on_connect);
 	mosquitto_disconnect_callback_set(mosq, on_disconnect);
 

@@ -7,7 +7,7 @@ from mosq_test_helper import *
 vg_index = 0
 def start_broker(filename):
     global vg_index
-    cmd = ['../../src/mosquitto', '-v', '-c', filename]
+    cmd = [mosq_test.get_build_root() + '/src/mosquitto', '-v', '-c', filename]
 
     if os.environ.get('MOSQ_USE_VALGRIND') is not None:
         logfile = os.path.basename(__file__)+'.'+str(vg_index)+'.vglog'
