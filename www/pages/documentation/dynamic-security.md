@@ -660,7 +660,7 @@ Where `acltype` is one of `publishClientSend`, `publishClientReceive`,
 For example:
 
 ```
-mosquitto_ctrl <options> dynsec addRoleACL <rolename> clientPublishSend client/topic allow 5
+mosquitto_ctrl <options> dynsec addRoleACL <rolename> publishClientSend client/topic allow 5
 ```
 
 To remove an ACL from a role using the topic filter as the key:
@@ -670,7 +670,7 @@ mosquitto_ctrl <options> dynsec removeRoleACL <rolename> <acltype> <topic filter
 For example:
 
 ```
-mosquitto_ctrl <options> dynsec removeRoleACL <rolename> clientPublishSend client/topic
+mosquitto_ctrl <options> dynsec removeRoleACL <rolename> publishClientSend client/topic
 ```
 
 To get information on a role:
