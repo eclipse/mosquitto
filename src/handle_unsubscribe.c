@@ -129,8 +129,16 @@ int handle__unsubscribe(struct mosquitto *context)
 
 		log__printf(NULL, MOSQ_LOG_DEBUG, "\t%s", sub);
 		if(allowed){
+			struct mosquitto_base_msg mod_sub;
+			mod_sub.topic = (char *) sub;
+			mod_sub.qos = 0;
+			rc = plugin__handle_unsubscribe(context, &mod_sub);
+			sub = mod_sub.topic;
+			if(rc){
+				mosquitto__FREE(sub);
+				return rc;
+			}
 			rc = sub__remove(context, sub, db.subs, &reason);
-			plugin__handle_unsubscribe(context, sub, properties);
 			plugin_persist__handle_subscription_delete(context, sub);
 		}else{
 			rc = MOSQ_ERR_SUCCESS;

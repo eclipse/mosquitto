@@ -214,7 +214,7 @@ struct mosquitto_evt_disconnect {
 struct mosquitto_evt_subscribe {
 	void *future;
 	struct mosquitto *client;
-	const char *topic;
+	char *topic;
 	const mosquitto_property *properties;
 	uint32_t subscription_identifier;
 	uint8_t subscription_options;
@@ -228,7 +228,7 @@ struct mosquitto_evt_subscribe {
 struct mosquitto_evt_unsubscribe {
 	void *future;
 	struct mosquitto *client;
-	const char *topic;
+	char *topic;
 	const mosquitto_property *properties;
 	void *future2[8];
 };
