@@ -61,6 +61,7 @@ Broker:
   Closes #2544.
 
 Plugins / plugin interface:
+- Add support for modifying outgoing messages using MOSQ_EVT_MESSAGE_READ.
 - Add persist-sqlite plugin.
 - Add mosquitto_client() function for retrieving a client struct if that
   client is connected.
@@ -110,7 +111,7 @@ Plugins / plugin interface:
 - The dynamic security plugin now only kicks clients at the start of the next
   network loop, to give chance for PUBACK/PUBREC to be sent. Closes #2474.
 - Add MOSQ_EVT_SUBSCRIBE and MOSQ_EVT_UNSUBSCRIBE events that are called when
-  subscribe/unsubscribes actually succeed.
+  subscribe/unsubscribes actually succeed. Allow modifying topic and qos.
 - Add `mosquitto_persistence_location()` for plugins to use to find a valid
   location for storing persistent data.
 
