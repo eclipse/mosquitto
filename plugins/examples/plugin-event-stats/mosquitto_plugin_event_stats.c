@@ -58,11 +58,12 @@ const char evt_topics[][60] = {
 	TOPIC_BASE "auth/ext/start", /* MOSQ_EVT_EXT_AUTH_START */
 	TOPIC_BASE "auth/ext/continue", /* MOSQ_EVT_EXT_AUTH_CONTINUE */
 	TOPIC_BASE "control", /* MOSQ_EVT_CONTROL */
-	TOPIC_BASE "message", /* MOSQ_EVT_MESSAGE */
+	TOPIC_BASE "message", /* MOSQ_EVT_MESSAGE_WRITE */
 	TOPIC_BASE "psk_key", /* MOSQ_EVT_PSK_KEY */
 	TOPIC_BASE "tick", /* MOSQ_EVT_TICK */
 	TOPIC_BASE "disconnect", /* MOSQ_EVT_DISCONNECT */
 	TOPIC_BASE "connect", /* MOSQ_EVT_CONNECT */
+	TOPIC_BASE "message_read", /* MOSQ_EVT_MESSAGE_READ */
 	TOPIC_BASE "subscribe", /* MOSQ_EVT_SUBSCRIBE */
 	TOPIC_BASE "unsubscribe", /* MOSQ_EVT_UNSUBSCRIBE */
 	TOPIC_BASE "persist/restore", /* MOSQ_EVT_PERSIST_RESTORE */

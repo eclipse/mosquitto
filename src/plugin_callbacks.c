@@ -39,8 +39,10 @@ static const char *get_event_name(int event)
 			return "auth-start";
 		case MOSQ_EVT_EXT_AUTH_CONTINUE:
 			return "auth-continue";
-		case MOSQ_EVT_MESSAGE:
-			return "message";
+		case MOSQ_EVT_MESSAGE_WRITE:
+			return "message-write";
+		case MOSQ_EVT_MESSAGE_READ:
+			return "message-read";
 		case MOSQ_EVT_TICK:
 			return "tick";
 		case MOSQ_EVT_DISCONNECT:
@@ -117,14 +119,16 @@ static struct mosquitto__callback **plugin__get_callback_base(struct mosquitto__
 			return &security_options->plugin_callbacks.ext_auth_continue;
 		case MOSQ_EVT_CONTROL:
 			return NULL;
-		case MOSQ_EVT_MESSAGE:
-			return &security_options->plugin_callbacks.message;
+		case MOSQ_EVT_MESSAGE_WRITE: /* same as MOSQ_EVT_MESSAGE */
+			return &security_options->plugin_callbacks.message_write;
 		case MOSQ_EVT_TICK:
 			return &security_options->plugin_callbacks.tick;
 		case MOSQ_EVT_DISCONNECT:
 			return &security_options->plugin_callbacks.disconnect;
 		case MOSQ_EVT_CONNECT:
 			return &security_options->plugin_callbacks.connect;
+		case MOSQ_EVT_MESSAGE_READ:
+			return &security_options->plugin_callbacks.message_read;
 		case MOSQ_EVT_SUBSCRIBE:
 			return &security_options->plugin_callbacks.subscribe;
 		case MOSQ_EVT_UNSUBSCRIBE:

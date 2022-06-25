@@ -40,5 +40,5 @@ int mosquitto_plugin_init(mosquitto_plugin_id_t *identifier, void **user_data, s
 
 	mosq_pid = identifier;
 	mosquitto_plugin_set_info(identifier, PLUGIN_NAME, PLUGIN_VERSION);
-	return mosquitto_callback_register(mosq_pid, MOSQ_EVT_MESSAGE, message_callback, NULL, NULL);
+	return mosquitto_callback_register(mosq_pid, MOSQ_EVT_MESSAGE_WRITE, message_callback, NULL, NULL);
 }

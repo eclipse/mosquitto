@@ -161,7 +161,8 @@ struct plugin__callbacks{
 	struct mosquitto__callback *disconnect;
 	struct mosquitto__callback *ext_auth_continue;
 	struct mosquitto__callback *ext_auth_start;
-	struct mosquitto__callback *message;
+	struct mosquitto__callback *message_write;
+	struct mosquitto__callback *message_read;
 	struct mosquitto__callback *psk_key;
 	struct mosquitto__callback *reload;
 	struct mosquitto__callback *subscribe;
@@ -869,7 +870,8 @@ int acl__pre_check(struct mosquitto__plugin_config *plugin, struct mosquitto *co
 
 void plugin__handle_connect(struct mosquitto *context);
 void plugin__handle_disconnect(struct mosquitto *context, int reason);
-int plugin__handle_message(struct mosquitto *context, struct mosquitto_base_msg *base_msg);
+int plugin__handle_message_write(struct mosquitto *context, struct mosquitto_base_msg *base_msg);
+int plugin__handle_message_read(struct mosquitto *context, struct mosquitto_base_msg *base_msg);
 int plugin__handle_subscribe(struct mosquitto *context, const char *topic, uint8_t qos, uint8_t subscription_options, uint32_t subscription_identifier, const mosquitto_property *properties);
 int plugin__handle_unsubscribe(struct mosquitto *context, const char *topic, const mosquitto_property *properties);
 void LIB_ERROR(void);

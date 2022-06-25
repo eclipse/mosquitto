@@ -56,6 +56,35 @@ int send__publish(struct mosquitto *mosq, uint16_t mid, const char *topic, uint3
 
 	if(!net__is_connected(mosq)) return MOSQ_ERR_NO_CONN;
 
+#ifdef WITH_BROKER
+	bool payload_changed = false;
+	bool topic_changed = false;
+	bool properties_changed = false;
+
+	{
+		struct mosquitto_base_msg tmp_msg;
+		tmp_msg.topic = (char *) topic;
+		tmp_msg.payloadlen = payloadlen;
+		tmp_msg.payload = (void *) payload;
+		tmp_msg.qos = qos;
+		tmp_msg.retain = retain;
+		tmp_msg.properties = (mosquitto_property *) store_props;
+
+		plugin__handle_message_read(mosq, &tmp_msg);
+
+		if(tmp_msg.payload != payload) payload_changed = true;
+		if(tmp_msg.topic != topic) topic_changed = true;
+		if(tmp_msg.properties != store_props) properties_changed = true;
+
+		topic = tmp_msg.topic;
+		payloadlen = tmp_msg.payloadlen;
+		payload = tmp_msg.payload;
+		qos = tmp_msg.qos;
+		retain = tmp_msg.retain;
+		store_props = tmp_msg.properties;
+	}
+#endif
+
 	if(!mosq->retain_available){
 		retain = false;
 	}
@@ -125,7 +154,15 @@ int send__publish(struct mosquitto *mosq, uint16_t mid, const char *topic, uint3
 	log__printf(mosq, MOSQ_LOG_DEBUG, "Client %s sending PUBLISH (d%d, q%d, r%d, m%d, '%s', ... (%ld bytes))", SAFE_PRINT(mosq->id), dup, qos, retain, mid, topic, (long)payloadlen);
 #endif
 
+#ifdef WITH_BROKER
+	rc = send__real_publish(mosq, mid, topic, payloadlen, payload, qos, retain, dup, subscription_identifier, store_props, expiry_interval);
+	if(payload_changed) mosquitto__free((void *) payload);
+	if(topic_changed) mosquitto__free((char *) topic);
+	if(properties_changed) mosquitto_property_free_all((mosquitto_property **) &store_props);
+	return rc;
+#else
 	return send__real_publish(mosq, mid, topic, payloadlen, payload, qos, retain, dup, subscription_identifier, store_props, expiry_interval);
+#endif
 }
 
 

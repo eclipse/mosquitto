@@ -134,7 +134,7 @@ int mosquitto_plugin_init(mosquitto_plugin_id_t *identifier, void **user_data, s
 	memset(last_size_counts, 0, sizeof(last_size_counts));
 
 	mosq_pid = identifier;
-	mosquitto_callback_register(mosq_pid, MOSQ_EVT_MESSAGE, callback_message, NULL, NULL);
+	mosquitto_callback_register(mosq_pid, MOSQ_EVT_MESSAGE_WRITE, callback_message, NULL, NULL);
 	mosquitto_callback_register(mosq_pid, MOSQ_EVT_TICK, callback_tick, NULL, NULL);
 
 	return MOSQ_ERR_SUCCESS;

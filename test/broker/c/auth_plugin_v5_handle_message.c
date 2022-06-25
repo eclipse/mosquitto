@@ -19,7 +19,7 @@ int mosquitto_plugin_init(mosquitto_plugin_id_t *identifier, void **user_data, s
 
 	plg_id = identifier;
 
-	mosquitto_callback_register(plg_id, MOSQ_EVT_MESSAGE, handle_publish, NULL, NULL);
+	mosquitto_callback_register(plg_id, MOSQ_EVT_MESSAGE_WRITE, handle_publish, NULL, NULL);
 
 	return MOSQ_ERR_SUCCESS;
 }
@@ -30,7 +30,7 @@ int mosquitto_plugin_cleanup(void *user_data, struct mosquitto_opt *auth_opts, i
 	(void)auth_opts;
 	(void)auth_opt_count;
 
-	mosquitto_callback_unregister(plg_id, MOSQ_EVT_MESSAGE, handle_publish, NULL);
+	mosquitto_callback_unregister(plg_id, MOSQ_EVT_MESSAGE_WRITE, handle_publish, NULL);
 
 	return MOSQ_ERR_SUCCESS;
 }
@@ -41,7 +41,7 @@ int handle_publish(int event, void *event_data, void *user_data)
 
 	(void)user_data;
 
-	if(event != MOSQ_EVT_MESSAGE){
+	if(event != MOSQ_EVT_MESSAGE_WRITE){
 		abort();
 	}
 	mosquitto_free(ed->topic);

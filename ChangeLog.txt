@@ -78,7 +78,7 @@ Plugins / plugin interface:
 - Plugins on non-Windows platforms now no longer make their symbols globally
   available, which means they are self contained.
 - Add support for delayed basic authentication in plugins.
-- Plugins using the MOSQ_EVT_MESSAGE callback can now return
+- Plugins using the MOSQ_EVT_MESSAGE_WRITE callback can now return
   MOSQ_ERR_QUOTA_EXCEEDED to have the message be rejected. MQTT v5 clients
   using QoS 1 or 2 will receive the quota-exceeded reason code in the
   corresponding PUBACK/PUBREC.

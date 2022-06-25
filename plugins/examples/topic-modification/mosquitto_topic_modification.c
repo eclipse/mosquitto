@@ -76,5 +76,5 @@ int mosquitto_plugin_init(mosquitto_plugin_id_t *identifier, void **user_data, s
 	UNUSED(opt_count);
 
 	mosq_pid = identifier;
-	return mosquitto_callback_register(mosq_pid, MOSQ_EVT_MESSAGE, callback_message, NULL, NULL);
+	return mosquitto_callback_register(mosq_pid, MOSQ_EVT_MESSAGE_WRITE, callback_message, NULL, NULL);
 }

@@ -72,30 +72,32 @@ enum mosquitto_plugin_event {
 	MOSQ_EVT_EXT_AUTH_START = 4,
 	MOSQ_EVT_EXT_AUTH_CONTINUE = 5,
 	MOSQ_EVT_CONTROL = 6,
-	MOSQ_EVT_MESSAGE = 7,
+	MOSQ_EVT_MESSAGE = 7, // deprecated name
+	MOSQ_EVT_MESSAGE_WRITE = 7,
 	MOSQ_EVT_PSK_KEY = 8,
 	MOSQ_EVT_TICK = 9,
 	MOSQ_EVT_DISCONNECT = 10,
 	MOSQ_EVT_CONNECT = 11,
-	MOSQ_EVT_SUBSCRIBE = 12,
-	MOSQ_EVT_UNSUBSCRIBE = 13,
-	MOSQ_EVT_PERSIST_RESTORE = 14,
-	MOSQ_EVT_PERSIST_CONFIG_ADD = 15,
-	MOSQ_EVT_PERSIST_BASE_MSG_ADD = 16,
-	MOSQ_EVT_PERSIST_BASE_MSG_DELETE = 17,
-	MOSQ_EVT_PERSIST_BASE_MSG_LOAD = 18,
-	MOSQ_EVT_PERSIST_RETAIN_MSG_SET = 19,
-	MOSQ_EVT_PERSIST_RETAIN_MSG_DELETE = 20,
-	MOSQ_EVT_PERSIST_CLIENT_ADD = 21,
-	MOSQ_EVT_PERSIST_CLIENT_DELETE = 22,
-	MOSQ_EVT_PERSIST_CLIENT_UPDATE = 23,
-	MOSQ_EVT_PERSIST_SUBSCRIPTION_ADD = 24,
-	MOSQ_EVT_PERSIST_SUBSCRIPTION_DELETE = 25,
-	MOSQ_EVT_PERSIST_CLIENT_MSG_ADD = 26,
-	MOSQ_EVT_PERSIST_CLIENT_MSG_DELETE = 27,
-	MOSQ_EVT_PERSIST_CLIENT_MSG_UPDATE = 28,
-	MOSQ_EVT_PERSIST_CLIENT_MSG_CLEAR = 29,
-	MOSQ_EVT_PERSIST_CLIENT_MSG_LOAD = 30,
+	MOSQ_EVT_MESSAGE_READ = 12,
+	MOSQ_EVT_SUBSCRIBE = 13,
+	MOSQ_EVT_UNSUBSCRIBE = 14,
+	MOSQ_EVT_PERSIST_RESTORE = 15,
+	MOSQ_EVT_PERSIST_CONFIG_ADD = 16,
+	MOSQ_EVT_PERSIST_BASE_MSG_ADD = 17,
+	MOSQ_EVT_PERSIST_BASE_MSG_DELETE = 18,
+	MOSQ_EVT_PERSIST_BASE_MSG_LOAD = 19,
+	MOSQ_EVT_PERSIST_RETAIN_MSG_SET = 20,
+	MOSQ_EVT_PERSIST_RETAIN_MSG_DELETE = 21,
+	MOSQ_EVT_PERSIST_CLIENT_ADD = 22,
+	MOSQ_EVT_PERSIST_CLIENT_DELETE = 23,
+	MOSQ_EVT_PERSIST_CLIENT_UPDATE = 24,
+	MOSQ_EVT_PERSIST_SUBSCRIPTION_ADD = 25,
+	MOSQ_EVT_PERSIST_SUBSCRIPTION_DELETE = 26,
+	MOSQ_EVT_PERSIST_CLIENT_MSG_ADD = 27,
+	MOSQ_EVT_PERSIST_CLIENT_MSG_DELETE = 28,
+	MOSQ_EVT_PERSIST_CLIENT_MSG_UPDATE = 29,
+	MOSQ_EVT_PERSIST_CLIENT_MSG_CLEAR = 30,
+	MOSQ_EVT_PERSIST_CLIENT_MSG_LOAD = 31,
 };
 
 /* Data for the MOSQ_EVT_RELOAD event */
@@ -167,7 +169,7 @@ struct mosquitto_evt_control {
 	void *future2[4];
 };
 
-/* Data for the MOSQ_EVT_MESSAGE event */
+/* Data for the MOSQ_EVT_MESSAGE_WRITE and MOSQ_EVT_MESSAGE_READ events */
 struct mosquitto_evt_message {
 	void *future;
 	struct mosquitto *client;
@@ -376,10 +378,13 @@ mosq_EXPORT int mosquitto_plugin_set_info(
  *          * MOSQ_EVT_CONTROL
  *              Called on receipt of a $CONTROL message that the plugin has
  *              registered for.
- *          * MOSQ_EVT_MESSAGE
- *              Called for each PUBLISH message after it has been received and
- *              authorised, but before it is sent to subscribing clients. The
- *              contents of the message can be modified.
+ *          * MOSQ_EVT_MESSAGE_WRITE
+ *              Called for each incoming PUBLISH message after it has been received
+ * 				and authorised. The contents of the message can be modified.
+ *          * MOSQ_EVT_MESSAGE_READ
+ *              Called for each outgoing PUBLISH message after it has been authorised,
+ * 				but before it is sent to each subscribing client. The contents of the
+ * 				message can be modified.
  *          * MOSQ_EVT_PSK_KEY
  *              Called when a client connects with TLS-PSK and the broker needs
  *              the PSK information.
@@ -423,7 +428,8 @@ mosq_EXPORT int mosquitto_callback_register(
  *          * MOSQ_EVT_EXT_AUTH_START
  *          * MOSQ_EVT_EXT_AUTH_CONTINUE
  *          * MOSQ_EVT_CONTROL
- *          * MOSQ_EVT_MESSAGE
+ *          * MOSQ_EVT_MESSAGE_WRITE
+ *          * MOSQ_EVT_MESSAGE_READ
  *          * MOSQ_EVT_PSK_KEY
  *          * MOSQ_EVT_TICK
  *          * MOSQ_EVT_DISCONNECT
