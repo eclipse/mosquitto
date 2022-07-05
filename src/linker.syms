@@ -75,4 +75,5 @@
 	mosquitto_topic_matches_sub;
 	mosquitto_topic_matches_sub_with_pattern;
 	mosquitto_validate_utf8;
+	mosquitto_get_retained;
 };

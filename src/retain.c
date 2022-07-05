@@ -351,3 +351,175 @@ void retain__clean(struct mosquitto__retainhier **retainhier)
 	}
 }
 
+static int buffer_add_msg(struct mosquitto_base_msg *retained, struct mosquitto_message **buffer, size_t buffer_size, int *index)
+{
+
+	if (*index >= buffer_size)
+	{
+		log__printf(NULL, MOSQ_LOG_ERR, "buffer_add_msg(): overflow index: %d, buffer_size: %d", *index, buffer_size);
+		return -1;
+	}
+
+	if (buffer[*index] == NULL)
+	{
+		return MOSQ_ERR_NOMEM;
+	}
+	struct mosquitto_message *msg = buffer[*index];
+	(*msg).mid = 0;
+	(*msg).payload = retained->payload;			   // does this need to be copied?
+	(*msg).payloadlen = (int)retained->payloadlen; // cast could be bad if payloadlen is big
+	(*msg).qos = 0;
+	(*msg).topic = retained->topic;
+	(*msg).retain = true;
+
+	struct mosquitto_message message = *buffer[*index];
+
+	*index = *index + 1;
+	return 0;
+}
+
+static int retain__search2(struct mosquitto__retainhier *retainhier, char **split_topics, const char *sub, struct mosquitto_message *const *buffer, size_t buffer_size, int level,
+						   int *index)
+{
+	struct mosquitto__retainhier *branch, *branch_tmp;
+	int flag = 0;
+
+	if (!strcmp(split_topics[0], "#") && split_topics[1] == NULL)
+	{
+		HASH_ITER(hh, retainhier->children, branch, branch_tmp)
+		{
+			/* Set flag to indicate that we should check for retained messages
+			 * on "foo" when we are subscribing to e.g. "foo/#" and then exit
+			 * this function and return to an earlier retain__search().
+			 */
+			flag = -1;
+			if (branch->retained)
+			{
+				int rc = buffer_add_msg(branch->retained, buffer, buffer_size, index);
+				if (rc == MOSQ_ERR_BUFFER_FULL)
+				{
+					return rc;
+				}
+			}
+
+			if (branch->children)
+			{
+				int rc = retain__search2(branch, split_topics, sub, buffer, buffer_size, level + 1, index);
+				if (rc == MOSQ_ERR_BUFFER_FULL)
+				{
+					return rc;
+				}
+			}
+		}
+	}
+	else
+	{
+		if (!strcmp(split_topics[0], "+"))
+		{
+			HASH_ITER(hh, retainhier->children, branch, branch_tmp)
+			{
+				if (split_topics[1] != NULL)
+				{
+					int rc = retain__search2(branch, &(split_topics[1]), sub, buffer, buffer_size, level + 1, index);
+					if (rc == -1 || (split_topics[1] != NULL && !strcmp(split_topics[1], "#") && level > 0))
+					{
+
+						if (branch->retained)
+						{
+
+							int rc = buffer_add_msg(branch->retained, buffer, buffer_size, index);
+							if (rc == MOSQ_ERR_BUFFER_FULL)
+							{
+								return rc;
+							}
+						}
+					}
+					else if (rc == MOSQ_ERR_BUFFER_FULL)
+					{
+						return rc;
+					}
+				}
+				else
+				{
+					if (branch->retained)
+					{
+
+						int rc = buffer_add_msg(branch->retained, buffer, buffer_size, index);
+						if (rc == MOSQ_ERR_BUFFER_FULL)
+						{
+							return rc;
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			HASH_FIND(hh, retainhier->children, split_topics[0], strlen(split_topics[0]), branch);
+			if (branch)
+			{
+				if (split_topics[1] != NULL)
+				{
+					if (retain__search2(branch, &(split_topics[1]), sub, buffer, buffer_size, level + 1, index) == -1 || (split_topics[1] != NULL && !strcmp(split_topics[1], "#") && level > 0))
+					{
+
+						if (branch->retained)
+						{
+							int rc = buffer_add_msg(branch->retained, buffer, buffer_size, index);
+							if (rc == MOSQ_ERR_BUFFER_FULL)
+							{
+								return rc;
+							}
+						}
+					}
+				}
+				else
+				{
+					if (branch->retained)
+					{
+						int rc = buffer_add_msg(branch->retained, buffer, buffer_size, index);
+						if (rc == MOSQ_ERR_BUFFER_FULL)
+						{
+							return rc;
+						}
+					}
+				}
+			}
+		}
+	}
+	return flag;
+}
+
+libmosq_EXPORT int mosquitto_get_retained(const char *sub, struct mosquitto_message *const *buffer, size_t *buffer_size, size_t *messages_found)
+{
+	struct mosquitto__retainhier *retainhier = db.retains;
+	char *local_sub;
+	char **split_topics;
+	int rc;
+
+	assert(sub);
+	rc = sub__topic_tokenise(sub, &local_sub, &split_topics, NULL);
+	if (rc)
+		return rc;
+
+	HASH_FIND(hh, db.retains, split_topics[0], strlen(split_topics[0]), retainhier);
+	int *index = mosquitto_malloc(sizeof(int));
+	if(index == NULL){
+		return MOSQ_ERR_NOMEM;
+	}
+
+	*index = 0;
+	rc = MOSQ_ERR_SUCCESS;
+	if (retainhier)
+	{
+		if (retain__search2(retainhier, split_topics, sub, buffer, *buffer_size, 0, index) == MOSQ_ERR_BUFFER_FULL) {
+			rc = MOSQ_ERR_BUFFER_FULL;
+		};
+	}
+
+	// set number of elements found for caller
+	*messages_found = *index;
+
+	mosquitto_free(index);
+	return rc;
+}

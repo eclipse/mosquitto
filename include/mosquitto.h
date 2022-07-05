@@ -121,6 +121,7 @@ enum mosq_err_t {
 	MOSQ_ERR_OVERSIZE_PACKET = 25,
 	MOSQ_ERR_OCSP = 26,
 	MOSQ_ERR_TIMEOUT = 27,
+	MOSQ_ERR_BUFFER_FULL = 28,
 	/* 28, 29, 30 - was internal only, moved to MQTT v5 section. */
 	MOSQ_ERR_ALREADY_EXISTS = 31,
 	MOSQ_ERR_PLUGIN_IGNORE = 32,
@@ -140,6 +141,7 @@ enum mosq_err_t {
 	MOSQ_ERR_ADMINISTRATIVE_ACTION = 152,
 	MOSQ_ERR_RETAIN_NOT_SUPPORTED = 154,
 	MOSQ_ERR_CONNECTION_RATE_EXCEEDED = 159,
+	
 };
 
 /* Option values */
@@ -3399,6 +3401,42 @@ libmosq_EXPORT const char *mosquitto_property_identifier_to_string(int identifie
  * (end)
  */
 libmosq_EXPORT int mosquitto_string_to_property_info(const char *propname, int *identifier, int *type);
+
+/*
+ * Function: mosquitto_get_retained
+ *
+ * Function to get matching retained messages from the database in a blocking manner.
+ *
+ *
+ * This connects to a broker, subscribes to a topic, waits for msg_count
+ * messages to be received, then returns after disconnecting cleanly.
+ *
+ * Parameters:
+ *   sub - pointer to a subscription topic with or without wildcards + or # in a
+ *   	   		normal subscription manner
+ *
+ * 	 buffer - pointer to a "struct mosquitto_message *". The received
+ *              messages will be returned here.
+ *
+ *   buffer_size - the size of the buffer.
+ *
+ *   messages_found - pointer to a size_t where the number of found messages will be
+ * 				 written. If the buffer gets full then it will contain that same value
+ * 				 and the function return value will indicate that there were more
+ * 				 messages available
+ *
+ * Returns:
+ *   MOSQ_ERR_SUCCESS - 	   on success
+ *	 MOSQ_ERR_SUCCESS -        on success.
+ * 	 MOSQ_ERR_INVAL -          if the input parameters were invalid.
+ * 	 MOSQ_ERR_NOMEM -          if an out of memory condition occurred.
+ *	 MOSQ_ERR_PROTOCOL -       if there is a protocol error communicating with the
+ *                            broker.
+ *   MOSQ_ERR_BUFFER_FULL -    if there were more messages that matches the topic than
+ * 							   could fit in the given buffer. The buffer will contain 
+ * 							   the valid messages that could fit,
+ */
+libmosq_EXPORT int mosquitto_get_retained(const char *sub, struct mosquitto_message *const *buf, size_t *buf_size, size_t *messages_found);
 
 
 #ifdef __cplusplus
