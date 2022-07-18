@@ -134,10 +134,19 @@ static void print_usage(void)
 static int output_new_password(FILE *fptr, const char *username, const char *password, int iterations)
 {
 	int rc;
+	char *username_dblcln = NULL;
 	char *salt64 = NULL, *hash64 = NULL;
 	struct mosquitto_pw pw;
 
+	// escape colons in user name by doubling them
+	username_dblcln = esc_for_strtok_dblesc(username, ":");
+	if(username_dblcln == NULL){
+		fprintf(stderr, "Error: Out of memory for escaping username.\n");
+		return 1;
+	}
+
 	if(password == NULL){
+		free(username_dblcln);
 		fprintf(stderr, "Error: Internal error, no password given.\n");
 		return 1;
 	}
@@ -146,12 +155,14 @@ static int output_new_password(FILE *fptr, const char *username, const char *pas
 	pw.hashtype = hashtype;
 
 	if(pw__hash(password, &pw, true, iterations)){
+		free(username_dblcln);
 		fprintf(stderr, "Error: Unable to hash password.\n");
 		return 1;
 	}
 
 	rc = base64__encode(pw.salt, pw.salt_len, &salt64);
 	if(rc){
+		free(username_dblcln);
 		free(salt64);
 		fprintf(stderr, "Error: Unable to encode salt.\n");
 		return 1;
@@ -159,6 +170,7 @@ static int output_new_password(FILE *fptr, const char *username, const char *pas
 
 	rc = base64__encode(pw.password_hash, sizeof(pw.password_hash), &hash64);
 	if(rc){
+		free(username_dblcln);
 		free(salt64);
 		free(hash64);
 		fprintf(stderr, "Error: Unable to encode hash.\n");
@@ -166,10 +178,11 @@ static int output_new_password(FILE *fptr, const char *username, const char *pas
 	}
 
 	if(pw.hashtype == pw_sha512_pbkdf2){
-		fprintf(fptr, "%s:$%d$%d$%s$%s\n", username, hashtype, iterations, salt64, hash64);
+		fprintf(fptr, "%s:$%d$%d$%s$%s\n", username_dblcln, hashtype, iterations, salt64, hash64);
 	}else{
-		fprintf(fptr, "%s:$%d$%s$%s\n", username, hashtype, salt64, hash64);
+		fprintf(fptr, "%s:$%d$%s$%s\n", username_dblcln, hashtype, salt64, hash64);
 	}
+	free(username_dblcln);
 	free(salt64);
 	free(hash64);
 
@@ -187,7 +200,7 @@ static int pwfile_iterate(FILE *fptr, FILE *ftmp,
 	int lbuflen;
 	int rc = 1;
 	int line = 0;
-	char *username, *password;
+	char *saveptr, *username, *password;
 
 	buf = malloc((size_t)buflen);
 	if(buf == NULL){
@@ -215,8 +228,8 @@ static int pwfile_iterate(FILE *fptr, FILE *ftmp,
 		}
 		memcpy(lbuf, buf, (size_t)buflen);
 		line++;
-		username = strtok(buf, ":");
-		password = strtok(NULL, ":");
+		username = strtok_dblesc(buf, ":", &saveptr);
+		password = strtok_dblesc(NULL, ":", &saveptr);
 		if(username == NULL || password == NULL){
 			fprintf(stderr, "Error: Corrupt password file at line %d.\n", line);
 			free(lbuf);
@@ -417,10 +430,6 @@ static bool is_username_valid(const char *username)
 				fprintf(stderr, "Error: Username must not contain control characters.\n");
 				return false;
 			}
-		}
-		if(strchr(username, ':')){
-			fprintf(stderr, "Error: Username must not contain the ':' character.\n");
-			return false;
 		}
 	}
 	return true;

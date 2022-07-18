@@ -27,4 +27,7 @@ char *fgets_extending(char **buf, int *buflen, FILE *stream);
 
 int mosquitto_write_file(const char* target_path, bool restrict_read, int (*write_fn)(FILE* fptr, void* user_data), void* user_data, void (*log_fn)(const char* msg));
 
+char *strtok_dblesc(char *str, const char *delim, char **saveptr);
+char *esc_for_strtok_dblesc(const char *plain, const char *delim);
+
 #endif

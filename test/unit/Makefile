@@ -15,11 +15,13 @@ LDADD:=$(LDADD) -lcunit
 TEST_OBJS = test.o \
 			datatype_read.o \
 			datatype_write.o \
+			esc_for_strtok_dblesc.o \
 			misc_trim_test.o \
 			property_add.o \
 			property_read.o \
 			property_user_read.o \
 			property_write.o \
+			strtok_dblesc.o \
 			stubs.o \
 			util_topic_test.o \
 			utf8.o
