@@ -7,13 +7,64 @@ Wants=network.target
 [Service]
 Type=notify
 NotifyAccess=main
+
+User=mosquitto
+Group=mosquitto
 ExecStart=/usr/sbin/mosquitto -c /etc/mosquitto/mosquitto.conf
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
-ExecStartPre=/bin/mkdir -m 740 -p /var/log/mosquitto
-ExecStartPre=/bin/chown mosquitto /var/log/mosquitto
-ExecStartPre=/bin/mkdir -m 740 -p /run/mosquitto
-ExecStartPre=/bin/chown mosquitto /run/mosquitto
+
+# vvv EXPERIMENTAL vvv
+# mount empty, read-only tmpfs on / and bind mosquitto and dependencies
+# NOTE: conflicts with ProtectSystem= (which binds original rootfs on top of /)
+#       and restrictive UMask= (Bind*= directives will create parent directories
+#       owned by root:root and with configured umask, which may make parents
+#       inaccessible to services not running as root)
+#TemporaryFileSystem=/:ro
+#BindReadOnlyPaths=/bin/kill /etc/group /etc/hosts.allow /etc/hosts.deny /etc/ld.so.cache /etc/passwd /lib/x86_64-linux-gnu /lib64 /run/systemd/notify /usr/sbin/mosquitto
+# ^^^ EXPERIMENTAL ^^^
+
+# bind/create mosquitto directories in /etc, /run, /var/lib, and /var/log
+ConfigurationDirectory=mosquitto
+ConfigurationDirectoryMode=755
+RuntimeDirectory=mosquitto
+RuntimeDirectoryMode=740
+StateDirectory=mosquitto
+StateDirectoryMode=740
+LogsDirectory=mosquitto
+LogsDirectoryMode=740
+
+# drop as many privileges as possible (see `systemd-analyze security
+# mosquitto.service` for suggestions)
+CapabilityBoundingSet=
+DevicePolicy=closed
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+NoNewPrivileges=yes
+PrivateDevices=yes
+PrivateTmp=yes
+PrivateUsers=yes
+ProcSubset=pid
+ProtectClock=yes
+ProtectControlGroups=yes
+ProtectHome=yes
+ProtectHostname=yes
+ProtectKernelLogs=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+ProtectProc=invisible
+ProtectSystem=strict
+RemoveIPC=yes
+# AF_UNIX is required for sd_notify(3)
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+UMask=027
+
+# whitelist syscalls required by mosquitto
+SystemCallArchitectures=native
+SystemCallFilter=@basic-io @default @file-system @io-event @network-io @signal @sync arch_prctl getrandom kill mprotect prctl umask
 
 [Install]
 WantedBy=multi-user.target
