@@ -1205,7 +1205,7 @@ accept_protocol_versions 3, 4</programlisting>
 							address/host</replaceable> part of the
 							<option>listener</option>, then <option>bind_interface</option>
 							will take priority.</para>
-						<para>This option is not available on Windows.</para>
+						<para>This option is not available on Windows and AIX.</para>
 						<para>Not reloaded on reload signal.</para>
 					</listitem>
 				</varlistentry>

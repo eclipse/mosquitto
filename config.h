@@ -14,6 +14,8 @@
 #  define _XOPEN_SOURCE 600
 #  define __BSD_VISIBLE 1
 #  define HAVE_NETINET_IN_H
+#elif defined(_AIX)
+#  define HAVE_NETINET_IN_H
 #else
 #  define _XOPEN_SOURCE 700
 #  define _DEFAULT_SOURCE 1

@@ -262,6 +262,7 @@ if(UNIX)
 		set_target_properties(mosquitto PROPERTIES
 			LINK_FLAGS "-Wl,-exported_symbols_list -Wl,${mosquitto_SOURCE_DIR}/src/linker-macosx.syms"
 		)
+	elseif (${CMAKE_SYSTEM_NAME} MATCHES "AIX")
 	else()
 		set_target_properties(mosquitto PROPERTIES
 			LINK_FLAGS "-Wl,-dynamic-list=${mosquitto_SOURCE_DIR}/src/linker.syms"

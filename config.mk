@@ -210,6 +210,12 @@ ifeq ($(UNAME),Linux)
 	LIB_LIBADD:=$(LIB_LIBADD) -lrt
 endif
 
+ifeq ($(UNAME),AIX)
+	BROKER_LDFLAGS:=$(BROKER_LDFLAGS) -Wl,-bE:linker-aix.syms
+# Allow library path override using LIBPATH environment variable
+	CLIENT_LDFLAGS:=$(CLIENT_LDFLAGS) -Wl,-bnoipath
+endif
+
 ifeq ($(WITH_SHARED_LIBRARIES),yes)
 	CLIENT_LDADD:=${CLIENT_LDADD} ${R}/lib/libmosquitto.so.${SOVERSION}
 endif
@@ -237,8 +243,12 @@ else
 	LIB_CXXFLAGS:=$(LIB_CXXFLAGS) -fPIC
 endif
 
-ifneq ($(UNAME),SunOS)
+ifneq ($(and $(findstring $(UNAME),SunOS), $(findstring $(UNAME),AIX)),)
 	LIB_LDFLAGS:=$(LIB_LDFLAGS) -Wl,--version-script=linker.version -Wl,-soname,libmosquitto.so.$(SOVERSION)
+endif
+
+ifeq ($(UNAME),AIX)
+	PLUGIN_LDFLAGS:=$(PLUGIN_LDFLAGS) -Wl,-G
 endif
 
 ifeq ($(UNAME),QNX)

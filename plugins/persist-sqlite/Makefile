@@ -23,6 +23,12 @@ else
 ALL_DEPS:=
 endif
 
+ifeq ($(WITH_CJSON),yes)
+ALL_DEPS:=$(ALL_DEPS)
+else
+ALL_DEPS:=
+endif
+
 all : ${ALL_DEPS}
 binary : ${PLUGIN_NAME}.so
 
@@ -65,8 +71,10 @@ test:
 
 install: all
 ifeq ($(WITH_SQLITE),yes)
+ifeq ($(WITH_CJSON),yes)
 	$(INSTALL) -d "${DESTDIR}$(libdir)"
 	$(INSTALL) ${STRIP_OPTS} ${PLUGIN_NAME}.so "${DESTDIR}${libdir}/${PLUGIN_NAME}.so"
+endif
 endif
 
 uninstall :

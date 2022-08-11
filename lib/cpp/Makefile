@@ -1,7 +1,7 @@
 R=../..
 include ${R}/config.mk
 
-ifneq ($(UNAME),SunOS)
+ifneq ($(and $(findstring $(UNAME),SunOS), $(findstring $(UNAME),AIX)),)
 	LIB_LDFLAGS:=$(LDFLAGS) -Wl,-soname,libmosquittopp.so.${SOVERSION}
 endif
 
@@ -21,7 +21,9 @@ install : all
 	ln -sf libmosquittopp.so.${SOVERSION} "${DESTDIR}${libdir}/libmosquittopp.so"
 ifeq ($(WITH_STATIC_LIBRARIES),yes)
 	$(INSTALL) libmosquittopp.a "${DESTDIR}${libdir}/libmosquittopp.a"
+ifneq ($(UNAME),AIX)
 	${CROSS_COMPILE}${STRIP} -g --strip-unneeded "${DESTDIR}${libdir}/libmosquittopp.a"
+endif
 endif
 	$(INSTALL) -d "${DESTDIR}${incdir}/"
 	$(INSTALL) ${R}/include/mosquittopp.h "${DESTDIR}${incdir}/mosquittopp.h"
