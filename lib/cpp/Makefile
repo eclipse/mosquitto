@@ -1,4 +1,5 @@
-include ../../config.mk
+R=../..
+include ${R}/config.mk
 
 ifneq ($(UNAME),SunOS)
 	LIB_LDFLAGS:=$(LDFLAGS) -Wl,-soname,libmosquittopp.so.${SOVERSION}
@@ -23,9 +24,9 @@ ifeq ($(WITH_STATIC_LIBRARIES),yes)
 	${CROSS_COMPILE}${STRIP} -g --strip-unneeded "${DESTDIR}${libdir}/libmosquittopp.a"
 endif
 	$(INSTALL) -d "${DESTDIR}${incdir}/"
-	$(INSTALL) mosquittopp.h "${DESTDIR}${incdir}/mosquittopp.h"
+	$(INSTALL) ${R}/include/mosquittopp.h "${DESTDIR}${incdir}/mosquittopp.h"
 	$(INSTALL) -d "${DESTDIR}${libdir}/pkgconfig/"
-	$(INSTALL) -m644 ../../libmosquittopp.pc.in "${DESTDIR}${libdir}/pkgconfig/libmosquittopp.pc"
+	$(INSTALL) -m644 ${R}/libmosquittopp.pc.in "${DESTDIR}${libdir}/pkgconfig/libmosquittopp.pc"
 	sed ${SEDINPLACE} -e "s#@CMAKE_INSTALL_PREFIX@#${prefix}#" -e "s#@VERSION@#${VERSION}#" "${DESTDIR}${libdir}/pkgconfig/libmosquittopp.pc"
 
 uninstall :
@@ -43,6 +44,6 @@ libmosquittopp.so.${SOVERSION} : mosquittopp.o
 libmosquittopp.a : mosquittopp.o
 	${CROSS_COMPILE}$(AR) cr $@ $^
 
-mosquittopp.o : mosquittopp.cpp mosquittopp.h
+mosquittopp.o : mosquittopp.cpp ${R}/include/mosquittopp.h
 	${CROSS_COMPILE}$(CXX) $(LIB_CPPFLAGS) $(LIB_CXXFLAGS) -c $< -o $@
 

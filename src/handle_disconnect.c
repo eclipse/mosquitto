@@ -1,14 +1,16 @@
 /*
-Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
-are made available under the terms of the Eclipse Public License v1.0
+are made available under the terms of the Eclipse Public License 2.0
 and Eclipse Distribution License v1.0 which accompany this distribution.
 
 The Eclipse Public License is available at
-   http://www.eclipse.org/legal/epl-v10.html
+   https://www.eclipse.org/legal/epl-2.0/
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
+
+SPDX-License-Identifier: EPL-2.0 OR BSD-3-Clause
 
 Contributors:
    Roger Light - initial implementation and documentation.
@@ -25,7 +27,7 @@ Contributors:
 #include "will_mosq.h"
 
 
-int handle__disconnect(struct mosquitto_db *db, struct mosquitto *context)
+int handle__disconnect(struct mosquitto *context)
 {
 	int rc;
 	uint8_t reason_code = 0;
@@ -33,6 +35,10 @@ int handle__disconnect(struct mosquitto_db *db, struct mosquitto *context)
 
 	if(!context){
 		return MOSQ_ERR_INVAL;
+	}
+
+	if(context->in_packet.command != CMD_DISCONNECT){
+		return MOSQ_ERR_MALFORMED_PACKET;
 	}
 
 	if(context->protocol == mosq_p_mqtt5 && context->in_packet.remaining_length > 0){
@@ -47,9 +53,6 @@ int handle__disconnect(struct mosquitto_db *db, struct mosquitto *context)
 	}
 	rc = property__process_disconnect(context, &properties);
 	if(rc){
-		if(rc == MOSQ_ERR_PROTOCOL){
-			send__disconnect(context, MQTT_RC_PROTOCOL_ERROR, NULL);
-		}
 		mosquitto_property_free_all(&properties);
 		return rc;
 	}
@@ -61,7 +64,7 @@ int handle__disconnect(struct mosquitto_db *db, struct mosquitto *context)
 	log__printf(NULL, MOSQ_LOG_DEBUG, "Received DISCONNECT from %s", context->id);
 	if(context->protocol == mosq_p_mqtt311 || context->protocol == mosq_p_mqtt5){
 		if((context->in_packet.command&0x0F) != 0x00){
-			do_disconnect(db, context, MOSQ_ERR_PROTOCOL);
+			do_disconnect(context, MOSQ_ERR_PROTOCOL);
 			return MOSQ_ERR_PROTOCOL;
 		}
 	}
@@ -71,6 +74,6 @@ int handle__disconnect(struct mosquitto_db *db, struct mosquitto *context)
 		will__clear(context);
 		mosquitto__set_state(context, mosq_cs_disconnecting);
 	}
-	do_disconnect(db, context, MOSQ_ERR_SUCCESS);
+	do_disconnect(context, MOSQ_ERR_SUCCESS);
 	return MOSQ_ERR_SUCCESS;
 }

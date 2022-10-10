@@ -1,14 +1,16 @@
 /*
-Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
-are made available under the terms of the Eclipse Public License v1.0
+are made available under the terms of the Eclipse Public License 2.0
 and Eclipse Distribution License v1.0 which accompany this distribution.
 
 The Eclipse Public License is available at
-   http://www.eclipse.org/legal/epl-v10.html
+   https://www.eclipse.org/legal/epl-2.0/
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
+
+SPDX-License-Identifier: EPL-2.0 OR BSD-3-Clause
 
 Contributors:
    Roger Light - initial implementation and documentation.
@@ -43,6 +45,8 @@ Contributors:
 
 #ifdef WITH_BROKER
 #include "mosquitto_broker_internal.h"
+#else
+#  include "callbacks.h"
 #endif
 
 #include "mosquitto.h"
@@ -53,33 +57,35 @@ Contributors:
 #include "tls_mosq.h"
 #include "util_mosq.h"
 
-#ifdef WITH_WEBSOCKETS
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
 #include <libwebsockets.h>
 #endif
 
-#ifdef WITH_BROKER
-int mosquitto__check_keepalive(struct mosquitto_db *db, struct mosquitto *mosq)
-#else
 int mosquitto__check_keepalive(struct mosquitto *mosq)
-#endif
 {
 	time_t next_msg_out;
 	time_t last_msg_in;
-	time_t now = mosquitto_time();
+	time_t now;
 #ifndef WITH_BROKER
 	int rc;
 #endif
-	int state;
+	enum mosquitto_client_state state;
 
 	assert(mosq);
+#ifdef WITH_BROKER
+	now = db.now_s;
+#else
+	now = mosquitto_time();
+#endif
+
 #if defined(WITH_BROKER) && defined(WITH_BRIDGE)
 	/* Check if a lazy bridge should be timed out due to idle. */
 	if(mosq->bridge && mosq->bridge->start_type == bst_lazy
-				&& mosq->sock != INVALID_SOCKET
+				&& net__is_connected(mosq)
 				&& now - mosq->next_msg_out - mosq->keepalive >= mosq->bridge->idle_timeout){
 
 		log__printf(NULL, MOSQ_LOG_NOTICE, "Bridge connection %s has exceeded idle timeout, disconnecting.", mosq->id);
-		net__socket_close(db, mosq);
+		net__socket_close(mosq);
 		return MOSQ_ERR_SUCCESS;
 	}
 #endif
@@ -87,7 +93,7 @@ int mosquitto__check_keepalive(struct mosquitto *mosq)
 	next_msg_out = mosq->next_msg_out;
 	last_msg_in = mosq->last_msg_in;
 	pthread_mutex_unlock(&mosq->msgtime_mutex);
-	if(mosq->keepalive && mosq->sock != INVALID_SOCKET &&
+	if(mosq->keepalive && net__is_connected(mosq) && 
 			(now >= next_msg_out || now - last_msg_in >= mosq->keepalive)){
 
 		state = mosquitto__get_state(mosq);
@@ -100,7 +106,12 @@ int mosquitto__check_keepalive(struct mosquitto *mosq)
 			pthread_mutex_unlock(&mosq->msgtime_mutex);
 		}else{
 #ifdef WITH_BROKER
-			net__socket_close(db, mosq);
+#  ifdef WITH_BRIDGE
+			if(mosq->bridge){
+				context__send_will(mosq);
+			}
+#  endif
+			net__socket_close(mosq);
 #else
 			net__socket_close(mosq);
 			state = mosquitto__get_state(mosq);
@@ -109,18 +120,7 @@ int mosquitto__check_keepalive(struct mosquitto *mosq)
 			}else{
 				rc = MOSQ_ERR_KEEPALIVE;
 			}
-			pthread_mutex_lock(&mosq->callback_mutex);
-			if(mosq->on_disconnect){
-				mosq->in_callback = true;
-				mosq->on_disconnect(mosq, mosq->userdata, rc);
-				mosq->in_callback = false;
-			}
-			if(mosq->on_disconnect_v5){
-				mosq->in_callback = true;
-				mosq->on_disconnect_v5(mosq, mosq->userdata, rc, NULL);
-				mosq->in_callback = false;
-			}
-			pthread_mutex_unlock(&mosq->callback_mutex);
+			callback__on_disconnect(mosq, rc, NULL);
 
 			return rc;
 #endif
@@ -242,7 +242,7 @@ int util__random_bytes(void *bytes, int count)
 		rc = MOSQ_ERR_SUCCESS;
 	}
 #elif defined(HAVE_GETRANDOM)
-	if(getrandom(bytes, count, 0) == count){
+	if(getrandom(bytes, (size_t)count, 0) == count){
 		rc = MOSQ_ERR_SUCCESS;
 	}
 #elif defined(WIN32)
@@ -293,3 +293,23 @@ enum mosquitto_client_state mosquitto__get_state(struct mosquitto *mosq)
 
 	return state;
 }
+
+#ifndef WITH_BROKER
+void mosquitto__set_request_disconnect(struct mosquitto *mosq, bool request_disconnect)
+{
+	pthread_mutex_lock(&mosq->state_mutex);
+	mosq->request_disconnect = request_disconnect;
+	pthread_mutex_unlock(&mosq->state_mutex);
+}
+
+bool mosquitto__get_request_disconnect(struct mosquitto *mosq)
+{
+	bool request_disconnect;
+
+	pthread_mutex_lock(&mosq->state_mutex);
+	request_disconnect = mosq->request_disconnect;
+	pthread_mutex_unlock(&mosq->state_mutex);
+
+	return request_disconnect;
+}
+#endif

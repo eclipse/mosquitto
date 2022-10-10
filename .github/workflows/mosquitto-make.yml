@@ -1,0 +1,43 @@
+name: Mosquitto - Make
+
+on:
+  push:
+    branches:
+      - develop
+      - fixes
+  pull_request:
+    branches:
+      - develop
+      - fixes
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    -
+      name: Install third party dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          docbook-xsl \
+          libc-ares-dev \
+          libcjson-dev \
+          libcjson1 \
+          libcunit1-dev \
+          libssl-dev \
+          libwrap0-dev \
+          python-all \
+          python3-all \
+          xsltproc
+    -
+      uses: actions/checkout@v3
+      with:
+        submodules: 'true'
+    -
+      name: make
+      run: make
+    -
+      name: make test
+      run: |
+        make test

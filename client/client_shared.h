@@ -1,15 +1,17 @@
 /*
-Copyright (c) 2014-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2014-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
-are made available under the terms of the Eclipse Public License v1.0
+are made available under the terms of the Eclipse Public License 2.0
 and Eclipse Distribution License v1.0 which accompany this distribution.
- 
+
 The Eclipse Public License is available at
-   http://www.eclipse.org/legal/epl-v10.html
+   https://www.eclipse.org/legal/epl-2.0/
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
- 
+
+SPDX-License-Identifier: EPL-2.0 OR BSD-3-Clause
+
 Contributors:
    Roger Light - initial implementation and documentation.
 */
@@ -23,6 +25,10 @@ Contributors:
 #  include <winsock2.h>
 #else
 #  include <sys/time.h>
+#endif
+
+#ifndef __GNUC__
+#define __attribute__(attrib)
 #endif
 
 /* pub_client.c modes */
@@ -83,6 +89,7 @@ struct mosq_config {
 	char *tls_engine;
 	char *tls_engine_kpass_sha1;
 	char *keyform;
+	bool tls_use_os_certs;
 #  ifdef FINAL_WITH_TLS_PSK
 	char *psk;
 	char *psk_identity;
@@ -108,6 +115,10 @@ struct mosq_config {
 	int sub_opts; /* sub */
 	long session_expiry_interval;
 	int random_filter; /* sub */
+	int transport;
+#ifndef WIN32
+	bool watch; /* sub */
+#endif
 #ifdef WITH_SOCKS
 	char *socks5_host;
 	int socks5_port;
@@ -120,9 +131,11 @@ struct mosq_config {
 	mosquitto_property *unsubscribe_props;
 	mosquitto_property *disconnect_props;
 	mosquitto_property *will_props;
-	bool have_topic_alias; /* pub */
 	char *response_topic; /* rr */
+	char *options_file;
+	bool have_topic_alias; /* pub */
 	bool tcp_nodelay;
+	bool no_tls;
 };
 
 int client_config_load(struct mosq_config *config, int pub_or_sub, int argc, char *argv[]);
@@ -133,6 +146,5 @@ int client_connect(struct mosquitto *mosq, struct mosq_config *cfg);
 
 int cfg_parse_property(struct mosq_config *cfg, int argc, char *argv[], int *idx);
 
-void err_printf(const struct mosq_config *cfg, const char *fmt, ...);
-
+void err_printf(const struct mosq_config *cfg, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
 #endif

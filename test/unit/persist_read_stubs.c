@@ -8,12 +8,13 @@
 #include <net_mosq.h>
 #include <send_mosq.h>
 #include <time_mosq.h>
+#include <callbacks.h>
 
 extern char *last_sub;
 extern int last_qos;
 extern uint32_t last_identifier;
 
-struct mosquitto *context__init(struct mosquitto_db *db, mosq_sock_t sock)
+struct mosquitto *context__init(void)
 {
 	struct mosquitto *m;
 
@@ -27,7 +28,7 @@ struct mosquitto *context__init(struct mosquitto_db *db, mosq_sock_t sock)
 	return m;
 }
 
-void db__msg_store_free(struct mosquitto_msg_store *store)
+void db__msg_store_free(struct mosquitto_base_msg *store)
 {
 	int i;
 
@@ -41,13 +42,15 @@ void db__msg_store_free(struct mosquitto_msg_store *store)
 	}
 	mosquitto__free(store->topic);
 	mosquitto_property_free_all(&store->properties);
-	UHPA_FREE_PAYLOAD(store);
+	mosquitto__free(store->payload);
 	mosquitto__free(store);
 }
 
-int db__message_store(struct mosquitto_db *db, const struct mosquitto *source, struct mosquitto_msg_store *stored, uint32_t message_expiry_interval, dbid_t store_id, enum mosquitto_msg_origin origin)
+int db__message_store(const struct mosquitto *source, struct mosquitto_base_msg *stored, uint32_t message_expiry_interval, dbid_t store_id, enum mosquitto_msg_origin origin)
 {
     int rc = MOSQ_ERR_SUCCESS;
+
+	UNUSED(origin);
 
     if(source && source->id){
         stored->source_id = mosquitto__strdup(source->id);
@@ -69,7 +72,6 @@ int db__message_store(struct mosquitto_db *db, const struct mosquitto *source, s
     if(source){
         stored->source_listener = source->listener;
     }
-    stored->mid = 0;
     if(message_expiry_interval > 0){
         stored->message_expiry_time = time(NULL) + message_expiry_interval;
     }else{
@@ -78,16 +80,16 @@ int db__message_store(struct mosquitto_db *db, const struct mosquitto *source, s
 
     stored->dest_ids = NULL;
     stored->dest_id_count = 0;
-    db->msg_store_count++;
-    db->msg_store_bytes += stored->payloadlen;
+    db.msg_store_count++;
+    db.msg_store_bytes += stored->payloadlen;
 
     if(!store_id){
-        stored->db_id = ++db->last_db_id;
+        stored->db_id = ++db.last_db_id;
     }else{
         stored->db_id = store_id;
     }
 
-	db->msg_store = stored;
+	HASH_ADD(hh, db.msg_store, db_id, sizeof(stored->db_id), stored);
 
     return MOSQ_ERR_SUCCESS;
 error:
@@ -95,8 +97,12 @@ error:
     return rc;
 }
 
-int log__printf(struct mosquitto *mosq, int priority, const char *fmt, ...)
+int log__printf(struct mosquitto *mosq, unsigned int priority, const char *fmt, ...)
 {
+	UNUSED(mosq);
+	UNUSED(priority);
+	UNUSED(fmt);
+
 	return 0;
 }
 
@@ -105,29 +111,52 @@ time_t mosquitto_time(void)
 	return 123;
 }
 
-int net__socket_close(struct mosquitto_db *db, struct mosquitto *mosq)
+bool net__is_connected(struct mosquitto *mosq)
 {
+	UNUSED(mosq);
+	return false;
+}
+
+int net__socket_close(struct mosquitto *mosq)
+{
+	UNUSED(mosq);
+
 	return MOSQ_ERR_SUCCESS;
 }
 
 int send__pingreq(struct mosquitto *mosq)
 {
+	UNUSED(mosq);
+
 	return MOSQ_ERR_SUCCESS;
 }
 
-int mosquitto_acl_check(struct mosquitto_db *db, struct mosquitto *context, const char *topic, long payloadlen, void* payload, int qos, bool retain, int access)
+int mosquitto_acl_check(struct mosquitto *context, const char *topic, uint32_t payloadlen, void* payload, uint8_t qos, bool retain, int access)
 {
+	UNUSED(context);
+	UNUSED(topic);
+	UNUSED(payloadlen);
+	UNUSED(payload);
+	UNUSED(qos);
+	UNUSED(retain);
+	UNUSED(access);
+
 	return MOSQ_ERR_SUCCESS;
 }
 
-int acl__find_acls(struct mosquitto_db *db, struct mosquitto *context)
+int acl__find_acls(struct mosquitto *context)
 {
+	UNUSED(context);
+
 	return MOSQ_ERR_SUCCESS;
 }
 
 
-int sub__add(struct mosquitto_db *db, struct mosquitto *context, const char *sub, int qos, uint32_t identifier, int options, struct mosquitto__subhier **root)
+int sub__add(struct mosquitto *context, const char *sub, uint8_t qos, uint32_t identifier, int options)
 {
+	UNUSED(context);
+	UNUSED(options);
+
 	last_sub = strdup(sub);
 	last_qos = qos;
 	last_identifier = identifier;
@@ -135,17 +164,100 @@ int sub__add(struct mosquitto_db *db, struct mosquitto *context, const char *sub
 	return MOSQ_ERR_SUCCESS;
 }
 
-int db__message_insert(struct mosquitto_db *db, struct mosquitto *context, uint16_t mid, enum mosquitto_msg_direction dir, int qos, bool retain, struct mosquitto_msg_store *stored, mosquitto_property *properties, bool update)
+int db__message_insert_incoming(struct mosquitto *context, uint64_t cmsg_id, struct mosquitto_base_msg *msg, bool persist)
 {
+	UNUSED(context);
+	UNUSED(cmsg_id);
+	UNUSED(msg);
+	UNUSED(persist);
+
 	return MOSQ_ERR_SUCCESS;
 }
 
-void db__msg_store_ref_dec(struct mosquitto_db *db, struct mosquitto_msg_store **store)
+int db__message_insert_outgoing(struct mosquitto *context, uint64_t cmsg_id, uint16_t mid, uint8_t qos, bool retain, struct mosquitto_base_msg *stored, uint32_t subscription_identifier, bool update, bool persist)
 {
+	UNUSED(context);
+	UNUSED(cmsg_id);
+	UNUSED(mid);
+	UNUSED(qos);
+	UNUSED(retain);
+	UNUSED(stored);
+	UNUSED(subscription_identifier);
+	UNUSED(update);
+	UNUSED(persist);
+
+	return MOSQ_ERR_SUCCESS;
 }
 
-void db__msg_store_ref_inc(struct mosquitto_msg_store *store)
+void db__msg_store_ref_dec(struct mosquitto_base_msg **store)
+{
+	UNUSED(store);
+}
+
+void db__msg_store_ref_inc(struct mosquitto_base_msg *store)
 {
 	store->ref_count++;
 }
 
+void callback__on_disconnect(struct mosquitto *mosq, int rc, const mosquitto_property *props)
+{
+	UNUSED(mosq);
+	UNUSED(rc);
+	UNUSED(props);
+}
+
+void db__msg_add_to_inflight_stats(struct mosquitto_msg_data *msg_data, struct mosquitto_client_msg *msg)
+{
+	UNUSED(msg_data);
+	UNUSED(msg);
+}
+
+void db__msg_add_to_queued_stats(struct mosquitto_msg_data *msg_data, struct mosquitto_client_msg *msg)
+{
+	UNUSED(msg_data);
+	UNUSED(msg);
+}
+
+void context__add_to_by_id(struct mosquitto *context)
+{
+	if(context->in_by_id == false){
+		context->in_by_id = true;
+		HASH_ADD_KEYPTR(hh_id, db.contexts_by_id, context->id, strlen(context->id), context);
+	}
+}
+
+void plugin_persist__handle_retain_msg_set(struct mosquitto_base_msg *msg)
+{
+	UNUSED(msg);
+}
+void plugin_persist__handle_retain_msg_delete(struct mosquitto_base_msg *msg)
+{
+	UNUSED(msg);
+}
+void plugin_persist__handle_base_msg_add(struct mosquitto_base_msg *msg)
+{
+	UNUSED(msg);
+}
+
+void plugin_persist__process_retain_events(bool force)
+{
+	UNUSED(force);
+}
+
+void plugin_persist__queue_retain_event(struct mosquitto_base_msg *msg, int event)
+{
+	UNUSED(msg);
+	UNUSED(event);
+}
+int session_expiry__add_from_persistence(struct mosquitto *context, time_t expiry_time)
+{
+	UNUSED(context);
+	UNUSED(expiry_time);
+	return 0;
+}
+
+void mosquitto_log_printf(int level, const char *fmt, ...)
+{
+	UNUSED(level);
+	UNUSED(fmt);
+}

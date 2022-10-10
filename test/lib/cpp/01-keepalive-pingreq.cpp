@@ -26,6 +26,7 @@ int main(int argc, char *argv[])
 	struct mosquittopp_test *mosq;
 
 	int port = atoi(argv[1]);
+	int rc;
 
 	mosqpp::lib_init();
 
@@ -34,7 +35,8 @@ int main(int argc, char *argv[])
 	mosq->connect("localhost", port, 5);
 
 	while(run == -1){
-		mosq->loop();
+		rc = mosq->loop();
+		if(rc) break;
 	}
 	delete mosq;
 

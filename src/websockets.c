@@ -1,37 +1,28 @@
 /*
-Copyright (c) 2014-2020 Roger Light <roger@atchoo.org>
-All rights reserved.
+Copyright (c) 2014-2021 Roger Light <roger@atchoo.org>
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
+All rights reserved. This program and the accompanying materials
+are made available under the terms of the Eclipse Public License 2.0
+and Eclipse Distribution License v1.0 which accompany this distribution.
 
-1. Redistributions of source code must retain the above copyright notice,
-   this list of conditions and the following disclaimer.
-2. Redistributions in binary form must reproduce the above copyright
-   notice, this list of conditions and the following disclaimer in the
-   documentation and/or other materials provided with the distribution.
-3. Neither the name of mosquitto nor the names of its
-   contributors may be used to endorse or promote products derived from
-   this software without specific prior written permission.
+The Eclipse Public License is available at
+   https://www.eclipse.org/legal/epl-2.0/
+and the Eclipse Distribution License is available at
+  http://www.eclipse.org/org/documents/edl-v10.php.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
-LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-POSSIBILITY OF SUCH DAMAGE.
+SPDX-License-Identifier: EPL-2.0 OR BSD-3-Clause
+
+Contributors:
+   Roger Light - initial implementation and documentation.
 */
 
 #ifdef WITH_WEBSOCKETS
 
 #include "config.h"
 
-#include <libwebsockets.h>
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
+#  include <libwebsockets.h>
+#endif
 #include "mosquitto_internal.h"
 #include "mosquitto_broker_internal.h"
 #include "mqtt_protocol.h"
@@ -48,32 +39,23 @@ POSSIBILITY OF SUCH DAMAGE.
 #  include <sys/socket.h>
 #endif
 
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
 /* Be careful if changing these, if TX is not bigger than SERV then there can
  * be very large write performance penalties.
  */
 #define WS_SERV_BUF_SIZE 4096
 #define WS_TX_BUF_SIZE (WS_SERV_BUF_SIZE*2)
 
-extern struct mosquitto_db int_db;
-
-#if defined(LWS_LIBRARY_VERSION_NUMBER)
 static int callback_mqtt(
-#else
-static int callback_mqtt(struct libwebsocket_context *context,
-#endif
-		struct libwebsocket *wsi,
-		enum libwebsocket_callback_reasons reason,
+		struct lws *wsi,
+		enum lws_callback_reasons reason,
 		void *user,
 		void *in,
 		size_t len);
 
-#if defined(LWS_LIBRARY_VERSION_NUMBER)
 static int callback_http(
-#else
-static int callback_http(struct libwebsocket_context *context,
-#endif
-	struct libwebsocket *wsi,
-	enum libwebsocket_callback_reasons reason,
+	struct lws *wsi,
+	enum lws_callback_reasons reason,
 	void *user,
 	void *in,
 	size_t len);
@@ -88,79 +70,43 @@ struct libws_http_data {
 	FILE *fptr;
 };
 
-static struct libwebsocket_protocols protocols[] = {
+static struct lws_protocols protocols[] = {
 	/* first protocol must always be HTTP handler */
 	{
 		"http-only",						/* name */
 		callback_http,						/* lws_callback_function */
 		sizeof (struct libws_http_data),	/* per_session_data_size */
 		0,									/* rx_buffer_size */
-#ifndef LWS_LIBRARY_VERSION_NUMBER
-		0,									/* no_buffer_all_partial_tx v1.3 only */
-#endif
-#ifdef LWS_FEATURE_PROTOCOLS_HAS_ID_FIELD
 		0,									/* id */
-#endif
-#ifdef LWS_LIBRARY_VERSION_NUMBER
 		NULL,								/* user v1.4 on */
-#  if LWS_LIBRARY_VERSION_NUMBER >= 2003000
 		WS_TX_BUF_SIZE						/* tx_packet_size v2.3.0 */
-#  endif
-#endif
 	},
 	{
 		"mqtt",
 		callback_mqtt,
 		sizeof(struct libws_mqtt_data),
 		0,									/* rx_buffer_size */
-#ifndef LWS_LIBRARY_VERSION_NUMBER
-		0,									/* no_buffer_all_partial_tx v1.3 only */
-#endif
-#ifdef LWS_FEATURE_PROTOCOLS_HAS_ID_FIELD
 		1,									/* id */
-#endif
-#ifdef LWS_LIBRARY_VERSION_NUMBER
 		NULL,								/* user v1.4 on */
-#  if LWS_LIBRARY_VERSION_NUMBER >= 2003000
 		WS_TX_BUF_SIZE						/* tx_packet_size v2.3.0 */
-#  endif
-#endif
 	},
 	{
 		"mqttv3.1",
 		callback_mqtt,
 		sizeof(struct libws_mqtt_data),
 		0,									/* rx_buffer_size */
-#ifndef LWS_LIBRARY_VERSION_NUMBER
-		0,									/* no_buffer_all_partial_tx v1.3 only */
-#endif
-#ifdef LWS_FEATURE_PROTOCOLS_HAS_ID_FIELD
 		2,									/* id */
-#endif
-#ifdef LWS_LIBRARY_VERSION_NUMBER
 		NULL,								/* user v1.4 on */
-#  if LWS_LIBRARY_VERSION_NUMBER >= 2003000
 		WS_TX_BUF_SIZE						/* tx_packet_size v2.3.0 */
-#  endif
-#endif
 	},
 	{
 		NULL,
 		NULL,
 		0,
 		0,									/* rx_buffer_size */
-#ifndef LWS_LIBRARY_VERSION_NUMBER
-		0,									/* no_buffer_all_partial_tx v1.3 only */
-#endif
-#ifdef LWS_FEATURE_PROTOCOLS_HAS_ID_FIELD
 		0,									/* id */
-#endif
-#ifdef LWS_LIBRARY_VERSION_NUMBER
 		NULL,								/* user v1.4 on */
-#  if LWS_LIBRARY_VERSION_NUMBER >= 2003000
 		0									/* tx_packet_size v2.3.0 */
-#  endif
-#endif
 	}
 };
 
@@ -168,49 +114,40 @@ static void easy_address(int sock, struct mosquitto *mosq)
 {
 	char address[1024];
 
-	if(!net__socket_get_address(sock, address, 1024)){
+	if(!net__socket_get_address(sock, address, 1024, &mosq->remote_port)){
 		mosq->address = mosquitto__strdup(address);
 	}
 }
 
-#if defined(LWS_LIBRARY_VERSION_NUMBER)
 static int callback_mqtt(
-#else
-static int callback_mqtt(struct libwebsocket_context *context,
-#endif
-		struct libwebsocket *wsi,
-		enum libwebsocket_callback_reasons reason,
+		struct lws *wsi,
+		enum lws_callback_reasons reason,
 		void *user,
 		void *in,
 		size_t len)
 {
-	struct mosquitto_db *db;
 	struct mosquitto *mosq = NULL;
 	struct mosquitto__packet *packet;
-	size_t txlen;
 	int count;
-	const struct libwebsocket_protocols *p;
+	unsigned int ucount;
+	const struct lws_protocols *p;
 	struct libws_mqtt_data *u = (struct libws_mqtt_data *)user;
 	size_t pos;
 	uint8_t *buf;
 	int rc;
 	uint8_t byte;
-
-	db = &int_db;
+	char ip_addr_buff[1024];
 
 	switch (reason) {
 		case LWS_CALLBACK_ESTABLISHED:
-			mosq = context__init(db, WEBSOCKET_CLIENT);
+			mosq = context__init();
 			if(mosq){
-				p = libwebsockets_get_protocol(wsi);
+				p = lws_get_protocol(wsi);
 				mosq->listener = p->user;
 				if(!mosq->listener){
-					mosquitto__free(mosq);
+					mosquitto__FREE(mosq);
 					return -1;
 				}
-#if !defined(LWS_LIBRARY_VERSION_NUMBER)
-				mosq->ws_context = context;
-#endif
 				mosq->wsi = wsi;
 #ifdef WITH_TLS
 				if(in){
@@ -224,25 +161,32 @@ static int callback_mqtt(struct libwebsocket_context *context,
 			}else{
 				return -1;
 			}
-			easy_address(libwebsocket_get_socket_fd(wsi), mosq);
+
+			if (lws_hdr_copy(wsi, ip_addr_buff, sizeof(ip_addr_buff), WSI_TOKEN_X_FORWARDED_FOR) > 0) {
+				mosq->address = mosquitto__strdup(ip_addr_buff);
+			} else {
+				easy_address(lws_get_socket_fd(wsi), mosq);
+			}
 			if(!mosq->address){
 				/* getpeername and inet_ntop failed and not a bridge */
-				mosquitto__free(mosq);
+				mosquitto__FREE(mosq);
 				u->mosq = NULL;
 				return -1;
 			}
-			if(mosq->listener->max_connections > 0 && mosq->listener->client_count > mosq->listener->max_connections){
-				if(db->config->connection_messages == true){
+			if((mosq->listener->max_connections > 0 && mosq->listener->client_count > mosq->listener->max_connections)
+					|| (db.config->global_max_connections > 0 && HASH_CNT(hh_sock, db.contexts_by_sock) > (unsigned int)db.config->global_max_connections)){
+
+				if(db.config->connection_messages == true){
 					log__printf(NULL, MOSQ_LOG_NOTICE, "Client connection from %s denied: max_connections exceeded.", mosq->address);
 				}
-				mosquitto__free(mosq->address);
-				mosquitto__free(mosq);
+				mosquitto__FREE(mosq->address);
+				mosquitto__FREE(mosq);
 				u->mosq = NULL;
 				return -1;
 			}
-			mosq->sock = libwebsocket_get_socket_fd(wsi);
-			HASH_ADD(hh_sock, db->contexts_by_sock, sock, sizeof(mosq->sock), mosq);
-			mux__add_in(db, mosq);
+			mosq->sock = lws_get_socket_fd(wsi);
+			HASH_ADD(hh_sock, db.contexts_by_sock, sock, sizeof(mosq->sock), mosq);
+			mux__new(mosq);
 			break;
 
 		case LWS_CALLBACK_CLOSED:
@@ -252,16 +196,15 @@ static int callback_mqtt(struct libwebsocket_context *context,
 			mosq = u->mosq;
 			if(mosq){
 				if(mosq->sock != INVALID_SOCKET){
-					HASH_DELETE(hh_sock, db->contexts_by_sock, mosq);
+					HASH_DELETE(hh_sock, db.contexts_by_sock, mosq);
 					mosq->sock = INVALID_SOCKET;
-					mosq->pollfd_index = -1;
-					mux__delete(db, mosq);
+					mux__delete(mosq);
 				}
 				mosq->wsi = NULL;
 #ifdef WITH_TLS
 				mosq->ssl = NULL;
 #endif
-				do_disconnect(db, mosq, MOSQ_ERR_CONN_LOST);
+				do_disconnect(mosq, MOSQ_ERR_CONN_LOST);
 			}
 			break;
 
@@ -274,38 +217,14 @@ static int callback_mqtt(struct libwebsocket_context *context,
 				return -1;
 			}
 
-			rc = db__message_write_inflight_out_latest(db, mosq);
+			rc = db__message_write_inflight_out_latest(mosq);
 			if(rc) return -1;
-			rc = db__message_write_queued_out(db, mosq);
+			rc = db__message_write_queued_out(mosq);
 			if(rc) return -1;
 
-			if(mosq->out_packet && !mosq->current_out_packet){
-				mosq->current_out_packet = mosq->out_packet;
-				mosq->out_packet = mosq->out_packet->next;
-				if(!mosq->out_packet){
-					mosq->out_packet_last = NULL;
-				}
-			}
-
-			while(mosq->current_out_packet && !lws_send_pipe_choked(mosq->wsi)){
-				packet = mosq->current_out_packet;
-
-				if(packet->pos == 0 && packet->to_process == packet->packet_length){
-					/* First time this packet has been dealt with.
-					 * libwebsockets requires that the payload has
-					 * LWS_SEND_BUFFER_PRE_PADDING space available before the
-					 * actual data and LWS_SEND_BUFFER_POST_PADDING afterwards.
-					 * We've already made the payload big enough to allow this,
-					 * but need to move it into position here. */
-					memmove(&packet->payload[LWS_SEND_BUFFER_PRE_PADDING], packet->payload, packet->packet_length);
-					packet->pos += LWS_SEND_BUFFER_PRE_PADDING;
-				}
-				if(packet->to_process > WS_TX_BUF_SIZE){
-					txlen = WS_TX_BUF_SIZE;
-				}else{
-					txlen = packet->to_process;
-				}
-				count = libwebsocket_write(wsi, &packet->payload[packet->pos], txlen, LWS_WRITE_BINARY);
+			while(mosq->out_packet && !lws_send_pipe_choked(mosq->wsi)){
+				packet = mosq->out_packet;
+				count = lws_write(wsi, &packet->payload[packet->pos], packet->to_process, LWS_WRITE_BINARY);
 				if(count < 0){
 					if (mosq->state == mosq_cs_disconnect_ws
 							|| mosq->state == mosq_cs_disconnecting
@@ -315,11 +234,12 @@ static int callback_mqtt(struct libwebsocket_context *context,
 					}
 					return 0;
 				}
+				ucount = (unsigned int)count;
 #ifdef WITH_SYS_TREE
-				g_bytes_sent += count;
+				g_bytes_sent += ucount;
 #endif
-				packet->to_process -= count;
-				packet->pos += count;
+				packet->to_process -= ucount;
+				packet->pos += ucount;
 				if(packet->to_process > 0){
 					if (mosq->state == mosq_cs_disconnect_ws
 							|| mosq->state == mosq_cs_disconnecting
@@ -332,24 +252,15 @@ static int callback_mqtt(struct libwebsocket_context *context,
 
 #ifdef WITH_SYS_TREE
 				g_msgs_sent++;
-				if(((packet->command)&0xF6) == CMD_PUBLISH){
+				if(((packet->command)&0xF0) == CMD_PUBLISH){
 					g_pub_msgs_sent++;
 				}
 #endif
 
-				/* Free data and reset values */
-				mosq->current_out_packet = mosq->out_packet;
-				if(mosq->out_packet){
-					mosq->out_packet = mosq->out_packet->next;
-					if(!mosq->out_packet){
-						mosq->out_packet_last = NULL;
-					}
-				}
+				packet__get_next_out(mosq);
+				mosquitto__FREE(packet);
 
-				packet__cleanup(packet);
-				mosquitto__free(packet);
-
-				mosq->next_msg_out = mosquitto_time() + mosq->keepalive;
+				mosq->next_msg_out = db.now_s + mosq->keepalive;
 			}
 			if (mosq->state == mosq_cs_disconnect_ws
 					|| mosq->state == mosq_cs_disconnecting
@@ -357,8 +268,8 @@ static int callback_mqtt(struct libwebsocket_context *context,
 
 				return -1;
 			}
-			if(mosq->current_out_packet){
-				libwebsocket_callback_on_writable(mosq->ws_context, mosq->wsi);
+			if(mosq->out_packet){
+				lws_callback_on_writable(mosq->wsi);
 			}
 			break;
 
@@ -398,7 +309,7 @@ static int callback_mqtt(struct libwebsocket_context *context,
 						mosq->in_packet.remaining_length += (byte & 127) * mosq->in_packet.remaining_mult;
 						mosq->in_packet.remaining_mult *= 128;
 					}while((byte & 128) != 0);
-					mosq->in_packet.remaining_count *= -1;
+					mosq->in_packet.remaining_count = (int8_t)(mosq->in_packet.remaining_count * -1);
 
 					if(mosq->in_packet.remaining_length > 0){
 						mosq->in_packet.payload = mosquitto__malloc(mosq->in_packet.remaining_length*sizeof(uint8_t));
@@ -409,15 +320,15 @@ static int callback_mqtt(struct libwebsocket_context *context,
 					}
 				}
 				if(mosq->in_packet.to_process>0){
-					if(len - pos >= mosq->in_packet.to_process){
+					if((uint32_t)len - pos >= mosq->in_packet.to_process){
 						memcpy(&mosq->in_packet.payload[mosq->in_packet.pos], &buf[pos], mosq->in_packet.to_process);
 						mosq->in_packet.pos += mosq->in_packet.to_process;
 						pos += mosq->in_packet.to_process;
 						mosq->in_packet.to_process = 0;
 					}else{
 						memcpy(&mosq->in_packet.payload[mosq->in_packet.pos], &buf[pos], len-pos);
-						mosq->in_packet.pos += len-pos;
-						mosq->in_packet.to_process -= len-pos;
+						mosq->in_packet.pos += (uint32_t)(len-pos);
+						mosq->in_packet.to_process -= (uint32_t)(len-pos);
 						return 0;
 					}
 				}
@@ -426,24 +337,24 @@ static int callback_mqtt(struct libwebsocket_context *context,
 
 #ifdef WITH_SYS_TREE
 				G_MSGS_RECEIVED_INC(1);
-				if(((mosq->in_packet.command)&0xF5) == CMD_PUBLISH){
+				if(((mosq->in_packet.command)&0xF0) == CMD_PUBLISH){
 					G_PUB_MSGS_RECEIVED_INC(1);
 				}
 #endif
-				rc = handle__packet(db, mosq);
+				rc = handle__packet(mosq);
 
 				/* Free data and reset values */
 				packet__cleanup(&mosq->in_packet);
 
 				keepalive__update(mosq);
 
-				if(rc && (mosq->out_packet || mosq->current_out_packet)) {
+				if(rc && mosq->out_packet) {
 					if(mosq->state != mosq_cs_disconnecting){
 						mosquitto__set_state(mosq, mosq_cs_disconnect_ws);
 					}
-					libwebsocket_callback_on_writable(mosq->ws_context, mosq->wsi);
+					lws_callback_on_writable(mosq->wsi);
 				} else if (rc) {
-					do_disconnect(db, mosq, MOSQ_ERR_CONN_LOST);
+					do_disconnect(mosq, MOSQ_ERR_CONN_LOST);
 					return -1;
 				}
 			}
@@ -458,10 +369,7 @@ static int callback_mqtt(struct libwebsocket_context *context,
 
 
 static char *http__canonical_filename(
-#ifndef LWS_LIBRARY_VERSION_NUMBER
-		struct libwebsocket_context *context,
-#endif
-		struct libwebsocket *wsi,
+		struct lws *wsi,
 		const char *in,
 		const char *http_dir)
 {
@@ -476,7 +384,7 @@ static char *http__canonical_filename(
 	}
 	filename = mosquitto__malloc(slen);
 	if(!filename){
-		libwebsockets_return_http_status(context, wsi, HTTP_STATUS_INTERNAL_SERVER_ERROR, NULL);
+		lws_return_http_status(wsi, HTTP_STATUS_INTERNAL_SERVER_ERROR, NULL);
 		return NULL;
 	}
 	if(((char *)in)[inlen-1] == '/'){
@@ -489,31 +397,31 @@ static char *http__canonical_filename(
 	/* Get canonical path and check it is within our http_dir */
 #ifdef WIN32
 	filename_canonical = _fullpath(NULL, filename, 0);
-	mosquitto__free(filename);
+	mosquitto__FREE(filename);
 	if(!filename_canonical){
-		libwebsockets_return_http_status(context, wsi, HTTP_STATUS_INTERNAL_SERVER_ERROR, NULL);
+		lws_return_http_status(wsi, HTTP_STATUS_INTERNAL_SERVER_ERROR, NULL);
 		return NULL;
 	}
 #else
 	filename_canonical = realpath(filename, NULL);
-	mosquitto__free(filename);
+	mosquitto__FREE(filename);
 	if(!filename_canonical){
 		if(errno == EACCES){
-			libwebsockets_return_http_status(context, wsi, HTTP_STATUS_FORBIDDEN, NULL);
+			lws_return_http_status(wsi, HTTP_STATUS_FORBIDDEN, NULL);
 		}else if(errno == EINVAL || errno == EIO || errno == ELOOP){
-			libwebsockets_return_http_status(context, wsi, HTTP_STATUS_INTERNAL_SERVER_ERROR, NULL);
+			lws_return_http_status(wsi, HTTP_STATUS_INTERNAL_SERVER_ERROR, NULL);
 		}else if(errno == ENAMETOOLONG){
-			libwebsockets_return_http_status(context, wsi, HTTP_STATUS_REQ_URI_TOO_LONG, NULL);
+			lws_return_http_status(wsi, HTTP_STATUS_REQ_URI_TOO_LONG, NULL);
 		}else if(errno == ENOENT || errno == ENOTDIR){
-			libwebsockets_return_http_status(context, wsi, HTTP_STATUS_NOT_FOUND, NULL);
+			lws_return_http_status(wsi, HTTP_STATUS_NOT_FOUND, NULL);
 		}
 		return NULL;
 	}
 #endif
 	if(strncmp(http_dir, filename_canonical, strlen(http_dir))){
 		/* Requested file isn't within http_dir, deny access. */
-		free(filename_canonical);
-		libwebsockets_return_http_status(context, wsi, HTTP_STATUS_FORBIDDEN, NULL);
+		SAFE_FREE(filename_canonical);
+		lws_return_http_status(wsi, HTTP_STATUS_FORBIDDEN, NULL);
 		return NULL;
 	}
 
@@ -521,13 +429,9 @@ static char *http__canonical_filename(
 }
 
 
-#if defined(LWS_LIBRARY_VERSION_NUMBER)
 static int callback_http(
-#else
-static int callback_http(struct libwebsocket_context *context,
-#endif
-		struct libwebsocket *wsi,
-		enum libwebsocket_callback_reasons reason,
+		struct lws *wsi,
+		enum lws_callback_reasons reason,
 		void *user,
 		void *in,
 		size_t len)
@@ -537,12 +441,14 @@ static int callback_http(struct libwebsocket_context *context,
 	char *http_dir;
 	size_t buflen;
 	size_t wlen;
+	int rc;
 	char *filename_canonical;
 	unsigned char buf[4096];
 	struct stat filestat;
-	struct mosquitto_db *db = &int_db;
 	struct mosquitto *mosq;
 	struct lws_pollargs *pollargs = (struct lws_pollargs *)in;
+	int hlen;
+	int i;
 
 	/* FIXME - ssl cert verification is done here. */
 
@@ -552,11 +458,7 @@ static int callback_http(struct libwebsocket_context *context,
 				return -1;
 			}
 
-#if defined(LWS_LIBRARY_VERSION_NUMBER)
 			hack = (struct libws_mqtt_hack *)lws_context_user(lws_get_context(wsi));
-#else
-			hack = (struct libws_mqtt_hack *)libwebsocket_context_user(context);
-#endif
 			if(!hack){
 				return -1;
 			}
@@ -569,26 +471,22 @@ static int callback_http(struct libwebsocket_context *context,
 
 			/* Forbid POST */
 			if(lws_hdr_total_length(wsi, WSI_TOKEN_POST_URI)){
-				libwebsockets_return_http_status(context, wsi, HTTP_STATUS_METHOD_NOT_ALLOWED, NULL);
+				lws_return_http_status(wsi, HTTP_STATUS_METHOD_NOT_ALLOWED, NULL);
 				return -1;
 			}
 
-#if defined(LWS_LIBRARY_VERSION_NUMBER)
 			filename_canonical = http__canonical_filename(wsi, (char *)in, http_dir);
-#else
-			filename_canonical = http__canonical_filename(context, wsi, (char *)in, http_dir);
-#endif
 			if(!filename_canonical) return -1;
 
 			u->fptr = fopen(filename_canonical, "rb");
 			if(!u->fptr){
-				free(filename_canonical);
-				libwebsockets_return_http_status(context, wsi, HTTP_STATUS_NOT_FOUND, NULL);
+				SAFE_FREE(filename_canonical);
+				lws_return_http_status(wsi, HTTP_STATUS_NOT_FOUND, NULL);
 				return -1;
 			}
 			if(fstat(fileno(u->fptr), &filestat) < 0){
-				free(filename_canonical);
-				libwebsockets_return_http_status(context, wsi, HTTP_STATUS_INTERNAL_SERVER_ERROR, NULL);
+				SAFE_FREE(filename_canonical);
+				lws_return_http_status(wsi, HTTP_STATUS_INTERNAL_SERVER_ERROR, NULL);
 				fclose(u->fptr);
 				u->fptr = NULL;
 				return -1;
@@ -598,36 +496,36 @@ static int callback_http(struct libwebsocket_context *context,
 			if((filestat.st_mode & S_IFDIR) == S_IFDIR){
 				fclose(u->fptr);
 				u->fptr = NULL;
-				free(filename_canonical);
+				SAFE_FREE(filename_canonical);
 
 				/* FIXME - use header functions from lws 2.x */
-				buflen = snprintf((char *)buf, 4096, "HTTP/1.0 302 OK\r\n"
+				buflen = (size_t)snprintf((char *)buf, 4096, "HTTP/1.0 302 OK\r\n"
 												"Location: %s/\r\n\r\n",
 												(char *)in);
-				return libwebsocket_write(wsi, buf, buflen, LWS_WRITE_HTTP);
+				return lws_write(wsi, buf, buflen, LWS_WRITE_HTTP);
 			}
 
 			if((filestat.st_mode & S_IFREG) != S_IFREG){
-				libwebsockets_return_http_status(context, wsi, HTTP_STATUS_FORBIDDEN, NULL);
+				lws_return_http_status(wsi, HTTP_STATUS_FORBIDDEN, NULL);
 				fclose(u->fptr);
 				u->fptr = NULL;
-				free(filename_canonical);
+				SAFE_FREE(filename_canonical);
 				return -1;
 			}
 
 			log__printf(NULL, MOSQ_LOG_DEBUG, "http serving file \"%s\".", filename_canonical);
-			free(filename_canonical);
+			SAFE_FREE(filename_canonical);
 			/* FIXME - use header functions from lws 2.x */
-			buflen = snprintf((char *)buf, 4096, "HTTP/1.0 200 OK\r\n"
+			buflen = (size_t)snprintf((char *)buf, 4096, "HTTP/1.0 200 OK\r\n"
 												"Server: mosquitto\r\n"
 												"Content-Length: %u\r\n\r\n",
 												(unsigned int)filestat.st_size);
-            if(libwebsocket_write(wsi, buf, buflen, LWS_WRITE_HTTP) < 0){
+            if(lws_write(wsi, buf, buflen, LWS_WRITE_HTTP) < 0){
 				fclose(u->fptr);
 				u->fptr = NULL;
 				return -1;
 			}
-			libwebsocket_callback_on_writable(context, wsi);
+			lws_callback_on_writable(wsi);
 			break;
 
 		case LWS_CALLBACK_HTTP_BODY:
@@ -642,6 +540,26 @@ static int callback_http(struct libwebsocket_context *context,
 			/* Access control here */
 			return 0;
 
+#if LWS_LIBRARY_VERSION_NUMBER >= 3001000
+		case LWS_CALLBACK_HTTP_CONFIRM_UPGRADE:
+			hack = lws_context_user(lws_get_context(wsi));
+			if(hack->listener->ws_origin_count){
+				hlen = lws_hdr_total_length(wsi, WSI_TOKEN_ORIGIN);
+				if(hlen <= 0 || hlen >= (int)sizeof(buf)){
+					return -1;
+				}
+				for(i=0; i<hack->listener->ws_origin_count; i++){
+					lws_hdr_copy(wsi, (char *)buf, sizeof(buf), WSI_TOKEN_ORIGIN);
+					if((!strcmp(hack->listener->ws_origins[i], (char *)buf))){
+						return 0;
+					}
+				}
+				return -1;
+			}else{
+				return 0;
+			}
+#endif
+
 		case LWS_CALLBACK_HTTP_WRITEABLE:
 			/* Send our data here */
 			if(u && u->fptr){
@@ -652,9 +570,13 @@ static int callback_http(struct libwebsocket_context *context,
 						u->fptr = NULL;
 						return -1;
 					}
-					wlen = libwebsocket_write(wsi, buf, buflen, LWS_WRITE_HTTP);
+					rc = lws_write(wsi, buf, buflen, LWS_WRITE_HTTP);
+					if(rc < 0){
+						return -1;
+					}
+					wlen = (size_t)rc;
 					if(wlen < buflen){
-						if(fseek(u->fptr, buflen-wlen, SEEK_CUR) < 0){
+						if(fseek(u->fptr, (long)(buflen-wlen), SEEK_CUR) < 0){
 							fclose(u->fptr);
 							u->fptr = NULL;
 							return -1;
@@ -666,7 +588,7 @@ static int callback_http(struct libwebsocket_context *context,
 						}
 					}
 				}while(u->fptr && !lws_send_pipe_choked(wsi));
-				libwebsocket_callback_on_writable(context, wsi);
+				lws_callback_on_writable(wsi);
 			}else{
 				return -1;
 			}
@@ -682,15 +604,37 @@ static int callback_http(struct libwebsocket_context *context,
 			break;
 
 		case LWS_CALLBACK_ADD_POLL_FD:
-		case LWS_CALLBACK_DEL_POLL_FD:
-		case LWS_CALLBACK_CHANGE_MODE_POLL_FD:
-			HASH_FIND(hh_sock, db->contexts_by_sock, &pollargs->fd, sizeof(pollargs->fd), mosq);
+			HASH_FIND(hh_sock, db.contexts_by_sock, &pollargs->fd, sizeof(pollargs->fd), mosq);
 			if(mosq){
-				if(pollargs->events & POLLOUT){
-					mux__add_out(db, mosq);
-					mosq->ws_want_write = true;
+				if(pollargs->events & LWS_POLLOUT){
+					mux__add_out(mosq);
 				}else{
-					mux__remove_out(db, mosq);
+					mux__remove_out(mosq);
+				}
+			}else{
+				if(pollargs->events & POLLIN){
+					/* Assume this is a new listener */
+					listeners__add_websockets(lws_get_context(wsi), pollargs->fd);
+				}
+			}
+			break;
+
+		case LWS_CALLBACK_DEL_POLL_FD:
+			HASH_FIND(hh_sock, db.contexts_by_sock, &pollargs->fd, sizeof(pollargs->fd), mosq);
+			if(mosq){
+				mux__delete(mosq);
+			}
+			break;
+
+		case LWS_CALLBACK_CHANGE_MODE_POLL_FD:
+			HASH_FIND(hh_sock, db.contexts_by_sock, &pollargs->fd, sizeof(pollargs->fd), mosq);
+			if(mosq){
+				if(pollargs->events & LWS_POLLHUP){
+					return 1;
+				}else if(pollargs->events & LWS_POLLOUT){
+					mux__add_out(mosq);
+				}else{
+					mux__remove_out(mosq);
 				}
 			}
 			break;
@@ -713,25 +657,26 @@ static int callback_http(struct libwebsocket_context *context,
 static void log_wrap(int level, const char *line)
 {
 	char *l = (char *)line;
+	UNUSED(level);
 	l[strlen(line)-1] = '\0'; /* Remove \n */
 	log__printf(NULL, MOSQ_LOG_WEBSOCKETS, "%s", l);
 }
 
-struct libwebsocket_context *mosq_websockets_init(struct mosquitto__listener *listener, const struct mosquitto__config *conf)
+void mosq_websockets_init(struct mosquitto__listener *listener, const struct mosquitto__config *conf)
 {
 	struct lws_context_creation_info info;
-	struct libwebsocket_protocols *p;
-	int protocol_count;
+	struct lws_protocols *p;
+	size_t protocol_count;
 	int i;
 	struct libws_mqtt_hack *user;
 
 	/* Count valid protocols */
 	for(protocol_count=0; protocols[protocol_count].name; protocol_count++);
 
-	p = mosquitto__calloc(protocol_count+1, sizeof(struct libwebsocket_protocols));
+	p = mosquitto__calloc(protocol_count+1, sizeof(struct lws_protocols));
 	if(!p){
 		log__printf(NULL, MOSQ_LOG_ERR, "Out of memory.");
-		return NULL;
+		return;
 	}
 	for(i=0; protocols[i].name; i++){
 		p[i].name = protocols[i].name;
@@ -752,26 +697,25 @@ struct libwebsocket_context *mosq_websockets_init(struct mosquitto__listener *li
 	info.ssl_cert_filepath = listener->certfile;
 	info.ssl_private_key_filepath = listener->keyfile;
 	info.ssl_cipher_list = listener->ciphers;
+#if defined(WITH_WEBSOCKETS) && LWS_LIBRARY_VERSION_NUMBER>=3001000
+	info.tls1_3_plus_cipher_list = listener->ciphers_tls13;
+#endif
 	if(listener->require_certificate){
 		info.options |= LWS_SERVER_OPTION_REQUIRE_VALID_OPENSSL_CLIENT_CERT;
 	}
 #endif
 
-#if LWS_LIBRARY_VERSION_MAJOR>1
 	info.options |= LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
-#endif
 	if(listener->socket_domain == AF_INET){
 		info.options |= LWS_SERVER_OPTION_DISABLE_IPV6;
 	}
-#if defined(LWS_LIBRARY_VERSION_NUMBER) && LWS_LIBRARY_VERSION_NUMBER>=1007000
     info.max_http_header_data = conf->websockets_headers_size;
-#endif
 
 	user = mosquitto__calloc(1, sizeof(struct libws_mqtt_hack));
 	if(!user){
-		mosquitto__free(p);
+		mosquitto__FREE(p);
 		log__printf(NULL, MOSQ_LOG_ERR, "Out of memory.");
-		return NULL;
+		return;
 	}
 
 	if(listener->http_dir){
@@ -781,24 +725,25 @@ struct libwebsocket_context *mosq_websockets_init(struct mosquitto__listener *li
 		user->http_dir = realpath(listener->http_dir, NULL);
 #endif
 		if(!user->http_dir){
-			mosquitto__free(user);
-			mosquitto__free(p);
+			mosquitto__FREE(user);
+			mosquitto__FREE(p);
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to open http dir \"%s\".", listener->http_dir);
-			return NULL;
+			return;
 		}
 	}
+	user->listener = listener;
 
 	info.user = user;
-#if defined(LWS_LIBRARY_VERSION_NUMBER) && LWS_LIBRARY_VERSION_NUMBER>=2004000
 	info.pt_serv_buf_size = WS_SERV_BUF_SIZE;
-#endif
 	listener->ws_protocol = p;
 
 	lws_set_log_level(conf->websockets_log_level, log_wrap);
 
 	log__printf(NULL, MOSQ_LOG_INFO, "Opening websockets listen socket on port %d.", listener->port);
-	return libwebsocket_create_context(&info);
+	listener->ws_in_init = true;
+	listener->ws_context = lws_create_context(&info);
+	listener->ws_in_init = false;
 }
 
-
+#endif
 #endif

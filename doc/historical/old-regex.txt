@@ -17,7 +17,7 @@ level is #.
 ^(?:							# Must start at beginning of string
 		(?:						# (Level 1 hierarchy)
 			(a|\+)(?!$) 		# Match a or +, but only if not EOL.
-		)						# AND 
+		)						# AND
 		(?:
 			(?:					# (Level 2 hierarchy)
 				/				# Match /

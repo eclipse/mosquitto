@@ -3,9 +3,9 @@
 .. slug: updated-debian-repository-backend
 .. date: 2018-08-08 23:00:43 UTC+01:00
 .. tags: Packaging
-.. category: 
-.. link: 
-.. description: 
+.. category:
+.. link:
+.. description:
 .. type: text
 -->
 

@@ -1,0 +1,49 @@
+name: Coverage
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - develop
+      - fixes
+  pull_request:
+    branches:
+      - develop
+      - fixes
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+
+    steps:
+    - run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+            lcov \
+            libc-ares-dev \
+            libcjson-dev \
+            libcunit1-dev \
+            libwrap0-dev \
+            python3-paho-mqtt \
+            uthash-dev
+
+    - uses: actions/checkout@v3
+
+    - run: |
+        make \
+          WITH_COVERAGE=yes \
+          CFLAGS="-O0 -Wall -ggdb -fprofile-arcs" \
+          -j $(nproc) \
+          binary
+
+    - run: |
+        make -C test test
+
+    - run: |
+        lcov --capture --directory . --output-file coverage.info --no-external
+
+    - uses: codecov/codecov-action@v3
+      with:
+        fail_ci_if_error: true
+        files: ./coverage.info
+        verbose: true

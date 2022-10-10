@@ -3,9 +3,9 @@
 .. slug: mqtt5-progress
 .. date: 2018-11-29 21:33:29 UTC+00:00
 .. tags: MQTT5
-.. category: 
-.. link: 
-.. description: 
+.. category:
+.. link:
+.. description:
 .. type: text
 -->
 

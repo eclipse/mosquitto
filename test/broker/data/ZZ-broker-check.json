@@ -1,0 +1,8 @@
+[
+	{
+		"group": "BROKER CHECK",
+		"tests": [
+			{ "name": "END OF TEST", "ver":4, "expect_disconnect": false, "msgs": []}
+		]
+	}
+]

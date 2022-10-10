@@ -5,6 +5,7 @@
 
 #include <CUnit/CUnit.h>
 #include <CUnit/Basic.h>
+#include "path_helper.h"
 
 #define WITH_BROKER
 #define WITH_PERSISTENCE
@@ -16,6 +17,7 @@ uint64_t last_retained;
 char *last_sub = NULL;
 int last_qos;
 
+struct mosquitto_db db;
 
 /* read entire file into memory */
 static int file_read(const char *filename, uint8_t **data, size_t *len)
@@ -27,7 +29,7 @@ static int file_read(const char *filename, uint8_t **data, size_t *len)
 	if(!fptr) return 1;
 
 	fseek(fptr, 0, SEEK_END);
-	*len = ftell(fptr);
+	*len = (size_t)ftell(fptr);
 	*data = malloc(*len);
 	if(!(*data)){
 		fclose(fptr);
@@ -73,7 +75,6 @@ static int file_diff(const char *one, const char *two)
 
 static void TEST_persistence_disabled(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	int rc;
 
@@ -82,18 +83,17 @@ static void TEST_persistence_disabled(void)
 	db.config = &config;
 	config.persistence = true;
 
-	rc = persist__backup(&db, false);
+	rc = persist__backup(false);
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_INVAL);
 
 	config.persistence_filepath = "disabled.db";
-	rc = persist__backup(&db, false);
+	rc = persist__backup(false);
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 }
 
 
 static void TEST_empty_file(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	int rc;
 
@@ -104,16 +104,17 @@ static void TEST_empty_file(void)
 	config.persistence = true;
 
 	config.persistence_filepath = "empty.db";
-	rc = persist__backup(&db, false);
+	rc = persist__backup(false);
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
-	CU_ASSERT_EQUAL(0, file_diff("files/persist_write/empty.test-db", "empty.db"));
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_write/empty.test-db");
+	CU_ASSERT_EQUAL(0, file_diff(persistence_filepath, "empty.db"));
 	unlink("empty.db");
 }
 
 
 static void TEST_v6_config_ok(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	int rc;
 
@@ -122,22 +123,23 @@ static void TEST_v6_config_ok(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v6-cfg.test-db";
-	rc = persist__restore(&db);
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v6-cfg.test-db");
+	config.persistence_filepath = persistence_filepath;
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 
 	config.persistence_filepath = "v6-cfg.db";
-	rc = persist__backup(&db, true);
+	rc = persist__backup(true);
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 
-	CU_ASSERT_EQUAL(0, file_diff("files/persist_read/v6-cfg.test-db", "v6-cfg.db"));
+	CU_ASSERT_EQUAL(0, file_diff(persistence_filepath, "v6-cfg.db"));
 	unlink("v6-cfg.db");
 }
 
 
 static void TEST_v6_message_store_no_ref(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	int rc;
 
@@ -146,22 +148,25 @@ static void TEST_v6_message_store_no_ref(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v6-message-store.test-db";
-	rc = persist__restore(&db);
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v6-message-store.test-db");
+	config.persistence_filepath = persistence_filepath;
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 
 	config.persistence_filepath = "v6-message-store-no-ref.db";
-	rc = persist__backup(&db, true);
+	rc = persist__backup(true);
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 
-	CU_ASSERT_EQUAL(0, file_diff("files/persist_write/v6-message-store-no-ref.test-db", "v6-message-store-no-ref.db"));
+	char persistence_filepath_no_ref[4096];
+	cat_sourcedir_with_relpath(persistence_filepath_no_ref, "/files/persist_write/v6-message-store-no-ref.test-db");
+	CU_ASSERT_EQUAL(0, file_diff(persistence_filepath_no_ref, "v6-message-store-no-ref.db"));
 	unlink("v6-message-store-no-ref.db");
 }
 
 
 static void TEST_v6_message_store_props(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	struct mosquitto__listener listener;
 	int rc;
@@ -176,22 +181,23 @@ static void TEST_v6_message_store_props(void)
 	config.listener_count = 1;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v6-message-store-props.test-db";
-	rc = persist__restore(&db);
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v6-message-store-props.test-db");
+	config.persistence_filepath = persistence_filepath;
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 
 	config.persistence_filepath = "v6-message-store-props.db";
-	rc = persist__backup(&db, true);
+	rc = persist__backup(true);
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 
-	CU_ASSERT_EQUAL(0, file_diff("files/persist_read/v6-message-store-props.test-db", "v6-message-store-props.db"));
+	CU_ASSERT_EQUAL(0, file_diff(persistence_filepath, "v6-message-store-props.db"));
 	unlink("v6-message-store-props.db");
 }
 
 
 static void TEST_v6_client(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	struct mosquitto__listener listener;
 	int rc;
@@ -206,22 +212,23 @@ static void TEST_v6_client(void)
 	config.listener_count = 1;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v6-client.test-db";
-	rc = persist__restore(&db);
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v6-client.test-db");
+	config.persistence_filepath = persistence_filepath;
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 
 	config.persistence_filepath = "v6-client.db";
-	rc = persist__backup(&db, true);
+	rc = persist__backup(true);
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 
-	CU_ASSERT_EQUAL(0, file_diff("files/persist_read/v6-client.test-db", "v6-client.db"));
+	CU_ASSERT_EQUAL(0, file_diff(persistence_filepath, "v6-client.db"));
 	unlink("v6-client.db");
 }
 
 
 static void TEST_v6_client_message(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	struct mosquitto__listener listener;
 	int rc;
@@ -236,22 +243,23 @@ static void TEST_v6_client_message(void)
 	config.listener_count = 1;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v6-client-message.test-db";
-	rc = persist__restore(&db);
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v6-client-message.test-db");
+	config.persistence_filepath = persistence_filepath;
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 
 	config.persistence_filepath = "v6-client-message.db";
-	rc = persist__backup(&db, true);
+	rc = persist__backup(true);
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 
-	CU_ASSERT_EQUAL(0, file_diff("files/persist_read/v6-client-message.test-db", "v6-client-message.db"));
+	CU_ASSERT_EQUAL(0, file_diff(persistence_filepath, "v6-client-message.db"));
 	unlink("v6-client-message.db");
 }
 
 
 static void TEST_v6_client_message_props(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	struct mosquitto__listener listener;
 	int rc;
@@ -266,8 +274,10 @@ static void TEST_v6_client_message_props(void)
 	config.listener_count = 1;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v6-client-message-props.test-db";
-	rc = persist__restore(&db);
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v6-client-message-props.test-db");
+	config.persistence_filepath = persistence_filepath;
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 
 	CU_ASSERT_PTR_NOT_NULL(db.msg_store);
@@ -279,17 +289,16 @@ static void TEST_v6_client_message_props(void)
 	}
 
 	config.persistence_filepath = "v6-client-message-props.db";
-	rc = persist__backup(&db, true);
+	rc = persist__backup(true);
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 
-	CU_ASSERT_EQUAL(0, file_diff("files/persist_read/v6-client-message-props.test-db", "v6-client-message-props.db"));
-	unlink("v6-client-message-props.db");
+	CU_ASSERT_EQUAL(0, file_diff(persistence_filepath, "v6-client-message-props.db"));
+	//unlink("v6-client-message-props.db");
 }
 
 
 static void TEST_v6_sub(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	struct mosquitto__listener listener;
 	int rc;
@@ -303,18 +312,20 @@ static void TEST_v6_sub(void)
 	config.listeners = &listener;
 	config.listener_count = 1;
 
-	db__open(&config, &db);
+	db__open(&config);
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v6-sub.test-db";
-	rc = persist__restore(&db);
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v6-sub.test-db");
+	config.persistence_filepath = persistence_filepath;
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 
 	config.persistence_filepath = "v6-sub.db";
-	rc = persist__backup(&db, true);
+	rc = persist__backup(true);
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 
-	CU_ASSERT_EQUAL(0, file_diff("files/persist_read/v6-sub.test-db", "v6-sub.db"));
+	CU_ASSERT_EQUAL(0, file_diff(persistence_filepath, "v6-sub.db"));
 	unlink("v6-sub.db");
 }
 
@@ -323,7 +334,6 @@ static void TEST_v6_sub(void)
 NOT WORKING
 static void TEST_v5_full(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	int rc;
 
@@ -331,18 +341,20 @@ static void TEST_v5_full(void)
 	memset(&config, 0, sizeof(struct mosquitto__config));
 	db.config = &config;
 
-	db__open(&config, &db);
+	db__open(&config);
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_write/v5-full.test-db";
-	rc = persist__restore(&db);
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_write/v5-full.test-db");
+	config.persistence_filepath = persistence_filepath;
+	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 
 	config.persistence_filepath = "v5-full.db";
-	rc = persist__backup(&db, true);
+	rc = persist__backup(true);
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 
-	CU_ASSERT_EQUAL(0, file_diff("files/persist_write/v5-full.test-db", "v5-full.db"));
+	CU_ASSERT_EQUAL(0, file_diff(persistence_filepath, "v5-full.db"));
 	unlink("v5-full.db");
 }
 #endif
@@ -357,6 +369,9 @@ int main(int argc, char *argv[])
 {
 	CU_pSuite test_suite = NULL;
 	unsigned int fails;
+
+	UNUSED(argc);
+	UNUSED(argv);
 
     if(CU_initialize_registry() != CUE_SUCCESS){
         printf("Error initializing CUnit registry.\n");

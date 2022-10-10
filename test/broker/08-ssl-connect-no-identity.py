@@ -10,12 +10,12 @@ if sys.version < '2.7':
 
 def write_config(filename, port1, port2):
     with open(filename, 'w') as f:
-        f.write("port %d\n" % (port2))
+        f.write("listener %d\n" % (port2))
         f.write("\n")
         f.write("listener %d\n" % (port1))
-        f.write("cafile ../ssl/all-ca.crt\n")
-        f.write("certfile ../ssl/server.crt\n")
-        f.write("keyfile ../ssl/server.key\n")
+        f.write(f"cafile {ssl_dir}/all-ca.crt\n")
+        f.write(f"certfile {ssl_dir}/server.crt\n")
+        f.write(f"keyfile {ssl_dir}/server.key\n")
         f.write("\n")
         f.write("use_identity_as_username true\n")
 
@@ -24,18 +24,18 @@ conf_file = os.path.basename(__file__).replace('.py', '.conf')
 write_config(conf_file, port1, port2)
 
 rc = 1
-keepalive = 10
-connect_packet = mosq_test.gen_connect("connect-no-identity-test", keepalive=keepalive)
+connect_packet = mosq_test.gen_connect("connect-no-identity-test")
 connack_packet = mosq_test.gen_connack(rc=4)
 
 broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port2, use_conf=True)
 
 try:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    ssock = ssl.wrap_socket(sock, ca_certs="../ssl/test-root-ca.crt", cert_reqs=ssl.CERT_REQUIRED)
+    context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH, cafile=f"{ssl_dir}/test-root-ca.crt")
+    ssock = context.wrap_socket(sock, server_hostname="localhost")
     ssock.settimeout(20)
     ssock.connect(("localhost", port1))
-    
+
     mosq_test.do_send_receive(ssock, connect_packet, connack_packet, "connack")
 
     rc = 0
@@ -47,7 +47,9 @@ finally:
     os.remove(conf_file)
     time.sleep(2)
     broker.terminate()
-    broker.wait()
+    if mosq_test.wait_for_subprocess(broker):
+        print("broker not terminated")
+        if rc == 0: rc=1
     (stdo, stde) = broker.communicate()
     if rc:
         print(stde.decode('utf-8'))

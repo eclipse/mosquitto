@@ -13,39 +13,39 @@
 
 from mosq_test_helper import *
 
-def do_test():
+def do_test(start_broker):
     rc = 1
-    keepalive = 60
-    connect_packet = mosq_test.gen_connect("subpub", keepalive=keepalive, proto_ver=5)
+    connect_packet = mosq_test.gen_connect("02-subpub-qos1-msg-expiry-retain", proto_ver=5)
     connack_packet = mosq_test.gen_connack(rc=0, proto_ver=5)
 
     mid = 1
-    subscribe1_packet = mosq_test.gen_subscribe(mid, "subpub/expired", 1, proto_ver=5)
+    subscribe1_packet = mosq_test.gen_subscribe(mid, "02/subpub/expiry/retain/expired", 1, proto_ver=5)
     suback1_packet = mosq_test.gen_suback(mid, 1, proto_ver=5)
 
     mid = 2
-    subscribe2_packet = mosq_test.gen_subscribe(mid, "subpub/kept", 1, proto_ver=5)
+    subscribe2_packet = mosq_test.gen_subscribe(mid, "02/subpub/expiry/retain/kept", 1, proto_ver=5)
     suback2_packet = mosq_test.gen_suback(mid, 1, proto_ver=5)
 
-    helper_connect = mosq_test.gen_connect("helper", proto_ver=5)
+    helper_connect = mosq_test.gen_connect("02-subpub-qos1-msg-expiry-retain-helper", proto_ver=5)
     helper_connack = mosq_test.gen_connack(rc=0, proto_ver=5)
 
     mid=1
-    props = mqtt5_props.gen_uint32_prop(mqtt5_props.PROP_MESSAGE_EXPIRY_INTERVAL, 4)
-    publish1_packet = mosq_test.gen_publish("subpub/expired", mid=mid, qos=1, retain=True, payload="message1", proto_ver=5, properties=props)
+    props = mqtt5_props.gen_uint32_prop(mqtt5_props.PROP_MESSAGE_EXPIRY_INTERVAL, 2)
+    publish1_packet = mosq_test.gen_publish("02/subpub/expiry/retain/expired", mid=mid, qos=1, retain=True, payload="message1", proto_ver=5, properties=props)
     puback1_packet = mosq_test.gen_puback(mid, proto_ver=5, reason_code=mqtt5_rc.MQTT_RC_NO_MATCHING_SUBSCRIBERS)
 
     mid=2
-    publish2s_packet = mosq_test.gen_publish("subpub/kept", mid=mid, qos=1, retain=True, payload="message2", proto_ver=5)
+    publish2s_packet = mosq_test.gen_publish("02/subpub/expiry/retain/kept", mid=mid, qos=1, retain=True, payload="message2", proto_ver=5)
     puback2s_packet = mosq_test.gen_puback(mid, proto_ver=5, reason_code=mqtt5_rc.MQTT_RC_NO_MATCHING_SUBSCRIBERS)
 
     mid=1
-    publish2r_packet = mosq_test.gen_publish("subpub/kept", mid=mid, qos=1, retain=True, payload="message2", proto_ver=5)
+    publish2r_packet = mosq_test.gen_publish("02/subpub/expiry/retain/kept", mid=mid, qos=1, retain=True, payload="message2", proto_ver=5)
     puback2r_packet = mosq_test.gen_puback(mid, proto_ver=5, reason_code=mqtt5_rc.MQTT_RC_NO_MATCHING_SUBSCRIBERS)
 
 
     port = mosq_test.get_port()
-    broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port)
+    if start_broker:
+        broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port)
 
     try:
         helper = mosq_test.do_client_connect(helper_connect, helper_connack, timeout=20, port=port)
@@ -64,7 +64,7 @@ def do_test():
         sock.send(puback2s_packet)
         sock.close()
 
-        time.sleep(5)
+        time.sleep(3)
         sock = mosq_test.do_client_connect(connect_packet, connack_packet, timeout=20, port=port)
         mosq_test.do_send_receive(sock, subscribe1_packet, suback1_packet, "suback 1-2")
         # We shouldn't receive a publish here
@@ -78,14 +78,22 @@ def do_test():
     except mosq_test.TestError:
         pass
     finally:
-        broker.terminate()
-        broker.wait()
-        (stdo, stde) = broker.communicate()
-        if rc:
-            print(stde.decode('utf-8'))
-            print("proto_ver=%d" % (proto_ver))
-            exit(rc)
+        if start_broker:
+            broker.terminate()
+            if mosq_test.wait_for_subprocess(broker):
+                print("broker not terminated")
+                if rc == 0: rc=1
+            (stdo, stde) = broker.communicate()
+            if rc:
+                print(stde.decode('utf-8'))
+                print("proto_ver=%d" % (proto_ver))
+                exit(rc)
+        else:
+            return rc
 
 
-do_test()
-exit(0)
+def all_tests(start_broker=False):
+    return do_test(start_broker)
+
+if __name__ == '__main__':
+    all_tests(True)

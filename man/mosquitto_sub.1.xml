@@ -24,7 +24,10 @@
 					<arg><option>-p</option> <replaceable>port-number</replaceable></arg>
 					<arg><option>-u</option> <replaceable>username</replaceable></arg>
 					<arg><option>-P</option> <replaceable>password</replaceable></arg>
-					<arg choice='plain' rep='repeat'><option>-t</option> <replaceable>message-topic</replaceable></arg>
+					<group choice='req'>
+						<arg choice='plain' rep='repeat'><option>-t</option> <replaceable>message-topic</replaceable></arg>
+						<arg choice='plain' rep='repeat'><option>-U</option> <replaceable>unsubscribe-topic</replaceable></arg>
+					</group>
 				</arg>
 				<arg choice='plain'>
 					<arg choice='plain'><option>-L</option> <replaceable>URL</replaceable></arg>
@@ -53,19 +56,24 @@
 			<arg><option>--retain-as-published</option></arg>
 			<arg><option>-S</option></arg>
 			<arg choice='opt' rep='repeat'><option>-T</option> <replaceable>filter-out</replaceable></arg>
-			<arg choice='opt' rep='repeat'><option>-U</option> <replaceable>unsub-topic</replaceable></arg>
 			<arg><option>-v</option></arg>
 			<arg><option>-V</option> <replaceable>protocol-version</replaceable></arg>
 			<arg><option>-W</option> <replaceable>message-processing-timeout</replaceable></arg>
+			<arg><option>--ws</option></arg>
 			<arg><option>-x</option> <replaceable>session-expiry-interval</replaceable></arg>
 			<arg><option>--proxy</option> <replaceable>socks-url</replaceable></arg>
 			<arg><option>--quiet</option></arg>
+			<group choice='opt'>
+				<arg choice='plain'><option>-w</option></arg>
+				<arg choice='plain'><option>--watch</option></arg>
+			</group>
 			<arg>
 				<option>--will-topic</option> <replaceable>topic</replaceable>
 				<arg><option>--will-payload</option> <replaceable>payload</replaceable></arg>
 				<arg><option>--will-qos</option> <replaceable>qos</replaceable></arg>
 				<arg><option>--will-retain</option></arg>
 			</arg>
+			<arg><option>--no-tls</option></arg>
 			<group>
 				<arg>
 					<group choice='req'>
@@ -83,6 +91,7 @@
 						<arg choice='plain'><replaceable>engine</replaceable></arg>
 					</group></arg>
 					<arg><option>--tls-engine-kpass-sha1</option> <replaceable>kpass-sha1</replaceable></arg>
+					<arg><option>--tls-use-os-certs</option></arg>
 					<arg><option>--insecure</option></arg>
 				</arg>
 				<arg>
@@ -119,8 +128,12 @@
 			connections. It is strongly recommended that you use an encrypted
 			connection for anything more than the most basic setup.</para>
 		<para>To enable TLS connections when using x509 certificates, one of
-			either <option>--cafile</option> or <option>--capath</option> must
+			either <option>--cafile</option> or <option>--capath</option> can
 			be provided as an option.</para>
+		<para>Alternatively, if the <option>-p 8883</option> option is used
+			then the OS provided certificates will be loaded and neither
+			<option>--cafile</option> or <option>--capath</option> are
+			needed</para>
 		<para>To enable TLS connections when using TLS-PSK, you must use the
 			<option>--psk</option> and the <option>--psk-identity</option>
 			options.</para>
@@ -128,19 +141,44 @@
 
 	<refsect1>
 		<title>Options</title>
-		<para>The options below may be given on the command line, but may also
-			be placed in a config file located at
+		<para>
+			There are three ways to provide options to mosquitto_sub: the
+			default config file, a specified config file, or options on
+			the command line.
+		</para>
+		<para>
+			The default config file is located at
 			<option>$XDG_CONFIG_HOME/mosquitto_sub</option> or
-			<option>$HOME/.config/mosquitto_sub</option> with one pair of
-			<option>-option <replaceable>value</replaceable></option>
-			per line. The values in the config file will be used as defaults
-			and can be overridden by using the command line. The exceptions to
-			this are <option>-t</option> and <option>-T</option>, which if
-			given in the config file will not be overridden. Note also that
-			currently some options cannot be negated, e.g.
-			<option>-S</option>. Config file lines that have a
-			<option>#</option> as the first character are treated as comments
-			and not processed any further.</para>
+			<option>$HOME/.config/mosquitto_sub</option> on POSIX systems, or
+			<option>%USERPROFILE%\mosquitto_sub</option> on Windows.
+		</para>
+		<para>
+			A config file can be specified on the command line using
+			<option>-o <replaceable>config-file</replaceable></option>.
+			If the <option>-o</option> option is used, the default config
+			file will not be loaded.
+		</para>
+		<para>
+			In both cases, the contents of the config file should consist of
+			options, one per line in the format:
+			<option>-option <replaceable>value</replaceable></option>. If
+			options are also specified on the command line, those
+			options will override the same options set in the config
+			file. The exceptions to this are the message type options, of which
+			only one can be specified. Note also that currently some options
+			cannot be negated, e.g. <option>-S</option>. TLS encryption options
+			can be negated with the <option>--no-tls</option> option.
+		</para>
+		<para>
+			Config file lines that have a <option>#</option> as the first
+			character are treated as comments and not processed any further.
+		</para>
+		<para>
+			It is suggested that config files are primarily used for
+			authentication purposes. Use of a config file allows you to
+			authenticate without the need to show the username and password
+			on the command line.
+		</para>
 		<variablelist>
 			<varlistentry>
 				<term><option>-A</option></term>
@@ -207,7 +245,7 @@
 				<listitem>
 					<para>An openssl compatible list of TLS ciphers to support
 						in the client. See
-						<citerefentry><refentrytitle>ciphers</refentrytitle><manvolnum>1</manvolnum></citerefentry>
+						<citerefentry><refentrytitle><link xlink:href="https://linux.die.net/man/1/ciphers">ciphers</link></refentrytitle><manvolnum>1</manvolnum></citerefentry>
 						for more information.</para>
 				</listitem>
 			</varlistentry>
@@ -334,15 +372,15 @@
 				<term><option>--insecure</option></term>
 				<listitem>
 					<para>When using certificate based encryption, this option
-						disables verification of the server hostname in the
-						server certificate. This can be useful when testing
-						initial server configurations but makes it possible for
-						a malicious third party to impersonate your server
-						through DNS spoofing, for example. Use this option in
-						testing <emphasis>only</emphasis>. If you need to
-						resort to using this option in a production
-						environment, your setup is at fault and there is no
-						point using encryption.</para>
+						disables verification of the server certificate. This
+						can be useful when testing initial server configurations
+						but means there are no guarantees whatsoever about
+						whether the server you are connecting to is the server
+						you expect. Use this option in testing
+						<emphasis>only</emphasis>. If you need to resort to using
+						this option in a production environment, your setup is at
+						fault and there is little point using encryption.
+					</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
@@ -379,12 +417,17 @@
 				<term><option>-L</option></term>
 				<term><option>--url</option></term>
 				<listitem>
-					<para>Specify specify user, password, hostname, port and
+					<para>
+						Specify specify user, password, hostname, port and
 						topic at once as a URL.  The URL must be in the form:
-						mqtt(s)://[username[:password]@]host[:port]/topic</para>
-					<para>If the scheme is mqtt:// then the port defaults to
-						1883. If the scheme is mqtts:// then the port defaults
-						to 8883.</para>
+						mqtt(s)://[username[:password]@]host[:port]/topic
+						or ws(s)://[username[:password]@]host[:port]/path
+					</para>
+					<para>
+                        Depending on the scheme, the port will default to
+						different values. mqtt:// - 1883, mqtts:// - 8883,
+						ws:// - 80, wss:// - 443.
+					</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
@@ -402,18 +445,35 @@
 				<listitem>
 					<para>Disable Nagle's algorithm for the socket. This means
 						that latency of sent messages is reduced, which is
-						particularly noticable for small, reasonably infrequent
+						particularly noticeable for small, reasonably infrequent
 						messages. Using this option may result in more packets
 						being sent than would normally be necessary.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>--no-tls</option></term>
+				<listitem>
+                    <para>
+                        Disable all use of TLS encryption. This is useful if you
+                        specify TLS options in a configuration file but want to
+                        disable those options. It also stops the automatic use
+                        of TLS when connecting to port 8883.
+                    </para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
 				<term><option>-p</option></term>
 				<term><option>--port</option></term>
 				<listitem>
-					<para>Connect to the port specified. If not given, the
-						default of 1883 for plain MQTT or 8883 for MQTT over
-						TLS will be used.</para>
+                    <para>
+                        Connect to the port specified. If not given, the
+                        default of 1883 for plain MQTT or 8883 for MQTT over
+                        TLS will be used.
+					</para>
+					<para>
+						See the <option>--no-tls</option> if you want to use
+						port 8883 without TLS.
+                    </para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
@@ -454,7 +514,7 @@
 					<para>More SOCKS versions may be available in the future,
 						depending on demand, and will use different protocol
 						prefixes as described in <citerefentry>
-							<refentrytitle>curl</refentrytitle>
+							<refentrytitle><link xlink:href="https://linux.die.net/man/1/curl">curl</link></refentrytitle>
 							<manvolnum>1</manvolnum> </citerefentry>.</para>
 				</listitem>
 			</varlistentry>
@@ -482,7 +542,7 @@
 				<listitem>
 					<para>Specify the quality of service desired for the
 					incoming messages, from 0, 1 and 2. Defaults to 0. See
-					<citerefentry><refentrytitle>mqtt</refentrytitle><manvolnum>7</manvolnum></citerefentry>
+					<citerefentry><refentrytitle><link xlink:href="mqtt-7.html">mqtt</link></refentrytitle><manvolnum>7</manvolnum></citerefentry>
 					for more information on QoS.</para>
 					<para>The QoS is identical for all topics subscribed to in
 					a single instance of mosquitto_sub.</para>
@@ -590,7 +650,7 @@ mosquitto_sub -t 'bbc/#' -T bbc/bbc1 --remove-retained</programlisting>
 				<term><option>--topic</option></term>
 				<listitem>
 					<para>The MQTT topic to subscribe to. See
-					<citerefentry><refentrytitle>mqtt</refentrytitle><manvolnum>7</manvolnum></citerefentry>
+					<citerefentry><refentrytitle><link xlink:href="mqtt-7.html">mqtt</link></refentrytitle><manvolnum>7</manvolnum></citerefentry>
 					for more information on MQTT topics.</para>
 					<para>This option may be repeated to subscribe to multiple topics.</para>
 				</listitem>
@@ -639,6 +699,20 @@ mosquitto_sub -t 'bbc/#' -T bbc/bbc1 --remove-retained</programlisting>
 						password to the engine directly, instead of the user
 						being prompted for the password.</para>
 					<para>See also <option>--tls-engine</option>.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>--tls-use-os-certs</option></term>
+				<listitem>
+                    <para>
+                        If used, this will load and trust the OS provided CA
+                        certificates. This can be used in conjunction with
+                        <option>--cafile</option> and <option>--capath</option>
+                        and can be used on its own to enable TLS mode. This
+						will be set by default if <option>-L mqtts://...</option>
+                        is used, or if port is 8883 and no other certificate
+                        options are used.
+					</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
@@ -744,6 +818,25 @@ mosquitto_sub -t 'bbc/#' -T bbc/bbc1 --remove-retained</programlisting>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
+				<term><option>-w</option></term>
+				<term><option>--watch</option></term>
+				<listitem>
+                    <para>
+                        Messages will be printed on a fixed line number based on
+                        the topic and order in which topics are received. Useful
+                        for monitoring multiple topics that have single line
+                        payloads. Unexpected behaviour will occur if there are
+                        more topics than lines in the terminal, or if the
+                        payload occupies more than a single line.
+						This can be used in conjuction with other output options
+						e.g. <option>-F</option>.
+					</para>
+					<para>
+						Requires ANSI escape code support in the terminal.
+					</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
 				<term><option>--will-payload</option></term>
 				<listitem>
 					<para>Specify a message that will be stored by the broker
@@ -774,10 +867,19 @@ mosquitto_sub -t 'bbc/#' -T bbc/bbc1 --remove-retained</programlisting>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
+				<term><option>--ws</option></term>
+				<listitem>
+					<para>
+						Connect using WebSockets instead of plain TCP.
+					</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
 				<term><option>-x</option></term>
 				<listitem>
 					<para>Set the session-expiry-interval property on the CONNECT packet.
-						Applies to MQTT v5 clients only. Set to 0-4294967294 to specify
+						If you use this option, the client will be set to be an MQTT v5
+						client. Set to 0-4294967294 to specify
 						the session will expire in that many seconds after the client
 						disconnects, or use -1, 4294967295, or ∞ for a session that does
 						not expire. Defaults to -1 if -c is also given, or 0 if -c not
@@ -811,7 +913,7 @@ mosquitto_sub -t 'bbc/#' -T bbc/bbc1 --remove-retained</programlisting>
 			related to the MQTT message being printed, or are helper sequences
 			to avoid the need to type long date format strings for example.
 			Sequences starting with <option>@</option> are passed to the
-			<citerefentry><refentrytitle>strftime</refentrytitle><manvolnum>3</manvolnum></citerefentry>
+			<citerefentry><refentrytitle><link xlink:href="https://linux.die.net/man/3/strftime">strftime</link></refentrytitle><manvolnum>3</manvolnum></citerefentry>
 			function (with the @ replaced with a % - note that only the
 			character immediately after the @ is passed to strftime). This
 			allows the construction of a wide variety of time based outputs.
@@ -826,12 +928,12 @@ mosquitto_sub -t 'bbc/#' -T bbc/bbc1 --remove-retained</programlisting>
 
 		<refsect2>
 			<title>Flag characters</title>
-			<para>The parameters %A, %C, %E, %F, %I, %l, %m, %p, %R, %S, %t, %x, and %X can have optional flags immediately after the % character.</para>
+			<para>The parameters %A, %C, %d, %E, %F, %f, %I, %l, %m, %p, %R, %S, %t, %x, and %X can have optional flags immediately after the % character.</para>
 			<variablelist>
 				<varlistentry>
 					<term><option>0</option></term>
 					<listitem><para>The value should be zero padded.
-					This applies to the parameters %A, %E, %F, %l, %m, %S, %X, and %x.
+					This applies to the parameters %A, %E, %d, %F, %f, %l, %m, %S, %X, and %x.
 					It will be ignored for other parameters. If used with the
 				<option>-</option> flag, the <option>0</option> flag will be
 					ignored.</para></listitem>
@@ -853,7 +955,7 @@ mosquitto_sub -t 'bbc/#' -T bbc/bbc1 --remove-retained</programlisting>
                     option to set their field width in a similar way to regular
                     printf style formats, i.e. this sets the minimum width when
                     printing this parameter. This applies to the options %A, %C,
-                    %E, %F, %I, %l, %m, %p, %R, %S, %t, %x, %X.
+                    %d, %E, %F, %f, %I, %l, %m, %p, %R, %S, %t, %x, %X.
                 </para>
 				<para>
 					For example <option>%10t</option> would set the minimum topic
@@ -870,9 +972,31 @@ mosquitto_sub -t 'bbc/#' -T bbc/bbc1 --remove-retained</programlisting>
                 </para>
 				<para>
 					For example <option>%10.10t</option> would set the minimum topic
-					field width to 10 characters, and the maximum topic width to 
+					field width to 10 characters, and the maximum topic width to
                     10 characters, i.e. the field will always be exactly 10
                     characters long.
+				</para>
+		</refsect2>
+
+		<refsect2>
+			<title>Floating point number printing consideration</title>
+				<para>
+					Mosquitto supports only IEEE754 floating point standard as
+					described in Annex F of ISO/IEC 9899:1999. Don't try to
+					use %f or %d if publisher's platform uses different
+					floating point representation standard than IEEE754 or you
+					will get invalid data. If you are unsure what floating
+					representation your platform is using, then it's most
+					likely IEEE754. If you get malformed and unexpected values,
+					check if float number in payload from publisher is encoded
+					in IEEE754.
+				</para>
+				<para>
+					If want to print floats, make sure you subscribe only
+					to topics that send only IEEE754 formatted floats.
+					Mosquitto is very strict about floats and if anything
+					that is not float is received, an error message will
+					be printed.
 				</para>
 		</refsect2>
 
@@ -884,8 +1008,10 @@ mosquitto_sub -t 'bbc/#' -T bbc/bbc1 --remove-retained</programlisting>
 				<listitem><para><option>%C</option> the MQTT v5 content-type property, if present.</para></listitem>
 				<listitem><para><option>%D</option> the MQTT v5 correlation-data property, if present. Note that this
 						property is specified as binary data, so may produce non-printable characters.</para></listitem>
+				<listitem><para><option>%d</option> the payload is treated as 8byte IEEE754 float (double).</para></listitem>
 				<listitem><para><option>%E</option> the MQTT v5 message-expiry-interval property, if present.</para></listitem>
 				<listitem><para><option>%F</option> the MQTT v5 payload-format-indicator property, if present.</para></listitem>
+				<listitem><para><option>%f</option> the payload is treated as 4byte IEEE754 float.</para></listitem>
 				<listitem><para><option>%l</option> the length of the payload in bytes.</para></listitem>
 				<listitem><para><option>%m</option> the message id (only relevant for messages with QoS>0).</para></listitem>
 				<listitem><para><option>%P</option> the MQTT v5 user-property property, if present. This will be printed in the
@@ -945,7 +1071,7 @@ mosquitto_sub -t 'bbc/#' -T bbc/bbc1 --remove-retained</programlisting>
 				<listitem><para><option>\0</option> a null character. Can be used
 						to separate different parameters that may contain spaces
 						(e.g. topic, payload) so that processing with tools such as
-						<citerefentry><refentrytitle>xargs</refentrytitle><manvolnum>1</manvolnum></citerefentry>
+				<citerefentry><refentrytitle><link xlink:href="https://linux.die.net/man/1/xargs">xargs</link></refentrytitle><manvolnum>1</manvolnum></citerefentry>
 						is easier.</para></listitem>
 				<listitem><para><option>\a</option> alert/bell.</para></listitem>
 				<listitem><para><option>\e</option> the escape sequence, which can
@@ -963,7 +1089,7 @@ mosquitto_sub -t 'bbc/#' -T bbc/bbc1 --remove-retained</programlisting>
 		<title>Wills</title>
 		<para>mosquitto_sub can register a message with the broker that will be
 		sent out if it disconnects unexpectedly. See
-		<citerefentry><refentrytitle>mqtt</refentrytitle><manvolnum>7</manvolnum></citerefentry>
+		<citerefentry><refentrytitle><link xlink:href="mqtt-7.html">mqtt</link></refentrytitle><manvolnum>7</manvolnum></citerefentry>
 		for more information.</para>
 		<para>The minimum requirement for this is to use <option>--will-topic</option> to
 		specify which topic the will should be sent out on. This will result in
@@ -997,6 +1123,7 @@ mosquitto_sub -t 'bbc/#' -T bbc/bbc1 --remove-retained</programlisting>
 		<refsect2>
 			<title>Subscribe</title>
 			<itemizedlist>
+				<listitem><para><option>subscription-identifier</option> (Variable byte integer)</para></listitem>
 				<listitem><para><option>user-property</option> (UTF-8 string pair)</para></listitem>
 			</itemizedlist>
 		</refsect2>

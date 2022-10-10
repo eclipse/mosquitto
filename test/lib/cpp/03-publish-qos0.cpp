@@ -11,6 +11,7 @@ class mosquittopp_test : public mosqpp::mosquittopp
 		mosquittopp_test(const char *id);
 
 		void on_connect(int rc);
+		void on_disconnect(int rc);
 		void on_publish(int mid);
 };
 
@@ -25,6 +26,11 @@ void mosquittopp_test::on_connect(int rc)
 	}else{
 		publish(&sent_mid, "pub/qos0/test", strlen("message"), "message", 0, false);
 	}
+}
+
+void mosquittopp_test::on_disconnect(int rc)
+{
+	run = rc;
 }
 
 void mosquittopp_test::on_publish(int mid)

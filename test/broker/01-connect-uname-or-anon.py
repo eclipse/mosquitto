@@ -12,7 +12,7 @@ def write_config(filename, port, allow_anonymous, password_file):
         else:
             f.write("allow_anonymous false\n")
         if password_file:
-            f.write("password_file %s\n" % (filename.replace('.conf', '.pwfile')))
+            f.write("password_file %s/%s\n" % (Path(__file__).resolve().parent, filename.replace('.conf', '.pwfile')))
 
 def do_test(allow_anonymous, password_file, username, expect_success):
     port = mosq_test.get_port()
@@ -24,11 +24,10 @@ def do_test(allow_anonymous, password_file, username, expect_success):
     try:
         for proto_ver in [4, 5]:
             rc = 1
-            keepalive = 10
             if username:
-                connect_packet = mosq_test.gen_connect("connect-test-%d" % (proto_ver), keepalive=keepalive, proto_ver=proto_ver, username="user", password="password")
+                connect_packet = mosq_test.gen_connect("connect-test-%d" % (proto_ver), proto_ver=proto_ver, username="user", password="password")
             else:
-                connect_packet = mosq_test.gen_connect("connect-test-%d" % (proto_ver), keepalive=keepalive, proto_ver=proto_ver)
+                connect_packet = mosq_test.gen_connect("connect-test-%d" % (proto_ver), proto_ver=proto_ver)
 
             if proto_ver == 5:
                 if expect_success == True:
@@ -50,7 +49,9 @@ def do_test(allow_anonymous, password_file, username, expect_success):
     finally:
         os.remove(conf_file)
         broker.terminate()
-        broker.wait()
+        if mosq_test.wait_for_subprocess(broker):
+            print("broker not terminated")
+            if rc == 0: rc=1
         (stdo, stde) = broker.communicate()
         if rc:
             print(stde.decode('utf-8'))

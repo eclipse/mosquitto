@@ -43,6 +43,7 @@
 			<arg><option>--repeat-delay</option> <replaceable>seconds</replaceable></arg>
 			<arg><option>-S</option></arg>
 			<arg><option>-V</option> <replaceable>protocol-version</replaceable></arg>
+			<arg><option>--ws</option></arg>
 			<arg><option>-x</option> <replaceable>session-expiry-interval</replaceable></arg>
 			<group choice='req'>
 				<arg choice='plain'><option>-f</option> <replaceable>file</replaceable></arg>
@@ -57,6 +58,7 @@
 				<arg><option>--will-qos</option> <replaceable>qos</replaceable></arg>
 				<arg><option>--will-retain</option></arg>
 			</arg>
+			<arg><option>--no-tls</option></arg>
 			<group>
 				<arg>
 					<group choice='req'>
@@ -75,6 +77,7 @@
 						<arg choice='plain'><replaceable>engine</replaceable></arg>
 					</group></arg>
 					<arg><option>--tls-engine-kpass-sha1</option> <replaceable>kpass-sha1</replaceable></arg>
+					<arg><option>--tls-use-os-certs</option></arg>
 					<arg><option>--insecure</option></arg>
 				</arg>
 				<arg>
@@ -107,8 +110,12 @@
 			connections. It is strongly recommended that you use an encrypted
 			connection for anything more than the most basic setup.</para>
 		<para>To enable TLS connections when using x509 certificates, one of
-			either <option>--cafile</option> or <option>--capath</option> must
+			either <option>--cafile</option> or <option>--capath</option> can
 			be provided as an option.</para>
+		<para>Alternatively, if the <option>-p 8883</option> option is used
+			then the OS provided certificates will be loaded and neither
+			<option>--cafile</option> or <option>--capath</option> are
+			needed</para>
 		<para>To enable TLS connections when using TLS-PSK, you must use the
 			<option>--psk</option> and the <option>--psk-identity</option>
 			options.</para>
@@ -116,18 +123,44 @@
 
 	<refsect1>
 		<title>Options</title>
-		<para>The options below may be given on the command line, but may also
-			be placed in a config file located at
+		<para>
+			There are three ways to provide options to mosquitto_pub: the
+			default config file, a specified config file, or options on
+			the command line.
+		</para>
+		<para>
+			The default config file is located at
 			<option>$XDG_CONFIG_HOME/mosquitto_pub</option> or
-			<option>$HOME/.config/mosquitto_pub</option> with one pair of
-			<option>-option <replaceable>value</replaceable></option>
-			per line. The values in the config file will be used as defaults
-			and can be overridden by using the command line. The exceptions to
-			this are the message type options, of which only one can be
-			specified. Note also that currently some options cannot be negated,
-			e.g. <option>-S</option>. Config file lines that have a
-			<option>#</option> as the first character are treated as comments
-			and not processed any further.</para>
+			<option>$HOME/.config/mosquitto_pub</option> on POSIX systems, or
+			<option>%USERPROFILE%\mosquitto_pub</option> on Windows.
+		</para>
+		<para>
+			A config file can be specified on the command line using
+			<option>-o <replaceable>config-file</replaceable></option>.
+			If the <option>-o</option> option is used, the default config
+			file will not be loaded.
+		</para>
+		<para>
+			In both cases, the contents of the config file should consist of
+			options, one per line in the format:
+			<option>-option <replaceable>value</replaceable></option>. If
+			options are also specified on the command line, those
+			options will override the same options set in the config
+			file. The exceptions to this are the message type options, of which
+			only one can be specified. Note also that currently some options
+			cannot be negated, e.g. <option>-S</option>. TLS encryption options
+			can be negated with the <option>--no-tls</option> option.
+		</para>
+		<para>
+			Config file lines that have a <option>#</option> as the first
+			character are treated as comments and not processed any further.
+		</para>
+		<para>
+			It is suggested that config files are primarily used for
+			authentication purposes. Use of a config file allows you to
+			authenticate without the need to show the username and password
+			on the command line.
+		</para>
 		<variablelist>
 			<varlistentry>
 				<term><option>-A</option></term>
@@ -194,7 +227,7 @@
 				<listitem>
 					<para>An openssl compatible list of TLS ciphers to support
 						in the client. See
-						<citerefentry><refentrytitle>ciphers</refentrytitle><manvolnum>1</manvolnum></citerefentry>
+						<citerefentry><refentrytitle><link xlink:href="https://linux.die.net/man/1/ciphers">ciphers</link></refentrytitle><manvolnum>1</manvolnum></citerefentry>
 						for more information.</para>
 				</listitem>
 			</varlistentry>
@@ -291,15 +324,15 @@
 				<term><option>--insecure</option></term>
 				<listitem>
 					<para>When using certificate based encryption, this option
-						disables verification of the server hostname in the
-						server certificate. This can be useful when testing
-						initial server configurations but makes it possible for
-						a malicious third party to impersonate your server
-						through DNS spoofing, for example. Use this option in
-						testing <emphasis>only</emphasis>. If you need to
-						resort to using this option in a production
-						environment, your setup is at fault and there is no
-						point using encryption.</para>
+						disables verification of the server certificate. This
+						can be useful when testing initial server configurations
+						but means there are no guarantees whatsoever about
+						whether the server you are connecting to is the server
+						you expect. Use this option in testing
+						<emphasis>only</emphasis>. If you need to resort to using
+						this option in a production environment, your setup is at
+						fault and there is little point using encryption.
+					</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
@@ -336,12 +369,17 @@
 				<term><option>-L</option></term>
 				<term><option>--url</option></term>
 				<listitem>
-					<para>Specify specify user, password, hostname, port and
+					<para>
+						Specify specify user, password, hostname, port and
 						topic at once as a URL.  The URL must be in the form:
-						mqtt(s)://[username[:password]@]host[:port]/topic</para>
-					<para>If the scheme is mqtt:// then the port defaults to
-						1883. If the scheme is mqtts:// then the port defaults
-						to 8883.</para>
+						mqtt(s)://[username[:password]@]host[:port]/topic
+						or ws(s)://[username[:password]@]host[:port]/path
+					</para>
+					<para>
+                        Depending on the scheme, the port will default to
+						different values. mqtt:// - 1883, mqtts:// - 8883,
+						ws:// - 80, wss:// - 443.
+					</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
@@ -370,18 +408,35 @@
 				<listitem>
 					<para>Disable Nagle's algorithm for the socket. This means
 						that latency of sent messages is reduced, which is
-						particularly noticable for small, reasonably infrequent
+						particularly noticeable for small, reasonably infrequent
 						messages. Using this option may result in more packets
 						being sent than would normally be necessary.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>--no-tls</option></term>
+				<listitem>
+                    <para>
+                        Disable all use of TLS encryption. This is useful if you
+                        specify TLS options in a configuration file but want to
+                        disable those options. It also stops the automatic use
+                        of TLS when connecting to port 8883.
+                    </para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
 				<term><option>-p</option></term>
 				<term><option>--port</option></term>
 				<listitem>
-					<para>Connect to the port specified. If not given, the
-						default of 1883 for plain MQTT or 8883 for MQTT over
-						TLS will be used.</para>
+                    <para>
+                        Connect to the port specified. If not given, the
+                        default of 1883 for plain MQTT or 8883 for MQTT over
+                        TLS will be used.
+					</para>
+					<para>
+						See the <option>--no-tls</option> if you want to use
+						port 8883 without TLS.
+                    </para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
@@ -412,7 +467,7 @@
 					<para>More SOCKS versions may be available in the future,
 						depending on demand, and will use different protocol
 						prefixes as described in <citerefentry>
-							<refentrytitle>curl</refentrytitle>
+							<refentrytitle><link xlink:href="https://linux.die.net/man/1/curl">curl</link></refentrytitle>
 							<manvolnum>1</manvolnum> </citerefentry>.</para>
 				</listitem>
 			</varlistentry>
@@ -454,13 +509,21 @@
 				<term><option>-r</option></term>
 				<term><option>--retain</option></term>
 				<listitem>
-					<para>If retain is given, the message will be retained as a "last known good" value on the broker. See <citerefentry><refentrytitle>mqtt</refentrytitle><manvolnum>7</manvolnum></citerefentry> for more information.</para>
+					<para>
+						If retain is given, the message will be retained as a
+						"last known good" value on the broker. See
+						<citerefentry><refentrytitle><link xlink:href="mqtt-7.html">mqtt</link></refentrytitle><manvolnum>7</manvolnum></citerefentry>
+						for more information. Note that zero length payloads
+						are never retained. If you send a zero length
+						payload retained message it will clear any retained
+						message on the topic.
+					</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
 				<term><option>--repeat</option></term>
 				<listitem>
-                    <para>If the publish mode is<option>-m</option>,
+					<para>If the publish mode is<option>-m</option>,
 						<option>-f</option>, or <option>-s</option> (i.e. the modes
 						where only a single message is sent), then
 						<option>--repeat</option> can be used to specify that the
@@ -506,7 +569,7 @@
 				<term><option>-t</option></term>
 				<term><option>--topic</option></term>
 				<listitem>
-					<para>The MQTT topic on which to publish the message. See <citerefentry><refentrytitle>mqtt</refentrytitle><manvolnum>7</manvolnum></citerefentry> for more information on MQTT topics.</para>
+					<para>The MQTT topic on which to publish the message. See <citerefentry><refentrytitle><link xlink:href="mqtt-7.html">mqtt</link></refentrytitle><manvolnum>7</manvolnum></citerefentry> for more information on MQTT topics.</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
@@ -535,6 +598,20 @@
 						password to the engine directly, instead of the user
 						being prompted for the password.</para>
 					<para>See also <option>--tls-engine</option>.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>--tls-use-os-certs</option></term>
+				<listitem>
+                    <para>
+                        If used, this will load and trust the OS provided CA
+                        certificates. This can be used in conjunction with
+                        <option>--cafile</option> and <option>--capath</option>
+                        and can be used on its own to enable TLS mode. This
+						will be set by default if <option>-L mqtts://...</option>
+                        is used, or if port is 8883 and no other certificate
+                        options are used.
+					</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
@@ -604,8 +681,12 @@
 				<term><option>--will-retain</option></term>
 				<listitem>
 					<para>If given, if the client disconnects unexpectedly the
-					message sent out will be treated as a retained message.
-					This must be used in conjunction with <option>--will-topic</option>.</para>
+						message sent out will be treated as a retained message.
+						This must be used in conjunction with <option>--will-topic</option>.
+						Note that zero length payloads are never retained. If you send a zero length
+						payload retained message it will clear any retained
+						message on the topic.
+					</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
@@ -616,10 +697,19 @@
 				</listitem>
 			</varlistentry>
 			<varlistentry>
+				<term><option>--ws</option></term>
+				<listitem>
+					<para>
+						Connect using WebSockets instead of plain TCP.
+					</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
 				<term><option>-x</option></term>
 				<listitem>
 					<para>Set the session-expiry-interval property on the CONNECT packet.
-						Applies to MQTT v5 clients only. Set to 0-4294967294 to specify
+						If you use this option, the client will be set to be an MQTT v5
+						client. Set to 0-4294967294 to specify
 						the session will expire in that many seconds after the client
 						disconnects, or use -1, 4294967295, or ∞ for a session that does
 						not expire. Defaults to -1 if -c is also given, or 0 if -c not
@@ -635,7 +725,7 @@
 		<title>Wills</title>
 		<para>mosquitto_sub can register a message with the broker that will be
 		sent out if it disconnects unexpectedly. See
-		<citerefentry><refentrytitle>mqtt</refentrytitle><manvolnum>7</manvolnum></citerefentry>
+		<citerefentry><refentrytitle><link xlink:href="mqtt-7.html">mqtt</link></refentrytitle><manvolnum>7</manvolnum></citerefentry>
 		for more information.</para>
 		<para>The minimum requirement for this is to use <option>--will-topic</option> to
 		specify which topic the will should be sent out on. This will result in

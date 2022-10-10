@@ -1,0 +1,38 @@
+[
+	{
+		"group": "v3.1.1 PINGREQ",
+		"tests": [
+			{ "name": "C0 [MQTT-3.1.0-1]", "ver":4, "connect":false, "msgs": [{"type":"send", "payload":"C0 00"}]},
+			{ "name": "C0 long", "ver":4, "msgs": [{"type":"send", "payload":"C00100"}]},
+			{ "name": "C0 valid", "ver":4, "expect_disconnect": false, "msgs": [{"type":"send", "payload":"C0 00"}, {"type":"recv", "payload":"D0 00"}]},
+			{ "name": "C1", "ver":4, "msgs": [{"type":"send", "payload":"C1 00"}]},
+			{ "name": "C2", "ver":4, "msgs": [{"type":"send", "payload":"C2 00"}]},
+			{ "name": "C4", "ver":4, "msgs": [{"type":"send", "payload":"C4 00"}]},
+			{ "name": "C8", "ver":4, "msgs": [{"type":"send", "payload":"C8 00"}]}
+		]
+	},
+	{
+		"group": "v5.0   PINGREQ",
+		"tests": [
+			{ "name": "C0 [MQTT-3.1.0-1]", "ver":5, "connect":false, "msgs": [{"type":"send", "payload":"C0 00"}]},
+			{ "name": "C0 long", "ver":5, "msgs": [{"type":"send", "payload":"C0 01 00"}]},
+			{ "name": "C0 valid", "ver":5, "expect_disconnect": false, "msgs": [{"type":"send", "payload":"C0 00"}, {"type":"recv", "payload":"D0 00"}]},
+			{ "name": "C1", "ver":5, "msgs": [
+				{"type":"send", "payload":"C1 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "C2", "ver":5, "msgs": [
+				{"type":"send", "payload":"C2 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "C4", "ver":5, "msgs": [
+				{"type":"send", "payload":"C4 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "C8", "ver":5, "msgs": [
+				{"type":"send", "payload":"C8 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]}
+		]
+	}
+]

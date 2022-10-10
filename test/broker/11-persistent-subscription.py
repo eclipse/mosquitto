@@ -6,7 +6,7 @@ from mosq_test_helper import *
 
 def write_config(filename, port):
     with open(filename, 'w') as f:
-        f.write("port %d\n" % (port))
+        f.write("listener %d\n" % (port))
         f.write("allow_anonymous true\n")
         f.write("persistence true\n")
         f.write("persistence_file mosquitto-%d.db\n" % (port))
@@ -18,9 +18,8 @@ def do_test(proto_ver):
 
     rc = 1
     mid = 530
-    keepalive = 60
     connect_packet = mosq_test.gen_connect(
-        "persistent-subscription-test", keepalive=keepalive, clean_session=False, proto_ver=proto_ver, session_expiry=60
+        "persistent-subscription-test", clean_session=False, proto_ver=proto_ver, session_expiry=60
     )
     connack_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
     connack_packet2 = mosq_test.gen_connack(rc=0, flags=1, proto_ver=proto_ver)  # session present
@@ -46,7 +45,9 @@ def do_test(proto_ver):
         mosq_test.do_send_receive(sock, subscribe_packet, suback_packet, "suback")
 
         broker.terminate()
-        broker.wait()
+        if mosq_test.wait_for_subprocess(broker):
+            print("broker not terminated")
+            if rc == 0: rc=1
         (stdo1, stde1) = broker.communicate()
         sock.close()
         broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port)
@@ -63,7 +64,9 @@ def do_test(proto_ver):
     finally:
         os.remove(conf_file)
         broker.terminate()
-        broker.wait()
+        if mosq_test.wait_for_subprocess(broker):
+            print("broker not terminated")
+            if rc == 0: rc=1
         (stdo, stde) = broker.communicate()
         if os.path.exists('mosquitto-%d.db' % (port)):
             os.unlink('mosquitto-%d.db' % (port))

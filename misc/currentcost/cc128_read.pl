@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 
 # Reads data from a Current Cost device via serial port.
-# Spawns 
+# Spawns
 
 use strict;
 use Device::SerialPort qw( :PARAM :STAT 0.07 );
@@ -18,6 +18,6 @@ open(SERIAL, "+<$PORT");
 open(MQTT, "|$pubclient");
 while (my $line = <SERIAL>) {
 	print(MQTT "$line");
-}	    
+}
 
 close(MQTT);

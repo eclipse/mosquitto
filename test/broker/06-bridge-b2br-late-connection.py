@@ -6,7 +6,7 @@ from mosq_test_helper import *
 
 def write_config(filename, port1, port2, protocol_version):
     with open(filename, 'w') as f:
-        f.write("port %d\n" % (port2))
+        f.write("listener %d\n" % (port2))
         f.write("allow_anonymous true\n")
         f.write("\n")
         f.write("connection bridge_sample\n")
@@ -14,6 +14,7 @@ def write_config(filename, port1, port2, protocol_version):
         f.write("topic bridge/# out 1\n")
         f.write("notifications false\n")
         f.write("bridge_attempt_unsubscribe false\n")
+        f.write("bridge_max_topic_alias 0\n")
         f.write("bridge_protocol_version %s\n" % (protocol_version))
 
 def do_test(proto_ver):
@@ -29,12 +30,11 @@ def do_test(proto_ver):
     write_config(conf_file, port1, port2, bridge_protocol)
 
     rc = 1
-    keepalive = 60
     client_id = socket.gethostname()+".bridge_sample"
-    connect_packet = mosq_test.gen_connect(client_id, keepalive=keepalive, clean_session=False, proto_ver=proto_ver_connect)
+    connect_packet = mosq_test.gen_connect(client_id, clean_session=False, proto_ver=proto_ver_connect)
     connack_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
 
-    c_connect_packet = mosq_test.gen_connect("client", keepalive=keepalive, proto_ver=proto_ver)
+    c_connect_packet = mosq_test.gen_connect("client", proto_ver=proto_ver)
     c_connack_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
 
     mid = 1
@@ -75,7 +75,9 @@ def do_test(proto_ver):
             pass
 
         broker.terminate()
-        broker.wait()
+        if mosq_test.wait_for_subprocess(broker):
+            print("broker not terminated")
+            if rc == 0: rc=1
         (stdo, stde) = broker.communicate()
         ssock.close()
         if rc:

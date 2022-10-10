@@ -1,15 +1,17 @@
 /*
-Copyright (c) 2010-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2010-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
-are made available under the terms of the Eclipse Public License v1.0
+are made available under the terms of the Eclipse Public License 2.0
 and Eclipse Distribution License v1.0 which accompany this distribution.
- 
+
 The Eclipse Public License is available at
-   http://www.eclipse.org/legal/epl-v10.html
+   https://www.eclipse.org/legal/epl-2.0/
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
- 
+
+SPDX-License-Identifier: EPL-2.0 OR BSD-3-Clause
+
 Contributors:
    Roger Light - initial implementation and documentation.
 */
@@ -17,6 +19,7 @@ Contributors:
 #define NET_MOSQ_H
 
 #ifndef WIN32
+#  include <sys/socket.h>
 #  include <unistd.h>
 #else
 #  include <winsock2.h>
@@ -29,23 +32,28 @@ typedef SSIZE_T ssize_t;
 #include "mosquitto_internal.h"
 #include "mosquitto.h"
 
-#ifdef WITH_BROKER
-struct mosquitto_db;
-#endif
-
 #ifdef WIN32
 #  define COMPAT_CLOSE(a) closesocket(a)
 #  define COMPAT_ECONNRESET WSAECONNRESET
+#  define COMPAT_EINTR WSAEINTR
 #  define COMPAT_EWOULDBLOCK WSAEWOULDBLOCK
+#  ifndef EINPROGRESS
+#    define EINPROGRESS WSAEINPROGRESS
+#  endif
 #else
 #  define COMPAT_CLOSE(a) close(a)
 #  define COMPAT_ECONNRESET ECONNRESET
+#  define COMPAT_EINTR EINTR
 #  define COMPAT_EWOULDBLOCK EWOULDBLOCK
 #endif
 
 /* For when not using winsock libraries. */
 #ifndef INVALID_SOCKET
 #define INVALID_SOCKET -1
+#endif
+
+#ifndef MSG_NOSIGNAL
+#  define MSG_NOSIGNAL 0
 #endif
 
 /* Macros for accessing the MSB and LSB of a uint16_t */
@@ -60,20 +68,18 @@ void net__init_tls(void);
 #endif
 
 int net__socket_connect(struct mosquitto *mosq, const char *host, uint16_t port, const char *bind_address, bool blocking);
-#ifdef WITH_BROKER
-int net__socket_close(struct mosquitto_db *db, struct mosquitto *mosq);
-#else
 int net__socket_close(struct mosquitto *mosq);
-#endif
 int net__try_connect(const char *host, uint16_t port, mosq_sock_t *sock, const char *bind_address, bool blocking);
 int net__try_connect_step1(struct mosquitto *mosq, const char *host);
 int net__try_connect_step2(struct mosquitto *mosq, uint16_t port, mosq_sock_t *sock);
 int net__socket_connect_step3(struct mosquitto *mosq, const char *host);
 int net__socket_nonblock(mosq_sock_t *sock);
 int net__socketpair(mosq_sock_t *sp1, mosq_sock_t *sp2);
+bool net__is_connected(struct mosquitto *mosq);
 
 ssize_t net__read(struct mosquitto *mosq, void *buf, size_t count);
-ssize_t net__write(struct mosquitto *mosq, void *buf, size_t count);
+ssize_t net__read_ws(struct mosquitto *mosq, void *buf, size_t count);
+ssize_t net__write(struct mosquitto *mosq, const void *buf, size_t count);
 
 #ifdef WITH_TLS
 void net__print_ssl_error(struct mosquitto *mosq);
@@ -85,6 +91,12 @@ UI_METHOD *net__get_ui_method(void);
 #define ENGINE_SECRET_MODE "SECRET_MODE"
 #define ENGINE_SECRET_MODE_SHA 0x1000
 #define ENGINE_PIN "PIN"
+#endif
+
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_BUILTIN
+void ws__context_init(struct mosquitto *mosq);
+void ws__prepare_packet(struct mosquitto *mosq, struct mosquitto__packet *packet);
+int ws__create_accept_key(const char *client_key, size_t client_key_len, char **encoded);
 #endif
 
 #endif

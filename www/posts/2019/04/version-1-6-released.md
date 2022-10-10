@@ -79,7 +79,7 @@ version 2.0.
 
 # Changelog
 
-The more detailed changelog is below, but does not include many of the 
+The more detailed changelog is below, but does not include many of the
 fixes and improvements that have been made:
 
 ## Broker features

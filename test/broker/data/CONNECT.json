@@ -1,0 +1,211 @@
+[
+	{
+		"comment": "CONNECT TESTS ARE INCOMPLETE",
+		"group": "v3.1   CONNECT",
+		"tests": [
+			{ "name": "10 ok ", "connect":false, "expect_disconnect":false, "msgs":[
+				{"type":"send", "payload":"10 0F 0006 4D5149736470 03 01 000A 0001 70", "comment":"minimal valid CONNECT"},
+				{"type":"recv", "payload":"20 02 00 00", "comment": "CONNACK"}
+			]},
+			{ "name": "14 ok ", "connect":false, "expect_disconnect":false, "msgs":[
+				{"type":"send", "payload":"14 0F 0006 4D5149736470 03 01 000A 0001 70", "comment":"CONNECT with QoS=1"},
+				{"type":"recv", "payload":"20 02 00 00", "comment": "CONNACK"}
+			]},
+			{ "name": "10 proto ver 2", "connect":false, "msgs":[
+				{"type":"send", "payload":"10 0F 0006 4D5149736470 02 00 000A 0001 70", "comment":"CONNECT"},
+				{"type":"recv", "payload":"20 03 00 84 00", "comment": "CONNACK identifier rejected"}
+			]},
+			{ "name": "10 proto ver 6", "connect":false, "msgs":[
+				{"type":"send", "payload":"10 0F 0006 4D5149736470 06 00 000A 0001 70", "comment":"CONNECT"},
+				{"type":"recv", "payload":"20 03 00 84 00", "comment": "CONNACK identifier rejected"}
+			]},
+			{ "name": "10 empty client ID", "ver":3, "connect":false, "msgs":[
+				{"type":"send", "payload":"10 0E 0006 4D5149736470 03 02 000A 0000", "comment":"CONNECT clean session true, no client id"},
+				{"type":"recv", "payload":"20 02 00 02", "comment": "CONNACK"}
+			]},
+			{ "name": "10 ok", "ver":3, "connect":false, "expect_disconnect":false, "msgs":[
+				{"type":"send", "payload":"10 0F 0006 4D5149736470 03 02 000A 0001 70", "comment":"CONNECT clean session true, no client id"},
+				{"type":"recv", "payload":"20 02 00 00", "comment": "CONNACK"}
+			]}
+		]
+	},
+	{
+		"group": "v3.1.1 CONNECT",
+		"tests": [
+			{ "name": "10 ok ", "connect":false, "expect_disconnect":false, "msgs":[
+				{"type":"send", "payload":"10 0D 0004 4D515454 04 02 000A 0001 70", "comment":"minimal valid CONNECT"},
+				{"type":"recv", "payload":"20 02 00 00", "comment": "CONNACK"}
+			]},
+			{ "name": "10 [MQTT-3.1.0-2]", "connect":false, "msgs":[
+				{"type":"send", "payload":"10 0D 0004 4D515454 04 02 000A 0001 70", "comment":"minimal valid CONNECT"},
+				{"type":"recv", "payload":"20 02 00 00", "comment": "CONNACK"},
+				{"type":"send", "payload":"10 0D 0004 4D515454 04 02 000A 0001 70", "comment":"minimal valid CONNECT"}
+			]},
+			{ "name": "10 missing client ID", "connect":false, "msgs":[{"type":"send", "payload":"10 08 0004 4D515454 04 02 000A"}]},
+			{ "name": "10 empty client ID", "connect":false, "expect_disconnect":false, "msgs":[
+				{"type":"send", "payload":"10 0C 0004 4D515454 04 02 000A 0000", "comment":"CONNECT clean session true, no client id"},
+				{"type":"recv", "payload":"20 02 00 00", "comment": "CONNACK"}
+			]},
+			{ "name": "10 empty client ID clean false [MQTT-3.1.3-7]", "connect":false, "expect_disconnect":true, "msgs":[
+				{"type":"send", "payload":"10 0C 0004 4D515454 04 00 000A 0000", "comment":"CONNECT clean session false, no client id"},
+				{"type":"recv", "payload":"20 02 00 02", "comment": "CONNACK"}
+			]},
+			{ "name": "10 proto ver 2 [MQTT-3.1.2-2]", "connect":false, "msgs":[
+				{"type":"send", "payload":"10 0D 0004 4D515454 02 00 000A 0001 70", "comment":"CONNECT"},
+				{"type":"recv", "payload":"20 03 00 84 00", "comment": "v3.1.1 CONNACK identifier rejected"}
+			]},
+			{ "name": "10 proto ver 6 [MQTT-3.1.2-2]", "connect":false, "msgs":[
+				{"type":"send", "payload":"10 0D 0004 4D515454 06 00 000A 0001 70", "comment":"CONNECT"},
+				{"type":"recv", "payload":"20 03 00 84 00", "comment": "v3.1.1 CONNACK identifier rejected"}
+			]},
+			{ "name": "10 remaining length 5 bytes", "connect":false, "msgs":[
+				{"type":"send", "payload":"10 FFFFFFFF7F 0004 4D515454 06 00 000A 0001 70", "comment":"CONNECT"}
+			]},
+			{ "name": "11", "connect":false, "msgs":[{"type":"send", "payload":"11 0D 0004 4D515454 04 02 000A 0001 70"}]},
+			{ "name": "12", "connect":false, "msgs":[{"type":"send", "payload":"12 0D 0004 4D515454 04 02 000A 0001 70"}]},
+			{ "name": "14", "connect":false, "msgs":[{"type":"send", "payload":"14 0D 0004 4D515454 04 02 000A 0001 70"}]},
+			{ "name": "18", "connect":false, "msgs":[{"type":"send", "payload":"18 0D 0004 4D515454 04 02 000A 0001 70"}]},
+			{ "name": "10 short proto", "connect":false, "msgs":[{"type":"send", "payload":"10 0C 0003 4D5154 04 02 000A 0001 70"}]},
+			{ "name": "10 zero proto", "connect":false, "msgs":[{"type":"send", "payload":"10 09 0000 04 02 000A 0001 70"}]},
+			{ "name": "10 long proto", "connect":false, "msgs":[{"type":"send", "payload":"10 0E 0005 4D51545454 04 02 000A 0001 70"}]},
+			{ "name": "10 [MQTT-3.1.2-1]", "connect":false, "msgs":[{"type":"send", "payload":"10 0D 0004 4D515455 04 02 000A 0001 70"}]},
+			{ "name": "10 [MQTT-3.1.2-3] ", "connect":false, "msgs":[{"type":"send", "payload":"10 0D 0004 4D515454 04 01 000A 0001 70"}]},
+			{ "name": "10 Will flag 0 Will QoS 1 [MQTT-3.1.2-11]", "connect":false, "msgs":[
+				{"type":"send", "payload":"10 0D 0004 4D515454 04 0A 000A 0001 70"}
+			]},
+			{ "name": "10 Will flag 0 Will retain 1 [MQTT-3.1.2-11]", "connect":false, "msgs":[
+				{"type":"send", "payload":"10 0D 0004 4D515454 04 12 000A 0001 70"}
+			]},
+			{ "name": "10 Will flag 1 no Will topic no Will message [MQTT-3.1.2-9]", "connect":false, "msgs":[
+				{"type":"send", "payload":"10 0D 0004 4D515454 04 06 000A 0001 70"}
+			]},
+			{ "name": "10 Will flag 1 no Will topic [MQTT-3.1.2-9]", "connect":false, "msgs":[
+				{"type":"send", "payload":"10 10 0004 4D515454 04 06 000A 0001 70 0001 70"}
+			]},
+			{ "name": "10 Will flag 1 ok", "connect":false, "expect_disconnect":false, "msgs":[
+				{"type":"send", "payload":"10 13 0004 4D515454 04 06 000A 0001 70 0001 70 0001 70"},
+				{"type":"recv", "payload":"20 02 00 00", "comment": "CONNACK"}
+			]},
+			{ "name": "10 Will flag 1 Will Qos 3 [MQTT-3.1.2-14]", "connect":false, "msgs":[
+				{"type":"send", "payload":"10 13 0004 4D515454 04 1E 000A 0001 70 0001 70 0001 70"}
+			]},
+			{ "name": "10 Will topic with 0x0000", "connect":false, "msgs": [{"type":"send", "payload":"10 17 0004 4D515454 04 06 000A 0001 70 0005 746F700000 0001 70"}]},
+			{ "name": "10 Will topic with U+D800", "connect":false, "msgs": [{"type":"send", "payload":"10 17 0004 4D515454 04 06 000A 0001 70 0005 746FEDA080 0001 70"}]},
+			{ "name": "10 Will topic with U+0001", "connect":false, "msgs": [{"type":"send", "payload":"10 17 0004 4D515454 04 06 000A 0001 70 0005 746F700170 0001 70"}]},
+			{ "name": "10 Will topic with U+001F", "connect":false, "msgs": [{"type":"send", "payload":"10 17 0004 4D515454 04 06 000A 0001 70 0005 746F701F70 0001 70"}]},
+			{ "name": "10 Will topic with U+007F", "connect":false, "msgs": [{"type":"send", "payload":"10 17 0004 4D515454 04 06 000A 0001 70 0005 746F707F70 0001 70"}]},
+			{ "name": "10 Will topic with U+009F", "connect":false, "msgs": [{"type":"send", "payload":"10 17 0004 4D515454 04 06 000A 0001 70 0005 746FC29F70 0001 70"}]},
+			{ "name": "10 Will topic with U+FFFF", "connect":false, "msgs": [{"type":"send", "payload":"10 17 0004 4D515454 04 06 000A 0001 70 0005 746FEDBFBF 0001 70"}]},
+			{ "name": "10 Client ID with 0x0000", "connect":false, "msgs": [{"type":"send", "payload":"10 11 0004 4D515454 04 02 000A 0005 746F700000"}]},
+			{ "name": "10 Client ID with U+D800", "connect":false, "msgs": [{"type":"send", "payload":"10 11 0004 4D515454 04 02 000A 0005 746FEDA080"}]},
+			{ "name": "10 Client ID with U+0001", "connect":false, "msgs": [{"type":"send", "payload":"10 11 0004 4D515454 04 02 000A 0005 746F700170"}]},
+			{ "name": "10 Client ID with U+001F", "connect":false, "msgs": [{"type":"send", "payload":"10 11 0004 4D515454 04 02 000A 0005 746F701F70"}]},
+			{ "name": "10 Client ID with U+007F", "connect":false, "msgs": [{"type":"send", "payload":"10 11 0004 4D515454 04 02 000A 0005 746F707F70"}]},
+			{ "name": "10 Client ID with U+009F", "connect":false, "msgs": [{"type":"send", "payload":"10 11 0004 4D515454 04 02 000A 0005 746FC29F70"}]},
+			{ "name": "10 Client ID with U+FFFF", "connect":false, "msgs": [{"type":"send", "payload":"10 11 0004 4D515454 04 02 000A 0005 746FEDBFBF"}]},
+			{ "name": "10 [MQTT-3.1.2-18]", "connect":false, "msgs":[{"type":"send", "payload":"10 10 0004 4D515454 04 02 000A 0001 70 0001 70"}]},
+			{ "name": "10 [MQTT-3.1.2-19]", "connect":false, "msgs":[{"type":"send", "payload":"10 0D 0004 4D515454 04 82 000A 0001 70"}]},
+			{ "name": "10 Username with 0x0000", "connect":false, "msgs":[{"type":"send", "payload":"10 14 0004 4D515454 04 82 000A 0001 70 0005 746F700000"}]},
+			{ "name": "10 Username with 0xD800", "connect":false, "msgs":[{"type":"send", "payload":"10 14 0004 4D515454 04 82 000A 0001 70 0005 746FEDA080"}]},
+			{ "name": "10 Username with 0x0001", "connect":false, "msgs":[{"type":"send", "payload":"10 14 0004 4D515454 04 82 000A 0001 70 0005 746F700170"}]},
+			{ "name": "10 Username with 0x001F", "connect":false, "msgs":[{"type":"send", "payload":"10 14 0004 4D515454 04 82 000A 0001 70 0005 746F701F70"}]},
+			{ "name": "10 Username with 0x007F", "connect":false, "msgs":[{"type":"send", "payload":"10 14 0004 4D515454 04 82 000A 0001 70 0005 746F707F70"}]},
+			{ "name": "10 Username with 0x009F", "connect":false, "msgs":[{"type":"send", "payload":"10 14 0004 4D515454 04 82 000A 0001 70 0005 746FC29F70"}]},
+			{ "name": "10 Username with 0xFFFF", "connect":false, "msgs":[{"type":"send", "payload":"10 14 0004 4D515454 04 82 000A 0001 70 0005 746FEDBFBF"}]},
+			{ "name": "10 Username zero length ok", "connect":false, "expect_disconnect":false, "msgs":[
+				{"type":"send", "payload":"10 0F 0004 4D515454 04 82 000A 0001 70 0000"},
+				{"type":"recv", "payload":"20 02 00 00", "comment": "CONNACK"}
+			]},
+			{ "name": "10 Username flag 1 Password flag 1 ok", "connect":false, "expect_disconnect":false, "msgs":[
+				{"type":"send", "payload":"10 13 0004 4D515454 04 C2 000A 0001 70 0001 70 0001 70"},
+				{"type":"recv", "payload":"20 02 00 00", "comment": "CONNACK"}
+			]},
+			{ "name": "10 [MQTT-3.1.2-20]", "connect":false, "msgs":[{"type":"send", "payload":"10 13 0004 4D515454 04 82 000A 0001 70 0001 70 0001 70"}]},
+			{ "name": "10 [MQTT-3.1.2-21]", "connect":false, "msgs":[{"type":"send", "payload":"10 10 0004 4D515454 04 C2 000A 0001 70 0001 70"}]},
+			{ "name": "10 [MQTT-3.1.2-22]", "connect":false, "msgs":[{"type":"send", "payload":"10 10 0004 4D515454 04 42 000A 0001 70 0001 70"}]},
+			{ "name": "10 Password with 0x0000", "connect":false, "expect_disconnect":false, "msgs":[
+				{"type":"send", "payload":"10 17 00 04 4D515454 04 C2 000A 0001 70 0001 70 0005 746F700000"},
+				{"type":"recv", "payload":"20 02 00 00", "comment": "CONNACK"}
+			]},
+			{ "name": "duplicate CONNECT", "msgs":[{"type":"send", "payload":"10 0D 0004 4D515454 04 02 000A 0001 70", "comment":"minimal valid duplicate CONNECT"}]},
+			{ "name": "NanoMQ CWE-119", "msgs":[{"type":"send", "payload":"10 07 0004 4D515454 04 C2 003C 000B 746573742D707974686F6E 0005 61646d696E 0008 70617373776F7264"}]}
+		]
+	},
+	{
+		"group": "v5.0   CONNECT",
+		"tests": [
+			{ "name": "10 ok ", "connect":false, "expect_disconnect":false, "msgs":[
+				{"type":"send", "payload":"10 0E 0004 4D515454 05 02 000A 00 0001 70", "comment":"minimal valid CONNECT"},
+				{"type":"recv", "payload":"20 09 00 00 06 22000A 210014", "comment": "CONNACK"}
+			]},
+			{ "name": "10 Username flag 1 ok", "connect":false, "expect_disconnect":false, "msgs":[
+				{"type":"send", "payload":"10 11 0004 4D515454 05 82 000A 00 0001 70 0001 70"},
+				{"type":"recv", "payload":"20 09 00 00 06 22000A 210014", "comment": "CONNACK"}
+			]},
+			{ "name": "10 Client ID with 0x0000", "connect":false, "msgs": [
+				{"type":"send", "payload":"10 12 0004 4D515454 05 02 000A 00 0005 746F700000"}
+			]},
+			{ "name": "10 Client ID with U+D800", "connect":false, "msgs": [
+				{"type":"send", "payload":"10 12 0004 4D515454 05 02 000A 00 0005 746FEDA080"}
+			]},
+			{ "name": "10 Client ID with U+0001", "connect":false, "msgs": [
+				{"type":"send", "payload":"10 12 0004 4D515454 05 02 000A 00 0005 746F700170"}
+			]},
+			{ "name": "10 Client ID with U+001F", "connect":false, "msgs": [
+				{"type":"send", "payload":"10 12 0004 4D515454 05 02 000A 00 0005 746F701F70"}
+			]},
+			{ "name": "10 Client ID with U+007F", "connect":false, "msgs": [
+				{"type":"send", "payload":"10 12 0004 4D515454 05 02 000A 00 0005 746F707F70"}
+			]},
+			{ "name": "10 Client ID with U+009F", "connect":false, "msgs": [
+				{"type":"send", "payload":"10 12 0004 4D515454 05 02 000A 00 0005 746FC29F70"}
+			]},
+			{ "name": "10 Client ID with U+FFFF", "connect":false, "msgs": [
+				{"type":"send", "payload":"10 12 0004 4D515454 05 02 000A 00 0005 746FEDBFBF"}
+			]},
+			{ "name": "10 [MQTT-3.1.2-16]", "connect":false, "msgs":[
+				{"type":"send", "payload":"10 11 0004 4D515454 05 02 000A 00 0001 70 0001 70"}
+			]},
+			{ "name": "10 [MQTT-3.1.2-17]", "connect":false, "msgs":[
+				{"type":"send", "payload":"10 0E 0004 4D515454 05 82 000A 00 0001 70"}
+			]},
+			{ "name": "10 Username with 0x0000", "connect":false, "msgs":[
+				{"type":"send", "payload":"10 15 0004 4D515454 05 82 000A 00 0001 70 0005 746F700000"}
+			]},
+			{ "name": "10 Username with 0xD800", "connect":false, "msgs":[
+				{"type":"send", "payload":"10 15 0004 4D515454 05 82 000A 00 0001 70 0005 746FEDA080"}
+			]},
+			{ "name": "10 Username with 0x0001", "connect":false, "msgs":[
+				{"type":"send", "payload":"10 15 0004 4D515454 05 82 000A 00 0001 70 0005 746F700170"}
+			]},
+			{ "name": "10 Username with 0x001F", "connect":false, "msgs":[
+				{"type":"send", "payload":"10 15 0004 4D515454 05 82 000A 00 0001 70 0005 746F701F70"}
+			]},
+			{ "name": "10 Username with 0x007F", "connect":false, "msgs":[
+				{"type":"send", "payload":"10 15 0004 4D515454 05 82 000A 00 0001 70 0005 746F707F70"}
+			]},
+			{ "name": "10 Username with 0x009F", "connect":false, "msgs":[
+				{"type":"send", "payload":"10 15 0004 4D515454 05 82 000A 00 0001 70 0005 746FC29F70"}
+			]},
+			{ "name": "10 Username with 0xFFFF", "connect":false, "msgs":[
+				{"type":"send", "payload":"10 15 0004 4D515454 05 82 000A 00 0001 70 0005 746FEDBFBF"}
+			]},
+			{ "name": "10 [MQTT-3.1.2-18]", "connect":false, "msgs":[
+				{"type":"send", "payload":"10 14 0004 4D515454 05 82 000A 00 0001 70 0001 70 0001 70"}
+			]},
+			{ "name": "10 [MQTT-3.1.2-19]", "connect":false, "msgs":[
+				{"type":"send", "payload":"10 11 0004 4D515454 05 C2 000A 00 0001 70 0001 70"}
+			]},
+			{ "name": "tiny max packet", "connect":false, "msgs":[{"type":"send", "payload":"10 13 0004 4D515454 05 02 000A 05 2700000002 0001 70"}]}
+		]
+	},
+	{
+		"group": "v5.0   CONNECT EXTENDED AUTH",
+		"tests": [
+			{ "name": "unsupported authentication method", "connect":false, "msgs":[
+				{"type":"send", "payload":"10 23 0004 4D515454 05 02 000A 15 15000B756E737570706F7274656416000474657374 0001 70", "comment":"auth-method:unsupported, auth-data:test"},
+				{"type":"recv", "payload":"20 03 00 8C 00", "comment": "CONNACK Bad authentication method"}
+			]}
+		]
+	}
+]

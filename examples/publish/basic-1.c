@@ -8,10 +8,15 @@
 #include <string.h>
 #include <unistd.h>
 
+#ifndef UNUSED
+#  define UNUSED(A) (void)(A)
+#endif
 
 /* Callback called when the client receives a CONNACK message from the broker. */
 void on_connect(struct mosquitto *mosq, void *obj, int reason_code)
 {
+	UNUSED(obj);
+
 	/* Print out the connection result. mosquitto_connack_string() produces an
 	 * appropriate string for MQTT v3.x clients, the equivalent for MQTT v5.0
 	 * clients is mosquitto_reason_string().
@@ -36,6 +41,9 @@ void on_connect(struct mosquitto *mosq, void *obj, int reason_code)
  * received a PUBCOMP from the broker. */
 void on_publish(struct mosquitto *mosq, void *obj, int mid)
 {
+	UNUSED(mosq);
+	UNUSED(obj);
+
 	printf("Message with mid %d has been published.\n", mid);
 }
 
@@ -43,7 +51,7 @@ void on_publish(struct mosquitto *mosq, void *obj, int mid)
 int get_temperature(void)
 {
 	sleep(1); /* Prevent a storm of messages - this pretend sensor works at 1Hz */
-	return random()%100;
+	return (int)random()%100;
 }
 
 /* This function pretends to read some data from a sensor and publish it.*/
@@ -68,7 +76,7 @@ void publish_sensor_data(struct mosquitto *mosq)
 	 * qos = 2 - publish with QoS 2 for this example
 	 * retain = false - do not use the retained message feature for this message
 	 */
-	rc = mosquitto_publish(mosq, NULL, "example/temperature", strlen(payload), payload, 2, false);
+	rc = mosquitto_publish(mosq, NULL, "example/temperature", (int)strlen(payload), payload, 2, false);
 	if(rc != MOSQ_ERR_SUCCESS){
 		fprintf(stderr, "Error publishing: %s\n", mosquitto_strerror(rc));
 	}
@@ -79,6 +87,9 @@ int main(int argc, char *argv[])
 {
 	struct mosquitto *mosq;
 	int rc;
+
+	UNUSED(argc);
+	UNUSED(argv);
 
 	/* Required before calling other mosquitto functions */
 	mosquitto_lib_init();

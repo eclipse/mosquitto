@@ -3,9 +3,9 @@
 .. slug: version-151-released
 .. date: 2018-08-16 17:01:08 UTC+01:00
 .. tags: Releases
-.. category: 
-.. link: 
-.. description: 
+.. category:
+.. link:
+.. description:
 .. type: text
 -->
 

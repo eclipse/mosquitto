@@ -8,12 +8,12 @@
 static void byte_prop_read_helper(
 		int command,
 		uint8_t *payload,
-		int remaining_length,
+		uint32_t remaining_length,
 		int rc_expected,
-		int identifier,
+		uint8_t identifier,
 		uint8_t value_expected)
 {
-	struct mosquitto__packet packet;
+	struct mosquitto__packet_in packet;
 	mosquitto_property *properties;
 	int rc;
 
@@ -34,7 +34,7 @@ static void byte_prop_read_helper(
 	CU_ASSERT_PTR_EQUAL(properties, NULL);
 }
 
-static void duplicate_byte_helper(int command, int identifier)
+static void duplicate_byte_helper(int command, uint8_t identifier)
 {
 	uint8_t payload[20];
 
@@ -48,7 +48,7 @@ static void duplicate_byte_helper(int command, int identifier)
 	byte_prop_read_helper(command, payload, 5, MOSQ_ERR_DUPLICATE_PROPERTY, identifier, 1);
 }
 
-static void bad_byte_helper(int command, int identifier)
+static void bad_byte_helper(int command, uint8_t identifier)
 {
 	uint8_t payload[20];
 
@@ -64,12 +64,12 @@ static void bad_byte_helper(int command, int identifier)
 static void int32_prop_read_helper(
 		int command,
 		uint8_t *payload,
-		int remaining_length,
+		uint32_t remaining_length,
 		int rc_expected,
-		int identifier,
+		uint8_t identifier,
 		uint32_t value_expected)
 {
-	struct mosquitto__packet packet;
+	struct mosquitto__packet_in packet;
 	mosquitto_property *properties;
 	int rc;
 
@@ -79,6 +79,9 @@ static void int32_prop_read_helper(
 	rc = property__read_all(command, &packet, &properties);
 
 	CU_ASSERT_EQUAL(rc, rc_expected);
+	if(rc != rc_expected){
+		printf("%d / %d\n", rc, rc_expected);
+	}
 	CU_ASSERT_EQUAL(packet.pos, remaining_length);
 	if(properties){
 		CU_ASSERT_EQUAL(properties->identifier, identifier);
@@ -90,7 +93,7 @@ static void int32_prop_read_helper(
 	CU_ASSERT_PTR_EQUAL(properties, NULL);
 }
 
-static void duplicate_int32_helper(int command, int identifier)
+static void duplicate_int32_helper(int command, uint8_t identifier)
 {
 	uint8_t payload[20];
 
@@ -114,12 +117,12 @@ static void duplicate_int32_helper(int command, int identifier)
 static void int16_prop_read_helper(
 		int command,
 		uint8_t *payload,
-		int remaining_length,
+		uint32_t remaining_length,
 		int rc_expected,
-		int identifier,
+		uint8_t identifier,
 		uint16_t value_expected)
 {
-	struct mosquitto__packet packet;
+	struct mosquitto__packet_in packet;
 	mosquitto_property *properties;
 	int rc;
 
@@ -140,7 +143,7 @@ static void int16_prop_read_helper(
 	CU_ASSERT_PTR_EQUAL(properties, NULL);
 }
 
-static void duplicate_int16_helper(int command, int identifier)
+static void duplicate_int16_helper(int command, uint8_t identifier)
 {
 	uint8_t payload[20];
 
@@ -159,12 +162,12 @@ static void duplicate_int16_helper(int command, int identifier)
 static void string_prop_read_helper(
 		int command,
 		uint8_t *payload,
-		int remaining_length,
+		uint32_t remaining_length,
 		int rc_expected,
-		int identifier,
+		uint8_t identifier,
 		const char *value_expected)
 {
-	struct mosquitto__packet packet;
+	struct mosquitto__packet_in packet;
 	mosquitto_property *properties;
 	int rc;
 
@@ -186,7 +189,7 @@ static void string_prop_read_helper(
 	CU_ASSERT_PTR_EQUAL(properties, NULL);
 }
 
-static void duplicate_string_helper(int command, int identifier)
+static void duplicate_string_helper(int command, uint8_t identifier)
 {
 	uint8_t payload[20];
 
@@ -204,7 +207,7 @@ static void duplicate_string_helper(int command, int identifier)
 	string_prop_read_helper(command, payload, 9, MOSQ_ERR_DUPLICATE_PROPERTY, identifier, "");
 }
 
-static void bad_string_helper(int identifier)
+static void bad_string_helper(uint8_t identifier)
 {
 	uint8_t payload[20];
 
@@ -223,13 +226,13 @@ static void bad_string_helper(int identifier)
 static void binary_prop_read_helper(
 		int command,
 		uint8_t *payload,
-		int remaining_length,
+		uint32_t remaining_length,
 		int rc_expected,
-		int identifier,
+		uint8_t identifier,
 		const uint8_t *value_expected,
 		int len_expected)
 {
-	struct mosquitto__packet packet;
+	struct mosquitto__packet_in packet;
 	mosquitto_property *properties;
 	int rc;
 
@@ -243,7 +246,7 @@ static void binary_prop_read_helper(
 	if(properties){
 		CU_ASSERT_EQUAL(properties->identifier, identifier);
 		CU_ASSERT_EQUAL(properties->value.bin.len, len_expected);
-		CU_ASSERT_EQUAL(memcmp(properties->value.bin.v, value_expected, len_expected), 0);
+		CU_ASSERT_EQUAL(memcmp(properties->value.bin.v, value_expected, (size_t)len_expected), 0);
 		CU_ASSERT_PTR_EQUAL(properties->next, NULL);
 		CU_ASSERT_EQUAL(property__get_length_all(properties), 1+2+len_expected);
 		mosquitto_property_free_all(&properties);
@@ -251,7 +254,7 @@ static void binary_prop_read_helper(
 	CU_ASSERT_PTR_EQUAL(properties, NULL);
 }
 
-static void duplicate_binary_helper(int command, int identifier)
+static void duplicate_binary_helper(int command, uint8_t identifier)
 {
 	uint8_t payload[20];
 
@@ -271,14 +274,14 @@ static void duplicate_binary_helper(int command, int identifier)
 
 static void string_pair_prop_read_helper(
 		uint8_t *payload,
-		int remaining_length,
+		uint32_t remaining_length,
 		int rc_expected,
-		int identifier,
+		uint8_t identifier,
 		const char *name_expected,
 		const char *value_expected,
 		bool expect_multiple)
 {
-	struct mosquitto__packet packet;
+	struct mosquitto__packet_in packet;
 	mosquitto_property *properties;
 	int rc;
 
@@ -308,12 +311,12 @@ static void string_pair_prop_read_helper(
 
 static void varint_prop_read_helper(
 		uint8_t *payload,
-		int remaining_length,
+		uint32_t remaining_length,
 		int rc_expected,
-		int identifier,
+		uint8_t identifier,
 		uint32_t value_expected)
 {
-	struct mosquitto__packet packet;
+	struct mosquitto__packet_in packet;
 	mosquitto_property *properties;
 	int rc;
 
@@ -323,6 +326,9 @@ static void varint_prop_read_helper(
 	rc = property__read_all(CMD_PUBLISH, &packet, &properties);
 
 	CU_ASSERT_EQUAL(rc, rc_expected);
+	if(rc != rc_expected){
+		printf("%d / %d\n", rc, rc_expected);
+	}
 	if(properties){
 		CU_ASSERT_EQUAL(properties->identifier, identifier);
 		CU_ASSERT_EQUAL(properties->value.varint, value_expected);
@@ -339,7 +345,7 @@ static void packet_helper_reason_string_user_property(int command)
 		MQTT_PROP_REASON_STRING, 0, 6, 'r', 'e', 'a', 's', 'o', 'n',
 		MQTT_PROP_USER_PROPERTY, 0, 4, 'n', 'a', 'm', 'e', 0, 5, 'v', 'a', 'l', 'u', 'e'};
 
-	struct mosquitto__packet packet;
+	struct mosquitto__packet_in packet;
 	mosquitto_property *properties, *p;
 	int rc;
 
@@ -379,7 +385,7 @@ static void packet_helper_reason_string_user_property(int command)
 
 static void TEST_no_properties(void)
 {
-	struct mosquitto__packet packet;
+	struct mosquitto__packet_in packet;
 	mosquitto_property *properties = NULL;
 	uint8_t payload[5];
 	int rc;
@@ -396,7 +402,7 @@ static void TEST_no_properties(void)
 
 static void TEST_truncated(void)
 {
-	struct mosquitto__packet packet;
+	struct mosquitto__packet_in packet;
 	mosquitto_property *properties = NULL;
 	uint8_t payload[5];
 	int rc;
@@ -407,7 +413,7 @@ static void TEST_truncated(void)
 	packet.payload = payload;
 	packet.remaining_length = 0;
 	rc = property__read_all(CMD_CONNECT, &packet, &properties);
-	CU_ASSERT_EQUAL(rc, MOSQ_ERR_PROTOCOL);
+	CU_ASSERT_EQUAL(rc, MOSQ_ERR_MALFORMED_PACKET);
 	CU_ASSERT_PTR_EQUAL(properties, NULL);
 	CU_ASSERT_EQUAL(packet.pos, 0);
 
@@ -418,7 +424,7 @@ static void TEST_truncated(void)
 	packet.payload = payload;
 	packet.remaining_length = 1;
 	rc = property__read_all(CMD_CONNECT, &packet, &properties);
-	CU_ASSERT_EQUAL(rc, MOSQ_ERR_PROTOCOL);
+	CU_ASSERT_EQUAL(rc, MOSQ_ERR_MALFORMED_PACKET);
 	CU_ASSERT_PTR_EQUAL(properties, NULL);
 	CU_ASSERT_EQUAL(packet.pos, 1);
 
@@ -430,7 +436,7 @@ static void TEST_truncated(void)
 	packet.payload = payload;
 	packet.remaining_length = 2;
 	rc = property__read_all(CMD_CONNECT, &packet, &properties);
-	CU_ASSERT_EQUAL(rc, MOSQ_ERR_PROTOCOL);
+	CU_ASSERT_EQUAL(rc, MOSQ_ERR_MALFORMED_PACKET);
 	CU_ASSERT_PTR_EQUAL(properties, NULL);
 	CU_ASSERT_EQUAL(packet.pos, 2);
 }
@@ -441,7 +447,7 @@ static void TEST_truncated(void)
 
 static void TEST_invalid_property_id(void)
 {
-	struct mosquitto__packet packet;
+	struct mosquitto__packet_in packet;
 	mosquitto_property *properties = NULL;
 	uint8_t payload[5];
 	int rc;
@@ -1089,7 +1095,7 @@ static void TEST_duplicate_subscription_identifier(void)
 	payload[4] = MQTT_PROP_SUBSCRIPTION_IDENTIFIER;
 	payload[5] = 0x04;
 
-	varint_prop_read_helper(payload, 5, MOSQ_ERR_PROTOCOL, MQTT_PROP_SUBSCRIPTION_IDENTIFIER, 0);
+	varint_prop_read_helper(payload, 5, MOSQ_ERR_MALFORMED_PACKET, MQTT_PROP_SUBSCRIPTION_IDENTIFIER, 0);
 }
 
 /* ========================================================================
@@ -1190,7 +1196,7 @@ static void TEST_bad_subscription_identifier(void)
 	payload[5] = 0xFF;
 	payload[6] = 0x01;
 
-	varint_prop_read_helper(payload, 7, MOSQ_ERR_PROTOCOL, MQTT_PROP_SUBSCRIPTION_IDENTIFIER, 0);
+	varint_prop_read_helper(payload, 7, MOSQ_ERR_MALFORMED_PACKET, MQTT_PROP_SUBSCRIPTION_IDENTIFIER, 0);
 }
 
 /* ========================================================================
@@ -1210,7 +1216,7 @@ static void TEST_packet_connect(void)
 		MQTT_PROP_AUTHENTICATION_METHOD, 0x00, 0x04, 'n', 'o', 'n', 'e',
 		MQTT_PROP_AUTHENTICATION_DATA, 0x00, 0x02, 1, 2};
 
-	struct mosquitto__packet packet;
+	struct mosquitto__packet_in packet;
 	mosquitto_property *properties, *p;
 	int rc;
 
@@ -1324,7 +1330,7 @@ static void TEST_packet_connack(void)
 		MQTT_PROP_AUTHENTICATION_METHOD, 0x00, 0x04, 'n', 'o', 'n', 'e',
 		MQTT_PROP_AUTHENTICATION_DATA, 0x00, 0x02, 1, 2};
 
-	struct mosquitto__packet packet;
+	struct mosquitto__packet_in packet;
 	mosquitto_property *properties, *p;
 	int rc;
 
@@ -1498,7 +1504,7 @@ static void TEST_packet_publish(void)
 		MQTT_PROP_SUBSCRIPTION_IDENTIFIER, 0x04,
 		MQTT_PROP_CONTENT_TYPE, 0, 5, 'e', 'm', 'p', 't', 'y'};
 
-	struct mosquitto__packet packet;
+	struct mosquitto__packet_in packet;
 	mosquitto_property *properties, *p;
 	int rc;
 
@@ -1611,7 +1617,7 @@ static void TEST_packet_subscribe(void)
 		MQTT_PROP_USER_PROPERTY, 0, 4, 'n', 'a', 'm', 'e', 0, 5, 'v', 'a', 'l', 'u', 'e',
 		MQTT_PROP_SUBSCRIPTION_IDENTIFIER, 0x04};
 
-	struct mosquitto__packet packet;
+	struct mosquitto__packet_in packet;
 	mosquitto_property *properties, *p;
 	int rc;
 
@@ -1656,7 +1662,7 @@ static void TEST_packet_unsubscribe(void)
 	uint8_t payload[] = {0,
 		MQTT_PROP_USER_PROPERTY, 0, 4, 'n', 'a', 'm', 'e', 0, 5, 'v', 'a', 'l', 'u', 'e'};
 
-	struct mosquitto__packet packet;
+	struct mosquitto__packet_in packet;
 	mosquitto_property *properties, *p;
 	int rc;
 
@@ -1695,7 +1701,7 @@ static void TEST_packet_disconnect(void)
 		MQTT_PROP_REASON_STRING, 0, 6, 'r', 'e', 'a', 's', 'o', 'n',
 		MQTT_PROP_USER_PROPERTY, 0, 4, 'n', 'a', 'm', 'e', 0, 5, 'v', 'a', 'l', 'u', 'e'};
 
-	struct mosquitto__packet packet;
+	struct mosquitto__packet_in packet;
 	mosquitto_property *properties, *p;
 	int rc;
 
@@ -1747,7 +1753,7 @@ static void TEST_packet_auth(void)
 		MQTT_PROP_REASON_STRING, 0, 6, 'r', 'e', 'a', 's', 'o', 'n',
 		MQTT_PROP_USER_PROPERTY, 0, 4, 'n', 'a', 'm', 'e', 0, 5, 'v', 'a', 'l', 'u', 'e'};
 
-	struct mosquitto__packet packet;
+	struct mosquitto__packet_in packet;
 	mosquitto_property *properties, *p;
 	int rc;
 

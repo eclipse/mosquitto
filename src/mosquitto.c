@@ -1,15 +1,17 @@
 /*
-Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
-are made available under the terms of the Eclipse Public License v1.0
+are made available under the terms of the Eclipse Public License 2.0
 and Eclipse Distribution License v1.0 which accompany this distribution.
- 
+
 The Eclipse Public License is available at
-   http://www.eclipse.org/legal/epl-v10.html
+   https://www.eclipse.org/legal/epl-2.0/
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
- 
+
+SPDX-License-Identifier: EPL-2.0 OR BSD-3-Clause
+
 Contributors:
    Roger Light - initial implementation and documentation.
 */
@@ -21,6 +23,8 @@ Contributors:
 #  include <unistd.h>
 #  include <grp.h>
 #  include <assert.h>
+/* For umask() */
+#  include <sys/stat.h>
 #endif
 
 #ifndef WIN32
@@ -45,39 +49,51 @@ Contributors:
 #ifdef WITH_WRAP
 #include <tcpd.h>
 #endif
-#ifdef WITH_WEBSOCKETS
-#  include <libwebsockets.h>
-#endif
 
 #include "mosquitto_broker_internal.h"
 #include "memory_mosq.h"
 #include "misc_mosq.h"
 #include "util_mosq.h"
 
-struct mosquitto_db int_db;
+struct mosquitto_db db;
 
-bool flag_reload = false;
-#ifdef WITH_PERSISTENCE
-bool flag_db_backup = false;
-#endif
-bool flag_tree_print = false;
-int run;
+struct mosquitto__listener_sock *g_listensock = NULL;
+int g_listensock_count = 0;
+
+int g_run = 0;
 #ifdef WITH_WRAP
 #include <syslog.h>
 int allow_severity = LOG_INFO;
 int deny_severity = LOG_INFO;
 #endif
 
-void handle_sigint(int signal);
-void handle_sigusr1(int signal);
-void handle_sigusr2(int signal);
-#ifdef SIGHUP
-void handle_sighup(int signal);
-#endif
-
-struct mosquitto_db *mosquitto__get_db(void)
+static int set_umask(void)
 {
-	return &int_db;
+#if !defined(__CYGWIN__) && !defined(WIN32)
+	/* This affects files that are written to, apart from those that are
+	 * created using mosquitto_fopen(..., restrict_read=true), which sets a
+	 * umask of 077. */
+	const char *mask_s;
+	char *endptr = NULL;
+	long mask;
+
+
+	mask_s = getenv("UMASK_SET");
+	if(mask_s){
+		errno = 0;
+		mask = strtol(mask_s, &endptr, 8);
+		if(errno || endptr == mask_s || *endptr != '\0'){
+			log__printf(NULL, MOSQ_LOG_ERR, "Error: UMASK_SET environment variable not a valid octal number.");
+			return MOSQ_ERR_INVAL;
+		}
+		if(mask < 000 || mask > 0777){
+			log__printf(NULL, MOSQ_LOG_ERR, "Error: UMASK_SET environment variable out of range.");
+			return MOSQ_ERR_INVAL;
+		}
+		umask((mode_t)mask);
+	}
+#endif
+	return MOSQ_ERR_SUCCESS;
 }
 
 /* mosquitto shouldn't run as root.
@@ -88,12 +104,15 @@ struct mosquitto_db *mosquitto__get_db(void)
  * Note that setting config->user to "root" does not produce an error, but it
  * strongly discouraged.
  */
-int drop_privileges(struct mosquitto__config *config, bool temporary)
+static int drop_privileges(struct mosquitto__config *config)
 {
 #if !defined(__CYGWIN__) && !defined(WIN32)
 	struct passwd *pwd;
 	char *err;
 	int rc;
+	const char *puid_s, *pgid_s;
+	uid_t puid;
+	gid_t pgid;
 
 	const char *snap = getenv("SNAP_NAME");
 	if(snap && !strcmp(snap, "mosquitto")){
@@ -101,8 +120,33 @@ int drop_privileges(struct mosquitto__config *config, bool temporary)
 		return MOSQ_ERR_SUCCESS;
 	}
 
+	/* PUID and PGID are docker custom user mappings */
+	puid_s = getenv("PUID");
+	pgid_s = getenv("PGID");
+
 	if(geteuid() == 0){
-		if(config->user && strcmp(config->user, "root")){
+		if(puid_s || pgid_s){
+			if(pgid_s){
+				pgid = (gid_t)atoi(pgid_s);
+
+				rc = setgid(pgid);
+				if(rc == -1){
+					err = strerror(errno);
+					log__printf(NULL, MOSQ_LOG_ERR, "Error setting gid whilst dropping privileges: %s.", err);
+					return 1;
+				}
+			}
+			if(puid_s){
+				puid = (uid_t)atoi(puid_s);
+
+				rc = setuid(puid);
+				if(rc == -1){
+					err = strerror(errno);
+					log__printf(NULL, MOSQ_LOG_ERR, "Error setting uid whilst dropping privileges: %s.", err);
+					return 1;
+				}
+			}
+		}else if(config->user && strcmp(config->user, "root")){
 			pwd = getpwnam(config->user);
 			if(!pwd){
 				if(strcmp(config->user, "mosquitto")){
@@ -122,21 +166,13 @@ int drop_privileges(struct mosquitto__config *config, bool temporary)
 				log__printf(NULL, MOSQ_LOG_ERR, "Error setting groups whilst dropping privileges: %s.", err);
 				return 1;
 			}
-			if(temporary){
-				rc = setegid(pwd->pw_gid);
-			}else{
-				rc = setgid(pwd->pw_gid);
-			}
+			rc = setgid(pwd->pw_gid);
 			if(rc == -1){
 				err = strerror(errno);
 				log__printf(NULL, MOSQ_LOG_ERR, "Error setting gid whilst dropping privileges: %s.", err);
 				return 1;
 			}
-			if(temporary){
-				rc = seteuid(pwd->pw_uid);
-			}else{
-				rc = setuid(pwd->pw_uid);
-			}
+			rc = setuid(pwd->pw_uid);
 			if(rc == -1){
 				err = strerror(errno);
 				log__printf(NULL, MOSQ_LOG_ERR, "Error setting uid whilst dropping privileges: %s.", err);
@@ -147,36 +183,13 @@ int drop_privileges(struct mosquitto__config *config, bool temporary)
 			log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Mosquitto should not be run as root/administrator.");
 		}
 	}
+#else
+	UNUSED(config);
 #endif
 	return MOSQ_ERR_SUCCESS;
 }
 
-int restore_privileges(void)
-{
-#if !defined(__CYGWIN__) && !defined(WIN32)
-	char *err;
-	int rc;
-
-	if(getuid() == 0){
-		rc = setegid(0);
-		if(rc == -1){
-			err = strerror(errno);
-			log__printf(NULL, MOSQ_LOG_ERR, "Error setting gid whilst restoring privileges: %s.", err);
-			return 1;
-		}
-		rc = seteuid(0);
-		if(rc == -1){
-			err = strerror(errno);
-			log__printf(NULL, MOSQ_LOG_ERR, "Error setting uid whilst restoring privileges: %s.", err);
-			return 1;
-		}
-	}
-#endif
-	return MOSQ_ERR_SUCCESS;
-}
-
-
-void mosquitto__daemonise(void)
+static void mosquitto__daemonise(void)
 {
 #ifndef WIN32
 	char *err;
@@ -206,197 +219,12 @@ void mosquitto__daemonise(void)
 }
 
 
-void listener__set_defaults(struct mosquitto__listener *listener)
-{
-	listener->security_options.allow_anonymous = -1;
-	listener->security_options.allow_zero_length_clientid = true;
-	listener->protocol = mp_mqtt;
-	listener->max_connections = -1;
-	listener->maximum_qos = 2;
-	listener->max_topic_alias = 10;
-}
-
-
-int listeners__start_single_mqtt(struct mosquitto_db *db, mosq_sock_t **listensock, int *listensock_count, int *listensock_index, struct mosquitto__listener *listener)
-{
-	int i;
-	mosq_sock_t *listensock_new;
-
-	if(net__socket_listen(listener)){
-		return 1;
-	}
-	(*listensock_count) += listener->sock_count;
-	listensock_new = mosquitto__realloc(*listensock, sizeof(mosq_sock_t)*(*listensock_count));
-	if(!listensock_new){
-		return 1;
-	}
-	*listensock = listensock_new;
-
-	for(i=0; i<listener->sock_count; i++){
-		if(listener->socks[i] == INVALID_SOCKET){
-			return 1;
-		}
-		(*listensock)[*listensock_index] = listener->socks[i];
-		(*listensock_index)++;
-	}
-	return MOSQ_ERR_SUCCESS;
-}
-
-
-int listeners__add_local(struct mosquitto_db *db, mosq_sock_t **listensock, int *listensock_count, int *listensock_index, const char *host, uint16_t port)
-{
-	struct mosquitto__listener *listeners;
-
-	listeners = mosquitto__realloc(db->config->listeners, (db->config->listener_count+1)*sizeof(struct mosquitto__listener));
-	if(listeners == NULL){
-		return MOSQ_ERR_NOMEM;
-	}
-	db->config->listener_count++;
-	db->config->listeners = listeners;
-	memset(&listeners[db->config->listener_count-1], 0, sizeof(struct mosquitto__listener));
-
-	listener__set_defaults(&listeners[db->config->listener_count-1]);
-	listeners[db->config->listener_count-1].security_options.allow_anonymous = true;
-	listeners[db->config->listener_count-1].port = port;
-	listeners[db->config->listener_count-1].host = mosquitto__strdup(host);
-	if(listeners[db->config->listener_count-1].host == NULL){
-		return MOSQ_ERR_NOMEM;
-	}
-	if(listeners__start_single_mqtt(db, listensock, listensock_count, listensock_index, &listeners[db->config->listener_count-1])){
-		mosquitto__free(listeners[db->config->listener_count-1].host);
-		listeners[db->config->listener_count-1].host = NULL;
-		db->config->listener_count--;
-		return MOSQ_ERR_UNKNOWN;
-	}
-	return MOSQ_ERR_SUCCESS;
-}
-
-int listeners__start_local_only(struct mosquitto_db *db, mosq_sock_t **listensock, int *listensock_count)
-{
-	/* Attempt to open listeners bound to 127.0.0.1 and ::1 only */
-	int i;
-	int listensock_index = 0;
-	int rc;
-
-	if(db->config->cmd_port_count == 0){
-		rc = listeners__add_local(db, listensock, listensock_count, &listensock_index, "127.0.0.1", 1883);
-		if(rc == MOSQ_ERR_NOMEM) return MOSQ_ERR_NOMEM;
-		rc = listeners__add_local(db, listensock, listensock_count, &listensock_index, "::1", 1883);
-		if(rc == MOSQ_ERR_NOMEM) return MOSQ_ERR_NOMEM;
-	}else{
-		for(i=0; i<db->config->cmd_port_count; i++){
-			rc = listeners__add_local(db, listensock, listensock_count, &listensock_index, "127.0.0.1", db->config->cmd_port[i]);
-			if(rc == MOSQ_ERR_NOMEM) return MOSQ_ERR_NOMEM;
-			rc = listeners__add_local(db, listensock, listensock_count, &listensock_index, "::1", db->config->cmd_port[i]);
-			if(rc == MOSQ_ERR_NOMEM) return MOSQ_ERR_NOMEM;
-		}
-	}
-
-	if(db->config->listener_count > 0){
-		return MOSQ_ERR_SUCCESS;
-	}else{
-		return MOSQ_ERR_UNKNOWN;
-	}
-}
-
-
-int listeners__start(struct mosquitto_db *db, mosq_sock_t **listensock, int *listensock_count)
-{
-	int i;
-	int listensock_index = 0;
-
-	listensock_index = 0;
-	(*listensock_count) = 0;
-
-	if(db->config->listener_count == 0){
-		if(listeners__start_local_only(db, listensock, listensock_count)){
-			db__close(db);
-			if(db->config->pid_file){
-				remove(db->config->pid_file);
-			}
-			return 1;
-		}
-		return MOSQ_ERR_SUCCESS;
-	}
-
-	for(i=0; i<db->config->listener_count; i++){
-		if(db->config->listeners[i].protocol == mp_mqtt){
-			if(listeners__start_single_mqtt(db, listensock, listensock_count, &listensock_index, &db->config->listeners[i])){
-				db__close(db);
-				if(db->config->pid_file){
-					remove(db->config->pid_file);
-				}
-				return 1;
-			}
-		}else if(db->config->listeners[i].protocol == mp_websockets){
-#ifdef WITH_WEBSOCKETS
-			db->config->listeners[i].ws_context = mosq_websockets_init(&db->config->listeners[i], db->config);
-			if(!db->config->listeners[i].ws_context){
-				log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to create websockets listener on port %d.", db->config->listeners[i].port);
-				return 1;
-			}
-#endif
-		}
-	}
-	if((*listensock) == NULL){
-		log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to start any listening sockets, exiting.");
-		return 1;
-	}
-	return MOSQ_ERR_SUCCESS;
-}
-
-
-void listeners__stop(struct mosquitto_db *db, mosq_sock_t *listensock, int listensock_count)
-{
-	int i;
-
-	for(i=0; i<db->config->listener_count; i++){
-#ifdef WITH_WEBSOCKETS
-		if(db->config->listeners[i].ws_context){
-			libwebsocket_context_destroy(db->config->listeners[i].ws_context);
-		}
-		mosquitto__free(db->config->listeners[i].ws_protocol);
-#endif
-#ifdef WITH_UNIX_SOCKETS
-		if(db->config->listeners[i].unix_socket_path != NULL){
-			unlink(db->config->listeners[i].unix_socket_path);
-		}
-#endif
-	}
-
-	for(i=0; i<listensock_count; i++){
-		if(listensock[i] != INVALID_SOCKET){
-			COMPAT_CLOSE(listensock[i]);
-		}
-	}
-	mosquitto__free(listensock);
-}
-
-
-void signal__setup(void)
-{
-	signal(SIGINT, handle_sigint);
-	signal(SIGTERM, handle_sigint);
-#ifdef SIGHUP
-	signal(SIGHUP, handle_sighup);
-#endif
-#ifndef WIN32
-	signal(SIGUSR1, handle_sigusr1);
-	signal(SIGUSR2, handle_sigusr2);
-	signal(SIGPIPE, SIG_IGN);
-#endif
-#ifdef WIN32
-	CreateThread(NULL, 0, SigThreadProc, NULL, 0, NULL);
-#endif
-}
-
-
-int pid__write(struct mosquitto_db *db)
+static int pid__write(void)
 {
 	FILE *pid;
 
-	if(db->config->daemon && db->config->pid_file){
-		pid = mosquitto__fopen(db->config->pid_file, "wt", false);
+	if(db.config->pid_file){
+		pid = mosquitto__fopen(db.config->pid_file, "wt", false);
 		if(pid){
 			fprintf(pid, "%d", getpid());
 			fclose(pid);
@@ -409,12 +237,39 @@ int pid__write(struct mosquitto_db *db)
 }
 
 
+static void report_features(void)
+{
+#ifdef WITH_BRIDGE
+	log__printf(NULL, MOSQ_LOG_INFO, "Bridge support available.");
+#else
+	log__printf(NULL, MOSQ_LOG_INFO, "Bridge support NOT available.");
+#endif
+#ifdef WITH_PERSISTENCE
+	log__printf(NULL, MOSQ_LOG_INFO, "Persistence support available.");
+#else
+	log__printf(NULL, MOSQ_LOG_INFO, "Persistence support NOT available.");
+#endif
+#ifdef WITH_TLS
+	log__printf(NULL, MOSQ_LOG_INFO, "TLS support available.");
+#else
+	log__printf(NULL, MOSQ_LOG_INFO, "TLS support NOT available.");
+#endif
+#ifdef FINAL_WITH_TLS_PSK
+	log__printf(NULL, MOSQ_LOG_INFO, "TLS-PSK support available.");
+#else
+	log__printf(NULL, MOSQ_LOG_INFO, "TLS-PSK support NOT available.");
+#endif
+#ifdef WITH_WEBSOCKETS
+	log__printf(NULL, MOSQ_LOG_INFO, "Websockets support available.");
+#else
+	log__printf(NULL, MOSQ_LOG_INFO, "Websockets support NOT available.");
+#endif
+}
+
+
 int main(int argc, char *argv[])
 {
-	mosq_sock_t *listensock = NULL;
-	int listensock_count = 0;
 	struct mosquitto__config config;
-	int i;
 	int rc;
 #ifdef WIN32
 	SYSTEMTIME st;
@@ -426,13 +281,13 @@ int main(int argc, char *argv[])
 #if defined(WIN32) || defined(__CYGWIN__)
 	if(argc == 2){
 		if(!strcmp(argv[1], "run")){
-			service_run();
+			service_run(argv[0]);
 			return 0;
 		}else if(!strcmp(argv[1], "install")){
-			service_install();
+			service_install(argv[0]);
 			return 0;
 		}else if(!strcmp(argv[1], "uninstall")){
-			service_uninstall();
+			service_uninstall(argv[0]);
 			return 0;
 		}
 	}
@@ -444,29 +299,61 @@ int main(int argc, char *argv[])
 	srand(st.wSecond + st.wMilliseconds);
 #else
 	gettimeofday(&tv, NULL);
-	srand(tv.tv_sec + tv.tv_usec);
+	srand((unsigned int)(tv.tv_sec + tv.tv_usec));
 #endif
 
 #ifdef WIN32
-	_setmaxstdio(2048);
+	if(_setmaxstdio(8192) != 8192){
+		/* Old limit was 2048 */
+		if(_setmaxstdio(2048) != 2048){
+			log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Unable to increase maximum allowed connections. This session may be limited to 512 connections.");
+		}
+	}
+
 #endif
 
-	memset(&int_db, 0, sizeof(struct mosquitto_db));
+	memset(&db, 0, sizeof(struct mosquitto_db));
+	db.now_s = mosquitto_time();
+	db.now_real_s = time(NULL);
 
 	net__broker_init();
 
-	config__init(&int_db, &config);
-	rc = config__parse_args(&int_db, &config, argc, argv);
+	db.config = &config;
+	config__init(&config);
+	rc = config__parse_args(&config, argc, argv);
 	if(rc != MOSQ_ERR_SUCCESS) return rc;
-	int_db.config = &config;
+
+	if(config.test_configuration){
+		if(!db.config_file){
+			log__printf(NULL, MOSQ_LOG_ERR, "Please provide a configuration file to test.");
+			return MOSQ_ERR_INVAL;
+		}else{
+			log__printf(NULL, MOSQ_LOG_INFO, "Configuration file is OK.");
+			return MOSQ_ERR_SUCCESS;
+		}
+	}
+
+	rc = keepalive__init();
+	if(rc != MOSQ_ERR_SUCCESS) return rc;
+
+	/* Drop privileges permanently immediately after the config is loaded.
+	 * This requires the user to ensure that all certificates, log locations,
+	 * etc. are accessible my the `mosquitto` or other unprivileged user.
+	 */
+	rc = drop_privileges(&config);
+	if(rc != MOSQ_ERR_SUCCESS) return rc;
+	/* Set umask based on environment variable */
+	rc = set_umask();
+	if(rc != MOSQ_ERR_SUCCESS) return rc;
+
 
 	if(config.daemon){
 		mosquitto__daemonise();
 	}
 
-	if(pid__write(&int_db)) return 1;
+	if(pid__write()) return 1;
 
-	rc = db__open(&config, &int_db);
+	rc = db__open(&config);
 	if(rc != MOSQ_ERR_SUCCESS){
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Couldn't open database.");
 		return rc;
@@ -479,22 +366,26 @@ int main(int argc, char *argv[])
 		return rc;
 	}
 	log__printf(NULL, MOSQ_LOG_INFO, "mosquitto version %s starting", VERSION);
-	if(int_db.config_file){
-		log__printf(NULL, MOSQ_LOG_INFO, "Config loaded from %s.", int_db.config_file);
+	if(db.config_file){
+		log__printf(NULL, MOSQ_LOG_INFO, "Config loaded from %s.", db.config_file);
 	}else{
 		log__printf(NULL, MOSQ_LOG_INFO, "Using default config.");
 	}
+	report_features();
 
-	rc = mosquitto_security_module_init(&int_db);
+	rc = mosquitto_security_module_init();
 	if(rc) return rc;
-	rc = mosquitto_security_init(&int_db, false);
+	rc = mosquitto_security_init(false);
 	if(rc) return rc;
+
+	plugin_persist__handle_restore();
+	db__msg_store_compact();
 
 	/* After loading persisted clients and ACLs, try to associate them,
 	 * so persisted subscriptions can start storing messages */
-	HASH_ITER(hh_id, int_db.contexts_by_id, ctxt, ctxt_tmp){
+	HASH_ITER(hh_id, db.contexts_by_id, ctxt, ctxt_tmp){
 		if(ctxt && !ctxt->clean_start && ctxt->username){
-			rc = acl__find_acls(&int_db, ctxt);
+			rc = acl__find_acls(ctxt);
 			if(rc){
 				log__printf(NULL, MOSQ_LOG_WARNING, "Failed to associate persisted user %s with ACLs, "
 					"likely due to changed ports while using a per_listener_settings configuration.", ctxt->username);
@@ -503,18 +394,22 @@ int main(int argc, char *argv[])
 	}
 
 #ifdef WITH_SYS_TREE
-	sys_tree__init(&int_db);
+	sys_tree__init();
 #endif
 
-	if(listeners__start(&int_db, &listensock, &listensock_count)) return 1;
+	rc = mux__init();
+	if(rc) return rc;
 
-	rc = drop_privileges(&config, false);
-	if(rc != MOSQ_ERR_SUCCESS) return rc;
+	if(listeners__start()) return 1;
 
 	signal__setup();
 
 #ifdef WITH_BRIDGE
-	bridge__start_all(&int_db);
+	bridge__start_all();
+#endif
+
+#ifdef WITH_CJSON
+	broker_control__init();
 #endif
 
 	log__printf(NULL, MOSQ_LOG_INFO, "mosquitto version %s running", VERSION);
@@ -522,58 +417,64 @@ int main(int argc, char *argv[])
 	sd_notify(0, "READY=1");
 #endif
 
-	run = 1;
-	rc = mosquitto_main_loop(&int_db, listensock, listensock_count);
-
-	log__printf(NULL, MOSQ_LOG_INFO, "mosquitto version %s terminating", VERSION);
+	g_run = 1;
+	rc = mosquitto_main_loop(g_listensock, g_listensock_count);
 
 	/* FIXME - this isn't quite right, all wills with will delay zero should be
 	 * sent now, but those with positive will delay should be persisted and
 	 * restored, pending the client reconnecting in time. */
-	HASH_ITER(hh_id, int_db.contexts_by_id, ctxt, ctxt_tmp){
-		context__send_will(&int_db, ctxt);
+	HASH_ITER(hh_id, db.contexts_by_id, ctxt, ctxt_tmp){
+		context__send_will(ctxt);
 	}
-	will_delay__send_all(&int_db);
+	will_delay__send_all();
+
+	/* Set to true only after persistence events have been processed */
+	db.shutdown = true;
+	log__printf(NULL, MOSQ_LOG_INFO, "mosquitto version %s terminating", VERSION);
+
+#ifdef WITH_CJSON
+	broker_control__cleanup();
+#endif
 
 #ifdef WITH_PERSISTENCE
-	persist__backup(&int_db, true);
+	persist__backup(true);
 #endif
-	session_expiry__remove_all(&int_db);
+	session_expiry__remove_all();
 
-	HASH_ITER(hh_id, int_db.contexts_by_id, ctxt, ctxt_tmp){
-#ifdef WITH_WEBSOCKETS
-		if(!ctxt->wsi){
-			context__cleanup(&int_db, ctxt, true);
-		}
-#else
-		context__cleanup(&int_db, ctxt, true);
+	listeners__stop();
+
+	HASH_ITER(hh_id, db.contexts_by_id, ctxt, ctxt_tmp){
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
+		if(!ctxt->wsi)
 #endif
+		{
+			ctxt->is_persisted = false; /* prevent persistence removal */
+			context__cleanup(ctxt, true);
+		}
 	}
-	HASH_ITER(hh_sock, int_db.contexts_by_sock, ctxt, ctxt_tmp){
-		context__cleanup(&int_db, ctxt, true);
+	HASH_ITER(hh_sock, db.contexts_by_sock, ctxt, ctxt_tmp){
+		ctxt->is_persisted = false; /* prevent persistence removal */
+		context__cleanup(ctxt, true);
 	}
 #ifdef WITH_BRIDGE
-	for(i=0; i<int_db.bridge_count; i++){
-		if(int_db.bridges[i]){
-			context__cleanup(&int_db, int_db.bridges[i], true);
-		}
-	}
-	mosquitto__free(int_db.bridges);
+	bridge__db_cleanup();
 #endif
-	context__free_disused(&int_db);
+	context__free_disused();
+	keepalive__cleanup();
 
-	db__close(&int_db);
+#ifdef WITH_TLS
+	mosquitto__FREE(db.tls_keylog);
+#endif
+	db__close();
 
-	listeners__stop(&int_db, listensock, listensock_count);
-
-	mosquitto_security_module_cleanup(&int_db);
+	mosquitto_security_module_cleanup();
 
 	if(config.pid_file){
-		remove(config.pid_file);
+		(void)remove(config.pid_file);
 	}
 
 	log__close(&config);
-	config__cleanup(int_db.config);
+	config__cleanup(db.config);
 	net__broker_cleanup();
 
 	return rc;
@@ -587,6 +488,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	char *token;
 	char *saveptr = NULL;
 	int rc;
+
+	UNUSED(hInstance);
+	UNUSED(hPrevInstance);
+	UNUSED(nCmdShow);
 
 	argv = mosquitto__malloc(sizeof(char *)*1);
 	argv[0] = "mosquitto";
@@ -602,7 +507,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		token = strtok_r(NULL, " ", &saveptr);
 	}
 	rc = main(argc, argv);
-	mosquitto__free(argv);
+	mosquitto__FREE(argv);
 	return rc;
 }
 #endif

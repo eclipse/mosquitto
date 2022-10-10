@@ -19,12 +19,14 @@ def do_test(publish_packet, reason_code, error_string):
 
     rc = 1
 
-    keepalive = 10
-    connect_packet = mosq_test.gen_connect("test", proto_ver=5, keepalive=keepalive)
+    connect_packet = mosq_test.gen_connect("13-malformed-publish-v5", proto_ver=5)
 
-    connack_props = mqtt5_props.gen_byte_prop(mqtt5_props.PROP_MAXIMUM_QOS, 1)
+    connack_props = mqtt5_props.gen_uint16_prop(mqtt5_props.PROP_TOPIC_ALIAS_MAXIMUM, 10)
     connack_props += mqtt5_props.gen_byte_prop(mqtt5_props.PROP_RETAIN_AVAILABLE, 0)
-    connack_packet = mosq_test.gen_connack(rc=0, proto_ver=5, properties=connack_props)
+    connack_props += mqtt5_props.gen_uint16_prop(mqtt5_props.PROP_RECEIVE_MAXIMUM, 20)
+    connack_props += mqtt5_props.gen_byte_prop(mqtt5_props.PROP_MAXIMUM_QOS, 1)
+
+    connack_packet = mosq_test.gen_connack(rc=0, proto_ver=5, properties=connack_props, property_helper=False)
 
     mid = 0
     disconnect_packet = mosq_test.gen_disconnect(proto_ver=5, reason_code=reason_code)
@@ -59,7 +61,7 @@ try:
     # Incorrect property
     props = mqtt5_props.gen_uint32_prop(mqtt5_props.PROP_SESSION_EXPIRY_INTERVAL, 0)
     publish_packet = mosq_test.gen_publish(topic="test/topic", qos=1, mid=1, proto_ver=5, properties=props)
-    do_test(publish_packet, mqtt5_rc.MQTT_RC_MALFORMED_PACKET, "Incorrect property")
+    do_test(publish_packet, mqtt5_rc.MQTT_RC_PROTOCOL_ERROR, "Incorrect property")
 
     # Truncated packet, remaining length only
     publish_packet = struct.pack("!BB", 48, 0)
@@ -83,12 +85,14 @@ try:
 
     # Bad topic
     publish_packet = mosq_test.gen_publish(topic="#/test/topic", qos=1, mid=1, proto_ver=5)
-    do_test(publish_packet, mqtt5_rc.MQTT_RC_PROTOCOL_ERROR, "Bad topic")
+    do_test(publish_packet, mqtt5_rc.MQTT_RC_MALFORMED_PACKET, "Bad topic")
 except mosq_test.TestError:
     pass
 finally:
     broker.terminate()
-    broker.wait()
+    if mosq_test.wait_for_subprocess(broker):
+        print("broker not terminated")
+        if rc == 0: rc=1
     (stdo, stde) = broker.communicate()
     os.remove(conf_file)
     if rc:

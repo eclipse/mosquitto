@@ -24,6 +24,7 @@
 			</group>
 			<arg>-p <replaceable>port number</replaceable></arg>
 			<arg>-v</arg>
+			<arg>--tls-keylog <replaceable>file</replaceable></arg>
 		</cmdsynopsis>
 	</refsynopsisdiv>
 
@@ -39,11 +40,12 @@
 				<term><option>-c</option></term>
 				<term><option>--config-file</option></term>
 				<listitem>
-                    <para>
+					<para>
 						Load configuration from a file. If not given, then the broker will listen on port 1883 bound to the loopback interface,
-						and the default values as described in <citerefentry><refentrytitle>mosquitto.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>
-                        are used.
-                    </para>
+						and the default values as described in
+						<citerefentry><refentrytitle><link xlink:href="mosquitto-conf-5.html">mosquitto.conf</link></refentrytitle><manvolnum>5</manvolnum></citerefentry>
+						are used.
+					</para>
 					<important><para>See the <option>-p</option> option for a description of changes in behaviour from 1.6.x to 2.0.</para></important>
 				</listitem>
 			</varlistentry>
@@ -67,6 +69,23 @@
 				</listitem>
 			</varlistentry>
 			<varlistentry>
+				<term><option>--tls-keylog</option> <replaceable>file</replaceable></term>
+				<listitem>
+					<para>
+						Log TLS connection information to <replaceable>file</replaceable>.
+						This option allows tools such as <command>tcpdump</command> and
+						<command>wireshark</command> to decrypt TLS traffic and inspect the
+						MQTT traffic. In Wireshark this can be done by setting the
+						<option>(Pre)-Master-Secret log filename</option> option for the
+						<option>Transport Layer Security</option> protocol.
+					</para>
+					<para>
+						This option should be used for debugging only, it must
+						not be used on production servers.
+					</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
 				<term><option>-v</option></term>
 				<term><option>--verbose</option></term>
 				<listitem>
@@ -83,11 +102,247 @@
 		<title>Configuration</title>
 		<para>The broker can be configured using a configuration file as
 			described in
-			<citerefentry><refentrytitle>mosquitto.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>
+			<citerefentry><refentrytitle><link xlink:href="mosquitto-conf-5.html">mosquitto.conf</link></refentrytitle><manvolnum>5</manvolnum></citerefentry>
 			and this is the main point of information for mosquitto.
-			The files required for SSL/TLS support are described in 
-			<citerefentry><refentrytitle>mosquitto-tls</refentrytitle><manvolnum>7</manvolnum></citerefentry>.
+			The files required for SSL/TLS support are described in
+			<citerefentry><refentrytitle><link xlink:href="mosquitto-tls-7.html">mosquitto-tls</link></refentrytitle><manvolnum>7</manvolnum></citerefentry>.
 		</para>
+	</refsect1>
+
+	<refsect1>
+		<title>Platform limitations</title>
+		<para>
+			Some versions of Windows have limitations on the number of
+			concurrent connections due to the Windows API being used. In
+			modern versions of Windows, e.g. Windows 10 or Windows Server
+			2019, this is approximately 8192 connections. In earlier
+			versions of Windows, this limit is 2048 connections.
+		</para>
+	</refsect1>
+
+	<refsect1>
+		<title>MQTT Support</title>
+		<para>Mosquitto supports MQTT v5.0, v3.1.1, and v3.1.</para>
+
+		<refsect2>
+			<title>MQTT v5.0</title>
+			<para>
+				Mosquitto provides full MQTT v5.0 support, but some features
+				are not used directly. The following sections describe the new
+				features and explain where Mosquitto does not make use of a feature.
+			</para>
+
+			<refsect3>
+				<title>Features</title>
+				<variablelist>
+					<varlistentry>
+						<term><option>Enhanced authentication</option></term>
+						<listitem><para>
+							Basic MQTT authentication uses username/password
+							checks. Enhanced authentication allows different
+							authentication schemes to be integrated into MQTT,
+							and even those schemes with multiple step processes.
+							Clients request a particular type of authentication
+							and if the broker is configured for that scheme the
+							authentication continues. Mosquitto supports
+							enhanced authentication through plugins.
+						</para></listitem>
+					</varlistentry>
+					<varlistentry>
+						<term><option>Error handling</option></term>
+						<listitem><para>
+							Most MQTT packets now have the concept of a
+							<option>reason code</option>
+							which indicates success or failure, and what the failure
+							was. Mosquitto provides full support for reason codes,
+							but does not make use of the
+							<option>reason string</option>
+							feature which can be used to provide a human readable
+							error string to explain the reason code.
+						</para></listitem>
+					</varlistentry>
+					<varlistentry>
+						<term><option>Flow control</option></term>
+						<listitem><para>
+							The number of "in flight" messages for QoS 1 and QoS
+							2 can be controlled by both the client and the
+							broker.
+						</para></listitem>
+					</varlistentry>
+					<varlistentry>
+						<term><option>Request / response</option></term>
+						<listitem><para>
+							MQTT v5.0 adds a request/response pattern that
+							allows a client to publish a message and instruct
+							the subscribers of that message where to publish a
+							response.
+						</para></listitem>
+					</varlistentry>
+					<varlistentry>
+						<term><option>Server redirection</option></term>
+						<listitem><para>
+							Server redirection is the concept of telling a
+							client to connect to a different MQTT broker, either
+							on CONNECT or with a broker initiated DISCONNECT.
+							Mosquitto does not currently make use of this
+							feature.
+						</para></listitem>
+					</varlistentry>
+					<varlistentry>
+						<term><option>Shared subscriptions</option></term>
+						<listitem><para>
+							When multiple clients subscribe to the same shared
+							subscription, only one client out of the group will
+							receive each message which allows for distributing
+							work loads.
+						</para></listitem>
+					</varlistentry>
+				</variablelist>
+			</refsect3>
+
+			<refsect3>
+				<title>Packet properties</title>
+				<para>
+					MQTT v5.0 allows properties to be added to packets to
+					control certain behaviour. Unless noted, Mosquitto
+					support the properties listed below.
+				</para>
+
+				<variablelist>
+					<varlistentry>
+						<term><option>CONNECT</option></term>
+						<listitem>
+							<itemizedlist>
+								<listitem><para>Authentication data</para></listitem>
+								<listitem><para>Authentication method</para></listitem>
+								<listitem><para>Maximum packet size</para></listitem>
+								<listitem><para>Receive maximum</para></listitem>
+								<listitem><para>Request problem information - supported but not used</para></listitem>
+								<listitem><para>Request response information - supported but not used</para></listitem>
+								<listitem><para>Session expiry interval</para></listitem>
+								<listitem><para>Topic alias maximum</para></listitem>
+								<listitem><para>User property</para></listitem>
+							</itemizedlist>
+						</listitem>
+					</varlistentry>
+					<varlistentry>
+						<term><option>Last will and testament</option></term>
+						<listitem>
+							<itemizedlist>
+								<listitem><para>Content type</para></listitem>
+								<listitem><para>Correlation data</para></listitem>
+								<listitem><para>Message expiry interval</para></listitem>
+								<listitem><para>Payload format indicator</para></listitem>
+								<listitem><para>Response topic</para></listitem>
+								<listitem><para>User property</para></listitem>
+								<listitem><para>Will delay interval</para></listitem>
+							</itemizedlist>
+						</listitem>
+					</varlistentry>
+					<varlistentry>
+						<term><option>CONNACK</option></term>
+						<listitem>
+							<itemizedlist>
+								<listitem><para>Assigned client identifier</para></listitem>
+								<listitem><para>Authentication data</para></listitem>
+								<listitem><para>Authentication method</para></listitem>
+								<listitem><para>Maximum packet size</para></listitem>
+								<listitem><para>Maximum qos</para></listitem>
+								<listitem><para>Reason string - supported but not used</para></listitem>
+								<listitem><para>Receive maximum</para></listitem>
+								<listitem><para>Response information - supported but not used</para></listitem>
+								<listitem><para>Retain available</para></listitem>
+								<listitem><para>Server keep alive</para></listitem>
+								<listitem><para>Server reference - supported but not used</para></listitem>
+								<listitem><para>Session expiry interval</para></listitem>
+								<listitem><para>Shared subscription available</para></listitem>
+								<listitem><para>Subscription identifiers available</para></listitem>
+								<listitem><para>Topic alias maximum</para></listitem>
+								<listitem><para>User property</para></listitem>
+								<listitem><para>Wildcard subscription available</para></listitem>
+							</itemizedlist>
+						</listitem>
+					</varlistentry>
+					<varlistentry>
+						<term><option>PUBLISH</option></term>
+						<listitem>
+							<itemizedlist>
+								<listitem><para>Content type</para></listitem>
+								<listitem><para>Correlation data</para></listitem>
+								<listitem><para>Message expiry interval</para></listitem>
+								<listitem><para>Payload format indicator</para></listitem>
+								<listitem><para>Response topic</para></listitem>
+								<listitem><para>Subscription identifier</para></listitem>
+								<listitem><para>Topic alias</para></listitem>
+								<listitem><para>User property</para></listitem>
+							</itemizedlist>
+						</listitem>
+					</varlistentry>
+					<varlistentry>
+						<term><option>PUBACK / PUBREC / PUBREL / PUBCOMP / SUBACK / SUBSCRIBE / SUBACK</option></term>
+						<listitem>
+							<itemizedlist>
+								<listitem><para>Reason string - supported but not used</para></listitem>
+								<listitem><para>User property</para></listitem>
+							</itemizedlist>
+						</listitem>
+					</varlistentry>
+					<varlistentry>
+						<term><option>SUBSCRIBE</option></term>
+						<listitem>
+							<itemizedlist>
+								<listitem><para>Subscription identifier</para></listitem>
+								<listitem><para>User property</para></listitem>
+							</itemizedlist>
+						</listitem>
+					</varlistentry>
+					<varlistentry>
+						<term><option>DISCONNECT</option></term>
+						<listitem>
+							<itemizedlist>
+								<listitem><para>Reason string - supported but not used</para></listitem>
+								<listitem><para>Server reference - supported but not used</para></listitem>
+								<listitem><para>Session expiry interval</para></listitem>
+								<listitem><para>User property</para></listitem>
+							</itemizedlist>
+						</listitem>
+					</varlistentry>
+					<varlistentry>
+						<term><option>AUTH</option></term>
+						<listitem>
+							<itemizedlist>
+								<listitem><para>Authentication method</para></listitem>
+								<listitem><para>Authentication data</para></listitem>
+								<listitem><para>Reason string - supported but not used</para></listitem>
+								<listitem><para>User property</para></listitem>
+							</itemizedlist>
+						</listitem>
+					</varlistentry>
+				</variablelist>
+			</refsect3>
+		</refsect2>
+
+		<refsect2>
+			<title>MQTT v3.1.1</title>
+			<para>Mosquitto provides full MQTT v3.1.1 support.</para>
+		</refsect2>
+
+		<refsect2>
+			<title>MQTT v3.1</title>
+			<para>Mosquitto provides full MQTT v3.1 support.</para>
+		</refsect2>
+
+		<refsect2>
+			<title>MQTT v3</title>
+			<para>
+				MQTT v3 is an obsolete version of the protocol that does not
+				support username/password authentication and used the
+				<option>clean start</option> flag in the CONNECT packet which
+				applied only to the start of a session. An MQTT v3 client
+				will be able to successfully connect to a Mosquitto instance
+				that does not require authentication.
+			</para>
+		</refsect2>
 	</refsect1>
 
 	<refsect1>
@@ -302,13 +557,35 @@
 				</listitem>
 			</varlistentry>
 			<varlistentry>
+				<term><option>$SYS/broker/packet/out/count</option></term>
+				<listitem>
+					<para>
+						The current number of packets queued for delivery across
+						all clients. A large and increasing value here may
+						indicate messages are being sent faster than the network
+						can handle.
+					</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>$SYS/broker/packet/out/bytes</option></term>
+				<listitem>
+					<para>
+						The current number of bytes in packets queued for
+						delivery across all clients. A large and increasing
+						value here may indicate messages are being sent faster
+						than the network can handle.
+					</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
 				<term><option>$SYS/broker/publish/messages/dropped</option></term>
 				<listitem>
 					<para>The total number of publish messages that have been
 						dropped due to inflight/queuing limits. See the
 						max_inflight_messages and max_queued_messages options
 						in
-						<citerefentry><refentrytitle>mosquitto.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>
+						<citerefentry><refentrytitle><link xlink:href="mosquitto-conf-5.html">mosquitto.conf</link></refentrytitle><manvolnum>5</manvolnum></citerefentry>
 						for more information.</para>
 				</listitem>
 			</varlistentry>
@@ -330,21 +607,21 @@
 					<para>The total number of retained messages active on the broker.</para>
 				</listitem>
 			</varlistentry>
-                        <varlistentry>
-                            <term><option>$SYS/broker/store/messages/count</option></term>
-                            <term><option>$SYS/broker/messages/stored</option> (deprecated)</term>
+			<varlistentry>
+				<term><option>$SYS/broker/store/messages/count</option></term>
+				<term><option>$SYS/broker/messages/stored</option> (deprecated)</term>
 				<listitem>
 					<para>The number of messages currently held in the message
 						store. This includes retained messages and messages
 						queued for durable clients.</para>
 				</listitem>
 			</varlistentry>
-                        <varlistentry>
-                            <term><option>$SYS/broker/store/messages/bytes</option></term>
+			<varlistentry>
+				<term><option>$SYS/broker/store/messages/bytes</option></term>
 				<listitem>
 					<para>The number of bytes currently held by message payloads
-                                            in the message store. This includes retained messages
-                                            and messages queued for durable clients.</para>
+					in the message store. This includes retained messages
+					and messages queued for durable clients.</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
@@ -415,11 +692,16 @@
 		local to each
 		broker.</para>
 		<para>For information on configuring bridges, see
-		<citerefentry><refentrytitle>mosquitto.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>.</para>
+		<citerefentry><refentrytitle><link xlink:href="mosquitto-conf-5.html">mosquitto.conf</link></refentrytitle><manvolnum>5</manvolnum></citerefentry>.</para>
 	</refsect1>
 
 	<refsect1>
 		<title>Signals</title>
+		<para>
+			On POSIX systems Mosquitto can receive signals and act on them as
+			described below. To send signals, use e.g.
+			<command>kill -HUP &lt;process id of mosquitto&gt;</command>
+		</para>
 		<variablelist>
 			<varlistentry>
 				<term>SIGHUP</term>
@@ -429,8 +711,22 @@
 					the <option>-c</option> argument was provided when
 					mosquitto was started. Not all configuration parameters can
 					be reloaded without restarting. See
-					<citerefentry><refentrytitle>mosquitto.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>
+					<citerefentry><refentrytitle><link xlink:href="mosquitto-conf-5.html">mosquitto.conf</link></refentrytitle><manvolnum>5</manvolnum></citerefentry>
 					for details.</para>
+					<para>If TLS certificates are in use, then mosquitto will
+					also reload certificate on receiving a SIGHUP.</para>
+					<para>
+						The logs will also be closed and reopened.
+					</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term>SIGRTMIN</term>
+				<listitem>
+					<para>
+						Upon receiving the SIGRTMIN signal, mosquitto will
+						close and reopen the logs to support log rotation.
+					</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
@@ -459,7 +755,7 @@
 			<varlistentry>
 				<term><filename>/etc/mosquitto/mosquitto.conf</filename></term>
 				<listitem>
-					<para>Configuration file. See <citerefentry><refentrytitle>mosquitto.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>.</para>
+					<para>Configuration file. See <citerefentry><refentrytitle><link xlink:href="mosquitto-conf-5.html">mosquitto.conf</link></refentrytitle><manvolnum>5</manvolnum></citerefentry>.</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
@@ -472,7 +768,7 @@
 				<term><filename>/etc/hosts.allow</filename></term>
 				<term><filename>/etc/hosts.deny</filename></term>
 				<listitem>
-					<para>Host access control via tcp-wrappers as described in <citerefentry><refentrytitle>hosts_access</refentrytitle><manvolnum>5</manvolnum></citerefentry>.</para>
+					<para>Host access control via tcp-wrappers as described in <citerefentry><refentrytitle><link xlink:href="https://linux.die.net/man/5/hosts_access">hosts_access</link></refentrytitle><manvolnum>5</manvolnum></citerefentry>.</para>
 				</listitem>
 			</varlistentry>
 		</variablelist>
@@ -509,6 +805,12 @@
 				<citerefentry>
 					<refentrytitle><link xlink:href="https://linux.die.net/man/5/hosts_access">hosts_access</link></refentrytitle>
 					<manvolnum>5</manvolnum>
+				</citerefentry>
+			</member>
+			<member>
+				<citerefentry>
+					<refentrytitle><link xlink:href="mosquitto_ctrl-1.html">mosquitto_ctrl</link></refentrytitle>
+					<manvolnum>1</manvolnum>
 				</citerefentry>
 			</member>
 			<member>

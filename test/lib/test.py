@@ -5,6 +5,10 @@ import ptest
 
 tests = [
     (1, ['./01-con-discon-success.py', 'c/01-con-discon-success.test']),
+    (1, ['./01-con-discon-success-v5.py', 'c/01-con-discon-success-v5.test']),
+    (1, ['./01-con-discon-will.py', 'c/01-con-discon-will.test']),
+    (1, ['./01-con-discon-will-v5.py', 'c/01-con-discon-will-v5.test']),
+    (1, ['./01-con-discon-will-clear.py', 'c/01-con-discon-will-clear.test']),
     (1, ['./01-keepalive-pingreq.py', 'c/01-keepalive-pingreq.test']),
     (1, ['./01-no-clean-session.py', 'c/01-no-clean-session.test']),
     (1, ['./01-server-keepalive-pingreq.py', 'c/01-server-keepalive-pingreq.test']),
@@ -48,6 +52,8 @@ tests = [
     (1, ['./08-ssl-bad-cacert.py', 'c/08-ssl-bad-cacert.test']),
     (1, ['./08-ssl-connect-cert-auth-enc.py', 'c/08-ssl-connect-cert-auth-enc.test']),
     (1, ['./08-ssl-connect-cert-auth.py', 'c/08-ssl-connect-cert-auth.test']),
+    (1, ['./08-ssl-connect-cert-auth.py', 'c/08-ssl-connect-cert-auth-custom-ssl-ctx.test']),
+    (1, ['./08-ssl-connect-cert-auth.py', 'c/08-ssl-connect-cert-auth-custom-ssl-ctx-default.test']),
     (1, ['./08-ssl-connect-no-auth.py', 'c/08-ssl-connect-no-auth.test']),
 
     (1, ['./09-util-topic-tokenise.py', 'c/09-util-topic-tokenise.test']),

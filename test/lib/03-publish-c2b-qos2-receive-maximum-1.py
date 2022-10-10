@@ -12,7 +12,7 @@ keepalive = 60
 connect_packet = mosq_test.gen_connect("publish-qos2-test", keepalive=keepalive, proto_ver=5)
 
 props = mqtt5_props.gen_uint16_prop(mqtt5_props.PROP_RECEIVE_MAXIMUM, 1)
-connack_packet = mosq_test.gen_connack(rc=0, proto_ver=5, properties=props)
+connack_packet = mosq_test.gen_connack(rc=0, proto_ver=5, properties=props, property_helper=False)
 
 disconnect_packet = mosq_test.gen_disconnect(proto_ver=5)
 
@@ -56,12 +56,12 @@ sock.listen(5)
 
 client_args = sys.argv[1:]
 env = dict(os.environ)
-env['LD_LIBRARY_PATH'] = '../../lib:../../lib/cpp'
+env['LD_LIBRARY_PATH'] = mosq_test.get_build_root() + '/lib:' + mosq_test.get_build_root() + '/lib/cpp'
 try:
     pp = env['PYTHONPATH']
 except KeyError:
     pp = ''
-env['PYTHONPATH'] = '../../lib/python:'+pp
+env['PYTHONPATH'] = mosq_test.get_build_root() + '/lib/python:'+pp
 client = mosq_test.start_client(filename=sys.argv[1].replace('/', '-'), cmd=client_args, env=env, port=port)
 
 
@@ -97,12 +97,9 @@ finally:
             break
         time.sleep(0.1)
 
-    try:
-        client.terminate()
-    except OSError:
-        pass
-
-    client.wait()
+    if mosq_test.wait_for_subprocess(client):
+        print("test client not finished")
+        rc=1
     sock.close()
     if client.returncode != 0:
         exit(1)

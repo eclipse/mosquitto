@@ -9,7 +9,7 @@
 .. type: text
 -->
 
-Mosquitto 1.6.12 has been released, this is a bugfix release.
+Mosquitto 1.6.12 and 1.5.10 have been released.
 
 # Security
 - In some circumstances, Mosquitto could leak memory when handling PUBLISH
@@ -20,6 +20,8 @@ Mosquitto 1.6.12 has been released, this is a bugfix release.
   that the incoming queue at the broker has filled up and hence messages are
   being dropped. This is more likely to have an effect where
   `max_queued_messages` is a small value. This has now been fixed. Closes [#1793].
+
+The following fixes apply to 1.6.12 only.
 
 # Broker
 - Build warning fixes when building with `WITH_BRIDGE=no` and `WITH_TLS=no`.

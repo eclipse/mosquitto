@@ -141,3 +141,11 @@ MOSQ_1.7 {
 		mosquitto_property_next;
 		mosquitto_ssl_get;
 } MOSQ_1.6;
+
+MOSQ_2.1 {
+	global:
+		mosquitto_pre_connect_callback_set;
+		mosquitto_topic_matches_sub_with_pattern;
+		mosquitto_sub_matches_acl;
+		mosquitto_sub_matches_acl_with_pattern;
+} MOSQ_1.7;

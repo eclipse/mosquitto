@@ -6,8 +6,12 @@
 
 #ifdef __APPLE__
 #  define __DARWIN_C_SOURCE
-#elif defined(__FreeBSD__) || defined(__NetBSD__) || defined(__SYMBIAN32__) || defined(__QNX__)
+#elif defined(__FreeBSD__) || defined(__NetBSD__) || defined(__SYMBIAN32__)
 #  define _XOPEN_SOURCE 700
+#  define __BSD_VISIBLE 1
+#  define HAVE_NETINET_IN_H
+#elif defined(__QNX__)
+#  define _XOPEN_SOURCE 600
 #  define __BSD_VISIBLE 1
 #  define HAVE_NETINET_IN_H
 #else
@@ -29,14 +33,27 @@
 #if defined(_MSC_VER) && _MSC_VER < 1900
 #  define snprintf sprintf_s
 #  define EPROTO ECONNABORTED
+#  ifndef ECONNABORTED
+#    define ECONNABORTED WSAECONNABORTED
+#  endif
+#  ifndef ENOTCONN
+#    define ENOTCONN WSAENOTCONN
+#  endif
+#  ifndef ECONNREFUSED
+#    define ECONNREFUSED WSAECONNREFUSED
+#  endif
 #endif
 
 #ifdef WIN32
-#  ifndef strcasecmp
-#    define strcasecmp strcmpi
-#  endif
+#  define strcasecmp _stricmp
+#  define strncasecmp _strnicmp
 #  define strtok_r strtok_s
 #  define strerror_r(e, b, l) strerror_s(b, l, e)
+
+#  ifdef _MSC_VER
+#    include <basetsd.h>
+typedef SSIZE_T ssize_t;
+#  endif
 #endif
 
 
@@ -65,8 +82,26 @@
 #define UNUSED(A) (void)(A)
 
 /* Android Bionic libpthread implementation doesn't have pthread_cancel */
-#ifndef ANDROID
+#if !defined(ANDROID) && !defined(WIN32)
 #  define HAVE_PTHREAD_CANCEL
+#endif
+
+#ifdef WITH_CJSON
+#  include <cjson/cJSON.h>
+#  define CJSON_VERSION_FULL (CJSON_VERSION_MAJOR*1000000+CJSON_VERSION_MINOR*1000+CJSON_VERSION_PATCH)
+#endif
+
+#define WS_IS_LWS 1
+#define WS_IS_BUILTIN 2
+
+#ifdef WITH_BROKER
+#  ifdef __GNUC__
+#    define BROKER_EXPORT __attribute__((__used__))
+#  else
+#    define BROKER_EXPORT
+#  endif
+#else
+#  define BROKER_EXPORT
 #endif
 
 #endif

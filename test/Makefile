@@ -1,4 +1,5 @@
-include ../config.mk
+R=..
+include ${R}/config.mk
 
 .PHONY: all check test ptest clean
 
@@ -14,13 +15,13 @@ test : utest
 ptest : utest
 	$(MAKE) -C broker ptest
 	$(MAKE) -C lib ptest
-	$(MAKE) -C client test
+	$(MAKE) -C client ptest
 
 utest :
 	$(MAKE) -C unit test
 
 reallyclean : clean
-clean : 
+clean :
 	$(MAKE) -C lib clean
 	$(MAKE) -C broker clean
 	$(MAKE) -C unit clean

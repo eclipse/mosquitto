@@ -1,0 +1,476 @@
+[
+	{
+		"group": "v3.1.1 SUBSCRIBE",
+		"tests": [
+			{ "name": "82 [MQTT-3.1.0-1]", "ver":4, "connect":false, "msgs": [{"type":"send", "payload":"82 06 1234 0001 70 00"}]},
+			{ "name": "80", "ver":4, "msgs": [{"type":"send", "payload":"80061234 0001 70 00"}]},
+			{ "name": "83 [MQTT-3.8.1-1]", "ver":4, "msgs": [{"type":"send", "payload":"83 06 1234 0001 70 00"}]},
+			{ "name": "84 [MQTT-3.8.1-1]", "ver":4, "msgs": [{"type":"send", "payload":"84 06 1234 0001 70 00"}]},
+			{ "name": "86 [MQTT-3.8.1-1]", "ver":4, "msgs": [{"type":"send", "payload":"86 06 1234 0001 70 00"}]},
+			{ "name": "8A [MQTT-3.8.1-1]", "ver":4, "msgs": [{"type":"send", "payload":"8A 06 1234 0001 70 00"}]},
+			{ "name": "82 QoS 3 [MQTT-3-8.3-4]", "ver":4, "msgs": [{"type":"send", "payload":"82 06 1234 0001 70 03"}]},
+			{ "name": "82 QoS 0x04 [MQTT-3-8.3-4]", "ver":4, "msgs": [{"type":"send", "payload":"82 06 1234 0001 70 04"}]},
+			{ "name": "82 QoS 0x08 [MQTT-3-8.3-4]", "ver":4, "msgs": [{"type":"send", "payload":"82 06 1234 0001 70 08"}]},
+			{ "name": "82 QoS 0x10 [MQTT-3-8.3-4]", "ver":4, "msgs": [{"type":"send", "payload":"82 06 1234 0001 70 10"}]},
+			{ "name": "82 QoS 0x20 [MQTT-3-8.3-4]", "ver":4, "msgs": [{"type":"send", "payload":"82 06 1234 0001 70 20"}]},
+			{ "name": "82 QoS 0x40 [MQTT-3-8.3-4]", "ver":4, "msgs": [{"type":"send", "payload":"82 06 1234 0001 70 40"}]},
+			{ "name": "82 QoS 0x80 [MQTT-3-8.3-4]", "ver":4, "msgs": [{"type":"send", "payload":"82 06 1234 0001 70 80"}]},
+			{ "name": "82 topic with 0x0000", "ver":4, "msgs": [{"type":"send", "payload":"82 0A 1234 0005 746F700000 00"} ] },
+			{ "name": "82 topic with U+D800", "ver":4, "msgs": [{"type":"send", "payload":"82 0A 1234 0005 746FEDA080 00"} ] },
+			{ "name": "82 topic with U+0001", "ver":4, "msgs": [{"type":"send", "payload":"82 0A 1234 0005 746F700170 00"} ] },
+			{ "name": "82 topic with U+001F", "ver":4, "msgs": [{"type":"send", "payload":"82 0A 1234 0005 746F701F70 00"} ] },
+			{ "name": "82 topic with U+007F", "ver":4, "msgs": [{"type":"send", "payload":"82 0A 1234 0005 746F707F70 00"} ] },
+			{ "name": "82 topic with U+009F", "ver":4, "msgs": [{"type":"send", "payload":"82 0A 1234 0005 746FC29F70 00"} ] },
+			{ "name": "82 topic with U+FFFF", "ver":4, "msgs": [{"type":"send", "payload":"82 0A 1234 0005 746FEDBFBF 00"} ] },
+			{ "name": "82 long", "ver":4, "msgs": [{"type":"send", "payload":"82 07 1234 0001 70 00 00"}]},
+			{ "name": "82 short 5 [MQTT-3.8.3-3]", "ver":4, "msgs": [{"type":"send", "payload":"82 05 1234 0001 70"}]},
+			{ "name": "82 short 4", "ver":4, "msgs": [{"type":"send", "payload":"82 04 1234 0000"}]},
+			{ "name": "82 short 3", "ver":4, "msgs": [{"type":"send", "payload":"82 03 1234 00"}]},
+			{ "name": "82 short 2", "ver":4, "msgs": [{"type":"send", "payload":"82 02 1234"}]},
+			{ "name": "82 short 1", "ver":4, "msgs": [{"type":"send", "payload":"82 01 12"}]},
+			{ "name": "82 short 0", "ver":4, "msgs": [{"type":"send", "payload":"82 00"}]},
+			{ "name": "82 single topic len 0", "ver":4, "msgs": [{"type":"send", "payload":"82 05 1234 0000 00"}]},
+			{ "name": "82 multiple topic 1 len 0", "ver":4, "msgs": [{"type":"send", "payload":"82 09 1234 0000 00 0001 71 00"}]},
+			{ "name": "82 multiple topic 2 len 0", "ver":4, "msgs": [{"type":"send", "payload":"82 09 1234 0001 71 00 0000 00"}]},
+			{ "name": "82 multiple topic 1,2 len 0", "ver":4, "msgs": [{"type":"send", "payload":"82 08 1234 0000 00 0000 00"}]},
+			{ "name": "82 single ok QoS 0 [MQTT-3.8.4-1]", "ver":4, "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 06 1234 0001 70 00"},
+				{"type":"recv", "payload":"90 03 1234 00"}
+			]},
+			{ "name": "82 single ok QoS 1 [MQTT-3.8.4-1]", "ver":4, "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 06 1234 0001 70 01"},
+				{"type":"recv", "payload":"90 03 1234 01"}
+			]},
+			{ "name": "82 single ok QoS 2 [MQTT-3.8.4-1]", "ver":4, "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 06 1234 0001 70 02"},
+				{"type":"recv", "payload":"90 03 1234 02"}
+			]},
+			{ "name": "82 multiple ok [MQTT-3.8.4-4]", "ver":4, "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 0A 1234 0001 70 00 0001 71 00"},
+				{"type":"recv", "payload":"90 04 1234 00 00"}
+			]}
+		]
+	},
+	{
+		"group": "v5.0   SUBSCRIBE",
+		"tests": [
+			{ "name": "82 [MQTT-3.1.0-1]", "ver":5, "connect":false, "msgs": [{"type":"send", "payload":"82 07 1234 00 0001 70 00"}]},
+			{ "name": "82 single ok QoS 0 [MQTT-3.8.4-1]", "ver":5, "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 07 1234 00 0001 70 00"},
+				{"type":"recv", "payload":"90 04 1234 00 00"}
+			]},
+			{ "name": "82 single ok QoS 1 [MQTT-3.8.4-1]", "ver":5, "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 07 1234 00 0001 70 01"},
+				{"type":"recv", "payload":"90 04 1234 0001"}
+			]},
+			{ "name": "82 single ok QoS 2 [MQTT-3.8.4-1]", "ver":5, "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 07 1234 00 0001 70 02"},
+				{"type":"recv", "payload":"90 04 1234 00 02"}
+			]},
+			{ "name": "80", "ver":5, "msgs": [
+				{"type":"send", "payload":"8007123400 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "83 [MQTT-3.8.1-1]", "ver":5, "msgs": [
+				{"type":"send", "payload":"8307123400 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "84 [MQTT-3.8.1-1]", "ver":5, "msgs": [
+				{"type":"send", "payload":"8407123400 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "86 [MQTT-3.8.1-1]", "ver":5, "msgs": [
+				{"type":"send", "payload":"8607123400 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "8A [MQTT-3.8.1-1]", "ver":5, "msgs": [
+				{"type":"send", "payload":"8A 07 1234 00 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 QoS 3 [MQTT-3-8.3-4]", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 07 1234 00 0001 70 03"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 QoS 0 no local 0x04", "ver":5, "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 07 1234 00 0001 70 04"},
+				{"type":"recv", "payload":"90 04 1234 00 00"}
+			]},
+			{ "name": "82 QoS 0 retain as published 0x08", "ver":5, "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 07 1234 00 0001 70 08"},
+				{"type":"recv", "payload":"90 04 1234 00 00"}
+			]},
+			{ "name": "82 QoS 0 retain handling=1 0x10", "ver":5, "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 07 1234 00 0001 70 10"},
+				{"type":"recv", "payload":"90 04 1234 00 00"}
+			]},
+			{ "name": "82 QoS 0 retain handling=2 0x20", "ver":5, "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 07 1234 00 0001 70 20"},
+				{"type":"recv", "payload":"90 04 1234 00 00"}
+			]},
+			{ "name": "82 QoS 0 retain handling=3 0x30 [MQTT-3-8.3-4]", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 07 1234 00 0001 70 30"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 QoS 0x40 [MQTT-3-8.3-5]", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 07 1234 00 0001 70 40"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 QoS 0x80 [MQTT-3-8.3-5]", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 07 1234 00 0001 70 80"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 topic with 0x0000", "ver":5, "msgs": [
+				{"type":"send", "payload":"82121234000005746F7000007061796C6F616400"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 topic with U+D800", "ver":5, "msgs": [
+				{"type":"send", "payload":"82121234000005746FEDA0807061796C6F616400"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 topic with U+0001", "ver":5, "msgs": [
+				{"type":"send", "payload":"82121234000005746F7001707061796C6F616400"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 topic with U+001F", "ver":5, "msgs": [
+				{"type":"send", "payload":"82121234000005746F701F707061796C6F616400"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 topic with U+007F", "ver":5, "msgs": [
+				{"type":"send", "payload":"82121234000005746F707F707061796C6F616400"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 topic with U+009F", "ver":5, "msgs": [
+				{"type":"send", "payload":"82121234000005746FC29F707061796C6F616400"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 topic with U+FFFF", "ver":5, "msgs": [
+				{"type":"send", "payload":"82121234000005746FEDBFBF7061796C6F616400"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 long", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 08 1234 00 0001 70 00 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 short 5 [MQTT-3.8.3-3]", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 06 1234 00 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 short 5", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 05 1234 00 0000"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 short 4", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 04 1234 00 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 short 3", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 03 1234 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 short 2", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 02 1234"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 short 1", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 01 12"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 short 0", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 single topic len 0", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 06 1234 00 0000 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 multiple topic 1 len 0", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 0A 1234 00 0000 00 0001 71 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 multiple topic 2 len 0", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 0A 1234 00 0001 71 00 0000 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 multiple topic 1,2 len 0", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 09 1234 00 0000 00 0000 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 single ok QoS 0 [MQTT-3.8.4-1]", "ver":5, "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 07 1234 00 0001 70 00"},
+				{"type":"recv", "payload":"90 04 1234 00 00"}
+			]},
+			{ "name": "82 single ok QoS 1 [MQTT-3.8.4-1]", "ver":5, "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 07 1234 00 0001 70 01"},
+				{"type":"recv", "payload":"90 04 1234 00 01"}
+			]},
+			{ "name": "82 single ok QoS 2 [MQTT-3.8.4-1]", "ver":5, "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 07 1234 00 0001 70 02"},
+				{"type":"recv", "payload":"90 04 1234 00 02"}
+			]},
+			{ "name": "82 multiple ok [MQTT-3.8.4-4]", "ver":5, "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 0B 1234 00 0001 70 00 0001 71 00"},
+				{"type":"recv", "payload":"90 05 1234 00 00 00"}
+			]}
+		]
+	},
+	{
+		"group": "v5.0   SUBSCRIBE ALLOWED PROPERTIES",
+		"tests": [
+			{ "name": "82 with user-property", "ver":5, "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 0E 0001 07 26000170000171 0001 70 00"},
+				{"type":"recv", "payload":"90 04 0001 00 00"}
+			]},
+			{ "name": "82 with 2*user-property", "ver":5, "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 15 0001 0E 26000170000171 26000170000171 0001 70 00"},
+				{"type":"recv", "payload":"90 04 0001 00 00"}
+			]},
+
+			{ "name": "82 with subscription-identifier=0 (variable byte integer)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 09 0001 02 0B00 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with subscription-identifier=1 (variable byte integer)", "ver":5, "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 09 0001 02 0B01 0001 70 00"},
+				{"type":"recv", "payload":"90 04 0001 00 00"}
+			]},
+			{ "name": "82 with 2*subscription-identifier=1 (variable byte integer)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 0B 0001 04 0B010B01 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 82"}
+			]},
+			{ "name": "82 with subscription-identifier=0x7F (variable byte integer)", "ver":5, "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 09 0001 02 0B7F 0001 70 00"},
+				{"type":"recv", "payload":"90 04 0001 00 00"}
+			]},
+			{ "name": "82 with subscription-identifier=0x8000 (variable byte integer)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 0A 0001 03 0B8000 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with subscription-identifier=0x8001 (variable byte integer)", "ver":5, "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 0A 0001 03 0B8001 0001 70 00"},
+				{"type":"recv", "payload":"90 04 0001 00 00"}
+			]},
+			{ "name": "82 with subscription-identifier=0xFF7F (variable byte integer)", "ver":5, "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 0A 0001 03 0BFF7F 0001 70 00"},
+				{"type":"recv", "payload":"90 04 0001 00 00"}
+			]},
+			{ "name": "82 with subscription-identifier=0x808001 (variable byte integer)", "ver":5, "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 0B 0001 04 0B808001 0001 70 00"},
+				{"type":"recv", "payload":"90 04 0001 00 00"}
+			]},
+			{ "name": "82 with subscription-identifier=0xFFFF7F (variable byte integer)", "ver":5, "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 0B 0001 04 0BFFFF7F 0001 70 00"},
+				{"type":"recv", "payload":"90 04 0001 00 00"}
+			]},
+			{ "name": "82 with subscription-identifier=0x80808001 (variable byte integer)", "ver":5, "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 0C 0001 05 0B80808001 0001 70 00"},
+				{"type":"recv", "payload":"90 04 0001 00 00"}
+			]},
+			{ "name": "82 with subscription-identifier=0xFFFFFF7F (variable byte integer)", "ver":5, "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 0C 0001 05 0BFFFFFF7F 0001 70 00"},
+				{"type":"recv", "payload":"90 04 0001 00 00"}
+			]},
+			{ "name": "82 with subscription-identifier=0x8080808001 (variable byte integer)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 0D 0001 06 0B8080808001 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]}
+		]
+	},
+	{
+		"group": "v5.0   SUBSCRIBE DISALLOWED PROPERTIES",
+		"tests": [
+			{ "name": "82 with payload-format-indicator (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 09 0001 02 0100 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with request-problem-information (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 09 0001 02 1700 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with maximum-qos (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 09 0001 02 2400 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with retain-available (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 09 0001 02 2500 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with wildcard-subscription-available (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 09 0001 02 2800 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with subscription-identifier-available (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 09 0001 02 2900 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with shared-subscription-available (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 09 0001 02 2A00 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+
+			{ "name": "82 with message-expiry-interval (four byte integer)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 0C 0001 05 0200000001 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with session-expiry-interval (four byte integer)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 0C 0001 05 1100000001 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with will-delay-interval (four byte integer)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 0C 0001 05 1800000001 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with maximum-packet-size (four byte integer)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 0C 0001 052700000001 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+
+			{ "name": "82 with content-type (UTF-8 string)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 0B 0001 04 03000170 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with response-topic (UTF-8 string)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 0B 0001 04 08000170 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with assigned-client-identifier (UTF-8 string)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 0B 0001 04 12000170 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with authentication-method (UTF-8 string)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 0B 0001 04 15000170 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with response-information (UTF-8 string)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 0B 0001 04 1A000170 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with server-reference (UTF-8 string)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 0B 0001 04 1C000170 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+
+			{ "name": "82 with correlation-data (binary data)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 0B 0001 04 09000170 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with authentication-data (binary data)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 0B 0001 04 16000170 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+
+			{ "name": "82 with server-keep-alive (two byte integer)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 0A 0001 03 130101 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with receive-maximum (two byte integer)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 0A 0001 03 210101 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with topic-alias-maximum (two byte integer)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 0A 0001 03 220101 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with topic-alias (two byte integer)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 0A 0001 03 230101 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+
+			{ "name": "82 with invalid-property 0x00 (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 09 0001 02 0001 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with unknown-property 0x04 (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 09 0001 02 0401 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with unknown-property 0x05 (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 09 0001 02 0501 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with unknown-property 0x06 (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 09 0001 02 0601 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with unknown-property 0x07 (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 09 0001 02 0701 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with unknown-property 0x0A (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 09 0001 02 0A01 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with unknown-property 0x0C (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 09 0001 02 0C01 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with unknown-property 0x0D (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 09 0001 02 0D01 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with unknown-property 0x0E (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 09 0001 02 0E01 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with unknown-property 0x0F (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 09 0001 02 0F01 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with unknown-property 0x10 (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 09 0001 02 1001 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with unknown-property 0x14 (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 09 0001 02 1401 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with unknown-property 0x1B (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 09 0001 02 1B01 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with unknown-property 0x1D (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 09 0001 02 1D01 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with unknown-property 0x1E (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 09 0001 02 1E01 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with unknown-property 0x20 (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 09 0001 02 2001 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with unknown-property 0x7F (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 09 0001 02 7F01 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with invalid-property 0x8000 (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 0A 0001 03 800001 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with unknown-property 0x8001 (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 0A 0001 03 800101 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with unknown-property 0xFF7F (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 0A 0001 03 FF7F01 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with unknown-property 0x808001 (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 0B 0001 04 80800101 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with unknown-property 0xFFFF7F (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 0B 0001 04 FFFF7F 01 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with unknown-property 0x80808001 (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 0C 0001 05 80808001 01 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "82 with unknown-property 0xFFFFFF7F (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"82 0C 0001 05 FFFFFF7F 01 0001 70 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]}
+		]
+	}
+]

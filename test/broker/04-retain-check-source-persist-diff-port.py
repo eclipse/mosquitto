@@ -10,7 +10,7 @@ def write_config(filename, port1, port2, per_listener):
     with open(filename, 'w') as f:
         f.write("per_listener_settings %s\n" % (per_listener))
         f.write("check_retain_source true\n")
-        f.write("port %d\n" % (port1))
+        f.write("listener %d\n" % (port1))
         f.write("allow_anonymous true\n")
         f.write("acl_file %s\n" % (filename.replace('.conf', '.acl')))
         f.write("persistence true\n")
@@ -46,8 +46,7 @@ def do_test(proto_ver, per_listener, username):
 
 
     rc = 1
-    keepalive = 60
-    connect_packet = mosq_test.gen_connect("retain-check", keepalive=keepalive, username=username, proto_ver=proto_ver)
+    connect_packet = mosq_test.gen_connect("retain-check", username=username, proto_ver=proto_ver)
     connack_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
 
     if per_listener == "true":
@@ -57,7 +56,7 @@ def do_test(proto_ver, per_listener, username):
         # unless we provide a username
         u = username
 
-    connect2_packet = mosq_test.gen_connect("retain-recv", keepalive=keepalive, username=u, proto_ver=proto_ver)
+    connect2_packet = mosq_test.gen_connect("retain-recv", username=u, proto_ver=proto_ver)
     connack2_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
 
     mid = 1
@@ -81,7 +80,9 @@ def do_test(proto_ver, per_listener, username):
         # Remove "write" ability
         write_acl_2(acl_file, username)
         broker.terminate()
-        broker.wait()
+        if mosq_test.wait_for_subprocess(broker):
+            print("broker not terminated")
+            if rc == 0: rc=1
         if os.path.isfile(persistence_file) == False:
             raise FileNotFoundError("Persistence file not written")
 
@@ -98,7 +99,9 @@ def do_test(proto_ver, per_listener, username):
         pass
     finally:
         broker.terminate()
-        broker.wait()
+        if mosq_test.wait_for_subprocess(broker):
+            print("broker not terminated")
+            if rc == 0: rc=1
         os.remove(conf_file)
         os.remove(acl_file)
         try:

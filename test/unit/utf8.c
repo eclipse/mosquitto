@@ -17,7 +17,7 @@ static void utf8_helper_len(const char *text, int len, int expected)
 
 static void utf8_helper(const char *text, int expected)
 {
-	utf8_helper_len(text, strlen(text), expected);
+	utf8_helper_len(text, (int)strlen(text), expected);
 }
 
 
@@ -37,17 +37,17 @@ static void TEST_utf8_valid(void)
 
 static void TEST_utf8_truncated(void)
 {
-	char buf[4];
+	uint8_t buf[4];
 
 	/* As per boundary condition tests, but less one character */
 	buf[0] = 0xC2; buf[1] = 0;
-	utf8_helper(buf, MOSQ_ERR_MALFORMED_UTF8);
+	utf8_helper((char *)buf, MOSQ_ERR_MALFORMED_UTF8);
 
 	buf[0] = 0xE0; buf[1] = 0xA0; buf[2] = 0;
-	utf8_helper(buf, MOSQ_ERR_MALFORMED_UTF8);
+	utf8_helper((char *)buf, MOSQ_ERR_MALFORMED_UTF8);
 
 	buf[0] = 0xF0; buf[1] = 0x90; buf[2] = 0x80; buf[3] = 0;
-	utf8_helper(buf, MOSQ_ERR_MALFORMED_UTF8);
+	utf8_helper((char *)buf, MOSQ_ERR_MALFORMED_UTF8);
 }
 
 
@@ -83,7 +83,7 @@ static void TEST_utf8_boundary_conditions(void)
 
 static void TEST_utf8_malformed_sequences(void)
 {
-	char buf[100];
+	uint8_t buf[100];
 	int i;
 	/* 3  Malformed sequences */
 	/* 3.1  Unexpected continuation bytes */
@@ -99,25 +99,25 @@ static void TEST_utf8_malformed_sequences(void)
 	/* 3.1.9  Sequence of all 64 possible continuation bytes (0x80-0xbf): */
 	memset(buf, 0, sizeof(buf));
 	for(i=0x80; i<0x90; i++){
-		buf[i-0x80] = i;
+		buf[i-0x80] = (uint8_t)i;
 	}
-	utf8_helper(buf, MOSQ_ERR_MALFORMED_UTF8);
+	utf8_helper((char *)buf, MOSQ_ERR_MALFORMED_UTF8);
 	memset(buf, 0, sizeof(buf));
 	for(i=0x90; i<0xa0; i++){
-		buf[i-0x90] = i;
+		buf[i-0x90] = (uint8_t)i;
 	}
-	utf8_helper(buf, MOSQ_ERR_MALFORMED_UTF8);
+	utf8_helper((char *)buf, MOSQ_ERR_MALFORMED_UTF8);
 
 	for(i=0x80; i<0xA0; i++){
-		buf[0] = i;
+		buf[0] = (uint8_t)i;
 		buf[1] = 0;
-		utf8_helper(buf, MOSQ_ERR_MALFORMED_UTF8);
+		utf8_helper((char *)buf, MOSQ_ERR_MALFORMED_UTF8);
 	}
 
 	for(i=0xA0; i<0xC0; i++){
-		buf[0] = i;
+		buf[0] = (uint8_t)i;
 		buf[1] = 0;
-		utf8_helper(buf, MOSQ_ERR_MALFORMED_UTF8);
+		utf8_helper((char *)buf, MOSQ_ERR_MALFORMED_UTF8);
 	}
 
 	/* 3.2  Lonely start characters */
@@ -126,40 +126,40 @@ static void TEST_utf8_malformed_sequences(void)
        each followed by a space character: */
 	utf8_helper("À Á Â Ã Ä Å Æ Ç È É Ê Ë Ì Í Î Ï Ð Ñ Ò Ó Ô Õ Ö × Ø Ù Ú Û Ü Ý Þ ß ", MOSQ_ERR_MALFORMED_UTF8);
 	for(i=0xC0; i<0xE0; i++){
-		buf[0] = i;
+		buf[0] = (uint8_t)i;
 		buf[1] = ' ';
 		buf[2] = 0;
-		utf8_helper(buf, MOSQ_ERR_MALFORMED_UTF8);
+		utf8_helper((char *)buf, MOSQ_ERR_MALFORMED_UTF8);
 	}
 
 	/* 3.2.2  All 16 first bytes of 3-byte sequences (0xe0-0xef),
        each followed by a space character: */
 	utf8_helper("\"à á â ã ä å æ ç è é ê ë ì í î ï \"", MOSQ_ERR_MALFORMED_UTF8);
 	for(i=0xe0; i<0xf0; i++){
-		buf[0] = i;
+		buf[0] = (uint8_t)i;
 		buf[1] = ' ';
 		buf[2] = 0;
-		utf8_helper(buf, MOSQ_ERR_MALFORMED_UTF8);
+		utf8_helper((char *)buf, MOSQ_ERR_MALFORMED_UTF8);
 	}
 
 	/* 3.2.3  All 8 first bytes of 4-byte sequences (0xf0-0xf7),
        each followed by a space character: */
 	utf8_helper("\"ð ñ ò ó ô õ ö ÷ \"", MOSQ_ERR_MALFORMED_UTF8);
 	for(i=0xF0; i<0xF8; i++){
-		buf[0] = i;
+		buf[0] = (uint8_t)i;
 		buf[1] = ' ';
 		buf[2] = 0;
-		utf8_helper(buf, MOSQ_ERR_MALFORMED_UTF8);
+		utf8_helper((char *)buf, MOSQ_ERR_MALFORMED_UTF8);
 	}
 
 	/* 3.2.4  All 4 first bytes of 5-byte sequences (0xf8-0xfb),
        each followed by a space character: */
 	utf8_helper("\"ø ù ú û \"", MOSQ_ERR_MALFORMED_UTF8);
 	for(i=0xF8; i<0xFC; i++){
-		buf[0] = i;
+		buf[0] = (uint8_t)i;
 		buf[1] = ' ';
 		buf[2] = 0;
-		utf8_helper(buf, MOSQ_ERR_MALFORMED_UTF8);
+		utf8_helper((char *)buf, MOSQ_ERR_MALFORMED_UTF8);
 	}
 
 	/* 3.2.5  All 2 first bytes of 6-byte sequences (0xfc-0xfd),
@@ -168,10 +168,10 @@ static void TEST_utf8_malformed_sequences(void)
 	utf8_helper("ü ", MOSQ_ERR_MALFORMED_UTF8);
 	utf8_helper("ý ", MOSQ_ERR_MALFORMED_UTF8);
 	for(i=0xFC; i<0xFE; i++){
-		buf[0] = i;
+		buf[0] = (uint8_t)i;
 		buf[1] = ' ';
 		buf[2] = 0;
-		utf8_helper(buf, MOSQ_ERR_MALFORMED_UTF8);
+		utf8_helper((char *)buf, MOSQ_ERR_MALFORMED_UTF8);
 	}
 
 	/* 3.3  Sequences with last continuation byte missing
@@ -398,50 +398,50 @@ static void TEST_utf8_illegal_code_positions(void)
 }
 
 
-void TEST_utf8_control_characters(void)
+static void TEST_utf8_control_characters(void)
 {
-	char buf[10];
+	uint8_t buf[10];
 	int i;
 
 	/* U+0001 to U+001F are single byte control characters */
 	for(i=0x01; i<0x20; i++){
-		buf[0] = i;
+		buf[0] = (uint8_t)i;
 		buf[1] = '\0';
-		utf8_helper(buf, MOSQ_ERR_MALFORMED_UTF8);
+		utf8_helper((char *)buf, MOSQ_ERR_MALFORMED_UTF8);
 	}
 
 	/* U+007F is a single byte control character */
 	buf[0] = 0x7F;
 	buf[1] = '\0';
-	utf8_helper(buf, MOSQ_ERR_MALFORMED_UTF8);
+	utf8_helper((char *)buf, MOSQ_ERR_MALFORMED_UTF8);
 
 	/* U+007F to U+009F are two byte control characters */
 	for(i=0x80; i<0xA0; i++){
 		buf[0] = 0xC2;
-		buf[1] = i-0x80;
+		buf[1] = (uint8_t)(i-0x80);
 		buf[2] = '\0';
-		utf8_helper(buf, MOSQ_ERR_MALFORMED_UTF8);
+		utf8_helper((char *)buf, MOSQ_ERR_MALFORMED_UTF8);
 	}
 
 }
 
 
-void TEST_utf8_mqtt_1_5_4_2(void)
+static void TEST_utf8_mqtt_1_5_4_2(void)
 {
-	char buf[10] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', '\0'};
+	uint8_t buf[10] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', '\0'};
 
-	utf8_helper_len(buf, 9, MOSQ_ERR_SUCCESS);
+	utf8_helper_len((char *)buf, 9, MOSQ_ERR_SUCCESS);
 
 	buf[3] = '\0';
-	utf8_helper_len(buf, 9, MOSQ_ERR_MALFORMED_UTF8);
+	utf8_helper_len((char *)buf, 9, MOSQ_ERR_MALFORMED_UTF8);
 }
 
 
-void TEST_utf8_mqtt_1_5_4_3(void)
+static void TEST_utf8_mqtt_1_5_4_3(void)
 {
-	char buf[10] = {'a', 'b', 0xEF, 0xBB, 0xBF, 'f', 'g', 'h', 'i', '\0'};
+	uint8_t buf[10] = {'a', 'b', 0xEF, 0xBB, 0xBF, 'f', 'g', 'h', 'i', '\0'};
 
-	utf8_helper_len(buf, 9, MOSQ_ERR_SUCCESS);
+	utf8_helper_len((char *)buf, 9, MOSQ_ERR_SUCCESS);
 }
 
 

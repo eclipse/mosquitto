@@ -9,7 +9,9 @@ ExecStart=/usr/sbin/mosquitto -c /etc/mosquitto/mosquitto.conf
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
 ExecStartPre=/bin/mkdir -m 740 -p /var/log/mosquitto
-ExecStartPre=/bin/chown mosquitto: /var/log/mosquitto
+ExecStartPre=/bin/chown mosquitto:mosquitto /var/log/mosquitto
+ExecStartPre=/bin/mkdir -m 740 -p /run/mosquitto
+ExecStartPre=/bin/chown mosquitto:mosquitto /run/mosquitto
 
 [Install]
 WantedBy=multi-user.target

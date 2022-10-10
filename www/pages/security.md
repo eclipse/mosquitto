@@ -1,7 +1,7 @@
 <!--
 .. title: Security
 .. slug: security
-.. date: 2018-02-07 10:52:50 UTC
+.. date: 2021-04-03 11:55:50 UTC+1
 .. tags:
 .. category:
 .. link:
@@ -19,6 +19,17 @@ follow the steps on [Eclipse Security] page to report it.
 Listed with most recent first. Further information on security related issues
 can be found in the [security category].
 
+* August 2022: Deleting the anonymous group in the dynamic security plugin
+  could lead to a crash. Affecting versions **2.0.0** to **2.0.14** inclusive,
+  fixed in **2.0.15**.
+* August 2021: [CVE-2021-34434] Affecting versions **2.0.0** to **2.0.11**
+  inclusive, fixed in **2.0.12**.
+* April 2021: [CVE-2021-28166] Affecting versions **2.0.0** to **2.0.9**
+  inclusive, fixed in **2.0.10**.
+* December 2020: Running mosquitto_passwd with the following arguments only
+  `mosquitto_passwd -b password_file username password` would cause the
+  username to be used as the password. Affecting versions **2.0.0** to
+  **2.0.2** inclusive, fixed in **2.0.3**.
 * September 2019: [CVE-2019-11779]. Affecting versions **1.5** to **1.6.5**
   inclusive, fixed in **1.6.6** and **1.5.9**. More details at [version-166-released].
 * September 2019: [CVE-2019-11778]. Affecting versions **1.6** to **1.6.4**
@@ -63,6 +74,8 @@ can be found in the [security category].
 [Eclipse Security]: https://www.eclipse.org/security/
 [security category]: /blog/categories/security/
 
+[CVE-2021-34434]: https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-34434
+[CVE-2021-28166]: https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-28166
 [CVE-2019-11779]: https://nvd.nist.gov/vuln/detail/CVE-2019-11779
 [CVE-2019-11778]: https://nvd.nist.gov/vuln/detail/CVE-2019-11778
 [CVE-2018-20145]: https://nvd.nist.gov/vuln/detail/CVE-2018-20145

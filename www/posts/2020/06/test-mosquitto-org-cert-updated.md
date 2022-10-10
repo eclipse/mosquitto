@@ -10,7 +10,7 @@
 -->
 
 The CA certificate and server certificate for the broker running at
-[test.mosquitto.org] has been updated to use a stronger key. 
+[test.mosquitto.org] has been updated to use a stronger key.
 
 This means that if you have downloaded the CA certificate, you will need to do
 so again.

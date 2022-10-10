@@ -1,14 +1,16 @@
 /*
-Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
-are made available under the terms of the Eclipse Public License v1.0
+are made available under the terms of the Eclipse Public License 2.0
 and Eclipse Distribution License v1.0 which accompany this distribution.
 
 The Eclipse Public License is available at
-   http://www.eclipse.org/legal/epl-v10.html
+   https://www.eclipse.org/legal/epl-2.0/
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
+
+SPDX-License-Identifier: EPL-2.0 OR BSD-3-Clause
 
 Contributors:
    Roger Light - initial implementation and documentation.
@@ -36,38 +38,36 @@ int send__disconnect(struct mosquitto *mosq, uint8_t reason_code, const mosquitt
 {
 	struct mosquitto__packet *packet = NULL;
 	int rc;
+	uint32_t remaining_length;
 
 	assert(mosq);
 #ifdef WITH_BROKER
 #  ifdef WITH_BRIDGE
 	if(mosq->bridge){
-		log__printf(mosq, MOSQ_LOG_DEBUG, "Bridge %s sending DISCONNECT", mosq->id);
+		log__printf(mosq, MOSQ_LOG_DEBUG, "Bridge %s sending DISCONNECT", SAFE_PRINT(mosq->id));
 	}else
 #  else
 	{
-		log__printf(mosq, MOSQ_LOG_DEBUG, "Sending DISCONNECT to %s (rc%d)", mosq->id, reason_code);
+		log__printf(mosq, MOSQ_LOG_DEBUG, "Sending DISCONNECT to %s (rc%d)", SAFE_PRINT(mosq->id), reason_code);
 	}
 #  endif
 #else
-	log__printf(mosq, MOSQ_LOG_DEBUG, "Client %s sending DISCONNECT", mosq->id);
+	log__printf(mosq, MOSQ_LOG_DEBUG, "Client %s sending DISCONNECT", SAFE_PRINT(mosq->id));
 #endif
 	assert(mosq);
-	packet = mosquitto__calloc(1, sizeof(struct mosquitto__packet));
-	if(!packet) return MOSQ_ERR_NOMEM;
 
-	packet->command = CMD_DISCONNECT;
 	if(mosq->protocol == mosq_p_mqtt5 && (reason_code != 0 || properties)){
-		packet->remaining_length = 1;
+		remaining_length = 1;
 		if(properties){
-			packet->remaining_length += property__get_remaining_length(properties);
+			remaining_length += property__get_remaining_length(properties);
 		}
 	}else{
-		packet->remaining_length = 0;
+		remaining_length = 0;
 	}
 
-	rc = packet__alloc(packet);
+	rc = packet__alloc(&packet, CMD_DISCONNECT, remaining_length);
 	if(rc){
-		mosquitto__free(packet);
+		mosquitto__FREE(packet);
 		return rc;
 	}
 	if(mosq->protocol == mosq_p_mqtt5 && (reason_code != 0 || properties)){

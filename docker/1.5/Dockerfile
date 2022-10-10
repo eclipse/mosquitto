@@ -1,12 +1,13 @@
-FROM alpine:3.12
+FROM alpine:3.14
 
 LABEL maintainer="Roger Light <roger@atchoo.org>" \
     description="Eclipse Mosquitto MQTT Broker"
 
-ENV VERSION=1.5.9 \
-    DOWNLOAD_SHA256=d7b62aa0ca680b0d869d6883373903362f98326a6465fc6cd01a0b9e0e8f0333 \
+ENV VERSION=1.5.11 \
+    DOWNLOAD_SHA256=4a3b8a8f5505d27a7a966dd68bfd76f1e69feb51796d1b46b7271d1bb5a1a299 \
     GPG_KEYS=A0D6EEA1DCAE49A635A3B2F0779B22DFB3E717B7 \
-    LWS_VERSION=2.4.2
+    LWS_VERSION=2.4.2 \
+    LWS_SHA256=73012d7fcf428dedccc816e83a63a01462e27819d5537b8e0d0c7264bfacfad6
 
 RUN set -x && \
     apk --no-cache add --virtual build-deps \
@@ -16,6 +17,7 @@ RUN set -x && \
         libressl-dev \
         util-linux-dev && \
     wget https://github.com/warmcat/libwebsockets/archive/v${LWS_VERSION}.tar.gz -O /tmp/lws.tar.gz && \
+    echo "$LWS_SHA256  /tmp/lws.tar.gz" | sha256sum -c - && \
     mkdir -p /build/lws && \
     tar --strip=1 -xf /tmp/lws.tar.gz -C /build/lws && \
     rm /tmp/lws.tar.gz && \
@@ -28,6 +30,7 @@ RUN set -x && \
         -DLWS_WITHOUT_CLIENT=ON \
         -DLWS_WITHOUT_EXTENSIONS=ON \
         -DLWS_WITHOUT_TESTAPPS=ON \
+        -DLWS_WITH_HTTP2=OFF \
         -DLWS_WITH_SHARED=OFF \
         -DLWS_WITH_ZIP_FOPS=OFF \
         -DLWS_WITH_ZLIB=OFF && \
@@ -39,9 +42,8 @@ RUN set -x && \
     export GNUPGHOME="$(mktemp -d)" && \
     found=''; \
     for server in \
-        ha.pool.sks-keyservers.net \
+        hkps://keys.openpgp.org \
         hkp://keyserver.ubuntu.com:80 \
-        hkp://p80.pool.sks-keyservers.net:80 \
         pgp.mit.edu \
     ; do \
         echo "Fetching GPG key $GPG_KEYS from $server"; \
@@ -62,7 +64,7 @@ RUN set -x && \
         WITH_SHARED_LIBRARIES=yes \
         WITH_SRV=no \
         WITH_STRIP=yes \
-		WITH_TLS_PSK=no \
+        WITH_TLS_PSK=no \
         WITH_WEBSOCKETS=yes \
         prefix=/usr \
         binary && \
@@ -79,8 +81,8 @@ RUN set -x && \
     chown -R mosquitto:mosquitto /mosquitto && \
     apk --no-cache add \
         ca-certificates \
-		libressl \
-		libuuid && \
+        libressl \
+        libuuid && \
     apk del build-deps && \
     rm -rf /build
 

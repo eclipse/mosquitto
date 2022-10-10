@@ -14,7 +14,8 @@ graphical software installer, or with `snap install mosquitto`.
 
 After installing the Mosquitto snap, the Mosquitto broker will be running with
 the default configuration, which means it is listening for connections on port
-1883.
+1883 on the local computer only. If you want to allow connections from other
+computers you must configure a listener and an [authentication method].
 
 To test the broker, you can use the `mosquitto_pub` and `mosquitto_sub` command
 line utilities, which are also provided in the snap. `mosquitto_pub` allows you
@@ -75,3 +76,5 @@ running as a snap.
 
 All other aspects of running Mosquitto are the same as with any other
 installation methods.
+
+[authentication method]:/documentation/authentication-methods

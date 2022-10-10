@@ -1,15 +1,17 @@
 /*
-Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
-are made available under the terms of the Eclipse Public License v1.0
+are made available under the terms of the Eclipse Public License 2.0
 and Eclipse Distribution License v1.0 which accompany this distribution.
- 
+
 The Eclipse Public License is available at
-   http://www.eclipse.org/legal/epl-v10.html
+   https://www.eclipse.org/legal/epl-2.0/
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
- 
+
+SPDX-License-Identifier: EPL-2.0 OR BSD-3-Clause
+
 Contributors:
    Roger Light - initial implementation and documentation.
 */
@@ -23,21 +25,26 @@ Contributors:
 #endif
 #include <time.h>
 
+#if defined(__APPLE__)
+#  include <sys/time.h>
+#endif
+
 #ifdef WITH_DLT
 #include <sys/stat.h>
 #include <dlt/dlt.h>
 #endif
 
+#include "logging_mosq.h"
 #include "mosquitto_broker_internal.h"
 #include "memory_mosq.h"
 #include "misc_mosq.h"
 #include "util_mosq.h"
 
-extern struct mosquitto_db int_db;
-
 #ifdef WIN32
 HANDLE syslog_h;
 #endif
+
+static char log_fptr_buffer[BUFSIZ];
 
 /* Options for logging should be:
  *
@@ -51,8 +58,8 @@ HANDLE syslog_h;
 /* Give option of logging timestamp.
  * Logging pid.
  */
-static int log_destinations = MQTT3_LOG_STDERR;
-static int log_priorities = MOSQ_LOG_ERR | MOSQ_LOG_WARNING | MOSQ_LOG_NOTICE | MOSQ_LOG_INFO;
+static unsigned int log_destinations = MQTT3_LOG_STDERR;
+static unsigned int log_priorities = MOSQ_LOG_ERR | MOSQ_LOG_WARNING | MOSQ_LOG_NOTICE | MOSQ_LOG_INFO;
 
 #ifdef WITH_DLT
 static DltContext dltContext;
@@ -83,26 +90,9 @@ void dlt_fifo_check(void)
 
 static int get_time(struct tm **ti)
 {
-#if defined(__APPLE__)
-	struct timeval tv;
-#else
-	struct timespec ts;
-#endif
 	time_t s;
 
-#ifdef WIN32
-	s = time(NULL);
-
-#elif defined(__APPLE__)
-	gettimeofday(&tv, NULL);
-	s = tv.tv_sec;
-#else
-	if(clock_gettime(CLOCK_REALTIME, &ts) != 0){
-		fprintf(stderr, "Error obtaining system time.\n");
-		return 1;
-	}
-	s = ts.tv_sec;
-#endif
+	s = db.now_real_s;
 
 	*ti = localtime(&s);
 	if(!(*ti)){
@@ -130,18 +120,14 @@ int log__init(struct mosquitto__config *config)
 	}
 
 	if(log_destinations & MQTT3_LOG_FILE){
-		if(drop_privileges(config, true)){
-			return 1;
-		}
 		config->log_fptr = mosquitto__fopen(config->log_file, "at", true);
 		if(config->log_fptr){
-			setvbuf(config->log_fptr, NULL, _IOLBF, 0);
+			setvbuf(config->log_fptr, log_fptr_buffer, _IOLBF, sizeof(log_fptr_buffer));
 		}else{
 			log_destinations = MQTT3_LOG_STDERR;
 			log_priorities = MOSQ_LOG_ERR;
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to open log file %s for writing.", config->log_file);
 		}
-		restore_privileges();
 	}
 #ifdef WITH_DLT
 	dlt_fifo_check();
@@ -180,7 +166,7 @@ int log__close(struct mosquitto__config *config)
 }
 
 #ifdef WITH_DLT
-DltLogLevelType get_dlt_level(int priority)
+DltLogLevelType get_dlt_level(unsigned int priority)
 {
 	switch (priority) {
 		case MOSQ_LOG_ERR:
@@ -201,26 +187,23 @@ DltLogLevelType get_dlt_level(int priority)
 }
 #endif
 
-int log__vprintf(int priority, const char *fmt, va_list va)
+static int log__vprintf(unsigned int priority, const char *fmt, va_list va)
 {
-	char *s;
-	char *st;
-	int len;
+	const char *topic;
+	int syslog_priority;
+	char log_line[1000];
+	size_t log_line_pos;
 #ifdef WIN32
 	char *sp;
 #endif
-	const char *topic;
-	int syslog_priority;
-	time_t now = time(NULL);
-	char time_buf[50];
 	bool log_timestamp = true;
 	char *log_timestamp_format = NULL;
 	FILE *log_fptr = NULL;
 
-	if(int_db.config){
-		log_timestamp = int_db.config->log_timestamp;
-		log_timestamp_format = int_db.config->log_timestamp_format;
-		log_fptr = int_db.config->log_fptr;
+	if(db.config){
+		log_timestamp = db.config->log_timestamp;
+		log_timestamp_format = db.config->log_timestamp_format;
+		log_fptr = db.config->log_fptr;
 	}
 
 	if((log_priorities & priority) && log_destinations != MQTT3_LOG_NONE){
@@ -281,7 +264,7 @@ int log__vprintf(int priority, const char *fmt, va_list va)
 				syslog_priority = EVENTLOG_INFORMATION_TYPE;
 #endif
 				break;
-#ifdef WITH_WEBSOCKETS
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
 			case MOSQ_LOG_WEBSOCKETS:
 				topic = "$SYS/broker/log/WS";
 #ifndef WIN32
@@ -299,88 +282,64 @@ int log__vprintf(int priority, const char *fmt, va_list va)
 				syslog_priority = EVENTLOG_ERROR_TYPE;
 #endif
 		}
-		len = strlen(fmt) + 500;
-		s = mosquitto__malloc(len*sizeof(char));
-		if(!s) return MOSQ_ERR_NOMEM;
-
-		vsnprintf(s, len, fmt, va);
-		s[len-1] = '\0'; /* Ensure string is null terminated. */
-
-		if(log_timestamp && log_timestamp_format){
-			struct tm *ti = NULL;
-			get_time(&ti);
-			if(strftime(time_buf, 50, log_timestamp_format, ti) == 0){
-				snprintf(time_buf, 50, "Time error");
-			}
-		}
-		if(log_destinations & MQTT3_LOG_STDOUT){
-			if(log_timestamp){
-				if(log_timestamp_format){
-					fprintf(stdout, "%s: %s\n", time_buf, s);
-				}else{
-					fprintf(stdout, "%d: %s\n", (int)now, s);
+		if(log_timestamp){
+			if(log_timestamp_format){
+				struct tm *ti = NULL;
+				get_time(&ti);
+				log_line_pos = strftime(log_line, sizeof(log_line), log_timestamp_format, ti);
+				if(log_line_pos == 0){
+					log_line_pos = (size_t)snprintf(log_line, sizeof(log_line), "Time error");
 				}
 			}else{
-				fprintf(stdout, "%s\n", s);
+				log_line_pos = (size_t)snprintf(log_line, sizeof(log_line), "%" PRIu64, (uint64_t)db.now_real_s);
 			}
+			if(log_line_pos < sizeof(log_line)-3){
+				log_line[log_line_pos] = ':';
+				log_line[log_line_pos+1] = ' ';
+				log_line[log_line_pos+2] = '\0';
+				log_line_pos += 2;
+			}
+		}else{
+			log_line_pos = 0;
+		}
+		vsnprintf(&log_line[log_line_pos], sizeof(log_line)-log_line_pos, fmt, va);
+		log_line[sizeof(log_line)-1] = '\0'; /* Ensure string is null terminated. */
+
+		if(log_destinations & MQTT3_LOG_STDOUT){
+			fprintf(stdout, "%s\n", log_line);
 		}
 		if(log_destinations & MQTT3_LOG_STDERR){
-			if(log_timestamp){
-				if(log_timestamp_format){
-					fprintf(stderr, "%s: %s\n", time_buf, s);
-				}else{
-					fprintf(stderr, "%d: %s\n", (int)now, s);
-				}
-			}else{
-				fprintf(stderr, "%s\n", s);
-			}
+			fprintf(stderr, "%s\n", log_line);
 		}
 		if(log_destinations & MQTT3_LOG_FILE && log_fptr){
-			if(log_timestamp){
-				if(log_timestamp_format){
-					fprintf(log_fptr, "%s: %s\n", time_buf, s);
-				}else{
-					fprintf(log_fptr, "%d: %s\n", (int)now, s);
-				}
-			}else{
-				fprintf(log_fptr, "%s\n", s);
-			}
+			fprintf(log_fptr, "%s\n", log_line);
+#ifdef WIN32
+			/* Windows doesn't support line buffering, so flush. */
+			fflush(log_fptr);
+#endif
 		}
 		if(log_destinations & MQTT3_LOG_SYSLOG){
 #ifndef WIN32
-			syslog(syslog_priority, "%s", s);
+			syslog(syslog_priority, "%s", log_line);
 #else
-			sp = (char *)s;
+			sp = (char *)log_line;
 			ReportEvent(syslog_h, syslog_priority, 0, 0, NULL, 1, 0, &sp, NULL);
 #endif
 		}
 		if(log_destinations & MQTT3_LOG_TOPIC && priority != MOSQ_LOG_DEBUG && priority != MOSQ_LOG_INTERNAL){
-			if(log_timestamp){
-				len += 30;
-				st = mosquitto__malloc(len*sizeof(char));
-				if(!st){
-					mosquitto__free(s);
-					return MOSQ_ERR_NOMEM;
-				}
-				snprintf(st, len, "%d: %s", (int)now, s);
-				db__messages_easy_queue(&int_db, NULL, topic, 2, strlen(st), st, 0, 20, NULL);
-				mosquitto__free(st);
-			}else{
-				db__messages_easy_queue(&int_db, NULL, topic, 2, strlen(s), s, 0, 20, NULL);
-			}
+			db__messages_easy_queue(NULL, topic, 2, (uint32_t)strlen(log_line), log_line, 0, 20, NULL);
 		}
 #ifdef WITH_DLT
 		if(log_destinations & MQTT3_LOG_DLT && priority != MOSQ_LOG_INTERNAL){
-			DLT_LOG_STRING(dltContext, get_dlt_level(priority), s);
+			DLT_LOG_STRING(dltContext, get_dlt_level(priority), log_line);
 		}
 #endif
-		mosquitto__free(s);
 	}
 
 	return MOSQ_ERR_SUCCESS;
 }
 
-int log__printf(struct mosquitto *mosq, int priority, const char *fmt, ...)
+int log__printf(struct mosquitto *mosq, unsigned int priority, const char *fmt, ...)
 {
 	va_list va;
 	int rc;
@@ -409,20 +368,24 @@ void log__internal(const char *fmt, ...)
 		return;
 	}
 
+#ifdef WIN32
+	log__printf(NULL, MOSQ_LOG_INTERNAL, "%s", buf);
+#else
 	log__printf(NULL, MOSQ_LOG_INTERNAL, "%s%s%s", "\e[32m", buf, "\e[0m");
+#endif
 }
 
-int mosquitto_log_vprintf(int level, const char *fmt, va_list va)
+BROKER_EXPORT int mosquitto_log_vprintf(int level, const char *fmt, va_list va)
 {
-	return log__vprintf(level, fmt, va);
+	return log__vprintf((unsigned int)level, fmt, va);
 }
 
-void mosquitto_log_printf(int level, const char *fmt, ...)
+BROKER_EXPORT void mosquitto_log_printf(int level, const char *fmt, ...)
 {
 	va_list va;
 
 	va_start(va, fmt);
-	log__vprintf(level, fmt, va);
+	log__vprintf((unsigned int)level, fmt, va);
 	va_end(va);
 }
 

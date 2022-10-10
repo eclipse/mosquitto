@@ -9,6 +9,7 @@
 	/etc/mosquitto/conf.d/* r,
 	/var/lib/mosquitto/ r,
 	/var/lib/mosquitto/mosquitto.db rwk,
+	/var/lib/mosquitto/mosquitto.db.new rwk,
 	/var/run/mosquitto.pid rw,
 
 	network inet stream,

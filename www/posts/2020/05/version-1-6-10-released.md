@@ -25,7 +25,7 @@ Mosquitto 1.6.10 has been released, this is a bugfix release.
   native version. Closes [#1684].
 - Fix possible assert crash associated with bridge reconnecting when compiled
   without epoll support. Closes [#1700].
- 
+
 # Client library
 - Don't treat an unexpected PUBACK, PUBREL, or PUBCOMP as a fatal error.
   Issue [#1629].

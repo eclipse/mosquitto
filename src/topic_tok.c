@@ -1,14 +1,16 @@
 /*
-Copyright (c) 2010-2019 Roger Light <roger@atchoo.org>
+Copyright (c) 2010-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
-are made available under the terms of the Eclipse Public License v1.0
+are made available under the terms of the Eclipse Public License 2.0
 and Eclipse Distribution License v1.0 which accompany this distribution.
 
 The Eclipse Public License is available at
-   http://www.eclipse.org/legal/epl-v10.html
+   https://www.eclipse.org/legal/epl-2.0/
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
+
+SPDX-License-Identifier: EPL-2.0 OR BSD-3-Clause
 
 Contributors:
    Roger Light - initial implementation and documentation.
@@ -61,7 +63,7 @@ int sub__topic_tokenise(const char *subtopic, char **local_sub, char ***topics, 
 	int count;
 	int topic_index = 0;
 	int i;
-	int len;
+	size_t len;
 
 	len = strlen(subtopic);
 	if(len == 0){
@@ -77,9 +79,9 @@ int sub__topic_tokenise(const char *subtopic, char **local_sub, char ***topics, 
 		saveptr = strchr(&saveptr[1], '/');
 		count++;
 	}
-	*topics = mosquitto__calloc(count+3 /* 3=$shared,sharename,NULL */, sizeof(char *));
+	*topics = mosquitto__calloc((size_t)(count+3) /* 3=$shared,sharename,NULL */, sizeof(char *));
 	if((*topics) == NULL){
-		mosquitto__free(*local_sub);
+		mosquitto__FREE(*local_sub);
 		return MOSQ_ERR_NOMEM;
 	}
 
@@ -97,8 +99,8 @@ int sub__topic_tokenise(const char *subtopic, char **local_sub, char ***topics, 
 
 	if(!strcmp((*topics)[0], "$share")){
 		if(count < 2){
-			mosquitto__free(*local_sub);
-			mosquitto__free(*topics);
+			mosquitto__FREE(*local_sub);
+			mosquitto__FREE(*topics);
 			return MOSQ_ERR_PROTOCOL;
 		}
 

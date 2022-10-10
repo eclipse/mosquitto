@@ -1,4 +1,4 @@
-check process mosquitto with pidfile /var/run/mosquitto.pid
+check process mosquitto with pidfile /run/mosquitto.pid
 	start = "/etc/init.d/mosquitto start"
 	stop = "/etc/init.d/mosquitto stop"
 

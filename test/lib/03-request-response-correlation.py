@@ -31,6 +31,7 @@ publish1_packet_outgoing = mosq_test.gen_publish(pub_topic, qos=0, payload="acti
 
 props = mqtt5_props.gen_string_prop(mqtt5_props.PROP_CORRELATION_DATA, "corridor")
 publish2_packet = mosq_test.gen_publish(resp_topic, qos=0, payload="a response", proto_ver=5, properties=props)
+publish2_packet_outgoing = mosq_test.gen_publish(pub_topic, qos=0, payload="action", proto_ver=5, properties=props)
 
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -40,12 +41,12 @@ sock.bind(('', port))
 sock.listen(5)
 
 env = dict(os.environ)
-env['LD_LIBRARY_PATH'] = '../../lib:../../lib/cpp'
+env['LD_LIBRARY_PATH'] = mosq_test.get_build_root() + '/lib:' + mosq_test.get_build_root() + '/lib/cpp'
 try:
     pp = env['PYTHONPATH']
 except KeyError:
     pp = ''
-env['PYTHONPATH'] = '../../lib/python:'+pp
+env['PYTHONPATH'] = mosq_test.get_build_root() + '/lib/python:'+pp
 client1 = mosq_test.start_client(filename="03-request-response-correlation-1.log", cmd=["c/03-request-response-correlation-1.test"], env=env, port=port)
 
 try:
@@ -66,6 +67,7 @@ try:
     conn2.send(publish1_packet_outgoing)
 
     mosq_test.expect_packet(conn2, "publish2", publish2_packet)
+    conn1.send(publish2_packet_outgoing)
     rc = 0
 
     conn1.close()
@@ -73,10 +75,12 @@ try:
 except mosq_test.TestError:
     pass
 finally:
-    client1.terminate()
-    client1.wait()
-    client2.terminate()
-    client2.wait()
+    if mosq_test.wait_for_subprocess(client1):
+        print("client1 not terminated")
+        if rc == 0: rc=1
+    if mosq_test.wait_for_subprocess(client2):
+        print("client2 not terminated")
+        if rc == 0: rc=1
     if rc:
         (stdo, stde) = client1.communicate()
         print(stde)

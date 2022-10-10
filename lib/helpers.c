@@ -1,15 +1,17 @@
 /*
-Copyright (c) 2016-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2016-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
-are made available under the terms of the Eclipse Public License v1.0
+are made available under the terms of the Eclipse Public License 2.0
 and Eclipse Distribution License v1.0 which accompany this distribution.
- 
+
 The Eclipse Public License is available at
-   http://www.eclipse.org/legal/epl-v10.html
+   https://www.eclipse.org/legal/epl-2.0/
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
- 
+
+SPDX-License-Identifier: EPL-2.0 OR BSD-3-Clause
+
 Contributors:
    Roger Light - initial implementation and documentation.
 */
@@ -21,6 +23,7 @@ Contributors:
 
 #include "mosquitto.h"
 #include "mosquitto_internal.h"
+#include "memory_mosq.h"
 
 struct userdata__callback {
 	const char *topic;
@@ -112,7 +115,7 @@ libmosq_EXPORT int mosquitto_subscribe_simple(
 
 	*messages = NULL;
 
-	userdata.messages = calloc(sizeof(struct mosquitto_message), msg_count);
+	userdata.messages = calloc(sizeof(struct mosquitto_message), (size_t)msg_count);
 	if(!userdata.messages){
 		return MOSQ_ERR_NOMEM;
 	}
@@ -135,8 +138,7 @@ libmosq_EXPORT int mosquitto_subscribe_simple(
 		for(i=0; i<msg_count; i++){
 			mosquitto_message_free_contents(&userdata.messages[i]);
 		}
-		free(userdata.messages);
-		userdata.messages = NULL;
+		SAFE_FREE(userdata.messages);
 		return rc;
 	}
 }

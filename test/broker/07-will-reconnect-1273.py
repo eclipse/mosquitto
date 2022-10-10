@@ -7,27 +7,29 @@
 from mosq_test_helper import *
 
 
-def do_test(proto_ver):
+def do_test(start_broker, proto_ver):
     rc = 1
-    keepalive = 60
 
-    connect1_packet = mosq_test.gen_connect("will-sub", keepalive=keepalive, proto_ver=proto_ver)
+    connect1_packet = mosq_test.gen_connect("will-reconnect-helper", proto_ver=proto_ver)
     connack1_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
 
     mid = 1
-    subscribe1_packet = mosq_test.gen_subscribe(mid, "will/test", 0, proto_ver=proto_ver)
+    subscribe1_packet = mosq_test.gen_subscribe(mid, "will/reconnect/test", 0, proto_ver=proto_ver)
     suback1_packet = mosq_test.gen_suback(mid, 0, proto_ver=proto_ver)
 
-    connect2_packet = mosq_test.gen_connect("will-1273", keepalive=keepalive, will_topic="will/test", will_payload=b"will msg",clean_session=False, proto_ver=proto_ver, session_expiry=60)
+    connect2_packet = mosq_test.gen_connect("will-1273", will_topic="will/reconnect/test", will_payload=b"will msg",clean_session=False, proto_ver=proto_ver, session_expiry=60)
     connack2a_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
     connack2b_packet = mosq_test.gen_connack(rc=0, flags=1, proto_ver=proto_ver)
 
     disconnect_packet = mosq_test.gen_disconnect(proto_ver=proto_ver)
 
-    publish_packet = mosq_test.gen_publish("will/test", qos=0, payload="alive", proto_ver=proto_ver)
+    publish_packet = mosq_test.gen_publish("will/reconnect/test", qos=0, payload="alive", proto_ver=proto_ver)
+
+    connect2_packet_clear = mosq_test.gen_connect("will-1273", proto_ver=proto_ver)
 
     port = mosq_test.get_port()
-    broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port)
+    if start_broker:
+        broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port)
 
     try:
         # Connect and subscribe will-sub
@@ -57,16 +59,34 @@ def do_test(proto_ver):
 
         sock1.close()
         sock2.close()
+
+        sock2 = mosq_test.do_client_connect(connect2_packet_clear, connack1_packet, timeout=30, port=port, connack_error="connack clear")
+        sock2.close()
     except mosq_test.TestError:
         pass
     finally:
-        broker.terminate()
-        broker.wait()
-        (stdo, stde) = broker.communicate()
-        if rc:
-            print(stde.decode('utf-8'))
-            exit(rc)
+        if start_broker:
+            broker.terminate()
+            if mosq_test.wait_for_subprocess(broker):
+                print("broker not terminated")
+                if rc == 0: rc=1
+            (stdo, stde) = broker.communicate()
+            if rc:
+                print(stde.decode('utf-8'))
+                exit(rc)
+        else:
+            return rc
 
-do_test(4)
-do_test(5)
-exit(0)
+
+
+def all_tests(start_broker=False):
+    rc = do_test(start_broker, proto_ver=4)
+    if rc:
+        return rc;
+    rc = do_test(start_broker, proto_ver=5)
+    if rc:
+        return rc;
+    return 0
+
+if __name__ == '__main__':
+    all_tests(True)

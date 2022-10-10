@@ -1,0 +1,668 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<?xml-stylesheet type="text/xsl" href="manpage.xsl"?>
+
+<refentry xml:id="mosquitto_ctrl" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<refmeta>
+		<refentrytitle>mosquitto_ctrl</refentrytitle>
+		<manvolnum>1</manvolnum>
+		<refmiscinfo class="source">Mosquitto Project</refmiscinfo>
+		<refmiscinfo class="manual">Commands</refmiscinfo>
+	</refmeta>
+
+	<refnamediv>
+		<refname>mosquitto_ctrl</refname>
+		<refpurpose>a tool for initialising/configuring a Mosquitto broker instance</refpurpose>
+	</refnamediv>
+
+	<refsynopsisdiv>
+		<cmdsynopsis>
+			<command>mosquitto_ctrl</command>
+			<arg choice='opt'>connection-options | -o config-file</arg>
+			<arg choice='plain'>module-name</arg>
+			<arg choice='plain'>module-command</arg>
+			<arg choice='opt'>command-options</arg>
+		</cmdsynopsis>
+		<cmdsynopsis>
+			<command>connection-options:</command>
+			<group choice='req'>
+				<arg choice='plain'>
+					<arg><option>-h</option> <replaceable>hostname</replaceable></arg>
+					<arg><option>--unix</option> <replaceable>socket path</replaceable></arg>
+					<arg><option>-p</option> <replaceable>port-number</replaceable></arg>
+					<arg><option>-u</option> <replaceable>username</replaceable></arg>
+					<arg><option>-P</option> <replaceable>password</replaceable></arg>
+				</arg>
+				<arg choice='plain'><option>-L</option> <replaceable>URL</replaceable></arg>
+			</group>
+			<arg><option>-A</option> <replaceable>bind-address</replaceable></arg>
+			<arg><option>-c</option></arg>
+			<arg><option>-d</option></arg>
+			<arg><option>-i</option> <replaceable>client-id</replaceable></arg>
+			<arg><option>-q</option> <replaceable>message-QoS</replaceable></arg>
+			<arg><option>--quiet</option></arg>
+			<arg><option>-V</option> <replaceable>protocol-version</replaceable></arg>
+			<group>
+				<arg>
+					<group choice='req'>
+						<arg choice='plain'><option>--cafile</option> <replaceable>file</replaceable></arg>
+						<arg choice='plain'><option>--capath</option> <replaceable>dir</replaceable></arg>
+					</group>
+					<arg><option>--cert</option> <replaceable>file</replaceable></arg>
+					<arg><option>--key</option> <replaceable>file</replaceable></arg>
+					<arg><option>--ciphers</option> <replaceable>ciphers</replaceable></arg>
+					<arg><option>--tls-version</option> <replaceable>version</replaceable></arg>
+					<arg><option>--tls-alpn</option> <replaceable>protocol</replaceable></arg>
+					<arg><option>--tls-engine</option> <replaceable>engine</replaceable></arg>
+					<arg><option>--keyform</option>
+					<group choice='req'>
+						<arg choice='plain'><replaceable>pem</replaceable></arg>
+						<arg choice='plain'><replaceable>engine</replaceable></arg>
+					</group></arg>
+					<arg><option>--tls-engine-kpass-sha1</option> <replaceable>kpass-sha1</replaceable></arg>
+					<arg><option>--insecure</option></arg>
+				</arg>
+				<arg>
+					<arg choice='plain'><option>--psk</option> <replaceable>hex-key</replaceable></arg>
+					<arg choice='plain'><option>--psk-identity</option> <replaceable>identity</replaceable></arg>
+					<arg><option>--ciphers</option> <replaceable>ciphers</replaceable></arg>
+					<arg><option>--tls-version</option> <replaceable>version</replaceable></arg>
+				</arg>
+			</group>
+			<arg><option>--proxy</option> <replaceable>socks-url</replaceable></arg>
+		</cmdsynopsis>
+		<cmdsynopsis>
+			<command>mosquitto_ctrl</command>
+				<arg><option>--help</option></arg>
+		</cmdsynopsis>
+	</refsynopsisdiv>
+
+	<refsect1>
+		<title>Description</title>
+		<para><command>mosquitto_ctrl</command> is a tool for helping configure a Mosquitto broker instance.</para>
+	</refsect1>
+
+	<refsect1>
+		<title>Encrypted Connections</title>
+		<para><command>mosquitto_ctrl</command> supports TLS encrypted
+			connections. It is strongly recommended that you use an encrypted
+			connection for all remote use of mosquitto_ctrl.</para>
+		<para>To enable TLS connections when using x509 certificates, one of
+			either <option>--cafile</option> or <option>--capath</option> must
+			be provided as an option.</para>
+		<para>To enable TLS connections when using TLS-PSK, you must use the
+			<option>--psk</option> and the <option>--psk-identity</option>
+			options.</para>
+	</refsect1>
+
+	<refsect1>
+		<title>Modules</title>
+		<variablelist>
+			<varlistentry>
+				<term><option>Dynamic security</option></term>
+				<listitem>
+					<para>
+						Authentication, and role based access control with users
+						and groups. Uses the <command>dynsec</command> module name. See:
+						<citerefentry>
+							<refentrytitle><link xlink:href="mosquitto_ctrl_dynsec-1.html">mosquitto_ctrl_dynsec</link></refentrytitle>
+							<manvolnum>1</manvolnum>
+						</citerefentry>
+					</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>External modules</option></term>
+				<listitem>
+					<para><command>mosquitto_ctrl</command> has the ability to load
+						external modules in the form of shared libraries. For example
+						using the module name <option>example</option> will try to load
+						the external module <option>mosquitto_ctrl_example.so</option>
+						or <option>mosquitto_ctrl_example.dll</option>, depending on platform.
+						This allows new functionality to be added to Mosquitto by combining
+						a plugin and mosquitto_ctrl module, without having to recompile any
+						Mosquitto source code.
+					</para>
+				</listitem>
+			</varlistentry>
+		</variablelist>
+	</refsect1>
+
+	<refsect1>
+		<title>Connection Options</title>
+		<para>The options below may be given on the command line, but may also
+			be placed in a config file located at
+			<option>$XDG_CONFIG_HOME/mosquitto_ctrl</option> or
+			<option>$HOME/.config/mosquitto_ctrl</option>.</para>
+		<para>The config file may be specified manually with the
+			<option>-o <replaceable>config-file</replaceable></option>
+			option.</para>
+		<para>The config file should have one pair of
+			<option>-option <replaceable>value</replaceable></option>
+			per line. The values in the config file will be used as defaults
+			and can be overridden by using the command line. The exceptions to
+			this are the message type options, of which only one can be
+			specified. Note also that currently some options cannot be negated,
+			e.g. <option>-S</option>. Config file lines that have a
+			<option>#</option> as the first character are treated as comments
+			and not processed any further.</para>
+		<variablelist>
+			<varlistentry>
+				<term><option>-A</option></term>
+				<listitem>
+					<para>Bind the outgoing connection to a local ip
+						address/hostname. Use this argument if you need to
+						restrict network communication to a particular
+						interface.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>--cafile</option></term>
+				<listitem>
+					<para>Define the path to a file containing PEM encoded CA
+						certificates that are trusted. Used to enable SSL
+						communication.</para>
+					<para>See also <option>--capath</option></para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>--capath</option></term>
+				<listitem>
+					<para>Define the path to a directory containing PEM encoded CA
+						certificates that are trusted. Used to enable SSL
+						communication.</para>
+					<para>For <option>--capath</option> to work correctly, the
+						certificate files must have ".crt" as the file ending
+						and you must run "openssl rehash &lt;path to capath&gt;" each
+						time you add/remove a certificate.</para>
+					<para>See also <option>--cafile</option></para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>--cert</option></term>
+				<listitem>
+					<para>Define the path to a file containing a PEM encoded
+						certificate for this client, if required by the
+						server.</para>
+					<para>See also <option>--key</option>.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>--ciphers</option></term>
+				<listitem>
+					<para>An openssl compatible list of TLS ciphers to support
+						in the client. See
+						<citerefentry><refentrytitle><link xlink:href="https://linux.die.net/man/1/ciphers">ciphers</link></refentrytitle><manvolnum>1</manvolnum></citerefentry>
+						for more information.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-d</option></term>
+				<term><option>--debug</option></term>
+				<listitem>
+					<para>Enable debug messages.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-D</option></term>
+				<term><option>--property</option></term>
+				<listitem>
+					<para>Use an MQTT v5 property with this publish. If you use
+						this option, the client will be set to be an MQTT v5
+						client. This option has two forms:</para>
+					<para><option>-D command identifier value</option></para>
+					<para><option>-D command identifier name value</option></para>
+					<para><option>command</option> is the MQTT command/packet
+						identifier and can be one of CONNECT, PUBLISH, PUBREL,
+						DISCONNECT, AUTH, or WILL. The properties available for
+						each command are listed in the
+						<link linkend='properties'>Properties</link>
+						section.</para>
+
+					<para><option>identifier</option> is the name of the
+						property to add. This is as described in the
+						specification, but with '-' as a word separator. For
+						example:
+						<option>payload-format-indicator</option>. More details
+						are in the <link linkend='properties'>Properties</link>
+						section.</para>
+
+					<para><option>value</option> is the value of the property
+						to add, with a data type that is property
+						specific.</para>
+
+					<para><option>name</option> is only used for the
+						<option>user-property</option> property as the first of
+						the two strings in the string pair. In that case,
+						<option>value</option> is the second of the strings in
+						the pair.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>--help</option></term>
+				<listitem>
+					<para>Display usage information.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-h</option></term>
+				<term><option>--host</option></term>
+				<listitem>
+					<para>Specify the host to connect to. Defaults to localhost.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-i</option></term>
+				<term><option>--id</option></term>
+				<listitem>
+					<para>The id to use for this client. If not given, a client id will
+					be generated depending on the MQTT version being used. For v3.1.1/v3.1,
+					the client generates a client id in the format
+					<option>mosq-XXXXXXXXXXXXXXXXXX</option>, where the
+					<option>X</option> are replaced with random alphanumeric
+					characters. For v5.0, the client sends a zero length client id, and the
+					server will generate a client id for the client.</para>
+
+					<para>This option cannot be used at the same time as the
+					<option>--id-prefix</option> argument.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>--insecure</option></term>
+				<listitem>
+					<para>When using certificate based encryption, this option
+						disables verification of the server hostname in the
+						server certificate. This can be useful when testing
+						initial server configurations but makes it possible for
+						a malicious third party to impersonate your server
+						through DNS spoofing, for example. Use this option in
+						testing <emphasis>only</emphasis>. If you need to
+						resort to using this option in a production
+						environment, your setup is at fault and there is no
+						point using encryption.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>--key</option></term>
+				<listitem>
+					<para>Define the path to a file containing a PEM encoded
+						private key for this client, if required by the
+						server.</para>
+					<para>See also <option>--cert</option>.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>--keyform</option></term>
+				<listitem>
+					<para>Specifies the type of private key in use when making
+						TLS connections.. This can be "pem" or "engine". This
+						parameter is useful when a TPM module is being used and
+						the private key has been created with it. Defaults to
+						"pem", which means normal private key files are
+						used.</para>
+					<para>See also <option>--tls-engine</option>.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-L</option></term>
+				<term><option>--url</option></term>
+				<listitem>
+					<para>Specify specify user, password, hostname, port and
+						topic at once as a URL.  The URL must be in the form:
+						mqtt(s)://[username[:password]@]host[:port]/topic</para>
+					<para>If the scheme is mqtt:// then the port defaults to
+						1883. If the scheme is mqtts:// then the port defaults
+						to 8883.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>--nodelay</option></term>
+				<listitem>
+					<para>Disable Nagle's algorithm for the socket. This means
+						that latency of sent messages is reduced, which is
+						particularly noticable for small, reasonably infrequent
+						messages. Using this option may result in more packets
+						being sent than would normally be necessary.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-o</option> <replaceable>config-file</replaceable></term>
+				<listitem>
+					<para>Provide a path to a config file to load options from. The config file should have one pair of
+						<option>-option <replaceable>value</replaceable></option>
+						per line. The values in the config file will be used as defaults
+						and can be overridden by using the command line. The exceptions to
+						this are the message type options, of which only one can be
+						specified. Note also that currently some options cannot be negated,
+						e.g. <option>-S</option>. Config file lines that have a
+						<option>#</option> as the first character are treated as comments
+						and not processed any further.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-p</option></term>
+				<term><option>--port</option></term>
+				<listitem>
+					<para>Connect to the port specified. If not given, the
+						default of 1883 for plain MQTT or 8883 for MQTT over
+						TLS will be used.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-P</option></term>
+				<term><option>--pw</option></term>
+				<listitem>
+					<para>Provide a password to be used for authenticating with
+						the broker. Using this argument without also specifying
+						a username is invalid when using MQTT v3.1 or v3.1.1.
+						See also the <option>--username</option> option.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>--proxy</option></term>
+				<listitem>
+					<para>Specify a SOCKS5 proxy to connect through. "None" and
+						"username" authentication types are supported. The
+						<option>socks-url</option> must be of the form
+						<option>socks5h://[username[:password]@]host[:port]</option>.
+						The protocol prefix <option>socks5h</option> means that
+						hostnames are resolved by the proxy. The symbols %25,
+						%3A and %40 are URL decoded into %, : and @
+						respectively, if present in the username or
+						password.</para>
+					<para>If username is not given, then no authentication is
+						attempted. If the port is not given, then the default
+						of 1080 is used.</para>
+					<para>More SOCKS versions may be available in the future,
+						depending on demand, and will use different protocol
+						prefixes as described in <citerefentry>
+							<refentrytitle><link xlink:href="https://linux.die.net/man/1/curl">curl</link></refentrytitle>
+							<manvolnum>1</manvolnum> </citerefentry>.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>--psk</option></term>
+				<listitem>
+					<para>Provide the hexadecimal (no leading 0x)
+						pre-shared-key matching the one used on the broker to
+						use TLS-PSK encryption support.
+						<option>--psk-identity</option> must also be provided
+						to enable TLS-PSK.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>--psk-identity</option></term>
+				<listitem>
+					<para>The client identity to use with TLS-PSK support. This
+						may be used instead of a username if the broker is
+						configured to do so.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-q</option></term>
+				<term><option>--qos</option></term>
+				<listitem>
+					<para>Specify the quality of service to use for messages, from 0, 1 and 2. Defaults to 1.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>--quiet</option></term>
+				<listitem>
+					<para>If this argument is given, no runtime errors will be
+					printed. This excludes any error messages given in case of
+					invalid user input (e.g. using <option>--port</option> without a
+					port).</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>--tls-alpn</option></term>
+				<listitem>
+					<para>Provide a protocol to use when connecting to a broker
+						that has multiple protocols available on a single port,
+						e.g. MQTT and WebSockets.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>--tls-engine</option></term>
+				<listitem>
+					<para>A valid openssl engine id. These can be listed with
+						openssl engine command.</para>
+					<para>See also <option>--keyform</option>.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>--tls-engine-kpass-sha1</option></term>
+				<listitem>
+					<para>SHA1 of the private key password when using an TLS
+						engine.  Some TLS engines such as the TPM engine may
+						require the use of a password in order to be accessed.
+						This option allows a hex encoded SHA1 hash of the
+						password to the engine directly, instead of the user
+						being prompted for the password.</para>
+					<para>See also <option>--tls-engine</option>.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>--tls-version</option></term>
+				<listitem>
+					<para>Choose which TLS protocol version to use when
+						communicating with the broker. Valid options are
+						<option>tlsv1.3</option>, <option>tlsv1.2</option> and
+						<option>tlsv1.1</option>. The default value is
+						<option>tlsv1.2</option>. Must match the protocol
+						version used by the broker.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-u</option></term>
+				<term><option>--username</option></term>
+				<listitem>
+					<para>Provide a username to be used for authenticating with
+						the broker.  See also the <option>--pw</option>
+						argument.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>--unix</option></term>
+				<listitem>
+					<para>Connect to a broker through a local unix domain socket
+						instead of a TCP socket. This is a replacement for
+						<option>-h</option> and <option>-L</option>. For example:
+						<option>mosquitto_ctrl --unix /tmp/mosquitto.sock ...</option>
+					</para>
+					<para>See the <option>socket_domain</option> option in
+						<refentrytitle>
+							<link xlink:href="mosquitto-conf-5.html">mosquitto.conf</link>
+						</refentrytitle><manvolnum>5</manvolnum>
+						to configure Mosquitto to listen on a unix socket.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-V</option></term>
+				<term><option>--protocol-version</option></term>
+				<listitem>
+					<para>Specify which version of the MQTT protocol should be
+						used when connecting to the rmeote broker. Can be
+						<option>5</option>, <option>311</option>,
+						<option>31</option>, or the more verbose
+						<option>mqttv5</option>, <option>mqttv311</option>, or
+						<option>mqttv31</option>.
+						Defaults to <option>311</option>.</para>
+				</listitem>
+			</varlistentry>
+		</variablelist>
+	</refsect1>
+
+	<refsect1 id='properties'>
+		<title>Properties</title>
+		<para>The <option>-D</option> / <option>--property</option> option
+			allows adding properties to different stages of the mosquitto_ctrl
+			run. The properties supported for each command are as
+			follows:</para>
+
+		<refsect2>
+			<title>Connect</title>
+			<itemizedlist>
+				<listitem><para><option>authentication-data</option> (binary data - note treated as a string in mosquitto_ctrl)</para></listitem>
+				<listitem><para><option>authentication-method</option> (UTF-8 string pair)</para></listitem>
+				<listitem><para><option>maximum-packet-size</option> (32-bit unsigned integer)</para></listitem>
+				<listitem><para><option>receive-maximum</option> (16-bit unsigned integer)</para></listitem>
+				<listitem><para><option>request-problem-information</option> (8-bit unsigned integer)</para></listitem>
+				<listitem><para><option>request-response-information</option> (8-bit unsigned integer)</para></listitem>
+				<listitem><para><option>session-expiry-interval</option> (32-bit unsigned integer, note use <option>-x</option> instead)</para></listitem>
+				<listitem><para><option>topic-alias-maximum</option> (16-bit unsigned integer)</para></listitem>
+				<listitem><para><option>user-property</option> (UTF-8 string pair)</para></listitem>
+			</itemizedlist>
+		</refsect2>
+
+		<refsect2>
+			<title>Publish</title>
+			<itemizedlist>
+				<listitem><para><option>content-type</option> (UTF-8 string)</para></listitem>
+				<listitem><para><option>correlation-data</option> (binary data - note treated as a string in mosquitto_ctrl)</para></listitem>
+				<listitem><para><option>message-expiry-interval</option> (32-bit unsigned integer)</para></listitem>
+				<listitem><para><option>payload-format-indicator</option> (8-bit unsigned integer)</para></listitem>
+				<listitem><para><option>response-topic</option> (UTF-8 string)</para></listitem>
+				<listitem><para><option>topic-alias</option> (16-bit unsigned integer)</para></listitem>
+				<listitem><para><option>user-property</option> (UTF-8 string pair)</para></listitem>
+			</itemizedlist>
+		</refsect2>
+
+		<refsect2>
+			<title>Disconnect</title>
+			<itemizedlist>
+				<listitem><para><option>session-expiry-interval</option> (32-bit unsigned integer)</para></listitem>
+				<listitem><para><option>user-property</option> (UTF-8 string pair)</para></listitem>
+			</itemizedlist>
+		</refsect2>
+
+		<refsect2>
+			<title>Will properties</title>
+			<itemizedlist>
+				<listitem><para><option>content-type</option> (UTF-8 string)</para></listitem>
+				<listitem><para><option>correlation-data</option> (binary data - note treated as a string in mosquitto_ctrl)</para></listitem>
+				<listitem><para><option>message-expiry-interval</option> (32-bit unsigned integer)</para></listitem>
+				<listitem><para><option>payload-format-indicator</option> (8-bit unsigned integer)</para></listitem>
+				<listitem><para><option>response-topic</option> (UTF-8 string)</para></listitem>
+				<listitem><para><option>user-property</option> (UTF-8 string pair)</para></listitem>
+				<listitem><para><option>will-delay-interval</option> (32-bit unsigned integer)</para></listitem>
+			</itemizedlist>
+		</refsect2>
+	</refsect1>
+
+	<refsect1>
+		<title>Exit Status</title>
+            <para>
+                mosquitto_sub returns zero on success, or non-zero on error. If
+                the connection is refused by the broker at the MQTT level, then
+                the exit code is the CONNACK reason code. If another error
+                occurs, the exit code is a libmosquitto return value.
+            </para>
+
+			<para>MQTT v3.1.1 CONNACK codes:</para>
+			<itemizedlist mark="circle">
+				<listitem><para><option>0</option> Success</para></listitem>
+				<listitem><para><option>1</option> Connection refused: Bad protocol version</para></listitem>
+				<listitem><para><option>2</option> Connection refused: Identifier rejected</para></listitem>
+				<listitem><para><option>3</option> Connection refused: Server unavailable</para></listitem>
+				<listitem><para><option>4</option> Connection refused: Bad username/password</para></listitem>
+				<listitem><para><option>5</option> Connection refused: Not authorized</para></listitem>
+			</itemizedlist>
+
+			<para>MQTT v5 CONNACK codes:</para>
+			<itemizedlist>
+				<listitem><para><option>0</option> Success</para></listitem>
+				<listitem><para><option>128</option> Unspecified error</para></listitem>
+				<listitem><para><option>129</option> Malformed packet</para></listitem>
+				<listitem><para><option>130</option> Protocol error</para></listitem>
+				<listitem><para><option>131</option> Implementation specific error</para></listitem>
+				<listitem><para><option>132</option> Unsupported protocol version</para></listitem>
+				<listitem><para><option>133</option> Client ID not valid</para></listitem>
+				<listitem><para><option>134</option> Bad username or password</para></listitem>
+				<listitem><para><option>135</option> Not authorized</para></listitem>
+				<listitem><para><option>136</option> Server unavailable</para></listitem>
+				<listitem><para><option>137</option> Server busy</para></listitem>
+				<listitem><para><option>138</option> Banned</para></listitem>
+				<listitem><para><option>139</option> Server shutting down</para></listitem>
+				<listitem><para><option>140</option> Bad authentication method</para></listitem>
+				<listitem><para><option>141</option> Keep alive timeout</para></listitem>
+				<listitem><para><option>142</option> Session taken over</para></listitem>
+				<listitem><para><option>143</option> Topic filter invalid</para></listitem>
+				<listitem><para><option>144</option> Topic name invalid</para></listitem>
+				<listitem><para><option>147</option> Receive maximum exceeded</para></listitem>
+				<listitem><para><option>148</option> Topic alias invalid</para></listitem>
+				<listitem><para><option>149</option> Packet too large</para></listitem>
+				<listitem><para><option>148</option> Message rate too high</para></listitem>
+				<listitem><para><option>151</option> Quota exceeded</para></listitem>
+				<listitem><para><option>152</option> Administrative action</para></listitem>
+				<listitem><para><option>153</option> Payload format invalid</para></listitem>
+				<listitem><para><option>154</option> Retain not supported</para></listitem>
+				<listitem><para><option>155</option> QoS not supported</para></listitem>
+				<listitem><para><option>156</option> Use another server</para></listitem>
+				<listitem><para><option>157</option> Server moved</para></listitem>
+				<listitem><para><option>158</option> Shared subscriptions not supported</para></listitem>
+				<listitem><para><option>159</option> Connection rate exceeded</para></listitem>
+				<listitem><para><option>160</option> Maximum connect time</para></listitem>
+				<listitem><para><option>161</option> Subscription IDs not supported</para></listitem>
+				<listitem><para><option>162</option> Wildcard subscriptions not supported</para></listitem>
+			</itemizedlist>
+	</refsect1>
+
+	<refsect1>
+		<title>Bugs</title>
+		<para><command>mosquitto</command> bug information can be found at
+			<ulink url="https://github.com/eclipse/mosquitto/issues"/></para>
+	</refsect1>
+
+	<refsect1>
+		<title>See Also</title>
+		<simplelist type="inline">
+			<member>
+				<citerefentry>
+					<refentrytitle><link xlink:href="mqtt-7.html">mqtt</link></refentrytitle>
+					<manvolnum>7</manvolnum>
+				</citerefentry>
+			</member>
+			<member>
+				<citerefentry>
+					<refentrytitle><link xlink:href="mosquitto_rr-1.html">mosquitto_rr</link></refentrytitle>
+					<manvolnum>1</manvolnum>
+				</citerefentry>
+			</member>
+			<member>
+				<citerefentry>
+					<refentrytitle><link xlink:href="mosquitto_pub-1.html">mosquitto_pub</link></refentrytitle>
+					<manvolnum>1</manvolnum>
+				</citerefentry>
+			</member>
+			<member>
+				<citerefentry>
+					<refentrytitle><link xlink:href="mosquitto_sub-1.html">mosquitto_sub</link></refentrytitle>
+					<manvolnum>1</manvolnum>
+				</citerefentry>
+			</member>
+			<member>
+				<citerefentry>
+					<refentrytitle><link xlink:href="mosquitto-8.html">mosquitto</link></refentrytitle>
+					<manvolnum>8</manvolnum>
+				</citerefentry>
+			</member>
+			<member>
+				<citerefentry>
+					<refentrytitle><link xlink:href="libmosquitto-3.html">libmosquitto</link></refentrytitle>
+					<manvolnum>3</manvolnum>
+				</citerefentry>
+			</member>
+			<member>
+				<citerefentry>
+					<refentrytitle><link xlink:href="mosquitto-tls-7.html">mosquitto-tls</link></refentrytitle>
+					<manvolnum>7</manvolnum>
+				</citerefentry>
+			</member>
+		</simplelist>
+	</refsect1>
+
+	<refsect1>
+		<title>Author</title>
+		<para>Roger Light <email>roger@atchoo.org</email></para>
+	</refsect1>
+</refentry>

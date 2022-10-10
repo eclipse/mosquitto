@@ -50,7 +50,7 @@
 			password files for the mosquitto MQTT broker.</para>
 		<para>Usernames must not contain ":". Passwords are stored in a similar
 			format to
-			<citerefentry><refentrytitle>crypt</refentrytitle><manvolnum>3</manvolnum></citerefentry>.</para>
+		<citerefentry><refentrytitle><link xlink:href="https://linux.die.net/man/3/crypt">crypt</link></refentrytitle><manvolnum>3</manvolnum></citerefentry>.</para>
 	</refsect1>
 
 	<refsect1>
@@ -190,6 +190,22 @@
 		<para>Add a user to a new password file:</para>
 		<itemizedlist mark="circle">
 			<listitem><para>mosquitto_passwd <literal>-c</literal> /etc/mosquitto/passwd <literal>ral</literal></para></listitem>
+		</itemizedlist>
+		<para>Add a user to an existing password file:</para>
+		<itemizedlist mark="circle">
+			<listitem><para>mosquitto_passwd /etc/mosquitto/passwd <literal>ral</literal></para></listitem>
+		</itemizedlist>
+		<para>Add a user to an existing password file, passing the password on the command line:</para>
+		<itemizedlist mark="circle">
+			<listitem><para>mosquitto_passwd -b /etc/mosquitto/passwd <literal>ral</literal> <literal>z2Dr0BsvtZ</literal></para></listitem>
+		</itemizedlist>
+		<para>Update the password for a user in an existing password file:</para>
+		<itemizedlist mark="circle">
+			<listitem><para>mosquitto_passwd /etc/mosquitto/passwd <literal>ral</literal></para></listitem>
+		</itemizedlist>
+		<para>Add a user to an existing password file using the sha512 hash for Mosquitto 1.6 compatibility:</para>
+		<itemizedlist mark="circle">
+			<listitem><para>mosquitto_passwd -H sha512 /etc/mosquitto/passwd <literal>ral</literal></para></listitem>
 		</itemizedlist>
 		<para>Delete a user from a password file</para>
 		<itemizedlist mark="circle">

@@ -1,0 +1,357 @@
+[
+	{
+		"group": "v3.1.1 UNSUBSCRIBE",
+		"tests": [
+			{ "name": "A2 [MQTT-3.1.0-1]", "ver":4, "connect":false, "msgs": [{"type":"send", "payload":"A2 05 1234 0001 70"}]},
+			{ "name": "A2 (no subscribe) [MQTT-3.10.4-5]", "ver":4, "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"A2 05 1234 0001 70"},
+				{"type":"recv", "payload":"B0 02 1234"}
+			]},
+			{ "name": "A2 (with subscribe) [MQTT-3.10.4-5]", "ver":4, "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 06 1234 0001 70 00"},
+				{"type":"recv", "payload":"90 03 1234 00"},
+				{"type":"send", "payload":"A2 05 1234 0001 70"},
+				{"type":"recv", "payload":"B0 02 1234"}
+			]},
+			{ "name": "A2 multiple [MQTT-3.10.4-6]", "ver":4, "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"A2 08 1234 0001 70 0001 71"},
+				{"type":"recv", "payload":"B0 02 1234"}
+			]},
+			{ "name": "A2 multiple zero 1st", "ver":4, "msgs": [{"type":"send", "payload":"A2 07 1234 0000 0001 71"}]},
+			{ "name": "A2 multiple zero 2nd", "ver":4, "msgs": [{"type":"send", "payload":"A2 07 1234 0001 71 0000"}]},
+			{ "name": "A2 short 4", "ver":4, "msgs": [{"type":"send", "payload":"A2 04 1234 0001"}]},
+			{ "name": "A2 short 3", "ver":4, "msgs": [{"type":"send", "payload":"A2 03 1234 01"}]},
+			{ "name": "A2 short 2 [MQTT-3.10.3-2]", "ver":4, "msgs": [{"type":"send", "payload":"A2 02 1234"}]},
+			{ "name": "A2 short 1", "ver":4, "msgs": [{"type":"send", "payload":"A2 01 12"}]},
+			{ "name": "A2 short 0", "ver":4, "msgs": [{"type":"send", "payload":"A2 00"}]},
+			{ "name": "A0 [MQTT-3.10.1-1]", "ver":4, "msgs": [{"type":"send", "payload":"A0 05 1234 0001 70"}]},
+			{ "name": "A3 [MQTT-3.10.1-1]", "ver":4, "msgs": [{"type":"send", "payload":"A3 05 1234 0001 70"}]},
+			{ "name": "A4 [MQTT-3.10.1-1]", "ver":4, "msgs": [{"type":"send", "payload":"A4 05 1234 0001 70"}]},
+			{ "name": "A6 [MQTT-3.10.1-1]", "ver":4, "msgs": [{"type":"send", "payload":"A6 05 1234 0001 70"}]},
+			{ "name": "AA [MQTT-3.10.1-1]", "ver":4, "msgs": [{"type":"send", "payload":"AA 05 1234 0001 70"}]},
+			{ "name": "A2 topic with 0x0000", "ver":4, "msgs": [{"type":"send", "payload":"A2 09 1234 0005 746F700000"}]},
+			{ "name": "A2 topic with U+D800", "ver":4, "msgs": [{"type":"send", "payload":"A2 09 1234 0005 746FEDA080"}]},
+			{ "name": "A2 topic with U+0001", "ver":4, "msgs": [{"type":"send", "payload":"A2 09 1234 0005 746F700170"}]},
+			{ "name": "A2 topic with U+001F", "ver":4, "msgs": [{"type":"send", "payload":"A2 09 1234 0005 746F701F70"}]},
+			{ "name": "A2 topic with U+007F", "ver":4, "msgs": [{"type":"send", "payload":"A2 09 1234 0005 746F707F70"}]},
+			{ "name": "A2 topic with U+009F", "ver":4, "msgs": [{"type":"send", "payload":"A2 09 1234 0005 746FC29F70"}]},
+			{ "name": "A2 topic with U+FFFF", "ver":4, "msgs": [{"type":"send", "payload":"A2 09 1234 0005 746FEDBFBF"}]}
+		]
+	},
+	{
+		"group": "v5.0   UNSUBSCRIBE",
+		"tests": [
+			{ "name": "A2 [MQTT-3.1.0-1]", "ver":5, "connect":false, "msgs": [{"type":"send", "payload":"A2 06 1234 00 0001 70"}]},
+			{ "name": "A2 (no subscribe) [MQTT-3.10.4-5]", "ver":5, "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"A2 06 1234 00 0001 70"},
+				{"type":"recv", "payload":"B0 04 1234 00 11"}
+			]},
+			{ "name": "A2 (with subscribe) [MQTT-3.10.4-5]", "ver":5, "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 07 1234 00 0001 70 00"},
+				{"type":"recv", "payload":"90 04 1234 00 00"},
+				{"type":"send", "payload":"A2 06 1234 00 0001 70"},
+				{"type":"recv", "payload":"B0 04 1234 00 00"}
+			]},
+			{ "name": "A2 multiple zero 1st", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 08 1234 00 0000 0001 71"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 multiple zero 2nd", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 08 1234 00 0001 71 0000"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 short 5", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 05 1234 00 0001"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 short 4", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 04 1234 00 01"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 short 3 [MQTT-3.10.3-2]", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 03 1234 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 short 2", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 01 1234"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 short 1", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 01 12"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 short 0", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 00"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A0 [MQTT-3.10.1-1]", "ver":5, "msgs": [
+				{"type":"send", "payload":"A0 06 1234 00 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A3 [MQTT-3.10.1-1]", "ver":5, "msgs": [
+				{"type":"send", "payload":"A3 06 1234 00 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A4 [MQTT-3.10.1-1]", "ver":5, "msgs": [
+				{"type":"send", "payload":"A4 06 1234 00 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A6 [MQTT-3.10.1-1]", "ver":5, "msgs": [
+				{"type":"send", "payload":"A6 06 1234 00 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "AA [MQTT-3.10.1-1]", "ver":5, "msgs": [
+				{"type":"send", "payload":"AA 06 1234 00 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 topic with 0x0000", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 0A 1234 00 0005 746F700000"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 topic with U+D800", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 0A 1234 00 0005 746FEDA080"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 topic with U+0001", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 0A 1234 00 0005 746F700170"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 topic with U+001F", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 0A 1234 00 0005 746F701F70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 topic with U+007F", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 0A 1234 00 0005 746F707F70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 topic with U+009F", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 0A 1234 00 0005 746FC29F70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 topic with U+FFFF", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 0A 1234 00 0005 746FEDBFBF"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 multiple [MQTT-3.10.4-6]", "ver":5, "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"A2 09 1234 00 0001 70 0001 71"},
+				{"type":"recv", "payload":"B0 05 1234 00 11 11"}
+			]}
+		]
+	},
+	{
+		"group": "v5.0   UNSUBSCRIBE ALLOWED PROPERTIES",
+		"tests": [
+			{ "name": "A2 with user-property", "ver":5, "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"A2 0D 0001 07 26000170000171 0001 70"},
+				{"type":"recv", "payload":"B0 04 0001 00 11"}
+			]},
+			{ "name": "A2 with 2*user-property", "ver":5, "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"A2 14 0001 0E 26000170000171 26000170000171 0001 70"},
+				{"type":"recv", "payload":"B0 04 0001 00 11"}
+			]}
+		]
+	},
+	{
+		"group": "v5.0   UNSUBSCRIBE DISALLOWED PROPERTIES",
+		"tests": [
+			{ "name": "A2 with payload-format-indicator (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 08 0001 02 0100 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with request-problem-information (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 08 0001 02 1700 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with maximum-qos (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 08 0001 02 2400 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with retain-available (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 08 0001 02 2500 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with wildcard-subscription-available (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 08 0001 02 2800 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with subscription-identifier-available (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 08 0001 02 2900 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with shared-subscription-available (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 08 0001 02 2A00 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+
+			{ "name": "A2 with message-expiry-interval (four byte integer)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 0B 0001 05 0200000001 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with session-expiry-interval (four byte integer)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 0B 0001 05 1100000001 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with will-delay-interval (four byte integer)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 0B 0001 05 1800000001 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with maximum-packet-size (four byte integer)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 0B 0001 05 2700000001 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+
+			{ "name": "A2 with content-type (UTF-8 string)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 0A 0001 04 03000170 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with response-topic (UTF-8 string)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 0B 0001 00 04 08000170 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with assigned-client-identifier (UTF-8 string)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 0B 0001 00 04 12000170 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with authentication-method (UTF-8 string)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 0B 0001 00 04 15000170 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with response-information (UTF-8 string)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 0B 0001 00 04 1A000170 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with server-reference (UTF-8 string)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 0B 0001 00 04 1C000170 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+
+			{ "name": "A2 with correlation-data (binary data)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 0A 0001 04 09000170 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with authentication-data (binary data)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 0A 0001 04 16000170 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+
+			{ "name": "A2 with subscription-identifier (variable byte integer)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 08 0001 02 0B01 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+
+			{ "name": "A2 with server-keep-alive (two byte integer)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 09 0001 03 130101 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with receive-maximum (two byte integer)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 09 0001 03 210101 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with topic-alias-maximum (two byte integer)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 09 0001 03 220101 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with topic-alias (two byte integer)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 09 0001 03 230101 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+
+			{ "name": "A2 with invalid-property 0x00 (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 08 0001 02 0001 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with unknown-property 0x04 (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 08 0001 02 0401 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with unknown-property 0x05 (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 08 0001 02 0501 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with unknown-property 0x06 (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 08 0001 02 0601 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with unknown-property 0x07 (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 08 0001 02 0701 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with unknown-property 0x0A (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 08 0001 02 0A01 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with unknown-property 0x0C (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 08 0001 02 0C01 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with unknown-property 0x0D (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 08 0001 02 0D01 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with unknown-property 0x0E (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 08 0001 02 0E01 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with unknown-property 0x0F (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 08 0001 02 0F01 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with unknown-property 0x10 (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 08 0001 02 1001 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with unknown-property 0x14 (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 08 0001 02 1401 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with unknown-property 0x1B (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 08 0001 02 1B01 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with unknown-property 0x1D (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 08 0001 02 1D01 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with unknown-property 0x1E (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 08 0001 02 1E01 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with unknown-property 0x20 (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 08 0001 02 2001 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with unknown-property 0x7F (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 08 0001 02 7F01 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with invalid-property 0x8000 (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 09 0001 03 800001 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with unknown-property 0x8001 (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 09 0001 03 800101 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with unknown-property 0xFF7F (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 09 0001 03 FF7F01 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with unknown-property 0x808001 (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 0A 0001 04 80800101 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with unknown-property 0xFFFF7F (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 0A 0001 04 FFFF7F01 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with unknown-property 0x80808001 (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 0B 0001 05 8080800101 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "A2 with unknown-property 0xFFFFFF7F (byte)", "ver":5, "msgs": [
+				{"type":"send", "payload":"A2 0B 0001 05 FFFFFF7F01 0001 70"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]}
+		]
+	}
+]

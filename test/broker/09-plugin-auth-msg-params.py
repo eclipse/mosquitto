@@ -6,7 +6,7 @@ from mosq_test_helper import *
 
 def write_config(filename, port):
     with open(filename, 'w') as f:
-        f.write("port %d\n" % (port))
+        f.write("listener %d\n" % (port))
         f.write("auth_plugin c/auth_plugin_msg_params.so\n")
         f.write("allow_anonymous true\n")
 
@@ -15,8 +15,7 @@ conf_file = os.path.basename(__file__).replace('.py', '.conf')
 write_config(conf_file, port)
 
 rc = 1
-keepalive = 10
-connect_packet = mosq_test.gen_connect("msg-param-test", keepalive=keepalive)
+connect_packet = mosq_test.gen_connect("msg-param-test")
 connack_packet = mosq_test.gen_connack(rc=0)
 
 mid = 2
@@ -47,7 +46,9 @@ except mosq_test.TestError:
 finally:
     os.remove(conf_file)
     broker.terminate()
-    broker.wait()
+    if mosq_test.wait_for_subprocess(broker):
+        print("broker not terminated")
+        if rc == 0: rc=1
     (stdo, stde) = broker.communicate()
     if rc:
         print(stde.decode('utf-8'))

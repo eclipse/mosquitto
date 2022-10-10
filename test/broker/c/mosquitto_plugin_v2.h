@@ -2,14 +2,14 @@
 Copyright (c) 2012-2014 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
-are made available under the terms of the Eclipse Public License v1.0
+are made available under the terms of the Eclipse Public License 2.0
 and Eclipse Distribution License v1.0 which accompany this distribution.
- 
+
 The Eclipse Public License is available at
-   http://www.eclipse.org/legal/epl-v10.html
+   https://www.eclipse.org/legal/epl-2.0/
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
- 
+
 Contributors:
    Roger Light - initial implementation and documentation.
 */
@@ -157,7 +157,7 @@ int mosquitto_auth_plugin_cleanup(void *user_data, struct mosquitto_auth_opt *au
  */
 int mosquitto_auth_security_init(void *user_data, struct mosquitto_auth_opt *auth_opts, int auth_opt_count, bool reload);
 
-/* 
+/*
  * Function: mosquitto_auth_security_cleanup
  *
  * Called when the broker cleans up the security functions when it shuts down.

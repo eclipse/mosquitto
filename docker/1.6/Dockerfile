@@ -1,12 +1,13 @@
-FROM alpine:3.12
+FROM alpine:3.14
 
 LABEL maintainer="Roger Light <roger@atchoo.org>" \
     description="Eclipse Mosquitto MQTT Broker"
 
-ENV VERSION=1.6.11 \
-    DOWNLOAD_SHA256=b02d8f1368c40d5779ee125c37daf9003608eb47d7fbb04c5b938c76c1230a1f \
+ENV VERSION=1.6.15 \
+    DOWNLOAD_SHA256=5ff2271512f745bf1a451072cd3768a5daed71e90c5179fae12b049d6c02aa0f \
     GPG_KEYS=A0D6EEA1DCAE49A635A3B2F0779B22DFB3E717B7 \
-    LWS_VERSION=2.4.2
+    LWS_VERSION=4.2.1 \
+    LWS_SHA256=842da21f73ccba2be59e680de10a8cce7928313048750eb6ad73b6fa50763c51
 
 RUN set -x && \
     apk --no-cache add --virtual build-deps \
@@ -14,8 +15,10 @@ RUN set -x && \
         cmake \
         gnupg \
         libressl-dev \
+        linux-headers \
         util-linux-dev && \
     wget https://github.com/warmcat/libwebsockets/archive/v${LWS_VERSION}.tar.gz -O /tmp/lws.tar.gz && \
+    echo "$LWS_SHA256  /tmp/lws.tar.gz" | sha256sum -c - && \
     mkdir -p /build/lws && \
     tar --strip=1 -xf /tmp/lws.tar.gz -C /build/lws && \
     rm /tmp/lws.tar.gz && \
@@ -23,11 +26,14 @@ RUN set -x && \
     cmake . \
         -DCMAKE_BUILD_TYPE=MinSizeRel \
         -DCMAKE_INSTALL_PREFIX=/usr \
+        -DDISABLE_WERROR=ON \
         -DLWS_IPV6=ON \
         -DLWS_WITHOUT_BUILTIN_GETIFADDRS=ON \
         -DLWS_WITHOUT_CLIENT=ON \
         -DLWS_WITHOUT_EXTENSIONS=ON \
         -DLWS_WITHOUT_TESTAPPS=ON \
+        -DLWS_WITH_EXTERNAL_POLL=ON \
+        -DLWS_WITH_HTTP2=OFF \
         -DLWS_WITH_SHARED=OFF \
         -DLWS_WITH_ZIP_FOPS=OFF \
         -DLWS_WITH_ZLIB=OFF && \
@@ -39,9 +45,8 @@ RUN set -x && \
     export GNUPGHOME="$(mktemp -d)" && \
     found=''; \
     for server in \
-        ha.pool.sks-keyservers.net \
+        hkps://keys.openpgp.org \
         hkp://keyserver.ubuntu.com:80 \
-        hkp://p80.pool.sks-keyservers.net:80 \
         pgp.mit.edu \
     ; do \
         echo "Fetching GPG key $GPG_KEYS from $server"; \
@@ -77,6 +82,9 @@ RUN set -x && \
     install -s -m755 /build/mosq/src/mosquitto /usr/sbin/mosquitto && \
     install -s -m755 /build/mosq/src/mosquitto_passwd /usr/bin/mosquitto_passwd && \
     install -m644 /build/mosq/mosquitto.conf /mosquitto/config/mosquitto.conf && \
+    install -Dm644 /build/lws/LICENSE /usr/share/licenses/libwebsockets/LICENSE && \
+    install -Dm644 /build/mosq/epl-v10 /usr/share/licenses/mosquitto/epl-v10 && \
+    install -Dm644 /build/mosq/edl-v10 /usr/share/licenses/mosquitto/edl-v10 && \
     chown -R mosquitto:mosquitto /mosquitto && \
     apk --no-cache add \
         ca-certificates \

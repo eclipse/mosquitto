@@ -20,6 +20,11 @@ def next_test(tests, ports):
         else:
             args = [test[1]]
 
+        try:
+            args.append(test[2])
+        except IndexError:
+            pass
+
         for i in range(0, test[0]):
             proc_port = ports.pop()
             proc_ports = proc_ports + (proc_port,)

@@ -1,44 +1,27 @@
-FROM alpine:3.12
+FROM alpine:3.16
 
 LABEL maintainer="Roger Light <roger@atchoo.org>" \
     description="Eclipse Mosquitto MQTT Broker"
-
-ENV LWS_VERSION=2.4.2
 
 COPY mosq.tar.gz /tmp
 
 RUN set -x && \
     apk --no-cache add --virtual build-deps \
         build-base \
+        cjson-dev \
         cmake \
         gnupg \
+        linux-headers \
         openssl-dev \
+		sqlite-dev \
         util-linux-dev && \
-    wget https://github.com/warmcat/libwebsockets/archive/v${LWS_VERSION}.tar.gz -O /tmp/lws.tar.gz && \
-    mkdir -p /build/lws && \
-    tar --strip=1 -xf /tmp/lws.tar.gz -C /build/lws && \
-    rm /tmp/lws.tar.gz && \
-    cd /build/lws && \
-    cmake . \
-        -DCMAKE_BUILD_TYPE=MinSizeRel \
-        -DCMAKE_INSTALL_PREFIX=/usr \
-        -DLWS_IPV6=ON \
-        -DLWS_WITHOUT_BUILTIN_GETIFADDRS=ON \
-        -DLWS_WITHOUT_CLIENT=ON \
-        -DLWS_WITHOUT_EXTENSIONS=ON \
-        -DLWS_WITHOUT_TESTAPPS=ON \
-        -DLWS_WITH_SHARED=OFF \
-        -DLWS_WITH_ZIP_FOPS=OFF \
-        -DLWS_WITH_ZLIB=OFF && \
-    make -j "$(nproc)" && \
-    rm -rf /root/.cmake && \
     mkdir -p /build/mosq && \
     tar --strip=1 -xf /tmp/mosq.tar.gz -C /build/mosq && \
     rm /tmp/mosq.tar.gz && \
     make -C /build/mosq -j "$(nproc)" \
-        CFLAGS="-Wall -O2 -I/build/lws/include" \
-        LDFLAGS="-L/build/lws/lib" \
+        CFLAGS="-Wall -O2 -I/build" \
         WITH_ADNS=no \
+        WITH_CJSON=yes \
         WITH_DOCS=no \
         WITH_SHARED_LIBRARIES=yes \
         WITH_SRV=no \
@@ -55,11 +38,18 @@ RUN set -x && \
     install -s -m755 /build/mosq/client/mosquitto_sub /usr/bin/mosquitto_sub && \
     install -s -m644 /build/mosq/lib/libmosquitto.so.1 /usr/lib/libmosquitto.so.1 && \
     install -s -m755 /build/mosq/src/mosquitto /usr/sbin/mosquitto && \
-    install -s -m755 /build/mosq/src/mosquitto_passwd /usr/bin/mosquitto_passwd && \
+    install -s -m755 /build/mosq/apps/mosquitto_passwd/mosquitto_passwd /usr/bin/mosquitto_passwd && \
+    install -s -m755 /build/mosq/apps/mosquitto_ctrl/mosquitto_ctrl /usr/bin/mosquitto_ctrl && \
+    install -s -m755 /build/mosq/plugins/dynamic-security/mosquitto_dynamic_security.so /usr/lib/mosquitto_dynamic_security.so && \
+    install -s -m755 /build/mosq/plugins/persist-sqlite/mosquitto_persist_sqlite.so /usr/lib/mosquitto_persist_sqlite.so && \
     install -m644 /build/mosq/mosquitto.conf /mosquitto/config/mosquitto.conf && \
+    install -Dm644 /build/mosq/epl-v20 /usr/share/licenses/mosquitto/epl-v20 && \
+    install -Dm644 /build/mosq/edl-v10 /usr/share/licenses/mosquitto/edl-v10 && \
     chown -R mosquitto:mosquitto /mosquitto && \
     apk --no-cache add \
-        ca-certificates && \
+        ca-certificates \
+		cjson \
+		sqlite-libs && \
     apk del build-deps && \
     rm -rf /build
 

@@ -6,7 +6,7 @@ from mosq_test_helper import *
 
 def write_config(filename, port1, port2, protocol_version):
     with open(filename, 'w') as f:
-        f.write("port %d\n" % (port2))
+        f.write("listener %d\n" % (port2))
         f.write("\n")
         f.write("connection bridge_sample\n")
         f.write("address 127.0.0.1:%d\n" % (port1))
@@ -22,15 +22,16 @@ def do_test(proto_ver):
     else:
         bridge_protocol = "mqttv50"
         proto_ver_connect = 5
-        
+
     (port1, port2) = mosq_test.get_port(2)
     conf_file = os.path.basename(__file__).replace('.py', '.conf')
     write_config(conf_file, port1, port2, bridge_protocol)
 
     rc = 1
-    keepalive = 60
     client_id = socket.gethostname()+".bridge_sample"
-    connect_packet = mosq_test.gen_connect(client_id, keepalive=keepalive, clean_session=False, proto_ver=proto_ver_connect)
+    properties = mqtt5_props.gen_uint16_prop(mqtt5_props.PROP_TOPIC_ALIAS_MAXIMUM, 10)
+    properties += mqtt5_props.gen_uint16_prop(mqtt5_props.PROP_RECEIVE_MAXIMUM, 20)
+    connect_packet = mosq_test.gen_connect(client_id, clean_session=False, proto_ver=proto_ver_connect, properties=properties)
     connack_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
 
     if proto_ver == 5:
@@ -119,7 +120,9 @@ def do_test(proto_ver):
             pass
 
         broker.terminate()
-        broker.wait()
+        if mosq_test.wait_for_subprocess(broker):
+            print("broker not terminated")
+            if rc == 0: rc=1
         (stdo, stde) = broker.communicate()
         ssock.close()
         if rc:

@@ -1,12 +1,20 @@
+R=../../..
+include ${R}/config.mk
+
 .PHONY: all clean reallyclean
 
-CFLAGS=-I../../../lib -Werror
-LIBS=../../../lib/libmosquitto.so.1
+CFLAGS=-I${R}/include -I${R}/test -Werror
+LIBS=${R}/lib/libmosquitto.so.1
 
 SRC = \
 	01-con-discon-success.c \
+	01-con-discon-success-v5.c \
+	01-con-discon-will.c \
+	01-con-discon-will-v5.c \
+	01-con-discon-will-clear.c \
 	01-keepalive-pingreq.c \
 	01-no-clean-session.c \
+	01-pre-connect-callback.c \
 	01-server-keepalive-pingreq.c \
 	01-unpwd-set.c \
 	01-will-set.c \
@@ -55,12 +63,19 @@ SRC = \
 	11-prop-send-payload-format.c \
 	11-prop-send-content-type.c
 
+ifeq ($(WITH_TLS),yes)
+SRC += \
+	08-ssl-connect-cert-auth-custom-ssl-ctx.c \
+	08-ssl-connect-cert-auth-custom-ssl-ctx-default.c
+LIBS += -lssl -lcrypto
+endif
+
 TESTS = ${SRC:.c=.test}
 
 all : ${TESTS}
 
-${TESTS} : %.test: %.c
-	$(CC) $< -o $@ $(CFLAGS) $(LIBS)
+${TESTS} : %.test: %.c ${R}/test/path_helper.h
+	$(CC) $< -o $@ -D TEST_SOURCE_DIR='"$(realpath .)"' $(CFLAGS) $(LIBS)
 
 reallyclean : clean
 	-rm -f *.orig

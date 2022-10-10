@@ -1,5 +1,6 @@
+R=../..
 CFLAGS=-Wall -ggdb
-LDFLAGS=../../lib/libmosquitto.so.1 -lmysqlclient
+LDFLAGS=${R}/lib/libmosquitto.so.1 -lmysqlclient
 
 .PHONY: all clean
 
@@ -9,7 +10,7 @@ mosquitto_mysql_log : mysql_log.o
 	${CC} $^ -o $@ ${LDFLAGS}
 
 mysql_log.o : mysql_log.c
-	${CC} -c $^ -o $@ ${CFLAGS} -I../../lib
+	${CC} -c $^ -o $@ ${CFLAGS} -I${R}/lib
 
-clean : 
+clean :
 	-rm -f *.o mosquitto_mysql_log

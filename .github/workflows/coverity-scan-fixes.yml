@@ -1,0 +1,26 @@
+name: Coverity Scan fixes branch on a weekly basis
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "7 3 * * 3"
+
+jobs:
+  coverity:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        ref: fixes
+
+    - name: Dependencies
+      run: sudo apt-get install -y libcjson-dev libsqlite3-dev libssl-dev uthash-dev
+
+    - uses: vapier/coverity-scan-action@v1
+      with:
+        build_language: 'cxx'
+        project: "eclipse/mosquitto"
+        token: ${{ secrets.COVERITY_SCAN_TOKEN }}
+        email: ${{ secrets.COVERITY_SCAN_EMAIL }}
+        command: "make binary"
+

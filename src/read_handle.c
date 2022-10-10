@@ -1,15 +1,17 @@
 /*
-Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
-are made available under the terms of the Eclipse Public License v1.0
+are made available under the terms of the Eclipse Public License 2.0
 and Eclipse Distribution License v1.0 which accompany this distribution.
- 
+
 The Eclipse Public License is available at
-   http://www.eclipse.org/legal/epl-v10.html
+   https://www.eclipse.org/legal/epl-2.0/
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
- 
+
+SPDX-License-Identifier: EPL-2.0 OR BSD-3-Clause
+
 Contributors:
    Roger Light - initial implementation and documentation.
 */
@@ -30,7 +32,7 @@ Contributors:
 #include "util_mosq.h"
 
 
-int handle__packet(struct mosquitto_db *db, struct mosquitto *context)
+int handle__packet(struct mosquitto *context)
 {
 	int rc = MOSQ_ERR_INVAL;
 
@@ -38,46 +40,57 @@ int handle__packet(struct mosquitto_db *db, struct mosquitto *context)
 
 	switch((context->in_packet.command)&0xF0){
 		case CMD_PINGREQ:
-			return handle__pingreq(context);
+			rc = handle__pingreq(context);
+			break;
 		case CMD_PINGRESP:
-			return handle__pingresp(context);
+			rc = handle__pingresp(context);
+			break;
 		case CMD_PUBACK:
-			return handle__pubackcomp(db, context, "PUBACK");
+			rc = handle__pubackcomp(context, "PUBACK");
+			break;
 		case CMD_PUBCOMP:
-			return handle__pubackcomp(db, context, "PUBCOMP");
+			rc = handle__pubackcomp(context, "PUBCOMP");
+			break;
 		case CMD_PUBLISH:
-			rc = handle__publish(db, context);
+			rc = handle__publish(context);
 			break;
 		case CMD_PUBREC:
-			return handle__pubrec(db, context);
+			rc = handle__pubrec(context);
+			break;
 		case CMD_PUBREL:
-			return handle__pubrel(db, context);
+			rc = handle__pubrel(context);
+			break;
 		case CMD_CONNECT:
-			return handle__connect(db, context);
+			return handle__connect(context);
 		case CMD_DISCONNECT:
-			return handle__disconnect(db, context);
+			rc = handle__disconnect(context);
+			break;
 		case CMD_SUBSCRIBE:
-			rc = handle__subscribe(db, context);
+			rc = handle__subscribe(context);
 			break;
 		case CMD_UNSUBSCRIBE:
-			rc = handle__unsubscribe(db, context);
+			rc = handle__unsubscribe(context);
 			break;
 #ifdef WITH_BRIDGE
 		case CMD_CONNACK:
-			return handle__connack(db, context);
+			rc = handle__connack(context);
+			break;
 		case CMD_SUBACK:
-			return handle__suback(context);
+			rc = handle__suback(context);
+			break;
 		case CMD_UNSUBACK:
-			return handle__unsuback(context);
+			rc = handle__unsuback(context);
+			break;
 #endif
 		case CMD_AUTH:
-			return handle__auth(db, context);
+			rc = handle__auth(context);
+			break;
 		default:
 			rc = MOSQ_ERR_PROTOCOL;
 	}
 
 	if(context->protocol == mosq_p_mqtt5){
-		if(rc == MOSQ_ERR_PROTOCOL){
+		if(rc == MOSQ_ERR_PROTOCOL || rc == MOSQ_ERR_DUPLICATE_PROPERTY){
 			send__disconnect(context, MQTT_RC_PROTOCOL_ERROR, NULL);
 		}else if(rc == MOSQ_ERR_MALFORMED_PACKET){
 			send__disconnect(context, MQTT_RC_MALFORMED_PACKET, NULL);
@@ -87,10 +100,11 @@ int handle__packet(struct mosquitto_db *db, struct mosquitto *context)
 			send__disconnect(context, MQTT_RC_RETAIN_NOT_SUPPORTED, NULL);
 		}else if(rc == MOSQ_ERR_TOPIC_ALIAS_INVALID){
 			send__disconnect(context, MQTT_RC_TOPIC_ALIAS_INVALID, NULL);
+		}else if(rc == MOSQ_ERR_RECEIVE_MAXIMUM_EXCEEDED){
+			send__disconnect(context, MQTT_RC_RECEIVE_MAXIMUM_EXCEEDED, NULL);
 		}else if(rc == MOSQ_ERR_UNKNOWN || rc == MOSQ_ERR_NOMEM){
 			send__disconnect(context, MQTT_RC_UNSPECIFIED, NULL);
 		}
 	}
 	return rc;
 }
-

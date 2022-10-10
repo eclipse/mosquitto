@@ -5,10 +5,9 @@
 
 from mosq_test_helper import *
 
-def do_test(proto_ver):
+def do_test(start_broker, proto_ver):
     rc = 1
-    keepalive = 10
-    connect_packet = mosq_test.gen_connect("will-no-payload", keepalive=keepalive, will_topic="will/topic", will_qos=1, will_retain=True, proto_ver=proto_ver)
+    connect_packet = mosq_test.gen_connect("will-no-payload", will_topic="will/topic", will_qos=1, will_retain=True, proto_ver=proto_ver)
     b = list(struct.unpack("B"*len(connect_packet), connect_packet))
 
     bmod = b[0:len(b)-2]
@@ -17,25 +16,33 @@ def do_test(proto_ver):
     connect_packet = struct.pack("B"*len(bmod), *bmod)
 
     port = mosq_test.get_port()
-    broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port)
+    broker = None
+    if start_broker:
+        broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port)
 
     try:
         sock = mosq_test.do_client_connect(connect_packet, b"", port=port)
         sock.close()
+    except BrokenPipeError:
         rc = 0
-    except mosq_test.TestError:
-        pass
     finally:
-        broker.terminate()
-        broker.wait()
-        (stdo, stde) = broker.communicate()
-        if rc:
-            print(stde.decode('utf-8'))
-            print("proto_ver=%d" % (proto_ver))
-            exit(rc)
+        if broker:
+            broker.terminate()
+            if mosq_test.wait_for_subprocess(broker):
+                print("broker not terminated")
+                if rc == 0: rc=1
+            (stdo, stde) = broker.communicate()
+            if rc:
+                print(stde.decode('utf-8'))
+                print("proto_ver=%d" % (proto_ver))
+    return rc
 
 
-do_test(proto_ver=4)
-do_test(proto_ver=5)
-exit(0)
+def all_tests(start_broker=False):
+    rc = do_test(start_broker, proto_ver=4)
+    if rc:
+        return rc
+    return do_test(start_broker, proto_ver=5)
 
+if __name__ == '__main__':
+    sys.exit(all_tests(True))

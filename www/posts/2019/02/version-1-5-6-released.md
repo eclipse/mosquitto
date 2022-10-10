@@ -41,7 +41,7 @@ If a client publishes a retained message to a topic that they have access to,
 and then their access to that topic is revoked, the retained message will still
 be delivered to future subscribers. This behaviour may be undesirable in some
 applications, so a configuration option `check_retain_source` has been
-introduced to enforce checking of the retained message source on publish.  
+introduced to enforce checking of the retained message source on publish.
 
 Patches for older versions are available at <https://mosquitto.org/files/cve/2018-12546>
 

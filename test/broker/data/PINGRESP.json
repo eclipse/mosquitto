@@ -1,0 +1,41 @@
+[
+	{
+		"group": "v3.1.1 PINGRESP",
+		"tests": [
+			{ "name": "D0 [MQTT-3.1.0-1]", "ver":4, "connect": false, "msgs": [{"type":"send", "payload":"D0 00"}]},
+			{ "name": "D0 long", "ver":4, "msgs": [{"type":"send", "payload":"D0 01 00"}]},
+			{ "name": "D0", "ver":4, "msgs": [{"type":"send", "payload":"D0 00"}]},
+			{ "name": "D1", "ver":4, "msgs": [{"type":"send", "payload":"D1 00"}]},
+			{ "name": "D2", "ver":4, "msgs": [{"type":"send", "payload":"D2 00"}]},
+			{ "name": "D4", "ver":4, "msgs": [{"type":"send", "payload":"D4 00"}]},
+			{ "name": "D8", "ver":4, "msgs": [{"type":"send", "payload":"D8 00"}]}
+		]
+	},
+	{
+		"group": "v5.0   PINGRESP",
+		"tests": [
+			{ "name": "D0 [MQTT-3.1.0-1]", "ver":5, "connect": false, "msgs": [{"type":"send", "payload":"D0 00"}]},
+			{ "name": "D0 long", "ver":5, "msgs": [{"type":"send", "payload":"D0 01 00"}]},
+			{ "name": "D0", "ver":5, "msgs": [
+				{"type":"send", "payload":"D0 00"},
+				{"type":"recv", "payload":"E0 01 82"}
+			]},
+			{ "name": "D1", "ver":5, "msgs": [
+				{"type":"send", "payload":"D1 00"},
+				{"type":"recv", "payload":"E0 01 82"}
+			]},
+			{ "name": "D2", "ver":5, "msgs": [
+				{"type":"send", "payload":"D2 00"},
+				{"type":"recv", "payload":"E0 01 82"}
+			]},
+			{ "name": "D4", "ver":5, "msgs": [
+				{"type":"send", "payload":"D4 00"},
+				{"type":"recv", "payload":"E0 01 82"}
+			]},
+			{ "name": "D8", "ver":5, "msgs": [
+				{"type":"send", "payload":"D8 00"},
+				{"type":"recv", "payload":"E0 01 82"}
+			]}
+		]
+	}
+]

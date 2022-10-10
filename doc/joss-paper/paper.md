@@ -38,7 +38,7 @@ block for building larger systems and has been used to evaluate MQTT for use in
 Smart City Services [@Antonic_2015], and in the development of an environmental
 monitoring system [@Bellavista_2017]. Mosquitto has also been used to support
 research less directly as part of a scheme for remote control of an experiment
-[@Schulz_2014]. 
+[@Schulz_2014].
 
 Outside of academia, Mosquitto is used in other open source projects such as
 the [openHAB](http://www.openhab.org/) home automation project and

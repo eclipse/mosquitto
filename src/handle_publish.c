@@ -1,14 +1,16 @@
 /*
-Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
-are made available under the terms of the Eclipse Public License v1.0
+are made available under the terms of the Eclipse Public License 2.0
 and Eclipse Distribution License v1.0 which accompany this distribution.
 
 The Eclipse Public License is available at
-   http://www.eclipse.org/legal/epl-v10.html
+   https://www.eclipse.org/legal/epl-2.0/
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
+
+SPDX-License-Identifier: EPL-2.0 OR BSD-3-Clause
 
 Contributors:
    Roger Light - initial implementation and documentation.
@@ -32,16 +34,16 @@ Contributors:
 #include "util_mosq.h"
 
 
-int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
+int handle__publish(struct mosquitto *context)
 {
 	uint8_t dup;
 	int rc = 0;
 	int rc2;
 	uint8_t header = context->in_packet.command;
 	int res = 0;
-	struct mosquitto_msg_store *msg, *stored = NULL;
-	int len;
-	int slen;
+	struct mosquitto_base_msg *msg, *stored = NULL;
+	size_t len;
+	uint16_t slen;
 	char *topic_mount;
 	mosquitto_property *properties = NULL;
 	mosquitto_property *p, *p_prev;
@@ -55,20 +57,28 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 		return MOSQ_ERR_PROTOCOL;
 	}
 
-	msg = mosquitto__calloc(1, sizeof(struct mosquitto_msg_store));
+	context->stats.messages_received++;
+
+	msg = mosquitto__calloc(1, sizeof(struct mosquitto_base_msg));
 	if(msg == NULL){
 		return MOSQ_ERR_NOMEM;
 	}
 
 	dup = (header & 0x08)>>3;
 	msg->qos = (header & 0x06)>>1;
+	if(dup == 1 && msg->qos == 0){
+		log__printf(NULL, MOSQ_LOG_INFO,
+				"Invalid PUBLISH (QoS=0 and DUP=1) from %s, disconnecting.", context->id);
+		db__msg_store_free(msg);
+		return MOSQ_ERR_MALFORMED_PACKET;
+	}
 	if(msg->qos == 3){
 		log__printf(NULL, MOSQ_LOG_INFO,
 				"Invalid QoS in PUBLISH from %s, disconnecting.", context->id);
 		db__msg_store_free(msg);
 		return MOSQ_ERR_MALFORMED_PACKET;
 	}
-	if(msg->qos > context->maximum_qos){
+	if(msg->qos > context->max_qos){
 		log__printf(NULL, MOSQ_LOG_INFO,
 				"Too high QoS in PUBLISH from %s, disconnecting.", context->id);
 		db__msg_store_free(msg);
@@ -76,7 +86,7 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 	}
 	msg->retain = (header & 0x01);
 
-	if(msg->retain && db->config->retain_available == false){
+	if(msg->retain && db.config->retain_available == false){
 		db__msg_store_free(msg);
 		return MOSQ_ERR_RETAIN_NOT_SUPPORTED;
 	}
@@ -110,11 +120,7 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 		rc = property__read_all(CMD_PUBLISH, &context->in_packet, &properties);
 		if(rc){
 			db__msg_store_free(msg);
-			if(rc == MOSQ_ERR_PROTOCOL){
-				return MOSQ_ERR_MALFORMED_PACKET;
-			}else{
-				return rc;
-			}
+			return rc;
 		}
 
 		p = properties;
@@ -175,16 +181,16 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 		return MOSQ_ERR_TOPIC_ALIAS_INVALID;
 	}else if(topic_alias > 0){
 		if(msg->topic){
-			rc = alias__add(context, msg->topic, topic_alias);
+			rc = alias__add_r2l(context, msg->topic, (uint16_t)topic_alias);
 			if(rc){
 				db__msg_store_free(msg);
 				return rc;
 			}
 		}else{
-			rc = alias__find(context, &msg->topic, topic_alias);
+			rc = alias__find_by_alias(context, ALIAS_DIR_R2L, (uint16_t)topic_alias, &msg->topic);
 			if(rc){
 				db__msg_store_free(msg);
-				return MOSQ_ERR_TOPIC_ALIAS_INVALID;
+				return MOSQ_ERR_PROTOCOL;
 			}
 		}
 	}
@@ -200,7 +206,7 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 	if(mosquitto_pub_topic_check(msg->topic) != MOSQ_ERR_SUCCESS){
 		/* Invalid publish topic, just swallow it. */
 		db__msg_store_free(msg);
-		return MOSQ_ERR_PROTOCOL;
+		return MOSQ_ERR_MALFORMED_PACKET;
 	}
 
 	msg->payloadlen = context->in_packet.remaining_length - context->in_packet.pos;
@@ -215,32 +221,38 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 		snprintf(topic_mount, len, "%s%s", context->listener->mount_point, msg->topic);
 		topic_mount[len] = '\0';
 
-		mosquitto__free(msg->topic);
+		mosquitto__FREE(msg->topic);
 		msg->topic = topic_mount;
 	}
 
 	if(msg->payloadlen){
-		if(db->config->message_size_limit && msg->payloadlen > db->config->message_size_limit){
+		if(db.config->message_size_limit && msg->payloadlen > db.config->message_size_limit){
 			log__printf(NULL, MOSQ_LOG_DEBUG, "Dropped too large PUBLISH from %s (d%d, q%d, r%d, m%d, '%s', ... (%ld bytes))", context->id, dup, msg->qos, msg->retain, msg->source_mid, msg->topic, (long)msg->payloadlen);
-			reason_code = MQTT_RC_IMPLEMENTATION_SPECIFIC;
+			reason_code = MQTT_RC_PACKET_TOO_LARGE;
 			goto process_bad_message;
 		}
-		if(UHPA_ALLOC(msg->payload, msg->payloadlen) == 0){
+		msg->payload = mosquitto__malloc(msg->payloadlen+1);
+		if(msg->payload == NULL){
 			db__msg_store_free(msg);
 			return MOSQ_ERR_NOMEM;
 		}
+		/* Ensure payload is always zero terminated, this is the reason for the extra byte above */
+		((uint8_t *)msg->payload)[msg->payloadlen] = 0;
 
-		if(packet__read_bytes(&context->in_packet, UHPA_ACCESS(msg->payload, msg->payloadlen), msg->payloadlen)){
+		if(packet__read_bytes(&context->in_packet, msg->payload, msg->payloadlen)){
 			db__msg_store_free(msg);
 			return MOSQ_ERR_MALFORMED_PACKET;
 		}
 	}
 
 	/* Check for topic access */
-	rc = mosquitto_acl_check(db, context, msg->topic, msg->payloadlen, UHPA_ACCESS(msg->payload, msg->payloadlen), msg->qos, msg->retain, MOSQ_ACL_WRITE);
+	rc = mosquitto_acl_check(context, msg->topic, msg->payloadlen, msg->payload, msg->qos, msg->retain, MOSQ_ACL_WRITE);
 	if(rc == MOSQ_ERR_ACL_DENIED){
-		log__printf(NULL, MOSQ_LOG_DEBUG, "Denied PUBLISH from %s (d%d, q%d, r%d, m%d, '%s', ... (%ld bytes))", context->id, dup, msg->qos, msg->retain, msg->source_mid, msg->topic, (long)msg->payloadlen);
-			reason_code = MQTT_RC_NOT_AUTHORIZED;
+		log__printf(NULL, MOSQ_LOG_DEBUG,
+				"Denied PUBLISH from %s (d%d, q%d, r%d, m%d, '%s', ... (%ld bytes))",
+				context->id, dup, msg->qos, msg->retain, msg->source_mid, msg->topic,
+				(long)msg->payloadlen);
+		reason_code = MQTT_RC_NOT_AUTHORIZED;
 		goto process_bad_message;
 	}else if(rc != MOSQ_ERR_SUCCESS){
 		db__msg_store_free(msg);
@@ -251,18 +263,32 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 
 	if(!strncmp(msg->topic, "$CONTROL/", 9)){
 #ifdef WITH_CONTROL
-		rc = control__process(db, context, msg);
+		rc = control__process(context, msg);
 		db__msg_store_free(msg);
 		return rc;
 #else
-		db__msg_store_free(msg);
-		return MOSQ_ERR_SUCCESS;
+		reason_code = MQTT_RC_IMPLEMENTATION_SPECIFIC;
+		goto process_bad_message;
 #endif
 	}
 
 	{
-		rc = plugin__handle_message(db, context, msg);
-		if(rc){
+		rc = plugin__handle_message(context, msg);
+		if(rc == MOSQ_ERR_ACL_DENIED){
+			log__printf(NULL, MOSQ_LOG_DEBUG,
+					"Denied PUBLISH from %s (d%d, q%d, r%d, m%d, '%s', ... (%ld bytes))",
+					context->id, dup, msg->qos, msg->retain, msg->source_mid, msg->topic,
+					(long)msg->payloadlen);
+
+			reason_code = MQTT_RC_NOT_AUTHORIZED;
+			goto process_bad_message;
+		}else if(rc == MOSQ_ERR_QUOTA_EXCEEDED){
+			log__printf(NULL, MOSQ_LOG_DEBUG,
+					"Rejected PUBLISH from %s, quota exceeded.", context->id);
+
+			reason_code = MQTT_RC_QUOTA_EXCEEDED;
+			goto process_bad_message;
+		}else if(rc != MOSQ_ERR_SUCCESS){
 			db__msg_store_free(msg);
 			return rc;
 		}
@@ -271,15 +297,32 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 	if(msg->qos > 0){
 		db__message_store_find(context, msg->source_mid, &stored);
 	}
+
+	if(stored && msg->source_mid != 0 &&
+			(stored->qos != msg->qos
+			 || stored->payloadlen != msg->payloadlen
+			 || strcmp(stored->topic, msg->topic)
+			 || memcmp(stored->payload, msg->payload, msg->payloadlen) )){
+
+		log__printf(NULL, MOSQ_LOG_WARNING, "Reused message ID %u from %s detected. Clearing from storage.", msg->source_mid, context->id);
+		db__message_remove_incoming(context, msg->source_mid);
+		stored = NULL;
+	}
+
 	if(!stored){
+		if(msg->qos > 0 && context->msgs_in.inflight_quota == 0){
+			/* Client isn't allowed any more incoming messages, so fail early */
+			db__msg_store_free(msg);
+			return MOSQ_ERR_RECEIVE_MAXIMUM_EXCEEDED;
+		}
+
 		if(msg->qos == 0
-				|| db__ready_for_flight(&context->msgs_in, msg->qos)
+				|| db__ready_for_flight(context, mosq_md_in, msg->qos)
 				|| db__ready_for_queue(context, msg->qos, &context->msgs_in)){
 
 			dup = 0;
-			if(db__message_store(db, context, msg, message_expiry_interval, 0, mosq_mo_client)){
-				return 1;
-			}
+			rc = db__message_store(context, msg, message_expiry_interval, 0, mosq_mo_client);
+			if(rc) return rc;
 		}else{
 			/* Client isn't allowed any more incoming messages, so fail early */
 			reason_code = MQTT_RC_QUOTA_EXCEEDED;
@@ -295,12 +338,12 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 
 	switch(stored->qos){
 		case 0:
-			rc2 = sub__messages_queue(db, context->id, stored->topic, stored->qos, stored->retain, &stored);
+			rc2 = sub__messages_queue(context->id, stored->topic, stored->qos, stored->retain, &stored);
 			if(rc2 > 0) rc = 1;
 			break;
 		case 1:
 			util__decrement_receive_quota(context);
-			rc2 = sub__messages_queue(db, context->id, stored->topic, stored->qos, stored->retain, &stored);
+			rc2 = sub__messages_queue(context->id, stored->topic, stored->qos, stored->retain, &stored);
 			/* stored may now be free, so don't refer to it */
 			if(rc2 == MOSQ_ERR_SUCCESS || context->protocol != mosq_p_mqtt5){
 				if(send__puback(context, mid, 0, NULL)) rc = 1;
@@ -312,7 +355,7 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 			break;
 		case 2:
 			if(dup == 0){
-				res = db__message_insert(db, context, stored->source_mid, mosq_md_in, stored->qos, stored->retain, stored, NULL, false);
+				res = db__message_insert_incoming(context, 0, stored, true);
 			}else{
 				res = 0;
 			}
@@ -327,7 +370,7 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 			break;
 	}
 
-	db__message_write_queued_in(db, context);
+	db__message_write_queued_in(context);
 	return rc;
 process_bad_message:
 	rc = 1;
@@ -340,11 +383,7 @@ process_bad_message:
 				rc = send__puback(context, msg->source_mid, reason_code, NULL);
 				break;
 			case 2:
-				if(context->protocol == mosq_p_mqtt5){
-					rc = send__pubrec(context, msg->source_mid, reason_code, NULL);
-				}else{
-					rc = send__pubrec(context, msg->source_mid, 0, NULL);
-				}
+				rc = send__pubrec(context, msg->source_mid, reason_code, NULL);
 				break;
 		}
 		db__msg_store_free(msg);

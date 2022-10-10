@@ -1,21 +1,29 @@
+R=../../..
 .PHONY: all test clean reallyclean
 
-CFLAGS=-I../../../lib -I../../../src -Wall -Werror
+CFLAGS=-I${R}/include -Wall -Werror
 
 PLUGIN_SRC = \
-	auth_plugin_v4.c \
-	auth_plugin_v5.c \
-	auth_plugin_v5_handle_message.c \
-	auth_plugin_pwd.c \
 	auth_plugin_acl.c \
+	auth_plugin_acl_change.c \
 	auth_plugin_acl_sub_denied.c \
-	auth_plugin_v2.c \
 	auth_plugin_context_params.c \
-	auth_plugin_msg_params.c \
+	auth_plugin_delayed.c \
 	auth_plugin_extended_multiple.c \
+	auth_plugin_extended_reauth.c \
 	auth_plugin_extended_single.c \
 	auth_plugin_extended_single2.c \
+	auth_plugin_id_change.c \
+	auth_plugin_msg_params.c \
 	auth_plugin_publish.c \
+	auth_plugin_pwd.c \
+	auth_plugin_v2.c \
+	auth_plugin_v3.c \
+	auth_plugin_v4.c \
+	auth_plugin_v5.c \
+	auth_plugin_v5_control.c \
+	auth_plugin_v5_handle_message.c \
+	auth_plugin_v5_handle_tick.c \
 	plugin_control.c
 
 PLUGINS = ${PLUGIN_SRC:.c=.so}
@@ -34,7 +42,7 @@ ${PLUGINS} : %.so: %.c
 
 
 ${TESTS} : %.test: %.c
-	$(CC) ${CFLAGS} $< -o $@ ../../../lib/libmosquitto.so.1
+	$(CC) ${CFLAGS} $< -o $@ ${R}/lib/libmosquitto.so.1
 
 
 reallyclean : clean

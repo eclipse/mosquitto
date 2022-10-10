@@ -30,12 +30,12 @@ sock.listen(5)
 
 client_args = sys.argv[1:]
 env = dict(os.environ)
-env['LD_LIBRARY_PATH'] = '../../lib:../../lib/cpp'
+env['LD_LIBRARY_PATH'] = mosq_test.get_build_root() + '/lib:' + mosq_test.get_build_root() + '/lib/cpp'
 try:
     pp = env['PYTHONPATH']
 except KeyError:
     pp = ''
-env['PYTHONPATH'] = '../../lib/python:'+pp
+env['PYTHONPATH'] = mosq_test.get_build_root() + '/lib/python:'+pp
 client = mosq_test.start_client(filename=sys.argv[1].replace('/', '-'), cmd=client_args, env=env, port=port)
 
 try:
@@ -64,12 +64,9 @@ finally:
             break
         time.sleep(0.1)
 
-    try:
-        client.terminate()
-    except OSError:
-        pass
-
-    client.wait()
+    if mosq_test.wait_for_subprocess(client):
+        print("test client not finished")
+        rc=1
     sock.close()
     if client.returncode != 0:
         exit(1)

@@ -1,14 +1,16 @@
 /*
-Copyright (c) 2018-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2018-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
-are made available under the terms of the Eclipse Public License v1.0
+are made available under the terms of the Eclipse Public License 2.0
 and Eclipse Distribution License v1.0 which accompany this distribution.
 
 The Eclipse Public License is available at
-   http://www.eclipse.org/legal/epl-v10.html
+   https://www.eclipse.org/legal/epl-2.0/
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
+
+SPDX-License-Identifier: EPL-2.0 OR BSD-3-Clause
 
 Contributors:
    Roger Light - initial implementation and documentation.
@@ -31,27 +33,29 @@ Contributors:
 #include "property_mosq.h"
 
 
-int property__read(struct mosquitto__packet *packet, int32_t *len, mosquitto_property *property)
+static int property__read(struct mosquitto__packet_in *packet, uint32_t *len, mosquitto_property *property)
 {
 	int rc;
-	int32_t property_identifier;
+	uint32_t property_identifier;
 	uint8_t byte;
-	int8_t byte_count;
+	uint8_t byte_count;
 	uint16_t uint16;
 	uint32_t uint32;
-	int32_t varint;
+	uint32_t varint;
 	char *str1, *str2;
-	int slen1, slen2;
+	uint16_t slen1, slen2;
 
 	if(!property) return MOSQ_ERR_INVAL;
 
 	rc = packet__read_varint(packet, &property_identifier, NULL);
-	if(rc) return rc;
+	if(rc){
+		return rc;
+	}
 	*len -= 1;
 
 	memset(property, 0, sizeof(mosquitto_property));
 
-	property->identifier = property_identifier;
+	property->identifier = (int32_t)property_identifier;
 
 	switch(property_identifier){
 		case MQTT_PROP_PAYLOAD_FORMAT_INDICATOR:
@@ -125,7 +129,7 @@ int property__read(struct mosquitto__packet *packet, int32_t *len, mosquitto_pro
 
 			rc = packet__read_string(packet, &str2, &slen2);
 			if(rc){
-				mosquitto__free(str1);
+				mosquitto__FREE(str1);
 				return rc;
 			}
 			*len = (*len) - 2 - slen2; /* uint16, string len */
@@ -145,10 +149,10 @@ int property__read(struct mosquitto__packet *packet, int32_t *len, mosquitto_pro
 }
 
 
-int property__read_all(int command, struct mosquitto__packet *packet, mosquitto_property **properties)
+int property__read_all(int command, struct mosquitto__packet_in *packet, mosquitto_property **properties)
 {
 	int rc;
-	int32_t proplen;
+	uint32_t proplen;
 	mosquitto_property *p, *tail = NULL;
 
 	rc = packet__read_varint(packet, &proplen, NULL);
@@ -165,9 +169,9 @@ int property__read_all(int command, struct mosquitto__packet *packet, mosquitto_
 			return MOSQ_ERR_NOMEM;
 		}
 
-		rc = property__read(packet, &proplen, p); 
+		rc = property__read(packet, &proplen, p);
 		if(rc){
-			mosquitto__free(p);
+			mosquitto__FREE(p);
 			mosquitto_property_free_all(properties);
 			return rc;
 		}
@@ -202,17 +206,17 @@ void property__free(mosquitto_property **property)
 		case MQTT_PROP_RESPONSE_INFORMATION:
 		case MQTT_PROP_SERVER_REFERENCE:
 		case MQTT_PROP_REASON_STRING:
-			mosquitto__free((*property)->value.s.v);
+			mosquitto__FREE((*property)->value.s.v);
 			break;
 
 		case MQTT_PROP_AUTHENTICATION_DATA:
 		case MQTT_PROP_CORRELATION_DATA:
-			mosquitto__free((*property)->value.bin.v);
+			mosquitto__FREE((*property)->value.bin.v);
 			break;
 
 		case MQTT_PROP_USER_PROPERTY:
-			mosquitto__free((*property)->name.v);
-			mosquitto__free((*property)->value.s.v);
+			mosquitto__FREE((*property)->name.v);
+			mosquitto__FREE((*property)->value.s.v);
 			break;
 
 		case MQTT_PROP_PAYLOAD_FORMAT_INDICATOR:
@@ -236,12 +240,11 @@ void property__free(mosquitto_property **property)
 			break;
 	}
 
-	free(*property);
-	*property = NULL;
+	SAFE_FREE(*property);
 }
 
 
-void mosquitto_property_free_all(mosquitto_property **property)
+BROKER_EXPORT void mosquitto_property_free_all(mosquitto_property **property)
 {
 	mosquitto_property *p, *next;
 
@@ -257,7 +260,7 @@ void mosquitto_property_free_all(mosquitto_property **property)
 }
 
 
-int property__get_length(const mosquitto_property *property)
+unsigned int property__get_length(const mosquitto_property *property)
 {
 	if(!property) return 0;
 
@@ -304,7 +307,7 @@ int property__get_length(const mosquitto_property *property)
 		/* binary */
 		case MQTT_PROP_CORRELATION_DATA:
 		case MQTT_PROP_AUTHENTICATION_DATA:
-			return 3 + property->value.bin.len; /* 1 + 2 bytes (len) + X bytes (payload) */
+			return 3U + property->value.bin.len; /* 1 + 2 bytes (len) + X bytes (payload) */
 
 		/* string */
 		case MQTT_PROP_CONTENT_TYPE:
@@ -314,11 +317,11 @@ int property__get_length(const mosquitto_property *property)
 		case MQTT_PROP_RESPONSE_INFORMATION:
 		case MQTT_PROP_SERVER_REFERENCE:
 		case MQTT_PROP_REASON_STRING:
-			return 3 + property->value.s.len; /* 1 + 2 bytes (len) + X bytes (string) */
+			return 3U + property->value.s.len; /* 1 + 2 bytes (len) + X bytes (string) */
 
 		/* string pair */
 		case MQTT_PROP_USER_PROPERTY:
-			return 5 + property->value.s.len + property->name.len; /* 1 + 2*(2 bytes (len) + X bytes (string))*/
+			return 5U + property->value.s.len + property->name.len; /* 1 + 2*(2 bytes (len) + X bytes (string))*/
 
 		default:
 			return 0;
@@ -327,10 +330,10 @@ int property__get_length(const mosquitto_property *property)
 }
 
 
-int property__get_length_all(const mosquitto_property *property)
+unsigned int property__get_length_all(const mosquitto_property *property)
 {
 	const mosquitto_property *p;
-	int len = 0;
+	unsigned int len = 0;
 
 	p = property;
 	while(p){
@@ -343,9 +346,9 @@ int property__get_length_all(const mosquitto_property *property)
 
 /* Return the number of bytes we need to add on to the remaining length when
  * encoding these properties. */
-int property__get_remaining_length(const mosquitto_property *props)
+unsigned int property__get_remaining_length(const mosquitto_property *props)
 {
-	int proplen, varbytes;
+	unsigned int proplen, varbytes;
 
 	proplen = property__get_length_all(props);
 	varbytes = packet__varint_bytes(proplen);
@@ -353,11 +356,11 @@ int property__get_remaining_length(const mosquitto_property *props)
 }
 
 
-int property__write(struct mosquitto__packet *packet, const mosquitto_property *property)
+static int property__write(struct mosquitto__packet *packet, const mosquitto_property *property)
 {
 	int rc;
 
-	rc = packet__write_varint(packet, property->identifier);
+	rc = packet__write_varint(packet, (uint32_t)property->identifier);
 	if(rc) return rc;
 
 	switch(property->identifier){
@@ -440,7 +443,7 @@ int property__write_all(struct mosquitto__packet *packet, const mosquitto_proper
 }
 
 
-int mosquitto_property_check_command(int command, int identifier)
+BROKER_EXPORT int mosquitto_property_check_command(int command, int identifier)
 {
 	switch(identifier){
 		case MQTT_PROP_PAYLOAD_FORMAT_INDICATOR:
@@ -534,7 +537,7 @@ int mosquitto_property_check_command(int command, int identifier)
 }
 
 
-const char *mosquitto_property_identifier_to_string(int identifier)
+BROKER_EXPORT const char *mosquitto_property_identifier_to_string(int identifier)
 {
 	switch(identifier){
 		case MQTT_PROP_PAYLOAD_FORMAT_INDICATOR:
@@ -597,7 +600,7 @@ const char *mosquitto_property_identifier_to_string(int identifier)
 }
 
 
-int mosquitto_string_to_property_info(const char *propname, int *identifier, int *type)
+BROKER_EXPORT int mosquitto_string_to_property_info(const char *propname, int *identifier, int *type)
 {
 	if(!propname) return MOSQ_ERR_INVAL;
 
@@ -706,7 +709,7 @@ static void property__add(mosquitto_property **proplist, struct mqtt5__property 
 }
 
 
-int mosquitto_property_add_byte(mosquitto_property **proplist, int identifier, uint8_t value)
+BROKER_EXPORT int mosquitto_property_add_byte(mosquitto_property **proplist, int identifier, uint8_t value)
 {
 	mosquitto_property *prop;
 
@@ -734,7 +737,7 @@ int mosquitto_property_add_byte(mosquitto_property **proplist, int identifier, u
 }
 
 
-int mosquitto_property_add_int16(mosquitto_property **proplist, int identifier, uint16_t value)
+BROKER_EXPORT int mosquitto_property_add_int16(mosquitto_property **proplist, int identifier, uint16_t value)
 {
 	mosquitto_property *prop;
 
@@ -758,7 +761,7 @@ int mosquitto_property_add_int16(mosquitto_property **proplist, int identifier, 
 }
 
 
-int mosquitto_property_add_int32(mosquitto_property **proplist, int identifier, uint32_t value)
+BROKER_EXPORT int mosquitto_property_add_int32(mosquitto_property **proplist, int identifier, uint32_t value)
 {
 	mosquitto_property *prop;
 
@@ -783,7 +786,7 @@ int mosquitto_property_add_int32(mosquitto_property **proplist, int identifier, 
 }
 
 
-int mosquitto_property_add_varint(mosquitto_property **proplist, int identifier, uint32_t value)
+BROKER_EXPORT int mosquitto_property_add_varint(mosquitto_property **proplist, int identifier, uint32_t value)
 {
 	mosquitto_property *prop;
 
@@ -802,7 +805,7 @@ int mosquitto_property_add_varint(mosquitto_property **proplist, int identifier,
 }
 
 
-int mosquitto_property_add_binary(mosquitto_property **proplist, int identifier, const void *value, uint16_t len)
+BROKER_EXPORT int mosquitto_property_add_binary(mosquitto_property **proplist, int identifier, const void *value, uint16_t len)
 {
 	mosquitto_property *prop;
 
@@ -822,7 +825,7 @@ int mosquitto_property_add_binary(mosquitto_property **proplist, int identifier,
 	if(len){
 		prop->value.bin.v = mosquitto__malloc(len);
 		if(!prop->value.bin.v){
-			mosquitto__free(prop);
+			mosquitto__FREE(prop);
 			return MOSQ_ERR_NOMEM;
 		}
 
@@ -835,13 +838,15 @@ int mosquitto_property_add_binary(mosquitto_property **proplist, int identifier,
 }
 
 
-int mosquitto_property_add_string(mosquitto_property **proplist, int identifier, const char *value)
+BROKER_EXPORT int mosquitto_property_add_string(mosquitto_property **proplist, int identifier, const char *value)
 {
 	mosquitto_property *prop;
+	size_t slen = 0;
 
 	if(!proplist) return MOSQ_ERR_INVAL;
 	if(value){
-		if(mosquitto_validate_utf8(value, strlen(value))) return MOSQ_ERR_MALFORMED_UTF8;
+		slen = strlen(value);
+		if(mosquitto_validate_utf8(value, (int)slen)) return MOSQ_ERR_MALFORMED_UTF8;
 	}
 
 	if(identifier != MQTT_PROP_CONTENT_TYPE
@@ -860,13 +865,13 @@ int mosquitto_property_add_string(mosquitto_property **proplist, int identifier,
 
 	prop->client_generated = true;
 	prop->identifier = identifier;
-	if(value && strlen(value)){
+	if(value && slen > 0){
 		prop->value.s.v = mosquitto__strdup(value);
 		if(!prop->value.s.v){
-			mosquitto__free(prop);
+			mosquitto__FREE(prop);
 			return MOSQ_ERR_NOMEM;
 		}
-		prop->value.s.len = strlen(value);
+		prop->value.s.len = (uint16_t)slen;
 	}
 
 	property__add(proplist, prop);
@@ -874,17 +879,19 @@ int mosquitto_property_add_string(mosquitto_property **proplist, int identifier,
 }
 
 
-int mosquitto_property_add_string_pair(mosquitto_property **proplist, int identifier, const char *name, const char *value)
+BROKER_EXPORT int mosquitto_property_add_string_pair(mosquitto_property **proplist, int identifier, const char *name, const char *value)
 {
 	mosquitto_property *prop;
+	size_t slen_name = 0, slen_value = 0;
 
 	if(!proplist) return MOSQ_ERR_INVAL;
 	if(identifier != MQTT_PROP_USER_PROPERTY) return MOSQ_ERR_INVAL;
 	if(name){
-		if(mosquitto_validate_utf8(name, strlen(name))) return MOSQ_ERR_MALFORMED_UTF8;
+		slen_name = strlen(name);
+		if(mosquitto_validate_utf8(name, (int)slen_name)) return MOSQ_ERR_MALFORMED_UTF8;
 	}
 	if(value){
-		if(mosquitto_validate_utf8(value, strlen(value))) return MOSQ_ERR_MALFORMED_UTF8;
+		if(mosquitto_validate_utf8(value, (int)slen_value)) return MOSQ_ERR_MALFORMED_UTF8;
 	}
 
 	prop = mosquitto__calloc(1, sizeof(mosquitto_property));
@@ -893,30 +900,30 @@ int mosquitto_property_add_string_pair(mosquitto_property **proplist, int identi
 	prop->client_generated = true;
 	prop->identifier = identifier;
 
-	if(name && strlen(name)){
+	if(name){
 		prop->name.v = mosquitto__strdup(name);
 		if(!prop->name.v){
-			mosquitto__free(prop);
+			mosquitto__FREE(prop);
 			return MOSQ_ERR_NOMEM;
 		}
-		prop->name.len = strlen(name);
+		prop->name.len = (uint16_t)strlen(name);
 	}
 
-	if(value && strlen(value)){
+	if(value){
 		prop->value.s.v = mosquitto__strdup(value);
 		if(!prop->value.s.v){
-			mosquitto__free(prop->name.v);
-			mosquitto__free(prop);
+			mosquitto__FREE(prop->name.v);
+			mosquitto__FREE(prop);
 			return MOSQ_ERR_NOMEM;
 		}
-		prop->value.s.len = strlen(value);
+		prop->value.s.len = (uint16_t)strlen(value);
 	}
 
 	property__add(proplist, prop);
 	return MOSQ_ERR_SUCCESS;
 }
 
-int mosquitto_property_check_all(int command, const mosquitto_property *properties)
+BROKER_EXPORT int mosquitto_property_check_all(int command, const mosquitto_property *properties)
 {
 	const mosquitto_property *p, *tail;
 	int rc;
@@ -926,6 +933,7 @@ int mosquitto_property_check_all(int command, const mosquitto_property *properti
 	while(p){
 		/* Validity checks */
 		if(p->identifier == MQTT_PROP_REQUEST_PROBLEM_INFORMATION
+				|| p->identifier == MQTT_PROP_PAYLOAD_FORMAT_INDICATOR
 				|| p->identifier == MQTT_PROP_REQUEST_RESPONSE_INFORMATION
 				|| p->identifier == MQTT_PROP_MAXIMUM_QOS
 				|| p->identifier == MQTT_PROP_RETAIN_AVAILABLE
@@ -953,14 +961,14 @@ int mosquitto_property_check_all(int command, const mosquitto_property *properti
 		if(rc) return rc;
 
 		/* Check for duplicates */
-		tail = p->next;
-		while(tail){
-			if(p->identifier == tail->identifier
-					&& p->identifier != MQTT_PROP_USER_PROPERTY){
-
-				return MOSQ_ERR_DUPLICATE_PROPERTY;
+		if(p->identifier != MQTT_PROP_USER_PROPERTY){
+			tail = p->next;
+			while(tail){
+				if(p->identifier == tail->identifier){
+					return MOSQ_ERR_DUPLICATE_PROPERTY;
+				}
+				tail = tail->next;
 			}
-			tail = tail->next;
 		}
 
 		p = p->next;
@@ -969,7 +977,7 @@ int mosquitto_property_check_all(int command, const mosquitto_property *properti
 	return MOSQ_ERR_SUCCESS;
 }
 
-const mosquitto_property *property__get_property(const mosquitto_property *proplist, int identifier, bool skip_first)
+static const mosquitto_property *property__get_property(const mosquitto_property *proplist, int identifier, bool skip_first)
 {
 	const mosquitto_property *p;
 	bool is_first = true;
@@ -989,7 +997,7 @@ const mosquitto_property *property__get_property(const mosquitto_property *propl
 }
 
 
-int mosquitto_property_identifier(const mosquitto_property *property)
+BROKER_EXPORT int mosquitto_property_identifier(const mosquitto_property *property)
 {
 	if(property == NULL) return 0;
 
@@ -997,7 +1005,7 @@ int mosquitto_property_identifier(const mosquitto_property *property)
 }
 
 
-const mosquitto_property *mosquitto_property_next(const mosquitto_property *proplist)
+BROKER_EXPORT const mosquitto_property *mosquitto_property_next(const mosquitto_property *proplist)
 {
 	if(proplist == NULL) return NULL;
 
@@ -1005,7 +1013,7 @@ const mosquitto_property *mosquitto_property_next(const mosquitto_property *prop
 }
 
 
-const mosquitto_property *mosquitto_property_read_byte(const mosquitto_property *proplist, int identifier, uint8_t *value, bool skip_first)
+BROKER_EXPORT const mosquitto_property *mosquitto_property_read_byte(const mosquitto_property *proplist, int identifier, uint8_t *value, bool skip_first)
 {
 	const mosquitto_property *p;
 	if(!proplist) return NULL;
@@ -1029,7 +1037,7 @@ const mosquitto_property *mosquitto_property_read_byte(const mosquitto_property 
 }
 
 
-const mosquitto_property *mosquitto_property_read_int16(const mosquitto_property *proplist, int identifier, uint16_t *value, bool skip_first)
+BROKER_EXPORT const mosquitto_property *mosquitto_property_read_int16(const mosquitto_property *proplist, int identifier, uint16_t *value, bool skip_first)
 {
 	const mosquitto_property *p;
 	if(!proplist) return NULL;
@@ -1049,7 +1057,7 @@ const mosquitto_property *mosquitto_property_read_int16(const mosquitto_property
 }
 
 
-const mosquitto_property *mosquitto_property_read_int32(const mosquitto_property *proplist, int identifier, uint32_t *value, bool skip_first)
+BROKER_EXPORT const mosquitto_property *mosquitto_property_read_int32(const mosquitto_property *proplist, int identifier, uint32_t *value, bool skip_first)
 {
 	const mosquitto_property *p;
 	if(!proplist) return NULL;
@@ -1070,7 +1078,7 @@ const mosquitto_property *mosquitto_property_read_int32(const mosquitto_property
 }
 
 
-const mosquitto_property *mosquitto_property_read_varint(const mosquitto_property *proplist, int identifier, uint32_t *value, bool skip_first)
+BROKER_EXPORT const mosquitto_property *mosquitto_property_read_varint(const mosquitto_property *proplist, int identifier, uint32_t *value, bool skip_first)
 {
 	const mosquitto_property *p;
 	if(!proplist) return NULL;
@@ -1087,7 +1095,7 @@ const mosquitto_property *mosquitto_property_read_varint(const mosquitto_propert
 }
 
 
-const mosquitto_property *mosquitto_property_read_binary(const mosquitto_property *proplist, int identifier, void **value, uint16_t *len, bool skip_first)
+BROKER_EXPORT const mosquitto_property *mosquitto_property_read_binary(const mosquitto_property *proplist, int identifier, void **value, uint16_t *len, bool skip_first)
 {
 	const mosquitto_property *p;
 	if(!proplist || (value && !len) || (!value && len)) return NULL;
@@ -1104,7 +1112,7 @@ const mosquitto_property *mosquitto_property_read_binary(const mosquitto_propert
 
 	if(value){
 		*len = p->value.bin.len;
-		*value = calloc(1, *len + 1);
+		*value = calloc(1, *len + 1U);
 		if(!(*value)) return NULL;
 
 		memcpy(*value, p->value.bin.v, *len);
@@ -1114,7 +1122,7 @@ const mosquitto_property *mosquitto_property_read_binary(const mosquitto_propert
 }
 
 
-const mosquitto_property *mosquitto_property_read_string(const mosquitto_property *proplist, int identifier, char **value, bool skip_first)
+BROKER_EXPORT const mosquitto_property *mosquitto_property_read_string(const mosquitto_property *proplist, int identifier, char **value, bool skip_first)
 {
 	const mosquitto_property *p;
 	if(!proplist) return NULL;
@@ -1133,7 +1141,7 @@ const mosquitto_property *mosquitto_property_read_string(const mosquitto_propert
 	}
 
 	if(value){
-		*value = calloc(1, p->value.s.len+1);
+		*value = calloc(1, (size_t)p->value.s.len+1);
 		if(!(*value)) return NULL;
 
 		memcpy(*value, p->value.s.v, p->value.s.len);
@@ -1143,7 +1151,7 @@ const mosquitto_property *mosquitto_property_read_string(const mosquitto_propert
 }
 
 
-const mosquitto_property *mosquitto_property_read_string_pair(const mosquitto_property *proplist, int identifier, char **name, char **value, bool skip_first)
+BROKER_EXPORT const mosquitto_property *mosquitto_property_read_string_pair(const mosquitto_property *proplist, int identifier, char **name, char **value, bool skip_first)
 {
 	const mosquitto_property *p;
 	if(!proplist) return NULL;
@@ -1156,17 +1164,16 @@ const mosquitto_property *mosquitto_property_read_string_pair(const mosquitto_pr
 	if(p->identifier != MQTT_PROP_USER_PROPERTY) return NULL;
 
 	if(name){
-		*name = calloc(1, p->name.len+1);
+		*name = calloc(1, (size_t)p->name.len+1);
 		if(!(*name)) return NULL;
 		memcpy(*name, p->name.v, p->name.len);
 	}
 
 	if(value){
-		*value = calloc(1, p->value.s.len+1);
+		*value = calloc(1, (size_t)p->value.s.len+1);
 		if(!(*value)){
 			if(name){
-				free(*name);
-				*name = NULL;
+				SAFE_FREE(*name);
 			}
 			return NULL;
 		}
@@ -1177,7 +1184,7 @@ const mosquitto_property *mosquitto_property_read_string_pair(const mosquitto_pr
 }
 
 
-int mosquitto_property_copy_all(mosquitto_property **dest, const mosquitto_property *src)
+BROKER_EXPORT int mosquitto_property_copy_all(mosquitto_property **dest, const mosquitto_property *src)
 {
 	mosquitto_property *pnew, *plast = NULL;
 
@@ -1199,6 +1206,7 @@ int mosquitto_property_copy_all(mosquitto_property **dest, const mosquitto_prope
 		}
 		plast = pnew;
 
+		pnew->client_generated = src->client_generated;
 		pnew->identifier = src->identifier;
 		switch(pnew->identifier){
 			case MQTT_PROP_PAYLOAD_FORMAT_INDICATOR:

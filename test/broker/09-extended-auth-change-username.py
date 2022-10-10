@@ -7,7 +7,7 @@ from mosq_test_helper import *
 def write_config(filename, acl_file, port, per_listener):
     with open(filename, 'w') as f:
         f.write("per_listener_settings %s\n" % (per_listener))
-        f.write("port %d\n" % (port))
+        f.write("listener %d\n" % (port))
         f.write("allow_anonymous true\n")
         f.write("acl_file %s\n" % (acl_file))
         f.write("auth_plugin c/auth_plugin_extended_single.so\n")
@@ -27,7 +27,7 @@ def do_test(per_listener):
     rc = 1
 
     # Connect without a username - this means no access
-    connect1_packet = mosq_test.gen_connect("client-params-test1", keepalive=42, proto_ver=5)
+    connect1_packet = mosq_test.gen_connect("client-params-test1", proto_ver=5)
     connack1_packet = mosq_test.gen_connack(rc=0, proto_ver=5)
 
     mid = 1
@@ -40,7 +40,7 @@ def do_test(per_listener):
 
     # Connect without a username, but have the plugin change it
     props = mqtt5_props.gen_string_prop(mqtt5_props.PROP_AUTHENTICATION_METHOD, "change")
-    connect2_packet = mosq_test.gen_connect("client-params-test2", keepalive=42, proto_ver=5, properties=props)
+    connect2_packet = mosq_test.gen_connect("client-params-test2", proto_ver=5, properties=props)
     props = mqtt5_props.gen_string_prop(mqtt5_props.PROP_AUTHENTICATION_METHOD, "change")
     connack2_packet = mosq_test.gen_connack(rc=0, proto_ver=5, properties=props)
 
@@ -75,7 +75,9 @@ def do_test(per_listener):
         os.remove(conf_file)
         os.remove(acl_file)
         broker.terminate()
-        broker.wait()
+        if mosq_test.wait_for_subprocess(broker):
+            print("broker not terminated")
+            if rc == 0: rc=1
         (stdo, stde) = broker.communicate()
         if rc:
             print(stde.decode('utf-8'))

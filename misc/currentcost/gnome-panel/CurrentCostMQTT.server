@@ -1,6 +1,6 @@
 <oaf_info>
-	<oaf_server iid="OAFIID:CurrentCostMQTT_Factory" 
-		    type="exe" 
+	<oaf_server iid="OAFIID:CurrentCostMQTT_Factory"
+		    type="exe"
 		    location="CurrentCostMQTT.py">
 
 		<oaf_attribute name="repo_ids" type="stringv">
@@ -11,9 +11,9 @@
 		<oaf_attribute name="description" type="string" value="Display energy usage published over MQTT"/>
 	</oaf_server>
 
-	<oaf_server iid="OAFIID:CurrentCostMQTT" 
-		    type="factory" 
-		    location="OAFIID:CurrentCostMQTT_Factory"> 
+	<oaf_server iid="OAFIID:CurrentCostMQTT"
+		    type="factory"
+		    location="OAFIID:CurrentCostMQTT_Factory">
 
 		<oaf_attribute name="repo_ids" type="stringv">
 			<item value="IDL:GNOME/Vertigo/PanelAppletShell:1.0"/>

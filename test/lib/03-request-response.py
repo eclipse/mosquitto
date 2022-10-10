@@ -33,12 +33,12 @@ sock.bind(('', port))
 sock.listen(5)
 
 env = dict(os.environ)
-env['LD_LIBRARY_PATH'] = '../../lib:../../lib/cpp'
+env['LD_LIBRARY_PATH'] = mosq_test.get_build_root() + '/lib:' + mosq_test.get_build_root() + '/lib/cpp'
 try:
     pp = env['PYTHONPATH']
 except KeyError:
     pp = ''
-env['PYTHONPATH'] = '../../lib/python:'+pp
+env['PYTHONPATH'] = mosq_test.get_build_root() + '/lib/python:'+pp
 client1 = mosq_test.start_client(filename="03-request-response-1.log", cmd=["c/03-request-response-1.test"], env=env, port=port)
 
 try:
@@ -59,6 +59,7 @@ try:
     conn2.send(publish1_packet)
 
     mosq_test.expect_packet(conn2, "publish2", publish2_packet)
+    conn1.send(publish2_packet)
     rc = 0
 
     conn1.close()
@@ -66,10 +67,12 @@ try:
 except mosq_test.TestError:
     pass
 finally:
-    client1.terminate()
-    client1.wait()
-    client2.terminate()
-    client2.wait()
+    if mosq_test.wait_for_subprocess(client1):
+        print("client1 not terminated")
+        if rc == 0: rc=1
+    if mosq_test.wait_for_subprocess(client2):
+        print("client2 not terminated")
+        if rc == 0: rc=1
     if rc:
         (stdo, stde) = client1.communicate()
         print(stde)

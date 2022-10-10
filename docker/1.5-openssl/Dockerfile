@@ -1,10 +1,10 @@
-FROM alpine:3.12
+FROM alpine:3.14
 
 LABEL maintainer="Roger Light <roger@atchoo.org>" \
     description="Eclipse Mosquitto MQTT Broker"
 
-ENV VERSION=1.5.9 \
-    DOWNLOAD_SHA256=d7b62aa0ca680b0d869d6883373903362f98326a6465fc6cd01a0b9e0e8f0333 \
+ENV VERSION=1.5.11 \
+    DOWNLOAD_SHA256=4a3b8a8f5505d27a7a966dd68bfd76f1e69feb51796d1b46b7271d1bb5a1a299 \
     GPG_KEYS=A0D6EEA1DCAE49A635A3B2F0779B22DFB3E717B7 \
     LWS_VERSION=2.4.2
 
@@ -28,6 +28,7 @@ RUN set -x && \
         -DLWS_WITHOUT_CLIENT=ON \
         -DLWS_WITHOUT_EXTENSIONS=ON \
         -DLWS_WITHOUT_TESTAPPS=ON \
+        -DLWS_WITH_HTTP2=OFF \
         -DLWS_WITH_SHARED=OFF \
         -DLWS_WITH_ZIP_FOPS=OFF \
         -DLWS_WITH_ZLIB=OFF && \
@@ -39,9 +40,8 @@ RUN set -x && \
     export GNUPGHOME="$(mktemp -d)" && \
     found=''; \
     for server in \
-        ha.pool.sks-keyservers.net \
+        htps://keys.openpgp.org \
         hkp://keyserver.ubuntu.com:80 \
-        hkp://p80.pool.sks-keyservers.net:80 \
         pgp.mit.edu \
     ; do \
         echo "Fetching GPG key $GPG_KEYS from $server"; \

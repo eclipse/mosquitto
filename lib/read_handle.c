@@ -1,15 +1,17 @@
 /*
-Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
-are made available under the terms of the Eclipse Public License v1.0
+are made available under the terms of the Eclipse Public License 2.0
 and Eclipse Distribution License v1.0 which accompany this distribution.
- 
+
 The Eclipse Public License is available at
-   http://www.eclipse.org/legal/epl-v10.html
+   https://www.eclipse.org/legal/epl-2.0/
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
- 
+
+SPDX-License-Identifier: EPL-2.0 OR BSD-3-Clause
+
 Contributors:
    Roger Light - initial implementation and documentation.
 */
@@ -48,9 +50,9 @@ int handle__packet(struct mosquitto *mosq)
 		case CMD_PUBLISH:
 			return handle__publish(mosq);
 		case CMD_PUBREC:
-			return handle__pubrec(NULL, mosq);
+			return handle__pubrec(mosq);
 		case CMD_PUBREL:
-			return handle__pubrel(NULL, mosq);
+			return handle__pubrel(mosq);
 		case CMD_CONNACK:
 			return handle__connack(mosq);
 		case CMD_SUBACK:

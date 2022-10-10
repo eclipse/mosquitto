@@ -1,0 +1,52 @@
+[
+	{
+		"group": "v3.1.1 FORBIDDEN",
+		"tests": [
+			{ "name": "00 first packet", "ver":4, "connect": false, "msgs": [{"type":"send", "payload":"00 00"}]},
+			{ "name": "01 first packet", "ver":4, "connect": false, "msgs": [{"type":"send", "payload":"01 00"}]},
+			{ "name": "02 first packet", "ver":4, "connect": false, "msgs": [{"type":"send", "payload":"02 00"}]},
+			{ "name": "04 first packet", "ver":4, "connect": false, "msgs": [{"type":"send", "payload":"04 00"}]},
+			{ "name": "08 first packet", "ver":4, "connect": false, "msgs": [{"type":"send", "payload":"08 00"}]},
+			{ "name": "00 long", "ver":4, "msgs": [{"type":"send", "payload":"00 01 00"}]},
+			{ "name": "00", "ver":4, "msgs": [{"type":"send", "payload":"00 00"}]},
+			{ "name": "01", "ver":4, "msgs": [{"type":"send", "payload":"01 00"}]},
+			{ "name": "02", "ver":4, "msgs": [{"type":"send", "payload":"02 00"}]},
+			{ "name": "04", "ver":4, "msgs": [{"type":"send", "payload":"04 00"}]},
+			{ "name": "08", "ver":4, "msgs": [{"type":"send", "payload":"08 00"}]}
+		]
+	},
+	{
+		"group": "v5.0   FORBIDDEN",
+		"tests": [
+			{ "name": "00 first packet", "ver":5, "connect": false, "msgs": [{"type":"send", "payload":"00 00"}]},
+			{ "name": "01 first packet", "ver":5, "connect": false, "msgs": [{"type":"send", "payload":"01 00"}]},
+			{ "name": "02 first packet", "ver":5, "connect": false, "msgs": [{"type":"send", "payload":"02 00"}]},
+			{ "name": "04 first packet", "ver":5, "connect": false, "msgs": [{"type":"send", "payload":"04 00"}]},
+			{ "name": "08 first packet", "ver":5, "connect": false, "msgs": [{"type":"send", "payload":"08 00"}]},
+			{ "name": "00 long", "ver":5, "msgs": [
+				{"type":"send", "payload":"00 01 00"},
+				{"type":"recv", "payload":"E0 01 82", "comment":"DISCONNECT protocol error"}
+			]},
+			{ "name": "00", "ver":5, "msgs": [
+				{"type":"send", "payload":"00 00"},
+				{"type":"recv", "payload":"E0 01 82", "comment":"DISCONNECT protocol error"}
+			]},
+			{ "name": "01", "ver":5, "msgs": [
+				{"type":"send", "payload":"01 00"},
+				{"type":"recv", "payload":"E0 01 82", "comment":"DISCONNECT protocol error"}
+			]},
+			{ "name": "02", "ver":5, "msgs": [
+				{"type":"send", "payload":"02 00"},
+				{"type":"recv", "payload":"E0 01 82", "comment":"DISCONNECT protocol error"}
+			]},
+			{ "name": "04", "ver":5, "msgs": [
+				{"type":"send", "payload":"04 00"},
+				{"type":"recv", "payload":"E0 01 82", "comment":"DISCONNECT protocol error"}
+			]},
+			{ "name": "08", "ver":5, "msgs": [
+				{"type":"send", "payload":"08 00"},
+				{"type":"recv", "payload":"E0 01 82", "comment":"DISCONNECT protocol error"}
+			]}
+		]
+	}
+]

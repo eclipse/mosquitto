@@ -2,14 +2,14 @@
 Copyright (c) 2010-2019 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
-are made available under the terms of the Eclipse Public License v1.0
+are made available under the terms of the Eclipse Public License 2.0
 and Eclipse Distribution License v1.0 which accompany this distribution.
- 
+
 The Eclipse Public License is available at
-   http://www.eclipse.org/legal/epl-v10.html
+   https://www.eclipse.org/legal/epl-2.0/
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
- 
+
 Contributors:
    Roger Light - initial implementation and documentation.
 */
@@ -21,6 +21,15 @@ Contributors:
 #define UNUSED(A) (void)(A)
 
 namespace mosqpp {
+
+static void on_pre_connect_wrapper(struct mosquitto *mosq, void *userdata)
+{
+	class mosquittopp *m = (class mosquittopp *)userdata;
+
+	UNUSED(mosq);
+
+	m->on_pre_connect();
+}
 
 static void on_connect_wrapper(struct mosquitto *mosq, void *userdata, int rc)
 {
@@ -38,11 +47,25 @@ static void on_connect_with_flags_wrapper(struct mosquitto *mosq, void *userdata
 	m->on_connect_with_flags(rc, flags);
 }
 
+static void on_connect_v5_wrapper(struct mosquitto *mosq, void *userdata, int rc, int flags, const mosquitto_property *props)
+{
+	class mosquittopp *m = (class mosquittopp *)userdata;
+	UNUSED(mosq);
+	m->on_connect_v5(rc, flags, props);
+}
+
 static void on_disconnect_wrapper(struct mosquitto *mosq, void *userdata, int rc)
 {
 	class mosquittopp *m = (class mosquittopp *)userdata;
 	UNUSED(mosq);
 	m->on_disconnect(rc);
+}
+
+static void on_disconnect_v5_wrapper(struct mosquitto *mosq, void *userdata, int rc, const mosquitto_property *props)
+{
+	class mosquittopp *m = (class mosquittopp *)userdata;
+	UNUSED(mosq);
+	m->on_disconnect_v5(rc, props);
 }
 
 static void on_publish_wrapper(struct mosquitto *mosq, void *userdata, int mid)
@@ -52,11 +75,25 @@ static void on_publish_wrapper(struct mosquitto *mosq, void *userdata, int mid)
 	m->on_publish(mid);
 }
 
+static void on_publish_v5_wrapper(struct mosquitto *mosq, void *userdata, int mid, int reason_code, const mosquitto_property *props)
+{
+	class mosquittopp *m = (class mosquittopp *)userdata;
+	UNUSED(mosq);
+	m->on_publish_v5(mid, reason_code, props);
+}
+
 static void on_message_wrapper(struct mosquitto *mosq, void *userdata, const struct mosquitto_message *message)
 {
 	class mosquittopp *m = (class mosquittopp *)userdata;
 	UNUSED(mosq);
 	m->on_message(message);
+}
+
+static void on_message_v5_wrapper(struct mosquitto *mosq, void *userdata, const struct mosquitto_message *message, const mosquitto_property *props)
+{
+	class mosquittopp *m = (class mosquittopp *)userdata;
+	UNUSED(mosq);
+	m->on_message_v5(message, props);
 }
 
 static void on_subscribe_wrapper(struct mosquitto *mosq, void *userdata, int mid, int qos_count, const int *granted_qos)
@@ -66,11 +103,25 @@ static void on_subscribe_wrapper(struct mosquitto *mosq, void *userdata, int mid
 	m->on_subscribe(mid, qos_count, granted_qos);
 }
 
+static void on_subscribe_v5_wrapper(struct mosquitto *mosq, void *userdata, int mid, int qos_count, const int *granted_qos, const mosquitto_property *props)
+{
+	class mosquittopp *m = (class mosquittopp *)userdata;
+	UNUSED(mosq);
+	m->on_subscribe_v5(mid, qos_count, granted_qos, props);
+}
+
 static void on_unsubscribe_wrapper(struct mosquitto *mosq, void *userdata, int mid)
 {
 	class mosquittopp *m = (class mosquittopp *)userdata;
 	UNUSED(mosq);
 	m->on_unsubscribe(mid);
+}
+
+static void on_unsubscribe_v5_wrapper(struct mosquitto *mosq, void *userdata, int mid, const mosquitto_property *props)
+{
+	class mosquittopp *m = (class mosquittopp *)userdata;
+	UNUSED(mosq);
+	m->on_unsubscribe_v5(mid, props);
 }
 
 
@@ -109,6 +160,21 @@ const char* connack_string(int connack_code)
 	return mosquitto_connack_string(connack_code);
 }
 
+int property_check_command(int command, int identifier)
+{
+	return mosquitto_property_check_command(command, identifier);
+}
+
+int property_check_all(int command, const mosquitto_property *properties)
+{
+	return mosquitto_property_check_all(command, properties);
+}
+
+const char* reason_string(int reason_code)
+{
+	return mosquitto_reason_string(reason_code);
+}
+
 int sub_topic_tokenise(const char *subtopic, char ***topics, int *count)
 {
 	return mosquitto_sub_topic_tokenise(subtopic, topics, count);
@@ -122,6 +188,21 @@ int sub_topic_tokens_free(char ***topics, int count)
 int topic_matches_sub(const char *sub, const char *topic, bool *result)
 {
 	return mosquitto_topic_matches_sub(sub, topic, result);
+}
+
+int topic_matches_sub_with_pattern(const char *sub, const char *topic, const char *clientid, const char *username, bool *result)
+{
+	return mosquitto_topic_matches_sub_with_pattern(sub, topic, clientid, username, result);
+}
+
+int sub_matches_acl(const char *acl, const char *sub, bool *result)
+{
+	return mosquitto_sub_matches_acl(acl, sub, result);
+}
+
+int sub_matches_acl_with_pattern(const char *acl, const char *sub, const char *clientid, const char *username, bool *result)
+{
+	return mosquitto_sub_matches_acl_with_pattern(acl, sub, clientid, username, result);
 }
 
 int validate_utf8(const char *str, int len)
@@ -176,18 +257,30 @@ mosqpp_EXPORT int subscribe_callback(
 			will, tls);
 }
 
+namespace {
+void mosquitto_callbacks_set(struct mosquitto *mosq) {
+	mosquitto_pre_connect_callback_set(mosq, on_pre_connect_wrapper);
+	mosquitto_connect_callback_set(mosq, on_connect_wrapper);
+	mosquitto_connect_with_flags_callback_set(mosq, on_connect_with_flags_wrapper);
+	mosquitto_connect_v5_callback_set(mosq, on_connect_v5_wrapper);
+	mosquitto_disconnect_callback_set(mosq, on_disconnect_wrapper);
+	mosquitto_disconnect_v5_callback_set(mosq, on_disconnect_v5_wrapper);
+	mosquitto_publish_callback_set(mosq, on_publish_wrapper);
+	mosquitto_publish_v5_callback_set(mosq, on_publish_v5_wrapper);
+	mosquitto_message_callback_set(mosq, on_message_wrapper);
+	mosquitto_message_v5_callback_set(mosq, on_message_v5_wrapper);
+	mosquitto_subscribe_callback_set(mosq, on_subscribe_wrapper);
+	mosquitto_subscribe_v5_callback_set(mosq, on_subscribe_v5_wrapper);
+	mosquitto_unsubscribe_callback_set(mosq, on_unsubscribe_wrapper);
+	mosquitto_unsubscribe_v5_callback_set(mosq, on_unsubscribe_v5_wrapper);
+	mosquitto_log_callback_set(mosq, on_log_wrapper);
+}
+}
 
 mosquittopp::mosquittopp(const char *id, bool clean_session)
 {
 	m_mosq = mosquitto_new(id, clean_session, this);
-	mosquitto_connect_callback_set(m_mosq, on_connect_wrapper);
-	mosquitto_connect_with_flags_callback_set(m_mosq, on_connect_with_flags_wrapper);
-	mosquitto_disconnect_callback_set(m_mosq, on_disconnect_wrapper);
-	mosquitto_publish_callback_set(m_mosq, on_publish_wrapper);
-	mosquitto_message_callback_set(m_mosq, on_message_wrapper);
-	mosquitto_subscribe_callback_set(m_mosq, on_subscribe_wrapper);
-	mosquitto_unsubscribe_callback_set(m_mosq, on_unsubscribe_wrapper);
-	mosquitto_log_callback_set(m_mosq, on_log_wrapper);
+	mosquitto_callbacks_set(m_mosq);
 }
 
 mosquittopp::~mosquittopp()
@@ -200,14 +293,7 @@ int mosquittopp::reinitialise(const char *id, bool clean_session)
 	int rc;
 	rc = mosquitto_reinitialise(m_mosq, id, clean_session, this);
 	if(rc == MOSQ_ERR_SUCCESS){
-		mosquitto_connect_callback_set(m_mosq, on_connect_wrapper);
-		mosquitto_connect_with_flags_callback_set(m_mosq, on_connect_with_flags_wrapper);
-		mosquitto_disconnect_callback_set(m_mosq, on_disconnect_wrapper);
-		mosquitto_publish_callback_set(m_mosq, on_publish_wrapper);
-		mosquitto_message_callback_set(m_mosq, on_message_wrapper);
-		mosquitto_subscribe_callback_set(m_mosq, on_subscribe_wrapper);
-		mosquitto_unsubscribe_callback_set(m_mosq, on_unsubscribe_wrapper);
-		mosquitto_log_callback_set(m_mosq, on_log_wrapper);
+		mosquitto_callbacks_set(m_mosq);
 	}
 	return rc;
 }
@@ -220,6 +306,11 @@ int mosquittopp::connect(const char *host, int port, int keepalive)
 int mosquittopp::connect(const char *host, int port, int keepalive, const char *bind_address)
 {
 	return mosquitto_connect_bind(m_mosq, host, port, keepalive, bind_address);
+}
+
+int mosquittopp::connect_v5(const char *host, int port, int keepalive, const char *bind_address, const mosquitto_property *properties)
+{
+	return mosquitto_connect_bind_v5(m_mosq, host, port, keepalive, bind_address, properties);
 }
 
 int mosquittopp::connect_async(const char *host, int port, int keepalive)
@@ -247,6 +338,11 @@ int mosquittopp::disconnect()
 	return mosquitto_disconnect(m_mosq);
 }
 
+int mosquittopp::disconnect_v5(int reason_code, const mosquitto_property *properties)
+{
+	return mosquitto_disconnect_v5(m_mosq, reason_code, properties);
+}
+
 int mosquittopp::socket()
 {
 	return mosquitto_socket(m_mosq);
@@ -255,6 +351,11 @@ int mosquittopp::socket()
 int mosquittopp::will_set(const char *topic, int payloadlen, const void *payload, int qos, bool retain)
 {
 	return mosquitto_will_set(m_mosq, topic, payloadlen, payload, qos, retain);
+}
+
+int mosquittopp::will_set_v5(const char *topic, int payloadlen, const void *payload, int qos, bool retain, mosquitto_property *properties)
+{
+	return mosquitto_will_set_v5(m_mosq, topic, payloadlen, payload, qos, retain, properties);
 }
 
 int mosquittopp::will_clear()
@@ -270,6 +371,11 @@ int mosquittopp::username_pw_set(const char *username, const char *password)
 int mosquittopp::publish(int *mid, const char *topic, int payloadlen, const void *payload, int qos, bool retain)
 {
 	return mosquitto_publish(m_mosq, mid, topic, payloadlen, payload, qos, retain);
+}
+
+int mosquittopp::publish_v5(int *mid, const char *topic, int payloadlen, const void *payload, int qos, bool retain, const mosquitto_property *properties)
+{
+	return mosquitto_publish_v5(m_mosq, mid, topic, payloadlen, payload, qos, retain, properties);
 }
 
 void mosquittopp::reconnect_delay_set(unsigned int reconnect_delay, unsigned int reconnect_delay_max, bool reconnect_exponential_backoff)
@@ -292,9 +398,19 @@ int mosquittopp::subscribe(int *mid, const char *sub, int qos)
 	return mosquitto_subscribe(m_mosq, mid, sub, qos);
 }
 
+int mosquittopp::subscribe_v5(int *mid, const char *sub, int qos, int options, const mosquitto_property *properties)
+{
+	return mosquitto_subscribe_v5(m_mosq, mid, sub, qos, options, properties);
+}
+
 int mosquittopp::unsubscribe(int *mid, const char *sub)
 {
 	return mosquitto_unsubscribe(m_mosq, mid, sub);
+}
+
+int mosquittopp::unsubscribe_v5(int *mid, const char *sub, const mosquitto_property *properties)
+{
+	return mosquitto_unsubscribe_v5(m_mosq, mid, sub, properties);
 }
 
 int mosquittopp::loop(int timeout, int max_packets)
@@ -340,6 +456,21 @@ bool mosquittopp::want_write()
 int mosquittopp::opts_set(enum mosq_opt_t option, void *value)
 {
 	return mosquitto_opts_set(m_mosq, option, value);
+}
+
+int mosquittopp::int_option(enum mosq_opt_t option, int value)
+{
+	return mosquitto_int_option(m_mosq, option, value);
+}
+
+int mosquittopp::string_option(enum mosq_opt_t option, const char *value)
+{
+	return mosquitto_string_option(m_mosq, option, value);
+}
+
+int mosquittopp::void_option(enum mosq_opt_t option, void *value)
+{
+	return mosquitto_void_option(m_mosq, option, value);
 }
 
 int mosquittopp::threaded_set(bool threaded)

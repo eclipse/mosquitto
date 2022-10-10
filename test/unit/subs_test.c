@@ -12,6 +12,8 @@
 #include "mosquitto_broker_internal.h"
 #include "memory_mosq.h"
 
+struct mosquitto_db db;
+
 static void hier_quick_check(struct mosquitto__subhier **sub, struct mosquitto *context, const char *topic)
 {
 	if(sub != NULL){
@@ -36,7 +38,6 @@ static void hier_quick_check(struct mosquitto__subhier **sub, struct mosquitto *
 
 static void TEST_sub_add_single(void)
 {
-	struct mosquitto_db db;
 	struct mosquitto__config config;
 	struct mosquitto__listener listener;
 	struct mosquitto context;
@@ -55,14 +56,14 @@ static void TEST_sub_add_single(void)
 	config.listeners = &listener;
 	config.listener_count = 1;
 
-	db__open(&config, &db);
+	db__open(&config);
 
-	rc = sub__add(&db, &context, "a/b/c/d/e", 0, 0, 0, &db.subs);
+	rc = sub__add(&context, "a/b/c/d/e", 0, 0, 0);
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 	CU_ASSERT_PTR_NOT_NULL(db.subs);
 	if(db.subs){
 		sub = db.subs;
-		
+
 		hier_quick_check(&sub, NULL, "");
 		hier_quick_check(&sub, NULL, "");
 		hier_quick_check(&sub, NULL, "a");
@@ -73,7 +74,7 @@ static void TEST_sub_add_single(void)
 		CU_ASSERT_PTR_NULL(sub);
 	}
 	mosquitto__free(context.subs);
-	db__close(&db);
+	db__close();
 }
 
 
@@ -86,6 +87,9 @@ int main(int argc, char *argv[])
 {
 	CU_pSuite test_suite = NULL;
 	unsigned int fails;
+
+	UNUSED(argc);
+	UNUSED(argv);
 
     if(CU_initialize_registry() != CUE_SUCCESS){
         printf("Error initializing CUnit registry.\n");

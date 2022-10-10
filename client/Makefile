@@ -1,9 +1,10 @@
-include ../config.mk
+R=..
+include ${R}/config.mk
 
 .PHONY: all install uninstall reallyclean clean static static_pub static_sub static_rr
 
 ifeq ($(WITH_SHARED_LIBRARIES),yes)
-SHARED_DEP:=../lib/libmosquitto.so.${SOVERSION}
+SHARED_DEP:=${R}/lib/libmosquitto.so.${SOVERSION}
 endif
 
 ifeq ($(WITH_SHARED_LIBRARIES),yes)
@@ -20,13 +21,13 @@ static : static_pub static_sub static_rr
 	# This makes mosquitto_pub/sub/rr versions that are statically linked with
 	# libmosquitto only.
 
-static_pub : pub_client.o pub_shared.o client_props.o client_shared.o ../lib/libmosquitto.a
+static_pub : pub_client.o pub_shared.o client_props.o client_shared.o ${R}/lib/libmosquitto.a
 	${CROSS_COMPILE}${CC} $^ -o mosquitto_pub ${CLIENT_LDFLAGS} ${STATIC_LIB_DEPS} ${CLIENT_STATIC_LDADD}
 
-static_sub : sub_client.o sub_client_output.o client_props.o client_shared.o ../lib/libmosquitto.a
+static_sub : sub_client.o sub_client_output.o client_props.o client_shared.o ${R}/lib/libmosquitto.a
 	${CROSS_COMPILE}${CC} $^ -o mosquitto_sub ${CLIENT_LDFLAGS} ${STATIC_LIB_DEPS} ${CLIENT_STATIC_LDADD}
 
-static_rr : rr_client.o client_props.o client_shared.o pub_shared.o sub_client_output.o ../lib/libmosquitto.a
+static_rr : rr_client.o client_props.o client_shared.o pub_shared.o sub_client_output.o ${R}/lib/libmosquitto.a
 	${CROSS_COMPILE}${CC} $^ -o mosquitto_rr ${CLIENT_LDFLAGS} ${STATIC_LIB_DEPS} ${CLIENT_STATIC_LDADD}
 
 mosquitto_pub : pub_client.o pub_shared.o client_shared.o client_props.o
@@ -68,11 +69,11 @@ testing.o : testing.c
 	${CROSS_COMPILE}${CC} $(CLIENT_CPPFLAGS) $(CLIENT_CFLAGS) -c $< -o $@
 
 
-../lib/libmosquitto.so.${SOVERSION} :
-	$(MAKE) -C ../lib
+${R}/lib/libmosquitto.so.${SOVERSION} :
+	$(MAKE) -C ${R}/lib
 
-../lib/libmosquitto.a :
-	$(MAKE) -C ../lib libmosquitto.a
+${R}/lib/libmosquitto.a :
+	$(MAKE) -C ${R}/lib libmosquitto.a
 
 install : all
 	$(INSTALL) -d "${DESTDIR}$(prefix)/bin"
@@ -87,5 +88,5 @@ uninstall :
 
 reallyclean : clean
 
-clean : 
+clean :
 	-rm -f *.o mosquitto_pub mosquitto_sub mosquitto_rr *.gcda *.gcno

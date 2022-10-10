@@ -3,9 +3,9 @@
 .. slug: version-155-released
 .. date: 2018-12-11 15:57:18 UTC+00:00
 .. tags: Releases
-.. category: 
-.. link: 
-.. description: 
+.. category:
+.. link:
+.. description:
 .. type: text
 -->
 

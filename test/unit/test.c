@@ -1,6 +1,6 @@
 #include "config.h"
 #include <stdio.h>
-  
+
 #include <CUnit/CUnit.h>
 #include <CUnit/Basic.h>
 
@@ -17,6 +17,9 @@ int init_misc_trim_tests(void);
 int main(int argc, char *argv[])
 {
 	unsigned int fails;
+
+	UNUSED(argc);
+	UNUSED(argv);
 
     if(CU_initialize_registry() != CUE_SUCCESS){
         printf("Error initializing CUnit registry.\n");

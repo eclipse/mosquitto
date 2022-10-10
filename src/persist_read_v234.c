@@ -1,15 +1,17 @@
 /*
-Copyright (c) 2010-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2010-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
-are made available under the terms of the Eclipse Public License v1.0
+are made available under the terms of the Eclipse Public License 2.0
 and Eclipse Distribution License v1.0 which accompany this distribution.
- 
+
 The Eclipse Public License is available at
-   http://www.eclipse.org/legal/epl-v10.html
+   https://www.eclipse.org/legal/epl-2.0/
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
- 
+
+SPDX-License-Identifier: EPL-2.0 OR BSD-3-Clause
+
 Contributors:
    Roger Light - initial implementation and documentation.
 */
@@ -36,7 +38,7 @@ Contributors:
 #include "util_mosq.h"
 
 
-int persist__chunk_header_read_v234(FILE *db_fptr, int *chunk, int *length)
+int persist__chunk_header_read_v234(FILE *db_fptr, uint32_t *chunk, uint32_t *length)
 {
 	size_t rlen;
 	uint16_t i16temp;
@@ -44,10 +46,10 @@ int persist__chunk_header_read_v234(FILE *db_fptr, int *chunk, int *length)
 
 	rlen = fread(&i16temp, sizeof(uint16_t), 1, db_fptr);
 	if(rlen != 1) return 1;
-	
+
 	rlen = fread(&i32temp, sizeof(uint32_t), 1, db_fptr);
 	if(rlen != 1) return 1;
-	
+
 	*chunk = ntohs(i16temp);
 	*length = ntohl(i32temp);
 
@@ -68,7 +70,7 @@ error:
 }
 
 
-int persist__chunk_client_read_v234(FILE *db_fptr, struct P_client *chunk, int db_version)
+int persist__chunk_client_read_v234(FILE *db_fptr, struct P_client *chunk, uint32_t db_version)
 {
 	uint16_t i16temp;
 	int rc;
@@ -88,7 +90,7 @@ int persist__chunk_client_read_v234(FILE *db_fptr, struct P_client *chunk, int d
 	return MOSQ_ERR_SUCCESS;
 error:
 	log__printf(NULL, MOSQ_LOG_ERR, "Error: %s.", strerror(errno));
-	mosquitto__free(chunk->client_id);
+	mosquitto__FREE(chunk->client_id);
 	return 1;
 }
 
@@ -116,18 +118,18 @@ int persist__chunk_client_msg_read_v234(FILE *db_fptr, struct P_client_msg *chun
 	read_e(db_fptr, &chunk->F.state, sizeof(uint8_t));
 	read_e(db_fptr, &dup, sizeof(uint8_t));
 
-	chunk->F.retain_dup = (retain&0x0F)<<4 | (dup&0x0F);
+	chunk->F.retain_dup = (uint8_t)((retain&0x0F)<<4 | (dup&0x0F));
 
 	return MOSQ_ERR_SUCCESS;
 error:
 	err = strerror(errno);
 	log__printf(NULL, MOSQ_LOG_ERR, "Error: %s.", err);
-	mosquitto__free(chunk->client_id);
+	mosquitto__FREE(chunk->client_id);
 	return 1;
 }
 
 
-int persist__chunk_msg_store_read_v234(FILE *db_fptr, struct P_msg_store *chunk, int db_version)
+int persist__chunk_base_msg_read_v234(FILE *db_fptr, struct P_base_msg *chunk, uint32_t db_version)
 {
 	uint32_t i32temp;
 	uint16_t i16temp;
@@ -143,7 +145,7 @@ int persist__chunk_msg_store_read_v234(FILE *db_fptr, struct P_msg_store *chunk,
 	if(db_version == 4){
 		rc = persist__read_string(db_fptr, &chunk->source.username);
 		if(rc){
-			mosquitto__free(chunk->source.id);
+			mosquitto__FREE(chunk->source.id);
 			return rc;
 		}
 		read_e(db_fptr, &i16temp, sizeof(uint16_t));
@@ -158,34 +160,37 @@ int persist__chunk_msg_store_read_v234(FILE *db_fptr, struct P_msg_store *chunk,
 
 	rc = persist__read_string(db_fptr, &chunk->topic);
 	if(rc){
-		mosquitto__free(chunk->source.id);
-		mosquitto__free(chunk->source.username);
+		mosquitto__FREE(chunk->source.id);
+		mosquitto__FREE(chunk->source.username);
 		return rc;
 	}
 
 	read_e(db_fptr, &chunk->F.qos, sizeof(uint8_t));
 	read_e(db_fptr, &chunk->F.retain, sizeof(uint8_t));
-	
+
 	read_e(db_fptr, &i32temp, sizeof(uint32_t));
 	chunk->F.payloadlen = ntohl(i32temp);
 
 	if(chunk->F.payloadlen){
-		if(UHPA_ALLOC(chunk->payload, chunk->F.payloadlen) == 0){
-			mosquitto__free(chunk->source.id);
-			mosquitto__free(chunk->source.username);
-			mosquitto__free(chunk->topic);
+		chunk->payload = mosquitto_malloc(chunk->F.payloadlen+1);
+		if(chunk->payload == NULL){
+			mosquitto__FREE(chunk->source.id);
+			mosquitto__FREE(chunk->source.username);
+			mosquitto__FREE(chunk->topic);
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 			return MOSQ_ERR_NOMEM;
 		}
-		read_e(db_fptr, UHPA_ACCESS(chunk->payload, chunk->F.payloadlen), chunk->F.payloadlen);
+		read_e(db_fptr, chunk->payload, chunk->F.payloadlen);
+		/* Ensure zero terminated regardless of contents */
+		((uint8_t *)chunk->payload)[chunk->F.payloadlen] = 0;
 	}
 
 	return MOSQ_ERR_SUCCESS;
 error:
 	err = strerror(errno);
 	log__printf(NULL, MOSQ_LOG_ERR, "Error: %s.", err);
-	mosquitto__free(chunk->source.id);
-	mosquitto__free(chunk->source.username);
+	mosquitto__FREE(chunk->source.id);
+	mosquitto__FREE(chunk->source.username);
 	return 1;
 }
 
@@ -218,7 +223,7 @@ int persist__chunk_sub_read_v234(FILE *db_fptr, struct P_sub *chunk)
 
 	rc = persist__read_string(db_fptr, &chunk->topic);
 	if(rc){
-		mosquitto__free(chunk->client_id);
+		mosquitto__FREE(chunk->client_id);
 		return rc;
 	}
 
@@ -228,8 +233,8 @@ int persist__chunk_sub_read_v234(FILE *db_fptr, struct P_sub *chunk)
 error:
 	err = strerror(errno);
 	log__printf(NULL, MOSQ_LOG_ERR, "Error: %s.", err);
-	mosquitto__free(chunk->client_id);
-	mosquitto__free(chunk->topic);
+	mosquitto__FREE(chunk->client_id);
+	mosquitto__FREE(chunk->topic);
 	return 1;
 }
 

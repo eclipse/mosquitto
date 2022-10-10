@@ -7,11 +7,29 @@ class mosquittopp_test : public mosqpp::mosquittopp
 {
 	public:
 		mosquittopp_test(const char *id, bool clean_session);
+
+		void on_connect(int rc);
+		void on_disconnect(int rc);
 };
 
 mosquittopp_test::mosquittopp_test(const char *id, bool clean_session) : mosqpp::mosquittopp(id, clean_session)
 {
 }
+
+void mosquittopp_test::on_connect(int rc)
+{
+	if(rc){
+		exit(1);
+	}else{
+		disconnect();
+	}
+}
+
+void mosquittopp_test::on_disconnect(int rc)
+{
+	run = rc;
+}
+
 
 int main(int argc, char *argv[])
 {

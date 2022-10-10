@@ -2,7 +2,7 @@
 .. title: Mosquitto now an Ubuntu Appliance
 .. slug: mosquitto-now-an-ubuntu-appliance
 .. date: 2020-06-16 16:01:13 UTC+01:00
-.. tags: 
+.. tags:
 .. category: news
 .. link:
 .. description:

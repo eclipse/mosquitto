@@ -1,0 +1,67 @@
+# For most projects, this workflow file will not need changing; you simply need
+# to commit it to your repository.
+#
+# You may wish to alter this file to override the set of languages analyzed,
+# or to provide custom queries or build logic.
+#
+# ******** NOTE ********
+# We have attempted to detect the languages in your repository. Please check
+# the `language` matrix defined below to confirm you have the correct set of
+# supported CodeQL languages.
+#
+name: "CodeQL"
+
+on:
+  push:
+    branches: [ master, fixes, develop, 1.6.x ]
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [ master ]
+  schedule:
+    - cron: '44 18 * * 1'
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'cpp', 'python' ]
+        # CodeQL supports [ 'cpp', 'csharp', 'go', 'java', 'javascript', 'python' ]
+        # Learn more:
+        # https://docs.github.com/en/free-pro-team@latest/github/finding-security-vulnerabilities-and-errors-in-your-code/configuring-code-scanning#changing-the-languages-that-are-analyzed
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    # Initializes the CodeQL tools for scanning.
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v1
+      with:
+        languages: ${{ matrix.language }}
+        # If you wish to specify custom queries, you can do so here or in a config file.
+        # By default, queries listed here will override any specified in a config file.
+        # Prefix the list here with "+" to use these queries and those in the config file.
+        # queries: ./path/to/local/query, your-org/your-repo/queries@main
+
+    # ℹ️ Command-line programs to run using the OS shell.
+    # 📚 https://git.io/JvXDl
+
+    - run: sudo apt-get update && sudo apt-get install -y gcc g++ git libssl-dev
+    # Install cJSON
+    - run: git clone https://github.com/DaveGamble/cJSON /tmp/cJSON
+    - run: wget https://github.com/DaveGamble/cJSON/archive/v1.7.14.tar.gz -O /tmp/cjson.tar.gz
+    - run: mkdir -p /tmp/build/cjson
+    - run: tar --strip=1 -xf /tmp/cjson.tar.gz -C /tmp/build/cjson
+    - run: rm /tmp/cjson.tar.gz
+    - run: cd /tmp/build/cjson && cmake .  -DCMAKE_BUILD_TYPE=MinSizeRel -DCJSON_BUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr
+    - run: sudo make -C /tmp/build/cjson install
+
+    # Now build Mosquitto
+    - run: make binary
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v1

@@ -7,7 +7,7 @@ from mosq_test_helper import *
 
 def write_config(filename, port):
     with open(filename, 'w') as f:
-        f.write("port %d\n" % (port))
+        f.write("listener %d\n" % (port))
         f.write("allow_anonymous true\n")
         f.write("upgrade_outgoing_qos true\n")
 
@@ -18,9 +18,8 @@ def do_test(proto_ver):
     write_config(conf_file, port)
 
     rc = 1
-    keepalive = 60
     mid = 16
-    connect_packet = mosq_test.gen_connect("retain-qos0-test", keepalive=keepalive, proto_ver=proto_ver)
+    connect_packet = mosq_test.gen_connect("retain-qos0-test", proto_ver=proto_ver)
     connack_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
 
     publish_packet = mosq_test.gen_publish("retain/qos0/test", qos=0, payload="retained message", retain=True, proto_ver=proto_ver)
@@ -46,7 +45,9 @@ def do_test(proto_ver):
     finally:
         os.remove(conf_file)
         broker.terminate()
-        broker.wait()
+        if mosq_test.wait_for_subprocess(broker):
+            print("broker not terminated")
+            if rc == 0: rc=1
         (stdo, stde) = broker.communicate()
         if rc:
             print(stde.decode('utf-8'))

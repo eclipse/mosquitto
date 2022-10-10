@@ -1,14 +1,16 @@
 /*
-Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
-are made available under the terms of the Eclipse Public License v1.0
+are made available under the terms of the Eclipse Public License 2.0
 and Eclipse Distribution License v1.0 which accompany this distribution.
 
 The Eclipse Public License is available at
-   http://www.eclipse.org/legal/epl-v10.html
+   https://www.eclipse.org/legal/epl-2.0/
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
+
+SPDX-License-Identifier: EPL-2.0 OR BSD-3-Clause
 
 Contributors:
    Roger Light - initial implementation and documentation.
@@ -27,7 +29,7 @@ Contributors:
 
 
 
-int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
+int handle__subscribe(struct mosquitto *context)
 {
 	int rc = 0;
 	int rc2;
@@ -39,15 +41,19 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 	uint8_t retain_handling = 0;
 	uint8_t *payload = NULL, *tmp_payload;
 	uint32_t payloadlen = 0;
-	int len;
-	int slen;
+	size_t len;
+	uint16_t slen;
 	char *sub_mount;
 	mosquitto_property *properties = NULL;
+	bool allowed;
 
 	if(!context) return MOSQ_ERR_INVAL;
 
 	if(context->state != mosq_cs_active){
 		return MOSQ_ERR_PROTOCOL;
+	}
+	if(context->in_packet.command != (CMD_SUBSCRIBE|2)){
+		return MOSQ_ERR_MALFORMED_PACKET;
 	}
 
 	log__printf(NULL, MOSQ_LOG_DEBUG, "Received SUBSCRIBE from %s", context->id);
@@ -90,7 +96,7 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 	while(context->in_packet.pos < context->in_packet.remaining_length){
 		sub = NULL;
 		if(packet__read_string(&context->in_packet, &sub, &slen)){
-			mosquitto__free(payload);
+			mosquitto__FREE(payload);
 			return MOSQ_ERR_MALFORMED_PACKET;
 		}
 
@@ -99,24 +105,30 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 				log__printf(NULL, MOSQ_LOG_INFO,
 						"Empty subscription string from %s, disconnecting.",
 						context->address);
-				mosquitto__free(sub);
-				mosquitto__free(payload);
+				mosquitto__FREE(sub);
+				mosquitto__FREE(payload);
 				return MOSQ_ERR_MALFORMED_PACKET;
 			}
 			if(mosquitto_sub_topic_check(sub)){
 				log__printf(NULL, MOSQ_LOG_INFO,
 						"Invalid subscription string from %s, disconnecting.",
 						context->address);
-				mosquitto__free(sub);
-				mosquitto__free(payload);
+				mosquitto__FREE(sub);
+				mosquitto__FREE(payload);
 				return MOSQ_ERR_MALFORMED_PACKET;
 			}
 
 			if(packet__read_byte(&context->in_packet, &subscription_options)){
-				mosquitto__free(sub);
-				mosquitto__free(payload);
+				mosquitto__FREE(sub);
+				mosquitto__FREE(payload);
 				return MOSQ_ERR_MALFORMED_PACKET;
 			}
+			if(subscription_options & MQTT_SUB_OPT_NO_LOCAL && !strncmp(sub, "$share/", strlen("$share/"))){
+				mosquitto__FREE(sub);
+				mosquitto__FREE(payload);
+				return MOSQ_ERR_PROTOCOL;
+			}
+
 			if(context->protocol == mosq_p_mqtt31 || context->protocol == mosq_p_mqtt311){
 				qos = subscription_options;
 				if(context->is_bridge){
@@ -128,8 +140,8 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 
 				retain_handling = (subscription_options & 0x30);
 				if(retain_handling == 0x30 || (subscription_options & 0xC0) != 0){
-					mosquitto__free(sub);
-					mosquitto__free(payload);
+					mosquitto__FREE(sub);
+					mosquitto__FREE(payload);
 					return MOSQ_ERR_MALFORMED_PACKET;
 				}
 			}
@@ -137,9 +149,12 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 				log__printf(NULL, MOSQ_LOG_INFO,
 						"Invalid QoS in subscription command from %s, disconnecting.",
 						context->address);
-				mosquitto__free(sub);
-				mosquitto__free(payload);
+				mosquitto__FREE(sub);
+				mosquitto__FREE(payload);
 				return MOSQ_ERR_MALFORMED_PACKET;
+			}
+			if(qos > context->max_qos){
+				qos = context->max_qos;
 			}
 
 
@@ -147,54 +162,61 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 				len = strlen(context->listener->mount_point) + slen + 1;
 				sub_mount = mosquitto__malloc(len+1);
 				if(!sub_mount){
-					mosquitto__free(sub);
-					mosquitto__free(payload);
+					mosquitto__FREE(sub);
+					mosquitto__FREE(payload);
 					return MOSQ_ERR_NOMEM;
 				}
 				snprintf(sub_mount, len, "%s%s", context->listener->mount_point, sub);
 				sub_mount[len] = '\0';
 
-				mosquitto__free(sub);
+				mosquitto__FREE(sub);
 				sub = sub_mount;
 
 			}
 			log__printf(NULL, MOSQ_LOG_DEBUG, "\t%s (QoS %d)", sub, qos);
 
-			if(context->protocol != mosq_p_mqtt31){
-				rc2 = mosquitto_acl_check(db, context, sub, 0, NULL, qos, false, MOSQ_ACL_SUBSCRIBE);
-				switch(rc2){
-					case MOSQ_ERR_SUCCESS:
-						break;
-					case MOSQ_ERR_ACL_DENIED:
+			allowed = true;
+			rc2 = mosquitto_acl_check(context, sub, 0, NULL, qos, false, MOSQ_ACL_SUBSCRIBE);
+			switch(rc2){
+				case MOSQ_ERR_SUCCESS:
+					break;
+				case MOSQ_ERR_ACL_DENIED:
+					allowed = false;
+					if(context->protocol == mosq_p_mqtt5){
+						qos = MQTT_RC_NOT_AUTHORIZED;
+					}else if(context->protocol == mosq_p_mqtt311){
 						qos = 0x80;
-						break;
-					default:
-						mosquitto__free(sub);
-						return rc2;
-				}
+					}
+					break;
+				default:
+					mosquitto__FREE(sub);
+					return rc2;
 			}
 
-			if(qos != 0x80){
-				rc2 = sub__add(db, context, sub, qos, subscription_identifier, subscription_options, &db->subs);
+			if(allowed){
+				rc2 = sub__add(context, sub, qos, subscription_identifier, subscription_options);
 				if(rc2 > 0){
-					mosquitto__free(sub);
+					mosquitto__FREE(sub);
 					return rc2;
 				}
 				if(context->protocol == mosq_p_mqtt311 || context->protocol == mosq_p_mqtt31){
 					if(rc2 == MOSQ_ERR_SUCCESS || rc2 == MOSQ_ERR_SUB_EXISTS){
-						if(retain__queue(db, context, sub, qos, 0)) rc = 1;
+						if(retain__queue(context, sub, qos, 0)) rc = 1;
 					}
 				}else{
 					if((retain_handling == MQTT_SUB_OPT_SEND_RETAIN_ALWAYS)
 							|| (rc2 == MOSQ_ERR_SUCCESS && retain_handling == MQTT_SUB_OPT_SEND_RETAIN_NEW)){
 
-						if(retain__queue(db, context, sub, qos, subscription_identifier)) rc = 1;
+						if(retain__queue(context, sub, qos, subscription_identifier)) rc = 1;
 					}
 				}
 
 				log__printf(NULL, MOSQ_LOG_SUBSCRIBE, "%s %d %s", context->id, qos, sub);
+
+				plugin__handle_subscribe(context, sub, qos, subscription_options, subscription_identifier, properties);
+				plugin_persist__handle_subscription_add(context, sub, qos | subscription_options, subscription_identifier);
 			}
-			mosquitto__free(sub);
+			mosquitto__FREE(sub);
 
 			tmp_payload = mosquitto__realloc(payload, payloadlen + 1);
 			if(tmp_payload){
@@ -202,7 +224,7 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 				payload[payloadlen] = qos;
 				payloadlen++;
 			}else{
-				mosquitto__free(payload);
+				mosquitto__FREE(payload);
 
 				return MOSQ_ERR_NOMEM;
 			}
@@ -216,16 +238,16 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 		}
 	}
 	if(send__suback(context, mid, payloadlen, payload)) rc = 1;
-	mosquitto__free(payload);
+	mosquitto__FREE(payload);
 
 #ifdef WITH_PERSISTENCE
-	db->persistence_changes++;
+	db.persistence_changes++;
 #endif
 
-	if(context->current_out_packet == NULL){
-		rc = db__message_write_queued_out(db, context);
+	if(context->out_packet == NULL){
+		rc = db__message_write_queued_out(context);
 		if(rc) return rc;
-		rc = db__message_write_inflight_out_latest(db, context);
+		rc = db__message_write_inflight_out_latest(context);
 		if(rc) return rc;
 	}
 
