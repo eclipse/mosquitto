@@ -65,6 +65,7 @@ Broker:
   preferred websockets implementation.
 - Add support for X-Forwarded-For header for built in websockets.
 - Report persistence stats when starting.
+- Enable TLS v1.3 when using TLS-PSK.
 
 Plugins / plugin interface:
 - Add persist-sqlite plugin.
@@ -145,6 +146,7 @@ Client library:
 - `mosquitto_unsubscribe*()` now returns MOSQ_ERR_INVAL if an empty string is
   passed as a topic filter.
 - Add websockets support.
+- Enable TLS v1.3 when using TLS-PSK.
 
 Clients:
 - Add `-W` timeout support to Windows.

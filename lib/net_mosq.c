@@ -690,12 +690,6 @@ static int net__init_ssl_ctx(struct mosquitto *mosq)
 			}
 		}
 
-#ifdef SSL_OP_NO_TLSv1_3
-		if(mosq->tls_psk){
-			SSL_CTX_set_options(mosq->ssl_ctx, SSL_OP_NO_TLSv1_3);
-		}
-#endif
-
 		if(!mosq->tls_version){
 			SSL_CTX_set_options(mosq->ssl_ctx, SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1);
 #ifdef SSL_OP_NO_TLSv1_3
