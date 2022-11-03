@@ -359,7 +359,7 @@ struct mosquitto {
 	struct mosquitto__acl_user *acl_list;
 	struct mosquitto__listener *listener;
 	struct mosquitto__packet *out_packet_last;
-	struct mosquitto__client_sub **subs;
+	struct mosquitto__subleaf **subs;
 	char *auth_method;
 	int sub_count;
 #  ifndef WITH_EPOLL

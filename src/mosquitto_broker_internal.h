@@ -356,17 +356,6 @@ struct mosquitto__config {
 };
 
 
-struct mosquitto__subleaf {
-	struct mosquitto__subleaf *prev;
-	struct mosquitto__subleaf *next;
-	struct mosquitto *context;
-	uint32_t identifier;
-	uint8_t qos;
-	bool no_local;
-	bool retain_as_published;
-};
-
-
 struct mosquitto__subshared {
 	UT_hash_handle hh;
 	struct mosquitto__subleaf *subs;
@@ -383,9 +372,16 @@ struct mosquitto__subhier {
 	char topic[];
 };
 
-struct mosquitto__client_sub {
+struct mosquitto__subleaf {
+	struct mosquitto__subleaf *prev;
+	struct mosquitto__subleaf *next;
+	struct mosquitto *context;
 	struct mosquitto__subhier *hier;
 	struct mosquitto__subshared *shared;
+	uint32_t identifier;
+	uint8_t qos;
+	bool no_local;
+	bool retain_as_published;
 	char topic_filter[];
 };
 
