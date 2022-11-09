@@ -14,6 +14,7 @@ SPDX-License-Identifier: EPL-2.0 OR BSD-3-Clause
 
 Contributors:
    Roger Light - initial implementation and documentation.
+   Stefan Schuermans - string tokenization using double delimiters as escaping
 */
 
 /* This contains general purpose utility functions that are not specific to
@@ -340,4 +341,102 @@ error:
 		unlink(tmp_file_path);
 	}
 	return MOSQ_ERR_ERRNO;
+}
+
+
+// version of strtok that treats two equal delimiters in a row as "escaped"
+// delimiter character, i.e., not as a delimiter, but adds one delimiter
+// character to the returned token
+char *strtok_dblesc(char *str, const char *delim, char **saveptr){
+	char *begin;
+	char *input;
+	char *output;
+
+	if(delim == NULL || saveptr == NULL){
+		return NULL;
+	}
+
+	// init if str given
+	if(str != NULL){
+		*saveptr = str;
+	}
+
+	if(*saveptr == NULL){
+		return NULL;
+	}
+
+	// find begin - non-delim char or doubel delim char
+	begin = *saveptr;
+	while(*begin != 0){
+		// not a delim
+		if(strchr(delim, *begin) == NULL){
+			break;
+		}
+		// double delim
+		if(begin[1] == *begin){
+			break;
+		}
+		// real (non-double) delim
+		++begin;
+	}
+	if(*begin == 0){
+		return NULL;
+	}
+
+	// find end - delim char, but not double delim char
+	// replace double delim in input with delim in output
+	// copy input to output, because string may get shorter due to double delim
+	input = begin;
+	output = begin;
+	while(*input != 0){
+		// not a delim
+		if(strchr(delim, *input) == NULL){
+			*output = *input;
+			++input;
+			++output;
+			continue;
+		}
+		// double delim
+		if(input[1] == *input){
+			*output = *input;
+			input += 2;
+			++output;
+			continue;
+		}
+		// real (non-double) delim
+		++input;
+		break;
+	}
+	*output = 0;
+	*saveptr = input;
+
+	return begin;
+}
+
+// duplicate delimiter characters in plain input string,
+// so that strtok_dblesc parsing returned string will yield plain string,
+// returns malloc-ed string with delims doubled or NULL on out of memory
+char *esc_for_strtok_dblesc(const char *plain, const char *delim){
+	char *escaped = NULL, *ptr_out = NULL;
+	const char *ptr_in = NULL;
+
+    if(plain == NULL || delim == NULL){
+		return NULL;
+	}
+
+	escaped = malloc(2 * strlen(plain) + 1);
+	if(escaped == NULL){
+		return NULL;
+	}
+
+	ptr_out = escaped;
+	for(ptr_in = plain; *ptr_in != 0; ++ptr_in){
+		*(ptr_out++) = *ptr_in;
+		if(strchr(delim, *ptr_in) != NULL){
+			*(ptr_out++) = *ptr_in;
+		}
+	}
+	*ptr_out = 0;
+
+    return escaped;
 }

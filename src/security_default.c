@@ -733,7 +733,7 @@ static int pwfile__parse(const char *file, struct mosquitto__unpwd **root)
 			if(buf[0] == '#') continue;
 			if(!strchr(buf, ':')) continue;
 
-			username = strtok_r(buf, ":", &saveptr);
+			username = strtok_dblesc(buf, ":", &saveptr);
 			if(username){
 				unpwd = mosquitto__calloc(1, sizeof(struct mosquitto__unpwd));
 				if(!unpwd){
@@ -755,7 +755,7 @@ static int pwfile__parse(const char *file, struct mosquitto__unpwd **root)
 					fclose(pwfile);
 					return MOSQ_ERR_NOMEM;
 				}
-				password = strtok_r(NULL, ":", &saveptr);
+				password = strtok_dblesc(NULL, ":", &saveptr);
 				if(password){
 					password = misc__trimblanks(password);
 
