@@ -33,3 +33,4 @@ clean :
 	$(MAKE) -C lib clean
 	$(MAKE) -C broker clean
 	$(MAKE) -C unit clean
+	$(MAKE) -C apps clean
