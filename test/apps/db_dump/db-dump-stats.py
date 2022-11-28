@@ -10,10 +10,11 @@ def do_test(file, counts):
         f"DB_CHUNK_SUB:        {counts[4]}\n" + \
         f"DB_CHUNK_CLIENT:     {counts[5]}\n"
 
-    cmd = [mosq_test.get_build_root()+'/apps/db_dump/mosquitto_db_dump',
+    cmd = [
+        mosq_test.get_build_root()+'/apps/db_dump/mosquitto_db_dump',
             '--stats',
-            f'db_dump/{file}'
-            ]
+            f'./{file}'
+    ]
 
     res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=1, encoding='utf-8')
     if res.stdout != stdout:

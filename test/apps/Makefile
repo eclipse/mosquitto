@@ -7,25 +7,17 @@ include ${R}/config.mk
 all :
 
 check : test
-ptest : test
-test : 01 02 03
 
-01 :
-	./01-db-dump-client-stats.py
-	./01-db-dump-corrupt.py
-	./01-db-dump-print-empty.py
-	./01-db-dump-print-v6-all.py
-	./01-db-dump-print-v6-mqtt-v5-props.py
-	./01-db-dump-stats-current.py
-	./01-db-dump-stats.py
+test :
+	$(MAKE) -C db_dump test
+	$(MAKE) -C ctrl test
+	$(MAKE) -C passwd test
 
-02 :
-	./02-ctrl-args.py
-	./02-ctrl-broker.py
-	./02-ctrl-dynsec.py
+ptest :
+	$(MAKE) -C db_dump ptest
+	$(MAKE) -C ctrl ptest
+	$(MAKE) -C passwd ptest
 
-03 :
-	./03-passwd-args.py
-	./03-passwd-changes.py
-
-clean:
+reallyclean : clean
+clean :
+	$(MAKE) -C db_dump clean

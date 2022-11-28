@@ -9,10 +9,11 @@ def do_test(file, counts):
         f"MS: {counts[3]} " + \
         f"  {counts[4]}\n"
 
-    cmd = [mosq_test.get_build_root()+'/apps/db_dump/mosquitto_db_dump',
-            '--client-stats',
-            f'db_dump/{file}'
-            ]
+    cmd = [
+        mosq_test.get_build_root()+'/apps/db_dump/mosquitto_db_dump',
+        '--client-stats',
+        f'./{file}'
+    ]
 
     res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=1, encoding='utf-8')
     if res.stdout != stdout:

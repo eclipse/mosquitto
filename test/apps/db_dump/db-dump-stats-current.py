@@ -20,10 +20,11 @@ def check_db(port, counts):
         f"DB_CHUNK_SUB:        {counts[4]}\n" + \
         f"DB_CHUNK_CLIENT:     {counts[5]}\n"
 
-    cmd = [mosq_test.get_build_root()+'/apps/db_dump/mosquitto_db_dump',
-            '--stats',
-            f'{port}/mosquitto.db'
-            ]
+    cmd = [
+        mosq_test.get_build_root()+'/apps/db_dump/mosquitto_db_dump',
+        '--stats',
+        f'{port}/mosquitto.db'
+    ]
     res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=1, encoding='utf-8')
     if res.stdout != stdout:
         print(res.stdout)
@@ -51,24 +52,26 @@ def do_test(counts):
             }
 
         # Set up persistent client session, including a subscription
-        cmd = [mosq_test.get_build_root()+'/client/mosquitto_sub',
+        cmd = [
+            mosq_test.get_build_root()+'/client/mosquitto_sub',
             '-c',
             '-i', 'client-id',
             '-p', str(port),
             '-q', '1',
             '-t', 'sub-topic',
             '-E'
-            ]
+        ]
         subprocess.run(cmd, timeout=1, env=env)
 
         # Publish a retained message which is also queued for the subscriber
-        cmd = [mosq_test.get_build_root()+'/client/mosquitto_pub',
+        cmd = [
+            mosq_test.get_build_root()+'/client/mosquitto_pub',
             '-p', str(port),
             '-q', '1',
             '-t', 'sub-topic',
             '-m', 'message',
             '-r'
-            ]
+        ]
         subprocess.run(cmd, timeout=1, env=env)
 
         broker.terminate()
