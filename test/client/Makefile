@@ -76,7 +76,7 @@ endif
 
 ptest :
 	./test.sh
-	#./test-ws.sh
+	./test-ws.sh
 	./test.py
 
 clean:
