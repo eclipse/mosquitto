@@ -44,15 +44,15 @@ static int callback_message(int event, void *event_data, void *userdata)
 {
 	struct mosquitto_evt_message *ed = event_data;
 	struct timespec ts;
-	struct tm *ti;
+	struct tm ti;
 	char time_buf[25];
 
 	UNUSED(event);
 	UNUSED(userdata);
 
 	clock_gettime(CLOCK_REALTIME, &ts);
-	ti = gmtime(&ts.tv_sec);
-	strftime(time_buf, sizeof(time_buf), "%Y-%m-%dT%H:%M:%SZ", ti);
+	gmtime_r(&ts.tv_sec, &ti);
+	strftime(time_buf, sizeof(time_buf), "%Y-%m-%dT%H:%M:%SZ", &ti);
 
 	return mosquitto_property_add_string_pair(&ed->properties, MQTT_PROP_USER_PROPERTY, "timestamp", time_buf);
 }
