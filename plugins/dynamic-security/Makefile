@@ -1,7 +1,7 @@
 R=../..
 include ${R}/config.mk
 
-.PHONY : all binary check clean reallyclean test install uninstall
+.PHONY : all binary check clean reallyclean test test-compile install uninstall
 
 PLUGIN_NAME=mosquitto_dynamic_security
 LOCAL_CPPFLAGS=-I${R}/lib/ -I${R}/src/ -I${R}/plugins/common -DWITH_CJSON -DWITH_TLS
@@ -115,8 +115,10 @@ reallyclean : clean
 clean:
 	-rm -f *.o ${PLUGIN_NAME}.so *.gcda *.gcno
 
+test-compile:
+
 check: test
-test:
+test: test-compile
 
 install: all
 ifeq ($(WITH_CJSON),yes)

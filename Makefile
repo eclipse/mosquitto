@@ -83,9 +83,11 @@ check : test
 
 test-compile: mosquitto lib
 	$(MAKE) -C test test-compile
+	$(MAKE) -C plugins test-compile
 
 test : mosquitto lib apps
 	$(MAKE) -C test test
+	$(MAKE) -C plugins test
 
 ptest : mosquitto
 	$(MAKE) -C test ptest

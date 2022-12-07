@@ -1,7 +1,7 @@
 R=../..
 include ${R}/config.mk
 
-.PHONY : all binary check clean reallyclean test install uninstall
+.PHONY : all binary check clean reallyclean test test-compile install uninstall
 
 PLUGIN_NAME=mosquitto_persist_sqlite
 LOCAL_CPPFLAGS=-I${R}/src/
@@ -60,8 +60,10 @@ reallyclean : clean
 clean:
 	-rm -f *.o ${PLUGIN_NAME}.so *.gcda *.gcno
 
-check: test
-test:
+test-compile:
+
+check : test
+test: test-compile
 
 install: all
 ifeq ($(WITH_SQLITE),yes)

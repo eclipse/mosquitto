@@ -8,6 +8,8 @@ all :
 
 check : test
 
+test-compile:
+
 test :
 	$(MAKE) -C db_dump test
 	$(MAKE) -C ctrl test

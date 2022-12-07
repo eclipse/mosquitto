@@ -10,20 +10,21 @@ test-compile:
 	$(MAKE) -C client test-compile
 	$(MAKE) -C lib test-compile
 	$(MAKE) -C unit test-compile
+	$(MAKE) -C apps test-compile
 
 check : test
 
 test : utest
-	$(MAKE) -C apps test
 	$(MAKE) -C broker test
 	$(MAKE) -C lib test
 	$(MAKE) -C client test
+	$(MAKE) -C apps test
 
 ptest : utest
-	$(MAKE) -C apps ptest
 	$(MAKE) -C broker ptest
 	$(MAKE) -C lib ptest
 	$(MAKE) -C client ptest
+	$(MAKE) -C apps ptest
 
 utest :
 	$(MAKE) -C unit test
@@ -32,5 +33,6 @@ reallyclean : clean
 clean :
 	$(MAKE) -C lib clean
 	$(MAKE) -C broker clean
+	$(MAKE) -C client clean
 	$(MAKE) -C unit clean
 	$(MAKE) -C apps clean
