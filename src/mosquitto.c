@@ -160,9 +160,9 @@ static void mosquitto__daemonise(void)
 		exit(1);
 	}
 
-	assert(freopen("/dev/null", "r", stdin));
-	assert(freopen("/dev/null", "w", stdout));
-	assert(freopen("/dev/null", "w", stderr));
+	freopen("/dev/null", "r", stdin);
+	freopen("/dev/null", "w", stdout);
+	freopen("/dev/null", "w", stderr);
 #else
 	log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Can't start in daemon mode in Windows.");
 #endif
