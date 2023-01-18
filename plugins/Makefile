@@ -1,4 +1,5 @@
 DIRS= \
+		auth-by-hmac \
 		dynamic-security \
 		examples \
 		persist-sqlite
