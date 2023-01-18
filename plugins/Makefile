@@ -1,5 +1,6 @@
 DIRS= \
 		auth-by-ip \
+		auth-by-hmac \
 		deny-protocol-version \
 		dynamic-security \
 		message-timestamp \
