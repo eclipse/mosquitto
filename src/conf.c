@@ -280,6 +280,7 @@ static void config__init_reload(struct mosquitto__config *config)
 		config->log_type = MOSQ_LOG_ERR | MOSQ_LOG_WARNING | MOSQ_LOG_NOTICE | MOSQ_LOG_INFO;
 	}
 #endif
+	config->log_stdout_unbuffered = false;
 	config->log_timestamp = true;
 	mosquitto__FREE(config->log_timestamp_format);
 	config->global_max_clients = -1;
@@ -629,6 +630,7 @@ static void config__copy(struct mosquitto__config *src, struct mosquitto__config
 	dest->log_dest = src->log_dest;
 	dest->log_facility = src->log_facility;
 	dest->log_type = src->log_type;
+	dest->log_stdout_unbuffered = src->log_stdout_unbuffered;
 	dest->log_timestamp = src->log_timestamp;
 
 	mosquitto__FREE(dest->log_timestamp_format);
@@ -1808,6 +1810,13 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 						cr->log_dest |= MQTT3_LOG_SYSLOG;
 					}else if(!strcmp(token, "stdout")){
 						cr->log_dest |= MQTT3_LOG_STDOUT;
+						token = &token[strlen(token)+1];
+						while(token[0] == ' ' || token[0] == '\t'){
+							token++;
+						}
+						if(!strcmp(token, "unbuffered")){
+							config->log_stdout_unbuffered = true;
+						}
 					}else if(!strcmp(token, "stderr")){
 						cr->log_dest |= MQTT3_LOG_STDERR;
 					}else if(!strcmp(token, "topic")){
