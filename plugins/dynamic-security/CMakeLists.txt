@@ -34,6 +34,7 @@ if(CJSON_FOUND AND WITH_TLS)
 		plugin.c
 		roles.c
 		rolelist.c
+		yaml_help.c
 		tick.c
 	)
 

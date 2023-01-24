@@ -31,6 +31,7 @@ OBJS=	\
 		roles.o \
 		rolelist.o \
 		tick.o
+		yaml_help.o
 
 ifeq ($(WITH_CJSON),yes)
 ifeq ($(WITH_TLS),yes)
@@ -46,7 +47,7 @@ all : ${ALL_DEPS}
 binary : ${PLUGIN_NAME}.so
 
 ${PLUGIN_NAME}.so : ${OBJS}
-	${CROSS_COMPILE}${CC} $(PLUGIN_LDFLAGS) -fPIC -shared $^ -o $@ -lcjson
+	${CROSS_COMPILE}${CC} $(PLUGIN_LDFLAGS) -fPIC -shared $^ -o $@ -lcjson -lyaml
 
 acl.o : acl.c dynamic_security.h
 	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) -c $< -o $@
@@ -110,6 +111,10 @@ rolelist.o : rolelist.c dynamic_security.h
 
 tick.o : tick.c dynamic_security.h
 	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) -c $< -o $@
+
+yaml_help.o : yaml_help.c dynamic_security.h
+	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) -c $< -o $@
+
 
 reallyclean : clean
 clean:
