@@ -25,7 +25,8 @@ if (CJSON_FOUND AND WITH_TLS)
 		plugin.c
 		roles.c
 		rolelist.c
-		sub_matches_sub.c)
+		sub_matches_sub.c
+		yaml_help.c)
 
 	set_target_properties(mosquitto_dynamic_security PROPERTIES
 		POSITION_INDEPENDENT_CODE 1

@@ -23,11 +23,13 @@ Contributors:
 #include <string.h>
 #include <uthash.h>
 #include <utlist.h>
+#include <yaml.h>
 
 #include "dynamic_security.h"
 #include "json_help.h"
 #include "mosquitto.h"
 #include "mosquitto_broker.h"
+#include "yaml_help.h"
 
 
 /* ################################################################
@@ -67,7 +69,7 @@ void dynsec_rolelist__cleanup(struct dynsec__rolelist **base_rolelist)
 	}
 }
 
-static int dynsec_rolelist__remove_role(struct dynsec__rolelist **base_rolelist, const struct dynsec__role *role)
+int dynsec_rolelist__remove_role(struct dynsec__rolelist **base_rolelist, const struct dynsec__role *role)
 {
 	struct dynsec__rolelist *found_rolelist;
 
@@ -107,7 +109,7 @@ void dynsec_rolelist__group_remove(struct dynsec__group *group, struct dynsec__r
 }
 
 
-static int dynsec_rolelist__add(struct dynsec__rolelist **base_rolelist, struct dynsec__role *role, int priority)
+int dynsec_rolelist__add(struct dynsec__rolelist **base_rolelist, struct dynsec__role *role, int priority)
 {
 	struct dynsec__rolelist *rolelist;
 
@@ -193,6 +195,85 @@ int dynsec_rolelist__load_from_json(cJSON *command, struct dynsec__rolelist **ro
 	}else{
 		return ERR_LIST_NOT_FOUND;
 	}
+}
+
+int dynsec_rolelist__load_from_yaml(yaml_parser_t *parser, yaml_event_t *event, struct dynsec__rolelist **rolelist)
+{
+
+    YAML_PARSER_SEQUENCE_FOR_ALL(parser, event, { goto error; }, {
+        printf("%s:%d\n", __FILE__, __LINE__);
+        char* rolename = NULL;
+        long int priority = -1;
+
+        printf("%s:%d\n", __FILE__, __LINE__);
+        YAML_PARSER_MAPPING_FOR_ALL(parser, event, key, { goto error; }, {
+                printf("%s:%d\n", __FILE__, __LINE__);
+                if (strcmp(key, "rolename") == 0) {
+                    printf("%s:%d\n", __FILE__, __LINE__);
+                    YAML_EVENT_INTO_SCALAR_STRING(event, &rolename, { goto error; });
+                } else if (strcmp(key, "priority") == 0) {
+                    printf("%s:%d\n", __FILE__, __LINE__);
+                    YAML_EVENT_INTO_SCALAR_LONG_INT(event, &priority, { goto error; });
+                } else {
+                    printf("%s:%d\n", __FILE__, __LINE__);
+                    mosquitto_log_printf(MOSQ_LOG_ERR, "Unexpected key for role config %s \n", key);
+                    yaml_dump_block(parser, event);
+                }
+        });
+
+        printf("%s:%d\n", __FILE__, __LINE__);
+
+        if (rolename) {
+            printf("rn = %s\n", rolename);
+            struct dynsec__role *role = dynsec_roles__find_or_create(rolename);
+            if (role) {
+                printf("%s:%d\n", __FILE__, __LINE__);
+                dynsec_rolelist__add(rolelist, role, (int)priority);
+            } else {
+                printf("OUT OF MEMORY %s:%d\n", __FILE__, __LINE__);
+                free(rolename);
+                goto error;
+            }
+        }
+
+        printf("%s:%d\n", __FILE__, __LINE__);
+    });
+
+    printf("%s:%d\n", __FILE__, __LINE__);
+
+    return 1;
+error:
+    dynsec_rolelist__cleanup(rolelist);
+    return 0;
+}
+
+
+int dynsec_rolelist__all_to_yaml(struct dynsec__rolelist *base_rolelist, yaml_emitter_t *emitter, yaml_event_t *event)
+{
+    struct dynsec__rolelist *rolelist, *rolelist_tmp;
+
+    yaml_sequence_start_event_initialize(event, NULL, (yaml_char_t *)YAML_SEQ_TAG,
+                                         1, YAML_ANY_SEQUENCE_STYLE);
+    if (!yaml_emitter_emit(emitter, event)) return 0;
+
+
+    HASH_ITER(hh, base_rolelist, rolelist, rolelist_tmp){
+
+        yaml_mapping_start_event_initialize(event, NULL, (yaml_char_t *)YAML_MAP_TAG,
+                                            1, YAML_ANY_MAPPING_STYLE);
+        if (!yaml_emitter_emit(emitter, event)) return 0;
+
+        if (!yaml_emit_string_field(emitter, event, "rolename", rolelist->role->rolename)) return 0;
+        if (rolelist->priority != -1 && !yaml_emit_int_field(emitter, event, "priority", rolelist->priority)) return 0;
+
+        yaml_mapping_end_event_initialize(event);
+        if (!yaml_emitter_emit(emitter, event)) return 0;
+    }
+
+    yaml_sequence_end_event_initialize(event);
+    if (!yaml_emitter_emit(emitter, event)) return 0;
+
+    return 1;
 }
 
 

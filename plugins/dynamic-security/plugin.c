@@ -37,6 +37,9 @@ Contributors:
 
 #include "dynamic_security.h"
 
+#include "yaml.h"
+#include "yaml_help.h"
+
 static mosquitto_plugin_id_t *plg_id = NULL;
 static char *config_file = NULL;
 struct dynsec__acl_default_access default_access = {false, false, false, false};
@@ -290,6 +293,27 @@ int mosquitto_plugin_version(int supported_version_count, const int *supported_v
 	return -1;
 }
 
+static int dynsec__general_config_load_yaml(yaml_parser_t *parser, yaml_event_t *event)
+{
+    YAML_PARSER_MAPPING_FOR_ALL(parser, event, key, { return 0; }, {
+        if (strcmp(key, ACL_TYPE_PUB_C_SEND) == 0) {
+            YAML_EVENT_INTO_SCALAR_BOOL(event, &default_access.publish_c_send, { return 0; });
+        } else if (strcmp(key, ACL_TYPE_PUB_C_RECV) == 0) {
+            YAML_EVENT_INTO_SCALAR_BOOL(event, &default_access.publish_c_recv, { return 0; });
+        } else if (strcmp(key, ACL_TYPE_SUB_GENERIC) == 0) {
+            YAML_EVENT_INTO_SCALAR_BOOL(event, &default_access.subscribe, { return 0; });
+        } else if (strcmp(key, ACL_TYPE_UNSUB_GENERIC) == 0) {
+            YAML_EVENT_INTO_SCALAR_BOOL(event, &default_access.unsubscribe, { return 0; });
+        } else {
+            mosquitto_log_printf(MOSQ_LOG_ERR, "Error parsing Dynamic security plugin config. Unknown key %s found on line %d:%d at %s:%d, \n", key, event->start_mark.line, event->start_mark.column, __FILE__, __LINE__ );
+            return 0;
+        }
+    });
+
+    return 1;
+}
+
+
 static int dynsec__general_config_load(cJSON *tree)
 {
 	cJSON *j_default_access, *jtmp;
@@ -327,6 +351,8 @@ static int dynsec__general_config_load(cJSON *tree)
 	return MOSQ_ERR_SUCCESS;
 }
 
+
+
 static int dynsec__general_config_save(cJSON *tree)
 {
 	cJSON *j_default_access;
@@ -349,7 +375,111 @@ static int dynsec__general_config_save(cJSON *tree)
 	return MOSQ_ERR_SUCCESS;
 }
 
-static int dynsec__config_load(void)
+static int dynsec__general_config_save_yaml(yaml_emitter_t* emitter, yaml_event_t* event)
+{
+    printf("%s:%d\n", __FILE__, __LINE__);
+
+    yaml_scalar_event_initialize(event, NULL, (yaml_char_t *)YAML_STR_TAG,
+                                 (yaml_char_t *)"defaultACLAccess", strlen("defaultACLAccess"), 1, 0, YAML_PLAIN_SCALAR_STYLE);
+
+    printf("%s:%d\n", __FILE__, __LINE__);
+
+    if (!yaml_emitter_emit(emitter, event)) return 0;
+
+    printf("%s:%d\n", __FILE__, __LINE__);
+
+    yaml_mapping_start_event_initialize(event, NULL, (yaml_char_t *)YAML_MAP_TAG, 1, YAML_ANY_MAPPING_STYLE);
+    if (!yaml_emitter_emit(emitter, event)) return 0;
+
+    printf("%s:%d\n", __FILE__, __LINE__);
+
+    if (!yaml_emit_bool_field(emitter, event, ACL_TYPE_PUB_C_SEND, default_access.publish_c_send)) return 0;
+    if (!yaml_emit_bool_field(emitter, event, ACL_TYPE_PUB_C_RECV, default_access.publish_c_recv)) return 0;
+    if (!yaml_emit_bool_field(emitter, event, ACL_TYPE_SUB_GENERIC, default_access.subscribe)) return 0;
+    if (!yaml_emit_bool_field(emitter, event, ACL_TYPE_UNSUB_GENERIC, default_access.unsubscribe)) return 0;
+
+    printf("%s:%d\n", __FILE__, __LINE__);
+    yaml_mapping_end_event_initialize(event);
+    if (!yaml_emitter_emit(emitter, event)) return 0;
+
+    printf("%s:%d\n", __FILE__, __LINE__);
+    return 1;
+}
+
+
+static int dynsec__config_load_yaml(void)
+{
+    yaml_parser_t parser;
+    yaml_event_t event;
+
+    yaml_parser_initialize(&parser);
+
+    /* Load from file */
+    FILE *fptr = fopen(config_file, "rb");
+    if(fptr == NULL){
+        mosquitto_log_printf(MOSQ_LOG_ERR, "Error loading Dynamic security plugin config: File is not readable - check permissions.\n");
+        return MOSQ_ERR_ERRNO;
+    }
+#ifndef WIN32
+    if(errno == ENOTDIR || errno == EISDIR){
+        mosquitto_log_printf(MOSQ_LOG_ERR, "Error loading Dynamic security plugin config: Config is not a file.\n");
+        return MOSQ_ERR_ERRNO;
+    }
+#endif
+
+    yaml_parser_set_input_file(&parser, fptr);
+
+    if (!yaml_parser_parse(&parser, &event)) { goto print_error; }
+    PARSER_EXPECT_EVENT_TYPE(&event, YAML_STREAM_START_EVENT, { return 1; });
+    yaml_event_delete(&event);
+
+    if (!yaml_parser_parse(&parser, &event)) { goto print_error; }
+    PARSER_EXPECT_EVENT_TYPE(&event, YAML_DOCUMENT_START_EVENT, { return 1; });
+    yaml_event_delete(&event);
+
+
+    if (!yaml_parser_parse(&parser, &event)) { goto print_error; }
+
+    YAML_PARSER_MAPPING_FOR_ALL(&parser, &event, key, { goto print_error; }, {
+
+        if (strcmp(key, "defaultACLAccess") == 0) {
+            if (!dynsec__general_config_load_yaml(&parser, &event)) goto print_error;
+        } else if (strcmp(key, "clients") == 0) {
+            if (!dynsec_clients__config_load_yaml(&parser, &event)) goto print_error;
+        } else if (strcmp(key, "groups") == 0) {
+            printf("groups:\n");
+            if (!dynsec_groups__config_load_yaml(&parser, &event)) goto print_error;
+        } else  if (strcmp(key, "roles") == 0) {
+            printf("roles:\n");
+            if (!dynsec_roles__config_load_from_yaml(&parser, &event)) goto print_error;
+        } else {
+            mosquitto_log_printf(MOSQ_LOG_ERR, "Error parsing Dynamic security plugin config. Unknown key %s found on line %d:%d at %s:%d, \n", event.data.scalar.value, event.start_mark.line, event.start_mark.column, __FILE__, __LINE__ );
+            yaml_event_delete(&event);
+            return 1;
+        }
+    });
+
+    if (!yaml_parser_parse(&parser, &event)) { goto print_error; }
+    PARSER_EXPECT_EVENT_TYPE(&event, YAML_DOCUMENT_END_EVENT, { return 1; });
+    yaml_event_delete(&event);
+
+    if (!yaml_parser_parse(&parser, &event)) { goto print_error; }
+    PARSER_EXPECT_EVENT_TYPE(&event, YAML_STREAM_END_EVENT, { return 1; });
+    yaml_event_delete(&event);
+
+    fclose(fptr);
+
+    dynsec__config_save();
+
+    return 0;
+
+print_error:
+    mosquitto_log_printf(MOSQ_LOG_ERR, "Error parsing Dynamic security plugin config on line %d:%d: %s, \n", parser.problem_mark.line, parser.problem_mark.column, parser.problem);
+    return 1;
+}
+
+
+static int dynsec__config_load_json(void)
 {
 	FILE *fptr;
 	long flen_l;
@@ -418,64 +548,169 @@ static int dynsec__config_load(void)
 	return 0;
 }
 
+static int str_ends_with(const char *str, const char *suffix) {
+    size_t str_len = strlen(str);
+    size_t suffix_len = strlen(suffix);
+
+    return (str_len >= suffix_len) &&
+           (!memcmp(str + str_len - suffix_len, suffix, suffix_len));
+}
+
+
+static void dynsec__config_load(void)
+{
+    if (str_ends_with(config_file, ".yaml") || str_ends_with(config_file, ".yml")) {
+        dynsec__config_load_yaml();
+    } else {
+        dynsec__config_load_json();
+    }
+}
+
+
+static void dynsec__config_save_json(void)
+{
+    cJSON *tree;
+    size_t file_path_len;
+    char *file_path;
+    FILE *fptr;
+    size_t json_str_len;
+    char *json_str;
+
+    tree = cJSON_CreateObject();
+    if(tree == NULL) return;
+
+    if(dynsec__general_config_save(tree)
+       || dynsec_clients__config_save(tree)
+       || dynsec_groups__config_save(tree)
+       || dynsec_roles__config_save(tree)){
+
+        cJSON_Delete(tree);
+        return;
+    }
+
+    /* Print json to string */
+    json_str = cJSON_Print(tree);
+    if(json_str == NULL){
+        cJSON_Delete(tree);
+        mosquitto_log_printf(MOSQ_LOG_ERR, "Error saving Dynamic security plugin config: Out of memory.\n");
+        return;
+    }
+    cJSON_Delete(tree);
+    json_str_len = strlen(json_str);
+
+    /* Save to file */
+    file_path_len = strlen(config_file) + 4 + 1 ;
+    file_path = mosquitto_malloc(file_path_len);
+    if(file_path == NULL){
+        mosquitto_free(json_str);
+        mosquitto_log_printf(MOSQ_LOG_ERR, "Error saving Dynamic security plugin config: Out of memory.\n");
+        return;
+    }
+    snprintf(file_path, file_path_len, "%s.new", config_file);
+
+    fptr = fopen(file_path, "wt");
+    if(fptr == NULL){
+        mosquitto_free(json_str);
+        mosquitto_free(file_path);
+        mosquitto_log_printf(MOSQ_LOG_ERR, "Error saving Dynamic security plugin config: File is not writable - check permissions.\n");
+        return;
+    }
+    fwrite(json_str, 1, json_str_len, fptr);
+    mosquitto_free(json_str);
+    fclose(fptr);
+
+    /* Everything is ok, so move new file over proper file */
+    if(rename(file_path, config_file) < 0){
+        mosquitto_log_printf(MOSQ_LOG_ERR, "Error updating dynsec config file: %s", strerror(errno));
+    }
+    mosquitto_free(file_path);
+
+}
+
+static void dynsec__config_save_yaml(void)
+{
+    yaml_emitter_t emitter;
+    yaml_event_t event;
+
+    /* Save to file */
+    size_t tmp_fn_len = strlen(config_file) + 4 + 1 ;
+    char *tmp_fn = mosquitto_malloc(tmp_fn_len);
+
+    if(tmp_fn == NULL){
+        mosquitto_log_printf(MOSQ_LOG_ERR, "Error saving Dynamic security plugin config: Out of memory.\n");
+        return;
+    }
+    snprintf(tmp_fn, tmp_fn_len, "%s.new", config_file);
+
+    FILE *fptr = fopen(tmp_fn, "wt");
+    if(fptr == NULL){
+        mosquitto_log_printf(MOSQ_LOG_ERR, "Error saving Dynamic security plugin config: File '%s' is not writable - check permissions.\n", tmp_fn);
+        return;
+    }
+
+    yaml_emitter_initialize(&emitter);
+    yaml_emitter_set_output_file(&emitter, fptr);
+
+
+    yaml_stream_start_event_initialize(&event, YAML_UTF8_ENCODING);
+    if (!yaml_emitter_emit(&emitter, &event)) goto error;
+
+
+    yaml_document_start_event_initialize(&event, NULL, NULL, NULL, 1);
+    if (!yaml_emitter_emit(&emitter, &event)) goto error;
+
+    yaml_mapping_start_event_initialize(&event, NULL, (yaml_char_t *)YAML_MAP_TAG, 1, YAML_ANY_MAPPING_STYLE);
+    if (!yaml_emitter_emit(&emitter, &event)) goto error;
+
+    if(!dynsec__general_config_save_yaml(&emitter, &event)) goto error;
+    if(!dynsec_clients__config_save_yaml(&emitter, &event)) goto error;
+    if(!dynsec_groups__config_save_yaml(&emitter, &event)) goto error;
+    printf("%s:%d\n", __FILE__, __LINE__);
+    if(!dynsec_roles__config_save_yaml(&emitter, &event)) goto error;
+    printf("%s:%d\n", __FILE__, __LINE__);
+
+    yaml_mapping_end_event_initialize(&event);
+    if (!yaml_emitter_emit(&emitter, &event)) goto error;
+
+    yaml_document_end_event_initialize(&event, 1);
+    if (!yaml_emitter_emit(&emitter, &event)) goto error;
+
+    yaml_stream_end_event_initialize(&event);
+    if (!yaml_emitter_emit(&emitter, &event)) goto error;
+
+/* Destroy the Emitter object. */
+    yaml_emitter_delete(&emitter);
+
+    fclose(fptr);
+
+    /* Everything is ok, so move new file over proper file */
+    if(rename(tmp_fn, config_file) < 0){
+        mosquitto_log_printf(MOSQ_LOG_ERR, "Error updating dynsec config file: %s", strerror(errno));
+    }
+
+    mosquitto_free(tmp_fn);
+
+    return;
+
+error:
+    printf("%s:%d\n", __FILE__, __LINE__);
+    fprintf(stderr, "Failed to emit event %d: %s\n", event.type, emitter.problem);
+    yaml_emitter_delete(&emitter);
+    fclose(fptr);
+    mosquitto_free(tmp_fn);
+}
+
+
 
 void dynsec__config_save(void)
 {
-	cJSON *tree;
-	size_t file_path_len;
-	char *file_path;
-	FILE *fptr;
-	size_t json_str_len;
-	char *json_str;
-
-	tree = cJSON_CreateObject();
-	if(tree == NULL) return;
-
-	if(dynsec__general_config_save(tree)
-			|| dynsec_clients__config_save(tree)
-			|| dynsec_groups__config_save(tree)
-			|| dynsec_roles__config_save(tree)){
-
-		cJSON_Delete(tree);
-		return;
-	}
-
-	/* Print json to string */
-	json_str = cJSON_Print(tree);
-	if(json_str == NULL){
-		cJSON_Delete(tree);
-		mosquitto_log_printf(MOSQ_LOG_ERR, "Error saving Dynamic security plugin config: Out of memory.\n");
-		return;
-	}
-	cJSON_Delete(tree);
-	json_str_len = strlen(json_str);
-
-	/* Save to file */
-	file_path_len = strlen(config_file) + 1;
-	file_path = mosquitto_malloc(file_path_len);
-	if(file_path == NULL){
-		mosquitto_free(json_str);
-		mosquitto_log_printf(MOSQ_LOG_ERR, "Error saving Dynamic security plugin config: Out of memory.\n");
-		return;
-	}
-	snprintf(file_path, file_path_len, "%s.new", config_file);
-
-	fptr = fopen(file_path, "wt");
-	if(fptr == NULL){
-		mosquitto_free(json_str);
-		mosquitto_free(file_path);
-		mosquitto_log_printf(MOSQ_LOG_ERR, "Error saving Dynamic security plugin config: File is not writable - check permissions.\n");
-		return;
-	}
-	fwrite(json_str, 1, json_str_len, fptr);
-	mosquitto_free(json_str);
-	fclose(fptr);
-
-	/* Everything is ok, so move new file over proper file */
-	if(rename(file_path, config_file) < 0){
-		mosquitto_log_printf(MOSQ_LOG_ERR, "Error updating dynsec config file: %s", strerror(errno));
-	}
-	mosquitto_free(file_path);
+    if (str_ends_with(config_file, ".yaml") || str_ends_with(config_file, ".yml")) {
+        printf("YAML\n");
+        dynsec__config_save_yaml();
+    } else {
+        printf("JSON %s\n", config_file);
+        dynsec__config_save_json();
+    }
 }
 
 

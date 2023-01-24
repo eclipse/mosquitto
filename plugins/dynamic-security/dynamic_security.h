@@ -22,6 +22,7 @@ Contributors:
 #include <uthash.h>
 #include "mosquitto.h"
 #include "password_mosq.h"
+#include "yaml.h"
 
 /* ################################################################
  * #
@@ -172,7 +173,9 @@ int dynsec_auth__basic_auth_callback(int event, void *event_data, void *userdata
 
 void dynsec_clients__cleanup(void);
 int dynsec_clients__config_load(cJSON *tree);
+int dynsec_clients__config_load_yaml(yaml_parser_t *parser, yaml_event_t *event);
 int dynsec_clients__config_save(cJSON *tree);
+int dynsec_clients__config_save_yaml(yaml_emitter_t *emitter, yaml_event_t *event);
 int dynsec_clients__process_add_role(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data);
 int dynsec_clients__process_create(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data);
 int dynsec_clients__process_delete(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data);
@@ -185,6 +188,7 @@ int dynsec_clients__process_remove_role(cJSON *j_responses, struct mosquitto *co
 int dynsec_clients__process_set_id(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data);
 int dynsec_clients__process_set_password(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data);
 struct dynsec__client *dynsec_clients__find(const char *username);
+struct dynsec__client *dynsec_clients__find_or_create(const char *username);
 
 
 /* ################################################################
@@ -194,10 +198,12 @@ struct dynsec__client *dynsec_clients__find(const char *username);
  * ################################################################ */
 
 cJSON *dynsec_clientlist__all_to_json(struct dynsec__clientlist *base_clientlist);
+int dynsec_clientlist__all_to_yaml(struct dynsec__clientlist *base_clientlist, yaml_emitter_t* emitter, yaml_event_t *event);
 int dynsec_clientlist__add(struct dynsec__clientlist **base_clientlist, struct dynsec__client *client, int priority);
 void dynsec_clientlist__cleanup(struct dynsec__clientlist **base_clientlist);
 void dynsec_clientlist__remove(struct dynsec__clientlist **base_clientlist, struct dynsec__client *client);
 void dynsec_clientlist__kick_all(struct dynsec__clientlist *base_clientlist);
+int dynsec_clientlist__load_from_yaml(yaml_parser_t *parser, yaml_event_t *event, struct dynsec__clientlist **clientlist);
 
 
 /* ################################################################
@@ -208,8 +214,10 @@ void dynsec_clientlist__kick_all(struct dynsec__clientlist *base_clientlist);
 
 void dynsec_groups__cleanup(void);
 int dynsec_groups__config_load(cJSON *tree);
+int dynsec_groups__config_load_yaml(yaml_parser_t *parser, yaml_event_t *event);
 int dynsec_groups__add_client(const char *username, const char *groupname, int priority, bool update_config);
 int dynsec_groups__config_save(cJSON *tree);
+int dynsec_groups__config_save_yaml(yaml_emitter_t* emitter, yaml_event_t* event);
 int dynsec_groups__process_add_client(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data);
 int dynsec_groups__process_add_role(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data);
 int dynsec_groups__process_create(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data);
@@ -223,6 +231,7 @@ int dynsec_groups__process_get_anonymous_group(cJSON *j_responses, struct mosqui
 int dynsec_groups__process_set_anonymous_group(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data);
 int dynsec_groups__remove_client(const char *username, const char *groupname, bool update_config);
 struct dynsec__group *dynsec_groups__find(const char *groupname);
+struct dynsec__group *dynsec_groups__find_or_create(const char *groupname);
 
 
 /* ################################################################
@@ -245,7 +254,9 @@ void dynsec_grouplist__remove(struct dynsec__grouplist **base_grouplist, struct 
 
 void dynsec_roles__cleanup(void);
 int dynsec_roles__config_load(cJSON *tree);
+int dynsec_roles__config_load_from_yaml(yaml_parser_t *parser, yaml_event_t *event);
 int dynsec_roles__config_save(cJSON *tree);
+int dynsec_roles__config_save_yaml(yaml_emitter_t *emitter, yaml_event_t *event);
 int dynsec_roles__process_add_acl(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data);
 int dynsec_roles__process_create(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data);
 int dynsec_roles__process_delete(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data);
@@ -254,6 +265,7 @@ int dynsec_roles__process_list(cJSON *j_responses, struct mosquitto *context, cJ
 int dynsec_roles__process_modify(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data);
 int dynsec_roles__process_remove_acl(cJSON *j_responses, struct mosquitto *context, cJSON *command, char *correlation_data);
 struct dynsec__role *dynsec_roles__find(const char *rolename);
+struct dynsec__role *dynsec_roles__find_or_create(const char *rolename);
 
 
 /* ################################################################
@@ -262,12 +274,16 @@ struct dynsec__role *dynsec_roles__find(const char *rolename);
  * #
  * ################################################################ */
 
+int dynsec_rolelist__add(struct dynsec__rolelist **base_rolelist, struct dynsec__role *role, int priority);
+int dynsec_rolelist__remove_role(struct dynsec__rolelist **base_rolelist, const struct dynsec__role *role);
 int dynsec_rolelist__client_add(struct dynsec__client *client, struct dynsec__role *role, int priority);
 int dynsec_rolelist__client_remove(struct dynsec__client *client, struct dynsec__role *role);
 int dynsec_rolelist__group_add(struct dynsec__group *group, struct dynsec__role *role, int priority);
 void dynsec_rolelist__group_remove(struct dynsec__group *group, struct dynsec__role *role);
 int dynsec_rolelist__load_from_json(cJSON *command, struct dynsec__rolelist **rolelist);
+int dynsec_rolelist__load_from_yaml(yaml_parser_t *parser, yaml_event_t *event, struct dynsec__rolelist **rolelist);
 void dynsec_rolelist__cleanup(struct dynsec__rolelist **base_rolelist);
 cJSON *dynsec_rolelist__all_to_json(struct dynsec__rolelist *base_rolelist);
+int dynsec_rolelist__all_to_yaml(struct dynsec__rolelist *base_rolelist, yaml_emitter_t *emitter, yaml_event_t *event);
 
 #endif
