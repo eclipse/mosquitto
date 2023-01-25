@@ -30,7 +30,7 @@ OBJS=	\
 		plugin.o \
 		roles.o \
 		rolelist.o \
-		tick.o
+		tick.o     \
 		yaml_help.o
 
 ifeq ($(WITH_CJSON),yes)

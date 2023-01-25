@@ -204,7 +204,7 @@ int dynsec_rolelist__load_from_json(struct dynsec__data *data, cJSON *command, s
 	}
 }
 
-int dynsec_rolelist__load_from_yaml(yaml_parser_t *parser, yaml_event_t *event, struct dynsec__rolelist **rolelist)
+int dynsec_rolelist__load_from_yaml(yaml_parser_t *parser, yaml_event_t *event, struct dynsec__data *data, struct dynsec__rolelist **rolelist)
 {
 
     YAML_PARSER_SEQUENCE_FOR_ALL(parser, event, { goto error; }, {
@@ -232,7 +232,7 @@ int dynsec_rolelist__load_from_yaml(yaml_parser_t *parser, yaml_event_t *event, 
 
         if (rolename) {
             printf("rn = %s\n", rolename);
-            struct dynsec__role *role = dynsec_roles__find_or_create(rolename);
+            struct dynsec__role *role = dynsec_roles__find_or_create(data, rolename);
             if (role) {
                 printf("%s:%d\n", __FILE__, __LINE__);
                 dynsec_rolelist__add(rolelist, role, (int)priority);
@@ -248,10 +248,10 @@ int dynsec_rolelist__load_from_yaml(yaml_parser_t *parser, yaml_event_t *event, 
 
     printf("%s:%d\n", __FILE__, __LINE__);
 
-    return 1;
+    return 0;
 error:
     dynsec_rolelist__cleanup(rolelist);
-    return 0;
+    return 1;
 }
 
 
@@ -261,26 +261,26 @@ int dynsec_rolelist__all_to_yaml(struct dynsec__rolelist *base_rolelist, yaml_em
 
     yaml_sequence_start_event_initialize(event, NULL, (yaml_char_t *)YAML_SEQ_TAG,
                                          1, YAML_ANY_SEQUENCE_STYLE);
-    if (!yaml_emitter_emit(emitter, event)) return 0;
+    if (!yaml_emitter_emit(emitter, event)) return 1;
 
 
     HASH_ITER(hh, base_rolelist, rolelist, rolelist_tmp){
 
         yaml_mapping_start_event_initialize(event, NULL, (yaml_char_t *)YAML_MAP_TAG,
                                             1, YAML_ANY_MAPPING_STYLE);
-        if (!yaml_emitter_emit(emitter, event)) return 0;
+        if (!yaml_emitter_emit(emitter, event)) return 1;
 
-        if (!yaml_emit_string_field(emitter, event, "rolename", rolelist->role->rolename)) return 0;
-        if (rolelist->priority != -1 && !yaml_emit_int_field(emitter, event, "priority", rolelist->priority)) return 0;
+        if (!yaml_emit_string_field(emitter, event, "rolename", rolelist->role->rolename)) return 1;
+        if (rolelist->priority != -1 && !yaml_emit_int_field(emitter, event, "priority", rolelist->priority)) return 1;
 
         yaml_mapping_end_event_initialize(event);
-        if (!yaml_emitter_emit(emitter, event)) return 0;
+        if (!yaml_emitter_emit(emitter, event)) return 1;
     }
 
     yaml_sequence_end_event_initialize(event);
-    if (!yaml_emitter_emit(emitter, event)) return 0;
+    if (!yaml_emitter_emit(emitter, event)) return 1;
 
-    return 1;
+    return 0;
 }
 
 

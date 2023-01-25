@@ -38,6 +38,7 @@ Contributors:
 
 static cJSON *add_role_to_json(struct dynsec__role *role, bool verbose);
 static void role__remove_all_clients(struct dynsec__data *data, struct dynsec__role *role);
+static int add_role_to_yaml(yaml_emitter_t *emitter, yaml_event_t *event, struct dynsec__role *role);
 
 /* ################################################################
  * #
@@ -98,19 +99,20 @@ struct dynsec__role *dynsec_roles__find(struct dynsec__data *data, const char *r
 	return role;
 }
 
-struct dynsec__role *dynsec_roles__find_or_create(const char *rolename)
+struct dynsec__role *dynsec_roles__find_or_create(struct dynsec__data *data, const char *rolename)
 {
     if (!rolename) return NULL;
 
-    struct dynsec__role *role = dynsec_roles__find(rolename);
+    struct dynsec__role *role = dynsec_roles__find(data, rolename);
 
     if(!role){
-        role = mosquitto_calloc(sizeof(struct dynsec__role), 1);
+        size_t rolename_len = strlen(rolename);
+        role = mosquitto_calloc(1, sizeof(struct dynsec__role) + rolename_len + 1);
         if(!role) return NULL;
 
-        role->rolename = mosquitto_strdup(rolename);
+        memcpy(role->rolename, rolename, rolename_len);
 
-        HASH_ADD_KEYPTR_INORDER(hh, local_roles, role->rolename, strlen(role->rolename), role, role_cmp);
+        HASH_ADD_KEYPTR_INORDER(hh, data->roles, role->rolename, strlen(role->rolename), role, role_cmp);
     }
 
     return role;
@@ -184,21 +186,21 @@ static int add_single_acl_to_yaml(yaml_emitter_t *emitter, yaml_event_t *event, 
         printf("%s:%d\n", __FILE__, __LINE__);
         yaml_mapping_start_event_initialize(event, NULL, (yaml_char_t *)YAML_MAP_TAG,
                                             1, YAML_ANY_MAPPING_STYLE);
-        if (!yaml_emitter_emit(emitter, event)) return 0;
+        if (!yaml_emitter_emit(emitter, event)) return 1;
         printf("%s:%d\n", __FILE__, __LINE__);
 
-        if (!yaml_emit_string_field(emitter, event, "acltype", acl_type)) return 0;
-        if (!yaml_emit_string_field(emitter, event, "topic", iter->topic)) return 0;
+        if (!yaml_emit_string_field(emitter, event, "acltype", acl_type)) return 1;
+        if (!yaml_emit_string_field(emitter, event, "topic", iter->topic)) return 1;
         printf("%s:%d\n", __FILE__, __LINE__);
-        if (!yaml_emit_int_field(emitter, event, "priority", iter->priority)) return 0;
-        if (!yaml_emit_bool_field(emitter, event, "allow", iter->allow)) return 0;
+        if (!yaml_emit_int_field(emitter, event, "priority", iter->priority)) return 1;
+        if (!yaml_emit_bool_field(emitter, event, "allow", iter->allow)) return 1;
 
         printf("%s:%d\n", __FILE__, __LINE__);
         yaml_mapping_end_event_initialize(event);
-        if (!yaml_emitter_emit(emitter, event)) return 0;
+        if (!yaml_emitter_emit(emitter, event)) return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 
@@ -228,37 +230,37 @@ static int add_acls_to_yaml(yaml_emitter_t *emitter, yaml_event_t *event, struct
     printf("%s:%d\n", __FILE__, __LINE__);
     yaml_scalar_event_initialize(event, NULL, (yaml_char_t *)YAML_STR_TAG,
                                  (yaml_char_t *)"acls", strlen("acls"), 1, 0, YAML_PLAIN_SCALAR_STYLE);
-    if (!yaml_emitter_emit(emitter, event)) return 0;
+    if (!yaml_emitter_emit(emitter, event)) return 1;
 
 
     yaml_sequence_start_event_initialize(event, NULL, (yaml_char_t *)YAML_SEQ_TAG,
                                          1, YAML_ANY_SEQUENCE_STYLE);
-    if (!yaml_emitter_emit(emitter, event)) return 0;
+    if (!yaml_emitter_emit(emitter, event)) return 1;
 
     printf("%s:%d\n", __FILE__, __LINE__);
-    if (!add_single_acl_to_yaml(emitter, event, ACL_TYPE_PUB_C_SEND, role->acls.publish_c_send)) return 0;
+    if (add_single_acl_to_yaml(emitter, event, ACL_TYPE_PUB_C_SEND, role->acls.publish_c_send)) return 1;
     printf("%s:%d\n", __FILE__, __LINE__);
-    if (!add_single_acl_to_yaml(emitter, event, ACL_TYPE_PUB_C_RECV, role->acls.publish_c_recv)) return 0;
+    if (add_single_acl_to_yaml(emitter, event, ACL_TYPE_PUB_C_RECV, role->acls.publish_c_recv)) return 1;
     printf("%s:%d\n", __FILE__, __LINE__);
-    if (!add_single_acl_to_yaml(emitter, event, ACL_TYPE_SUB_LITERAL, role->acls.subscribe_literal)) return 0;
+    if (add_single_acl_to_yaml(emitter, event, ACL_TYPE_SUB_LITERAL, role->acls.subscribe_literal)) return 1;
     printf("%s:%d\n", __FILE__, __LINE__);
-    if (!add_single_acl_to_yaml(emitter, event, ACL_TYPE_SUB_PATTERN, role->acls.subscribe_pattern)) return 0;
+    if (add_single_acl_to_yaml(emitter, event, ACL_TYPE_SUB_PATTERN, role->acls.subscribe_pattern)) return 1;
     printf("%s:%d\n", __FILE__, __LINE__);
-    if (!add_single_acl_to_yaml(emitter, event, ACL_TYPE_UNSUB_LITERAL, role->acls.unsubscribe_literal)) return 0;
+    if (add_single_acl_to_yaml(emitter, event, ACL_TYPE_UNSUB_LITERAL, role->acls.unsubscribe_literal)) return 1;
     printf("%s:%d\n", __FILE__, __LINE__);
-    if (!add_single_acl_to_yaml(emitter, event, ACL_TYPE_UNSUB_PATTERN, role->acls.unsubscribe_pattern)) return 0;
+    if (add_single_acl_to_yaml(emitter, event, ACL_TYPE_UNSUB_PATTERN, role->acls.unsubscribe_pattern)) return 1;
     printf("%s:%d\n", __FILE__, __LINE__);
 
     yaml_sequence_end_event_initialize(event);
-    if (!yaml_emitter_emit(emitter, event)) return 0;
+    if (!yaml_emitter_emit(emitter, event)) return 1;
 
     printf("%s:%d\n", __FILE__, __LINE__);
 
-    return 1;
+    return 0;
 }
 
 
-int dynsec_roles__config_save(struct dynsec__data *data, cJSON *tree)
+int dynsec_roles__config_save_json(struct dynsec__data *data, cJSON *tree)
 {
 	cJSON *j_roles, *j_role;
 	struct dynsec__role *role, *role_tmp = NULL;
@@ -278,31 +280,31 @@ int dynsec_roles__config_save(struct dynsec__data *data, cJSON *tree)
 	return 0;
 }
 
-int dynsec_roles__config_save_yaml(yaml_emitter_t *emitter, yaml_event_t *event)
+int dynsec_roles__config_save_yaml(yaml_emitter_t *emitter, yaml_event_t *event, struct dynsec__data *data)
 {
     struct dynsec__role *role, *role_tmp = NULL;
 
     printf("%s:%d\n", __FILE__, __LINE__);
     yaml_scalar_event_initialize(event, NULL, (yaml_char_t *)YAML_STR_TAG,
                                  (yaml_char_t *)"roles", strlen("roles"), 1, 0, YAML_PLAIN_SCALAR_STYLE);
-    if (!yaml_emitter_emit(emitter, event)) return 0;
+    if (!yaml_emitter_emit(emitter, event)) return 1;
 
     printf("%s:%d\n", __FILE__, __LINE__);
     yaml_sequence_start_event_initialize(event, NULL, (yaml_char_t *)YAML_SEQ_TAG,
                                          1, YAML_ANY_SEQUENCE_STYLE);
-    if (!yaml_emitter_emit(emitter, event)) return 0;
+    if (!yaml_emitter_emit(emitter, event)) return 1;
 
-    HASH_ITER(hh, local_roles, role, role_tmp){
+    HASH_ITER(hh, data->roles, role, role_tmp){
         printf("%s:%d\n", __FILE__, __LINE__);
-        if (!add_role_to_yaml(emitter, event, role)) return 0;
+        if (add_role_to_yaml(emitter, event, role)) return 1;
     }
 
     printf("%s:%d\n", __FILE__, __LINE__);
     yaml_sequence_end_event_initialize(event);
-    if (!yaml_emitter_emit(emitter, event)) return 0;
+    if (!yaml_emitter_emit(emitter, event)) return 1;
 
 
-    return 1;
+    return 0;
 }
 
 
@@ -413,9 +415,10 @@ static int dynsec_roles__acl_load_yaml(yaml_parser_t *parser, yaml_event_t *even
 
         if (acllist) {
             mosquitto_log_printf(MOSQ_LOG_ERR, "INSERTING ACL %s:%d\n", __FILE__, __LINE__);
-            struct dynsec__acl *acl = mosquitto_calloc(sizeof(struct dynsec__acl), 1);
+            size_t topic_len = strlen(topic);
+            struct dynsec__acl *acl = mosquitto_calloc(1, sizeof(struct dynsec__acl) + topic_len + 1);
 
-            acl->topic = topic;
+            memcpy(acl->topic, topic, topic_len);
             acl->priority = (int)priority;
             acl->allow = allow;
 
@@ -438,90 +441,70 @@ error:
     return 0;
 }
 
-int dynsec_roles__config_load(struct dynsec__data *data, cJSON *tree)
+int dynsec_roles__config_load_yaml(yaml_parser_t *parser, yaml_event_t *event, struct dynsec__data *data)
 {
-	cJSON *j_roles, *j_role, *jtmp, *j_acls;
-	struct dynsec__role *role;
-	size_t rolename_len;
+    struct dynsec__role *role = NULL;
+    char* textname;
+    char* textdescription;
+    struct dynsec__acls acls;
 
-	j_roles = cJSON_GetObjectItem(tree, "roles");
-	if(j_roles == NULL){
-		return 0;
-	}
+    YAML_PARSER_SEQUENCE_FOR_ALL(parser, event, { goto error; }, {
+        memset(&acls, 0, sizeof(acls));
+        printf("%s:%d\n", __FILE__, __LINE__);
 
-	if(cJSON_IsArray(j_roles) == false){
-		return 1;
-	}
+        role = NULL;
+        textname = textdescription = NULL;
 
-	cJSON_ArrayForEach(j_role, j_roles){
-		if(cJSON_IsObject(j_role) == true){
-			/* Role name */
-			jtmp = cJSON_GetObjectItem(j_role, "rolename");
-			if(jtmp == NULL || !cJSON_IsString(jtmp)){
-				continue;
-			}
-			rolename_len = strlen(jtmp->valuestring);
-			if(rolename_len == 0){
-				continue;
-			}
+        printf("%s:%d\n", __FILE__, __LINE__);
 
-			role = mosquitto_calloc(1, sizeof(struct dynsec__role) + rolename_len + 1);
-			if(role == NULL){
-				return MOSQ_ERR_NOMEM;
-			}
-			strncpy(role->rolename, jtmp->valuestring, rolename_len+1);
+        YAML_PARSER_MAPPING_FOR_ALL(parser, event, key, { goto error; }, {
+                printf("%s:%d\n", __FILE__, __LINE__);
+                if (strcmp(key, "rolename") == 0) {
+                    printf("%s:%d\n", __FILE__, __LINE__);
+                    char *rolename;
+                    YAML_EVENT_INTO_SCALAR_STRING(event, &rolename, { goto error; });
+                    role = dynsec_roles__find_or_create(data, rolename);
+                    mosquitto_free(rolename);
+                } else if (strcmp(key, "textname") == 0) {
+                    printf("%s:%d\n", __FILE__, __LINE__);
+                    YAML_EVENT_INTO_SCALAR_STRING(event, &textname, { goto error; });
+                } else if (strcmp(key, "textdescription") == 0) {
+                    printf("%s:%d\n", __FILE__, __LINE__);
+                    YAML_EVENT_INTO_SCALAR_STRING(event, &textdescription, { goto error; });
+                } else if (strcmp(key, "acls") == 0) {
+                    if (!dynsec_roles__acl_load_yaml(parser, event, &acls)) goto error;
+                    printf("%s:%d\n", __FILE__, __LINE__);
+                } else {
+                    yaml_dump_block(parser, event);
+                    printf("%s:%d\n", __FILE__, __LINE__);
+                    mosquitto_log_printf(MOSQ_LOG_ERR, "Unexpected key for client config %s \n", key);
+                }
+        });
 
-			/* Text name */
-			jtmp = cJSON_GetObjectItem(j_role, "textname");
-			if(jtmp != NULL){
-				role->text_name = mosquitto_strdup(jtmp->valuestring);
-				if(role->text_name == NULL){
-					mosquitto_free(role);
-					continue;
-				}
-			}
+        if (role) {
+            role->text_name = textname;
+            role->text_description = textdescription;
+            role->acls = acls;
+        } else {
+            mosquitto_free(textname);
+            mosquitto_free(textdescription);
+        }
 
-			/* Text description */
-			jtmp = cJSON_GetObjectItem(j_role, "textdescription");
-			if(jtmp != NULL){
-				role->text_description = mosquitto_strdup(jtmp->valuestring);
-				if(role->text_description == NULL){
-					mosquitto_free(role->text_name);
-					mosquitto_free(role);
-					continue;
-				}
-			}
+        printf("%s:%d\n", __FILE__, __LINE__);
 
-			/* Allow wildcard subs */
-			jtmp = cJSON_GetObjectItem(j_role, "allowwildcardsubs");
-			if(jtmp != NULL && cJSON_IsBool(jtmp)){
-				role->allow_wildcard_subs = cJSON_IsTrue(jtmp);
-			}else{
-				role->allow_wildcard_subs = true;
-			}
+    });
 
-			/* ACLs */
-			j_acls = cJSON_GetObjectItem(j_role, "acls");
-			if(j_acls && cJSON_IsArray(j_acls)){
-				if(dynsec_roles__acl_load(j_acls, ACL_TYPE_PUB_C_SEND, &role->acls.publish_c_send) != 0
-						|| dynsec_roles__acl_load(j_acls, ACL_TYPE_PUB_C_RECV, &role->acls.publish_c_recv) != 0
-						|| dynsec_roles__acl_load(j_acls, ACL_TYPE_SUB_LITERAL, &role->acls.subscribe_literal) != 0
-						|| dynsec_roles__acl_load(j_acls, ACL_TYPE_SUB_PATTERN, &role->acls.subscribe_pattern) != 0
-						|| dynsec_roles__acl_load(j_acls, ACL_TYPE_UNSUB_LITERAL, &role->acls.unsubscribe_literal) != 0
-						|| dynsec_roles__acl_load(j_acls, ACL_TYPE_UNSUB_PATTERN, &role->acls.unsubscribe_pattern) != 0
-						){
+    printf("%s:%d\n", __FILE__, __LINE__);
 
-					mosquitto_free(role);
-					continue;
-				}
-			}
+    return 1;
 
-			HASH_ADD(hh, data->roles, rolename, rolename_len, role);
-		}
-	}
-	HASH_SORT(data->roles, role_cmp);
+error:
+    mosquitto_free(textname);
+    mosquitto_free(textdescription);
+    return 0;
+}
 
-int dynsec_roles__config_load(cJSON *tree)
+int dynsec_roles__config_load_json(struct dynsec__data *data, cJSON *tree)
 {
     cJSON *j_roles, *j_role, *jtmp, *j_acls;
     struct dynsec__role *role;
@@ -537,29 +520,25 @@ int dynsec_roles__config_load(cJSON *tree)
 
     cJSON_ArrayForEach(j_role, j_roles){
         if(cJSON_IsObject(j_role) == true){
-            role = mosquitto_calloc(1, sizeof(struct dynsec__role));
-            if(role == NULL){
-                return MOSQ_ERR_NOMEM;
-            }
-
             /* Role name */
             jtmp = cJSON_GetObjectItem(j_role, "rolename");
             if(jtmp == NULL){
-                mosquitto_free(role);
                 continue;
             }
-            role->rolename = mosquitto_strdup(jtmp->valuestring);
-            if(role->rolename == NULL){
-                mosquitto_free(role);
-                continue;
+
+            size_t rolename_len = strlen(jtmp->valuestring);
+
+            role = mosquitto_calloc(1, sizeof(struct dynsec__role) + rolename_len);
+            if(role == NULL){
+                return MOSQ_ERR_NOMEM;
             }
+            memcpy(role->rolename, jtmp->valuestring, rolename_len);
 
             /* Text name */
             jtmp = cJSON_GetObjectItem(j_role, "textname");
             if(jtmp != NULL){
                 role->text_name = mosquitto_strdup(jtmp->valuestring);
                 if(role->text_name == NULL){
-                    mosquitto_free(role->rolename);
                     mosquitto_free(role);
                     continue;
                 }
@@ -571,7 +550,6 @@ int dynsec_roles__config_load(cJSON *tree)
                 role->text_description = mosquitto_strdup(jtmp->valuestring);
                 if(role->text_description == NULL){
                     mosquitto_free(role->text_name);
-                    mosquitto_free(role->rolename);
                     mosquitto_free(role);
                     continue;
                 }
@@ -588,16 +566,15 @@ int dynsec_roles__config_load(cJSON *tree)
                    || dynsec_roles__acl_load(j_acls, ACL_TYPE_UNSUB_PATTERN, &role->acls.unsubscribe_pattern) != 0
                         ){
 
-                    mosquitto_free(role->rolename);
                     mosquitto_free(role);
                     continue;
                 }
             }
 
-            HASH_ADD_KEYPTR(hh, local_roles, role->rolename, strlen(role->rolename), role);
+            HASH_ADD_KEYPTR(hh, data->roles, role->rolename, strlen(role->rolename), role);
         }
     }
-    HASH_SORT(local_roles, role_cmp);
+    HASH_SORT(data->roles, role_cmp);
 
     return 0;
 }
@@ -710,7 +687,6 @@ error:
 	return rc;
 }
 
-
 static void role__remove_all_clients(struct dynsec__data *data, struct dynsec__role *role)
 {
 	struct dynsec__clientlist *clientlist, *clientlist_tmp = NULL;
@@ -809,22 +785,22 @@ static int add_role_to_yaml(yaml_emitter_t *emitter, yaml_event_t *event, struct
     printf("%s:%d\n", __FILE__, __LINE__);
     yaml_mapping_start_event_initialize(event, NULL, (yaml_char_t *)YAML_MAP_TAG,
                                         1, YAML_ANY_MAPPING_STYLE);
-    if (!yaml_emitter_emit(emitter, event)) return 0;
+    if (!yaml_emitter_emit(emitter, event)) return 1;
 
     printf("%s:%d\n", __FILE__, __LINE__);
-    if (!yaml_emit_string_field(emitter, event, "rolename", role->rolename)) return 0;
-    if (role->text_name && !yaml_emit_string_field(emitter, event, "textname", role->text_name)) return 0;
-    if (role->text_description && !yaml_emit_string_field(emitter, event, "textdescription", role->text_description)) return 0;
+    if (!yaml_emit_string_field(emitter, event, "rolename", role->rolename)) return 1;
+    if (role->text_name && !yaml_emit_string_field(emitter, event, "textname", role->text_name)) return 1;
+    if (role->text_description && !yaml_emit_string_field(emitter, event, "textdescription", role->text_description)) return 1;
     printf("%s:%d\n", __FILE__, __LINE__);
 
-    if(!add_acls_to_yaml(emitter, event, role)) return 0;
+    if(add_acls_to_yaml(emitter, event, role)) return 1;
 
     printf("%s:%d\n", __FILE__, __LINE__);
     yaml_mapping_end_event_initialize(event);
-    if (!yaml_emitter_emit(emitter, event)) return 0;
+    if (!yaml_emitter_emit(emitter, event)) return 1;
 
     printf("%s:%d\n", __FILE__, __LINE__);
-    return 1;
+    return 0;
 }
 
 

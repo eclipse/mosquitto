@@ -133,7 +133,7 @@ int dynsec_clientlist__all_to_yaml(struct dynsec__clientlist *base_clientlist, y
     return 1;
 }
 
-int dynsec_clientlist__load_from_yaml(yaml_parser_t *parser, yaml_event_t *event, struct dynsec__clientlist **clientlist)
+int dynsec_clientlist__load_from_yaml(yaml_parser_t *parser, yaml_event_t *event, struct dynsec__data *data, struct dynsec__clientlist **clientlist)
 {
     YAML_PARSER_SEQUENCE_FOR_ALL(parser, event, { goto error; }, {
         printf("%s:%d\n", __FILE__, __LINE__);
@@ -160,7 +160,7 @@ int dynsec_clientlist__load_from_yaml(yaml_parser_t *parser, yaml_event_t *event
 
         if (username) {
             printf("un = %s\n", username);
-            struct dynsec__client *client = dynsec_clients__find_or_create(username);
+            struct dynsec__client *client = dynsec_clients__find_or_create(data, username);
             if (client) {
                 printf("%s:%d\n", __FILE__, __LINE__);
                 dynsec_clientlist__add(clientlist, client, (int)priority);
@@ -176,10 +176,10 @@ int dynsec_clientlist__load_from_yaml(yaml_parser_t *parser, yaml_event_t *event
 
     printf("%s:%d\n", __FILE__, __LINE__);
 
-    return 1;
-    error:
-    dynsec_clientlist__cleanup(clientlist);
     return 0;
+error:
+    dynsec_clientlist__cleanup(clientlist);
+    return 1;
 }
 
 

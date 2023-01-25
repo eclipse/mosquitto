@@ -75,21 +75,25 @@ struct dynsec__client *dynsec_clients__find(struct dynsec__data *data, const cha
 	return client;
 }
 
-struct dynsec__client *dynsec_clients__find_or_create(const char *username)
+struct dynsec__client *dynsec_clients__find_or_create(struct dynsec__data *data, const char *username)
 {
     if (!username) return NULL;
 
-    struct dynsec__client *client = dynsec_clients__find(username);
+    struct dynsec__client *client = dynsec_clients__find(data, username);
 
     if(!client) {
-        client = mosquitto_calloc(sizeof(struct dynsec__client), 1);
+        size_t username_len = strlen(username);
+        if (username_len == 0) return NULL;
+
+        client = mosquitto_calloc(1, sizeof(struct dynsec__client) + username_len + 1);
         if(!client) return NULL;
 
-        client->username = mosquitto_strdup(username);
+        memcpy(client->username, username, username_len);
+
         client->disabled = 1;
         client->pw.valid = 0; //Technically should already be 0.
 
-        HASH_ADD_KEYPTR_INORDER(hh, local_clients, client->username, strlen(client->username), client, client_cmp);
+        HASH_ADD_KEYPTR_INORDER(hh, data->clients, client->username, strlen(client->username), client, client_cmp);
     }
 
     return client;
@@ -128,7 +132,7 @@ void dynsec_clients__cleanup(struct dynsec__data *data)
  * #
  * ################################################################ */
 
-int dynsec_clients__config_load(struct dynsec__data *data, cJSON *tree)
+int dynsec_clients__config_load_json(struct dynsec__data *data, cJSON *tree)
 {
 	cJSON *j_clients, *j_client, *jtmp, *j_roles, *j_role;
 	cJSON *j_salt, *j_password, *j_iterations;
@@ -165,7 +169,6 @@ int dynsec_clients__config_load(struct dynsec__data *data, cJSON *tree)
 			if(client == NULL){
 				return MOSQ_ERR_NOMEM;
 			}
-            client->username = mosquitto_malloc(username_len + 1);
 			strncpy(client->username, jtmp->valuestring, username_len);
 
 			jtmp = cJSON_GetObjectItem(j_client, "disabled");
@@ -273,10 +276,10 @@ int dynsec_clients__config_load(struct dynsec__data *data, cJSON *tree)
 	return 0;
 }
 
-int dynsec_clients__config_load_yaml(yaml_parser_t *parser, yaml_event_t *event)
+int dynsec_clients__config_load_yaml(yaml_parser_t *parser, yaml_event_t *event, struct dynsec__data *data)
 {
     unsigned char *buf = NULL;
-    int buf_len;
+    unsigned int buf_len;
 
     struct dynsec__client *client = NULL;
     bool disabled = 1;
@@ -305,7 +308,7 @@ int dynsec_clients__config_load_yaml(yaml_parser_t *parser, yaml_event_t *event)
                 printf("%s:%d\n", __FILE__, __LINE__);
                 char *username;
                 YAML_EVENT_INTO_SCALAR_STRING(event, &username, { goto error; });
-                client = dynsec_clients__find_or_create(username);
+                client = dynsec_clients__find_or_create(data, username);
                 mosquitto_free(username);
             } else if (strcmp(key, "disabled") == 0) {
                 printf("%s:%d\n", __FILE__, __LINE__);
@@ -329,7 +332,7 @@ int dynsec_clients__config_load_yaml(yaml_parser_t *parser, yaml_event_t *event)
                 printf("%s:%d\n", __FILE__, __LINE__);
                 YAML_EVENT_INTO_SCALAR_LONG_INT(event, &iterations, { goto error; });
             } else if (strcmp(key, "roles") == 0) {
-                if (!dynsec_rolelist__load_from_yaml(parser, event, &rolelist)) goto error;
+                if (dynsec_rolelist__load_from_yaml(parser, event, data, &rolelist)) goto error;
 
                 printf("%s:%d\n", __FILE__, __LINE__);
             } else {
@@ -367,7 +370,7 @@ int dynsec_clients__config_load_yaml(yaml_parser_t *parser, yaml_event_t *event)
                 client->pw.valid = 1;
                 client->pw.iterations = (int)iterations;
 
-                if(dynsec_auth__base64_decode(salt, &buf, &buf_len) == MOSQ_ERR_SUCCESS && buf_len == sizeof(client->pw.salt)) {
+                if(base64__decode(salt, &buf, &buf_len) == MOSQ_ERR_SUCCESS && buf_len == sizeof(client->pw.salt)) {
                     memcpy(client->pw.salt, buf, (size_t)buf_len);
                     mosquitto_free(buf);
                     buf = NULL;
@@ -377,7 +380,7 @@ int dynsec_clients__config_load_yaml(yaml_parser_t *parser, yaml_event_t *event)
                     buf = NULL;
                 }
 
-                if(dynsec_auth__base64_decode(pw, &buf, &buf_len) == MOSQ_ERR_SUCCESS && buf_len == sizeof(client->pw.password_hash)) {
+                if(base64__decode(pw, &buf, &buf_len) == MOSQ_ERR_SUCCESS && buf_len == sizeof(client->pw.password_hash)) {
                     memcpy(client->pw.password_hash, buf, (size_t)buf_len);
                     mosquitto_free(buf);
                     buf = NULL;
@@ -418,7 +421,7 @@ error:
     return 0;
 }
 
-static int dynsec__config_add_clients_yaml(yaml_emitter_t* emitter, yaml_event_t* event)
+static int dynsec__config_add_clients_yaml(yaml_emitter_t* emitter, yaml_event_t* event, struct dynsec__data *data)
 {
 
 
@@ -428,74 +431,82 @@ static int dynsec__config_add_clients_yaml(yaml_emitter_t* emitter, yaml_event_t
 
     yaml_sequence_start_event_initialize(event, NULL, (yaml_char_t *)YAML_SEQ_TAG,
                                          1, YAML_ANY_SEQUENCE_STYLE);
-    if (!yaml_emitter_emit(emitter, event)) return 0;
+    if (!yaml_emitter_emit(emitter, event)) return 1;
+    printf("%s:%d\n", __FILE__, __LINE__);
 
-    HASH_ITER(hh, local_clients, client, client_tmp){
+    HASH_ITER(hh, data->clients, client, client_tmp){
+        printf("%s:%d\n", __FILE__, __LINE__);
         yaml_mapping_start_event_initialize(event, NULL, (yaml_char_t *)YAML_MAP_TAG,
                                             1, YAML_ANY_MAPPING_STYLE);
-        if (!yaml_emitter_emit(emitter, event)) return 0;
+        if (!yaml_emitter_emit(emitter, event)) return 1;
 
-        if (!yaml_emit_string_field(emitter, event, "username", client->username)) return 0;
+        if (!yaml_emit_string_field(emitter, event, "username", client->username)) return 1;
 
-        if (client->clientid && !yaml_emit_string_field(emitter, event, "clientid", client->clientid)) return 0;
-        if (client->text_name && !yaml_emit_string_field(emitter, event, "textname", client->text_name)) return 0;
-        if (client->text_description && !yaml_emit_string_field(emitter, event, "textdescription", client->text_description)) return 0;
-        if (client->disabled && !yaml_emit_string_field(emitter, event, "disabled", "true")) return 0;
+        printf("%s:%d\n", __FILE__, __LINE__);
+        if (client->clientid && !yaml_emit_string_field(emitter, event, "clientid", client->clientid)) return 1;
+        printf("%s:%d\n", __FILE__, __LINE__);
+        if (client->text_name && !yaml_emit_string_field(emitter, event, "textname", client->text_name)) return 1;
+        printf("%s:%d\n", __FILE__, __LINE__);
+        if (client->text_description && !yaml_emit_string_field(emitter, event, "textdescription", client->text_description)) return 1;
+        printf("%s:%d\n", __FILE__, __LINE__);
+        if (client->disabled && !yaml_emit_string_field(emitter, event, "disabled", "true")) return 1;
+        printf("%s:%d\n", __FILE__, __LINE__);
 
 
         yaml_scalar_event_initialize(event, NULL, (yaml_char_t *)YAML_STR_TAG,
                                      (yaml_char_t *)"roles", strlen("roles"), 1, 0, YAML_PLAIN_SCALAR_STYLE);
-        if (!yaml_emitter_emit(emitter, event)) return 0;
+        if (!yaml_emitter_emit(emitter, event)) return 1;
 
-        if (!dynsec_rolelist__all_to_yaml(client->rolelist, emitter, event)) return 0;
+        printf("%s:%d\n", __FILE__, __LINE__);
+        if (dynsec_rolelist__all_to_yaml(client->rolelist, emitter, event)) return 1;
+        printf("%s:%d\n", __FILE__, __LINE__);
 
         if(client->pw.valid){
-            if(dynsec_auth__base64_encode(client->pw.password_hash, sizeof(client->pw.password_hash), &buf) != MOSQ_ERR_SUCCESS){
+            if(base64__encode(client->pw.password_hash, sizeof(client->pw.password_hash), &buf) != MOSQ_ERR_SUCCESS){
                 mosquitto_log_printf(MOSQ_LOG_ERR, "dynsec: error encoding password hash to base64");
-                return 0;
+                return 1;
             }
 
             if (!yaml_emit_string_field(emitter, event, "password", buf)) {
                 mosquitto_free(buf);
-                return 0;
+                return 1;
             }
 
             mosquitto_free(buf);
 
-            if(dynsec_auth__base64_encode(client->pw.salt, sizeof(client->pw.salt), &buf) != MOSQ_ERR_SUCCESS){
+            if(base64__encode(client->pw.salt, sizeof(client->pw.salt), &buf) != MOSQ_ERR_SUCCESS){
                 mosquitto_log_printf(MOSQ_LOG_ERR, "dynsec: error encoding password salt to base64");
-                return 0;
+                return 1;
             }
 
             if (!yaml_emit_string_field(emitter, event, "salt", buf)) {
                 mosquitto_free(buf);
-                return 0;
+                return 1;
             }
 
             mosquitto_free(buf);
 
             if (!yaml_emit_int_field(emitter, event, "iterations", client->pw.iterations)) {
-                mosquitto_free(buf);
-                return 0;
+                return 1;
             }
         }
 
         yaml_mapping_end_event_initialize(event);
-        if (!yaml_emitter_emit(emitter, event)) return 0;
+        if (!yaml_emitter_emit(emitter, event)) return 1;
 
     }
 
     printf("%s:%d\n", __FILE__, __LINE__);
 
     yaml_sequence_end_event_initialize(event);
-    if (!yaml_emitter_emit(emitter, event)) return 0;
+    if (!yaml_emitter_emit(emitter, event)) return 1;
 
 
-    return 1;
+    return 0;
 }
 
 
-static int dynsec__config_add_clients(struct dynsec__data *data, cJSON *j_clients)
+static int dynsec__config_add_clients_json(struct dynsec__data *data, cJSON *j_clients)
 {
 	struct dynsec__client *client, *client_tmp;
 	cJSON *j_client, *j_roles, *jtmp;
@@ -549,26 +560,26 @@ static int dynsec__config_add_clients(struct dynsec__data *data, cJSON *j_client
 	return 0;
 }
 
-int dynsec_clients__config_save_yaml(yaml_emitter_t* emitter, yaml_event_t* event)
+int dynsec_clients__config_save_yaml(yaml_emitter_t* emitter, yaml_event_t* event, struct dynsec__data *data)
 {
     yaml_scalar_event_initialize(event, NULL, (yaml_char_t *)YAML_STR_TAG,
                                  (yaml_char_t *)"clients", strlen("clients"), 1, 0, YAML_PLAIN_SCALAR_STYLE);
-    if (!yaml_emitter_emit(emitter, event)) return 0;
+    if (!yaml_emitter_emit(emitter, event)) return 1;
 
-    if(!dynsec__config_add_clients_yaml(emitter, event)) return 0;
+    if(dynsec__config_add_clients_yaml(emitter, event, data)) return 1;
 
-    return 1;
+    return 0;
 }
 
 
-int dynsec_clients__config_save(struct dynsec__data *data, cJSON *tree)
+int dynsec_clients__config_save_json(struct dynsec__data *data, cJSON *tree)
 {
 	cJSON *j_clients;
 
 	if((j_clients = cJSON_AddArrayToObject(tree, "clients")) == NULL){
 		return 1;
 	}
-	if(dynsec__config_add_clients(data, j_clients)){
+	if(dynsec__config_add_clients_json(data, j_clients)){
 		return 1;
 	}
 
