@@ -135,6 +135,9 @@ WITH_OLD_KEEPALIVE=no
 # Build with sqlite3 support - this enables the sqlite persistence plugin.
 WITH_SQLITE=yes
 
+# Build with yaml support - this enables the dynamic security plugin to read/write yaml configuration files
+WITH_YAML=yes
+
 # =============================================================================
 # End of user configuration
 # =============================================================================

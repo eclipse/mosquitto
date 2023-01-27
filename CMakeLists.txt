@@ -63,6 +63,13 @@ if (WITH_SQLITE)
 	add_definitions("-DWITH_SQLITE")
 endif()
 
+option(WITH_YAML "Include yaml configuration file support?" ON)
+if (WITH_SQLITE)
+	find_package(Yaml REQUIRED)
+	add_definitions("-DWITH_YAML")
+endif()
+
+
 option(WITH_UNIX_SOCKETS "Include Unix Domain Socket support?" ON)
 if(WITH_UNIX_SOCKETS AND NOT WIN32)
 	add_definitions("-DWITH_UNIX_SOCKETS")

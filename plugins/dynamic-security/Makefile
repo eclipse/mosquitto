@@ -4,7 +4,7 @@ include ${R}/config.mk
 .PHONY : all binary check clean reallyclean test test-compile install uninstall
 
 PLUGIN_NAME=mosquitto_dynamic_security
-LOCAL_CPPFLAGS=-I${R}/lib/ -I${R}/src/ -I${R}/plugins/common -DWITH_CJSON -DWITH_TLS
+LOCAL_CPPFLAGS=-I${R}/lib/ -I${R}/src/ -I${R}/plugins/common -I$(CURDIR)
 ifeq ($(WITH_BUNDLED_DEPS),yes)
 	LOCAL_CPPFLAGS:=$(LOCAL_CPPFLAGS) -I${R}/deps
 endif
@@ -30,11 +30,14 @@ OBJS=	\
 		plugin.o \
 		roles.o \
 		rolelist.o \
-		tick.o     \
-		yaml_help.o
+		tick.o
 
 ifeq ($(WITH_CJSON),yes)
+PLUGIN_LIBS += -lcjson
+OBJS += config/clients_json.o config/clientlist_json.o config/groups_json.o config/roles_json.o config/rolelist_json.o
+LOCAL_CPPFLAGS += -DWITH_CJSON
 ifeq ($(WITH_TLS),yes)
+LOCAL_CPPFLAGS += -DWITH_TLS
 ALL_DEPS:= binary
 else
 ALL_DEPS:=
@@ -43,11 +46,17 @@ else
 ALL_DEPS:=
 endif
 
+ifeq ($(WITH_YAML),yes)
+PLUGIN_LIBS += -lyaml
+OBJS += config/yaml_help.o config/clients_yaml.o config/clientlist_yaml.o config/groups_yaml.o config/roles_yaml.o config/rolelist_yaml.o
+LOCAL_CPPFLAGS += -DWITH_YAML
+endif
+
 all : ${ALL_DEPS}
 binary : ${PLUGIN_NAME}.so
 
 ${PLUGIN_NAME}.so : ${OBJS}
-	${CROSS_COMPILE}${CC} $(PLUGIN_LDFLAGS) -fPIC -shared $^ -o $@ -lcjson -lyaml
+	${CROSS_COMPILE}${CC} $(PLUGIN_LDFLAGS) -fPIC -shared $^ -o $@ $(PLUGIN_LIBS)
 
 acl.o : acl.c dynamic_security.h
 	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) -c $< -o $@
@@ -65,6 +74,9 @@ clientlist.o : clientlist.c dynamic_security.h
 	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) -c $< -o $@
 
 config.o : config.c dynamic_security.h
+	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) -c $< -o $@
+
+config/%.o : config/%.c dynamic_security.h
 	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) -c $< -o $@
 
 config_init.o : config_init.c dynamic_security.h

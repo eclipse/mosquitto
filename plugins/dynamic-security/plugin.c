@@ -121,7 +121,9 @@ int mosquitto_plugin_init(mosquitto_plugin_id_t *identifier, void **user_data, s
 	return MOSQ_ERR_SUCCESS;
 error:
 	mosquitto_free(dynsec_data.config_file);
+	mosquitto_free(dynsec_data.password_init_file);
 	dynsec_data.config_file = NULL;
+	dynsec_data.password_init_file = NULL;
 	return rc;
 }
 
