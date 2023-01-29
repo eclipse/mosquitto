@@ -33,7 +33,8 @@ Contributors:
 #include "mosquitto.h"
 #include "mosquitto_broker.h"
 
-static cJSON *add_role_to_json(struct dynsec__role *role, bool verbose);
+cJSON *add_role_to_json(struct dynsec__role *role, bool verbose);
+int dynsec_roles__acl_load(cJSON *j_acls, const char *key, struct dynsec__acl **acllist);
 static void role__remove_all_clients(struct dynsec__data *data, struct dynsec__role *role);
 
 /* ################################################################
@@ -146,129 +147,9 @@ static void role__kick_all(struct dynsec__data *data, struct dynsec__role *role)
  * #
  * ################################################################ */
 
-static int add_single_acl_to_json(cJSON *j_array, const char *acl_type, struct dynsec__acl *acl)
-{
-    struct dynsec__acl *iter, *tmp = NULL;
-    cJSON *j_acl;
-
-    HASH_ITER(hh, acl, iter, tmp){
-        j_acl = cJSON_CreateObject();
-        if(j_acl == NULL){
-            return 1;
-        }
-        cJSON_AddItemToArray(j_array, j_acl);
-
-        if(cJSON_AddStringToObject(j_acl, "acltype", acl_type) == NULL
-           || cJSON_AddStringToObject(j_acl, "topic", iter->topic) == NULL
-           || cJSON_AddIntToObject(j_acl, "priority", iter->priority) == NULL
-           || cJSON_AddBoolToObject(j_acl, "allow", iter->allow) == NULL
-                ){
-
-            return 1;
-        }
-    }
-
-
-    return 0;
-}
-
-static int add_acls_to_json(cJSON *j_role, struct dynsec__role *role)
-{
-    cJSON *j_acls;
-
-    if((j_acls = cJSON_AddArrayToObject(j_role, "acls")) == NULL){
-        return 1;
-    }
-
-    if(add_single_acl_to_json(j_acls, ACL_TYPE_PUB_C_SEND, role->acls.publish_c_send) != MOSQ_ERR_SUCCESS
-       || add_single_acl_to_json(j_acls, ACL_TYPE_PUB_C_RECV, role->acls.publish_c_recv) != MOSQ_ERR_SUCCESS
-       || add_single_acl_to_json(j_acls, ACL_TYPE_SUB_LITERAL, role->acls.subscribe_literal) != MOSQ_ERR_SUCCESS
-       || add_single_acl_to_json(j_acls, ACL_TYPE_SUB_PATTERN, role->acls.subscribe_pattern) != MOSQ_ERR_SUCCESS
-       || add_single_acl_to_json(j_acls, ACL_TYPE_UNSUB_LITERAL, role->acls.unsubscribe_literal) != MOSQ_ERR_SUCCESS
-       || add_single_acl_to_json(j_acls, ACL_TYPE_UNSUB_PATTERN, role->acls.unsubscribe_pattern) != MOSQ_ERR_SUCCESS
-            ){
-
-        return 1;
-    }
-    return 0;
-}
-
-static cJSON *add_role_to_json(struct dynsec__role *role, bool verbose)
-{
-    cJSON *j_role = NULL;
-
-    if(verbose){
-        j_role = cJSON_CreateObject();
-        if(j_role == NULL){
-            return NULL;
-        }
-
-        if(cJSON_AddStringToObject(j_role, "rolename", role->rolename) == NULL
-           || (role->text_name && cJSON_AddStringToObject(j_role, "textname", role->text_name) == NULL)
-           || (role->text_description && cJSON_AddStringToObject(j_role, "textdescription", role->text_description) == NULL)
-           || cJSON_AddBoolToObject(j_role, "allowwildcardsubs", role->allow_wildcard_subs) == NULL
-                ){
-
-            cJSON_Delete(j_role);
-            return NULL;
-        }
-        if(add_acls_to_json(j_role, role)){
-            cJSON_Delete(j_role);
-            return NULL;
-        }
-    }else{
-        j_role = cJSON_CreateString(role->rolename);
-        if(j_role == NULL){
-            return NULL;
-        }
-    }
-    return j_role;
-}
-
 static int insert_acl_cmp(struct dynsec__acl *a, struct dynsec__acl *b)
 {
 	return b->priority - a->priority;
-}
-
-static int dynsec_roles__acl_load(cJSON *j_acls, const char *key, struct dynsec__acl **acllist)
-{
-	cJSON *j_acl, *j_type, *jtmp;
-	struct dynsec__acl *acl;
-	size_t topic_len;
-
-	cJSON_ArrayForEach(j_acl, j_acls){
-		j_type = cJSON_GetObjectItem(j_acl, "acltype");
-		if(j_type == NULL || !cJSON_IsString(j_type) || strcasecmp(j_type->valuestring, key) != 0){
-			continue;
-		}
-		jtmp = cJSON_GetObjectItem(j_acl, "topic");
-		if(!jtmp || !cJSON_IsString(jtmp)){
-			continue;
-		}
-
-		topic_len = strlen(jtmp->valuestring);
-		if(topic_len == 0){
-			continue;
-		}
-
-		acl = mosquitto_calloc(1, sizeof(struct dynsec__acl) + topic_len + 1);
-		if(acl == NULL){
-			return 1;
-		}
-		strncpy(acl->topic, jtmp->valuestring, topic_len+1);
-
-		json_get_int(j_acl, "priority", &acl->priority, true, 0);
-		json_get_bool(j_acl, "allow", &acl->allow, true, false);
-
-		jtmp = cJSON_GetObjectItem(j_acl, "allow");
-		if(jtmp && cJSON_IsBool(jtmp)){
-			acl->allow = cJSON_IsTrue(jtmp);
-		}
-
-		HASH_ADD_INORDER(hh, *acllist, topic, topic_len, acl, insert_acl_cmp);
-	}
-
-	return 0;
 }
 
 int dynsec_roles__process_create(struct dynsec__data *data, struct control_cmd *cmd, struct mosquitto *context)

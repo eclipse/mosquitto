@@ -88,7 +88,7 @@ int dynsec_roles__config_save_json(struct dynsec__data *data, cJSON *tree)
     }
 
     HASH_ITER(hh, data->roles, role, role_tmp){
-        j_role = add_role_to_json(role);
+        j_role = add_role_to_json(role, true);
         if(j_role == NULL){
             return 1;
         }
@@ -104,7 +104,7 @@ static int insert_acl_cmp(struct dynsec__acl *a, struct dynsec__acl *b)
 }
 
 
-static int dynsec_roles__acl_load(cJSON *j_acls, const char *key, struct dynsec__acl **acllist)
+int dynsec_roles__acl_load(cJSON *j_acls, const char *key, struct dynsec__acl **acllist)
 {
     cJSON *j_acl, *j_type, *jtmp;
     struct dynsec__acl *acl;
@@ -212,29 +212,35 @@ int dynsec_roles__config_load_json(struct dynsec__data *data, cJSON *tree)
     return 0;
 }
 
-static cJSON *add_role_to_json(struct dynsec__role *role)
+static cJSON *add_role_to_json(struct dynsec__role *role, bool verbose)
 {
     cJSON *j_role = NULL;
 
-    j_role = cJSON_CreateObject();
-    if(j_role == NULL){
-        return NULL;
-    }
+    if(verbose){
+        j_role = cJSON_CreateObject();
+        if(j_role == NULL){
+            return NULL;
+        }
 
-    if(cJSON_AddStringToObject(j_role, "rolename", role->rolename) == NULL
-       || (role->text_name && cJSON_AddStringToObject(j_role, "textname", role->text_name) == NULL)
-       || (role->text_description && cJSON_AddStringToObject(j_role, "textdescription", role->text_description) == NULL)
-       || cJSON_AddBoolToObject(j_role, "allowwildcardsubs", role->allow_wildcard_subs) == NULL
-            ){
+        if(cJSON_AddStringToObject(j_role, "rolename", role->rolename) == NULL
+           || (role->text_name && cJSON_AddStringToObject(j_role, "textname", role->text_name) == NULL)
+           || (role->text_description && cJSON_AddStringToObject(j_role, "textdescription", role->text_description) == NULL)
+           || cJSON_AddBoolToObject(j_role, "allowwildcardsubs", role->allow_wildcard_subs) == NULL
+                ){
 
-        cJSON_Delete(j_role);
-        return NULL;
+            cJSON_Delete(j_role);
+            return NULL;
+        }
+        if(add_acls_to_json(j_role, role)){
+            cJSON_Delete(j_role);
+            return NULL;
+        }
+    }else{
+        j_role = cJSON_CreateString(role->rolename);
+        if(j_role == NULL){
+            return NULL;
+        }
     }
-    if(add_acls_to_json(j_role, role)){
-        cJSON_Delete(j_role);
-        return NULL;
-    }
-
     return j_role;
 }
 

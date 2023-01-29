@@ -54,7 +54,7 @@ static void client__remove_all_roles(struct dynsec__client *client);
  * #
  * ################################################################ */
 
-int client_cmp(void *a, void *b)
+static int client_cmp(void *a, void *b)
 {
 	struct dynsec__client *client_a = a;
 	struct dynsec__client *client_b = b;
