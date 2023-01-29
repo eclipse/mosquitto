@@ -146,11 +146,11 @@ int yaml_parse_bool_scalar(yaml_event_t *event, bool* value, char* file, int lin
 
 int yaml_emit_string_field(yaml_emitter_t *emitter, yaml_event_t *event, const char* field, const char* value) {
     yaml_scalar_event_initialize(event, NULL, (yaml_char_t *)YAML_STR_TAG,
-                                 (yaml_char_t *)field, (int)strlen(field), 1, 0, YAML_PLAIN_SCALAR_STYLE);
+                                 (yaml_char_t *)field, (int)strlen(field), 1, 1, YAML_PLAIN_SCALAR_STYLE);
     if (!yaml_emitter_emit(emitter, event)) return 0;
 
     yaml_scalar_event_initialize(event, NULL, (yaml_char_t *)YAML_STR_TAG,
-                                 (yaml_char_t *)value, (int)strlen(value), 1, 0, YAML_PLAIN_SCALAR_STYLE);
+                                 (yaml_char_t *)value, (int)strlen(value), 1, 1, YAML_PLAIN_SCALAR_STYLE);
     if (!yaml_emitter_emit(emitter, event)) return 0;
 
     return 1;
@@ -161,11 +161,11 @@ int yaml_emit_int_field(yaml_emitter_t *emitter, yaml_event_t *event, const char
     snprintf(buf, 32, "%d", value);
 
     yaml_scalar_event_initialize(event, NULL, (yaml_char_t *)YAML_STR_TAG,
-                                 (yaml_char_t *)field, (int)strlen(field), 1, 0, YAML_PLAIN_SCALAR_STYLE);
+                                 (yaml_char_t *)field, (int)strlen(field), 1, 1, YAML_PLAIN_SCALAR_STYLE);
     if (!yaml_emitter_emit(emitter, event)) return 0;
 
     yaml_scalar_event_initialize(event, NULL, (yaml_char_t *)YAML_INT_TAG,
-                                 (yaml_char_t *)buf, (int)strlen(buf), 1, 0, YAML_PLAIN_SCALAR_STYLE);
+                                 (yaml_char_t *)buf, (int)strlen(buf), 1, 1, YAML_PLAIN_SCALAR_STYLE);
     if (!yaml_emitter_emit(emitter, event)) return 0;
 
     return 1;
@@ -173,11 +173,11 @@ int yaml_emit_int_field(yaml_emitter_t *emitter, yaml_event_t *event, const char
 
 int yaml_emit_bool_field(yaml_emitter_t *emitter, yaml_event_t *event, const char* field, int value) {
     yaml_scalar_event_initialize(event, NULL, (yaml_char_t *)YAML_STR_TAG,
-                                 (yaml_char_t *)field, (int)strlen(field), 1, 0, YAML_PLAIN_SCALAR_STYLE);
+                                 (yaml_char_t *)field, (int)strlen(field), 1, 1, YAML_PLAIN_SCALAR_STYLE);
     if (!yaml_emitter_emit(emitter, event)) return 0;
 
     yaml_scalar_event_initialize(event, NULL, (yaml_char_t *)YAML_BOOL_TAG,
-                                 (yaml_char_t *)(value ? "true" : "false"), (int)strlen(value ? "true" : "false"), 1, 0, YAML_PLAIN_SCALAR_STYLE);
+                                 (yaml_char_t *)(value ? "true" : "false"), (int)strlen(value ? "true" : "false"), 1, 1, YAML_PLAIN_SCALAR_STYLE);
     if (!yaml_emitter_emit(emitter, event)) return 0;
 
     return 1;

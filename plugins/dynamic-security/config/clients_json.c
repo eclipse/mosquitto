@@ -57,7 +57,7 @@ int dynsec_clients__config_load_json(struct dynsec__data *data, cJSON *tree)
                 continue;
             }
 
-            client = dynsec_clients__find_or_create(data, jtmp->valuestring);
+            client = dynsec_clients__create(jtmp->valuestring);
 
             jtmp = cJSON_GetObjectItem(j_client, "disabled");
             if(jtmp && cJSON_IsBool(jtmp)){
@@ -153,6 +153,8 @@ int dynsec_clients__config_load_json(struct dynsec__data *data, cJSON *tree)
                     }
                 }
             }
+
+            dynsec_clients__insert(data, client);
         }
     }
 

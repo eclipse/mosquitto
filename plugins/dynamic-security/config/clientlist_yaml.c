@@ -31,37 +31,40 @@ Contributors:
 #include "yaml_help.h"
 
 
-int dynsec_clientlist__all_to_yaml(struct dynsec__clientlist *base_clientlist, yaml_emitter_t* emitter, yaml_event_t *event)
+//Return 0 on success, other value on error.
+int dynsec_clientlist__all_to_yaml(struct dynsec__clientlist *clientlist, yaml_emitter_t* emitter, yaml_event_t *event)
 {
-    struct dynsec__clientlist *clientlist, *clientlist_tmp;
+    struct dynsec__clientlist *iter, *tmp;
 
     yaml_sequence_start_event_initialize(event, NULL, (yaml_char_t *)YAML_SEQ_TAG,
                                          1, YAML_ANY_SEQUENCE_STYLE);
-    if (!yaml_emitter_emit(emitter, event)) return 0;
+    if (!yaml_emitter_emit(emitter, event)) return MOSQ_ERR_UNKNOWN;
 
-    printf("%s:%d\n", __FILE__, __LINE__);
-    HASH_ITER(hh, base_clientlist, clientlist, clientlist_tmp){
-        yaml_mapping_start_event_initialize(event, NULL, (yaml_char_t *)YAML_MAP_TAG,
-                                            1, YAML_ANY_MAPPING_STYLE);
-        if (!yaml_emitter_emit(emitter, event)) return 0;
+    HASH_ITER(hh, clientlist, iter, tmp){
 
-        printf("%s:%d\n", __FILE__, __LINE__);
+        if (iter->priority == -1) {
+            //Just output the username as a scalar string
+            yaml_scalar_event_initialize(event, NULL, (yaml_char_t *)YAML_INT_TAG,
+                                         (yaml_char_t *)iter->client->username, (int)strlen(iter->client->username), 1, 1, YAML_PLAIN_SCALAR_STYLE);
+            if (!yaml_emitter_emit(emitter, event)) return MOSQ_ERR_UNKNOWN;
+        } else {
+            //Output both the username and the priority as a mapping.
+            yaml_mapping_start_event_initialize(event, NULL, (yaml_char_t *)YAML_MAP_TAG,
+                                                1, YAML_FLOW_MAPPING_STYLE);
+            if (!yaml_emitter_emit(emitter, event)) return MOSQ_ERR_UNKNOWN;
 
-        if (!yaml_emit_string_field(emitter, event, "username", clientlist->client->username)) return 0;
-        if (clientlist->priority != -1 && !yaml_emit_int_field(emitter, event, "priority", clientlist->priority)) return 0;
+            if (!yaml_emit_string_field(emitter, event, "username", iter->client->username)) return MOSQ_ERR_UNKNOWN;
+            if (iter->priority != -1 && !yaml_emit_int_field(emitter, event, "priority", iter->priority)) return MOSQ_ERR_UNKNOWN;
 
-        yaml_mapping_end_event_initialize(event);
-        if (!yaml_emitter_emit(emitter, event)) return 0;
-        printf("%s:%d\n", __FILE__, __LINE__);
-
+            yaml_mapping_end_event_initialize(event);
+            if (!yaml_emitter_emit(emitter, event)) return MOSQ_ERR_UNKNOWN;
+        }
     }
 
-    printf("%s:%d\n", __FILE__, __LINE__);
     yaml_sequence_end_event_initialize(event);
-    if (!yaml_emitter_emit(emitter, event)) return 0;
+    if (!yaml_emitter_emit(emitter, event)) return MOSQ_ERR_UNKNOWN;
 
-    printf("%s:%d\n", __FILE__, __LINE__);
-    return 1;
+    return MOSQ_ERR_SUCCESS;
 }
 
 int dynsec_clientlist__load_from_yaml(yaml_parser_t *parser, yaml_event_t *event, struct dynsec__data *data, struct dynsec__clientlist **clientlist)
@@ -72,26 +75,37 @@ int dynsec_clientlist__load_from_yaml(yaml_parser_t *parser, yaml_event_t *event
             long int priority = -1;
 
             printf("%s:%d\n", __FILE__, __LINE__);
-            YAML_PARSER_MAPPING_FOR_ALL(parser, event, key, { goto error; }, {
-                printf("%s:%d\n", __FILE__, __LINE__);
-                if (strcmp(key, "username") == 0) {
-                    printf("%s:%d\n", __FILE__, __LINE__);
-                    YAML_EVENT_INTO_SCALAR_STRING(event, &username, { goto error; });
-                } else if (strcmp(key, "priority") == 0) {
-                    printf("%s:%d\n", __FILE__, __LINE__);
-                    YAML_EVENT_INTO_SCALAR_LONG_INT(event, &priority, { goto error; });
-                } else {
-                    printf("%s:%d\n", __FILE__, __LINE__);
-                    mosquitto_log_printf(MOSQ_LOG_ERR, "Unexpected key for role config %s \n", key);
-                    yaml_dump_block(parser, event);
-                }
-            });
+
+            if (event->type == YAML_SCALAR_EVENT) {
+                YAML_EVENT_INTO_SCALAR_STRING(event, &username, { goto error; });
+            } else {
+                YAML_PARSER_MAPPING_FOR_ALL(parser, event, key, { goto error; }, {
+                        printf("%s:%d\n", __FILE__, __LINE__);
+                        if (strcmp(key, "username") == 0) {
+                            printf("%s:%d\n", __FILE__, __LINE__);
+                            YAML_EVENT_INTO_SCALAR_STRING(event, &username, { goto error; });
+                        } else if (strcmp(key, "priority") == 0) {
+                            printf("%s:%d\n", __FILE__, __LINE__);
+                            YAML_EVENT_INTO_SCALAR_LONG_INT(event, &priority, { goto error; });
+                        } else {
+                            printf("%s:%d\n", __FILE__, __LINE__);
+                            mosquitto_log_printf(MOSQ_LOG_ERR, "Unexpected key for role config %s \n", key);
+                            yaml_dump_block(parser, event);
+                        }
+                });
+            }
 
             printf("%s:%d\n", __FILE__, __LINE__);
 
             if (username) {
                 printf("un = %s\n", username);
-                struct dynsec__client *client = dynsec_clients__find_or_create(data, username);
+                struct dynsec__client *client = dynsec_clients__find(data, username);
+
+                if (!client) {
+                    client = dynsec_clients__create(username);
+                    if (client) dynsec_clients__insert(data, client);
+                }
+
                 if (client) {
                     printf("%s:%d\n", __FILE__, __LINE__);
                     dynsec_clientlist__add(clientlist, client, (int)priority);

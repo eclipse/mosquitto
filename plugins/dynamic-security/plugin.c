@@ -36,9 +36,6 @@ Contributors:
 
 #include "dynamic_security.h"
 
-#include "yaml.h"
-#include "yaml_help.h"
-
 MOSQUITTO_PLUGIN_DECLARE_VERSION(5);
 
 static struct dynsec__data dynsec_data;

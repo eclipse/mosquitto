@@ -32,81 +32,86 @@ Contributors:
 
 int dynsec_rolelist__load_from_yaml(yaml_parser_t *parser, yaml_event_t *event, struct dynsec__data *data, struct dynsec__rolelist **rolelist)
 {
+    char* rolename;
+    int ret;
 
-    YAML_PARSER_SEQUENCE_FOR_ALL(parser, event, { goto error; }, {
-            printf("%s:%d\n", __FILE__, __LINE__);
-            char* rolename = NULL;
+    YAML_PARSER_SEQUENCE_FOR_ALL(parser, event, { ret = MOSQ_ERR_INVAL; goto error; }, {
             long int priority = -1;
+            rolename = NULL;
 
-            printf("%s:%d\n", __FILE__, __LINE__);
-            YAML_PARSER_MAPPING_FOR_ALL(parser, event, key, { goto error; }, {
-                printf("%s:%d\n", __FILE__, __LINE__);
-                if (strcmp(key, "rolename") == 0) {
-                    printf("%s:%d\n", __FILE__, __LINE__);
-                    YAML_EVENT_INTO_SCALAR_STRING(event, &rolename, { goto error; });
-                } else if (strcmp(key, "priority") == 0) {
-                    printf("%s:%d\n", __FILE__, __LINE__);
-                    YAML_EVENT_INTO_SCALAR_LONG_INT(event, &priority, { goto error; });
-                } else {
-                    printf("%s:%d\n", __FILE__, __LINE__);
-                    mosquitto_log_printf(MOSQ_LOG_ERR, "Unexpected key for role config %s \n", key);
-                    yaml_dump_block(parser, event);
-                }
-            });
-
-            printf("%s:%d\n", __FILE__, __LINE__);
+            if (event->type == YAML_SCALAR_EVENT) {
+                YAML_EVENT_INTO_SCALAR_STRING(event, &rolename, { ret = MOSQ_ERR_INVAL; goto error; });
+            } else {
+                YAML_PARSER_MAPPING_FOR_ALL(parser, event, key, { ret = MOSQ_ERR_INVAL; goto error; }, {
+                        if (strcmp(key, "rolename") == 0) {
+                            YAML_EVENT_INTO_SCALAR_STRING(event, &rolename, { ret = MOSQ_ERR_INVAL; goto error; });
+                        } else if (strcmp(key, "priority") == 0) {
+                            YAML_EVENT_INTO_SCALAR_LONG_INT(event, &priority, { ret = MOSQ_ERR_INVAL; goto error; });
+                        } else {
+                            mosquitto_log_printf(MOSQ_LOG_ERR, "Unexpected key for role config %s \n", key);
+                            yaml_dump_block(parser, event);
+                        }
+                });
+            }
 
             if (rolename) {
-                printf("rn = %s\n", rolename);
-                struct dynsec__role *role = dynsec_roles__find_or_create(data, rolename);
+                struct dynsec__role *role = dynsec_roles__find(data, rolename);
+
+                if (!role) {
+                    role = dynsec_roles__create(rolename);
+                    if (role) dynsec_roles__insert(data, role);
+                }
+
                 if (role) {
-                    printf("%s:%d\n", __FILE__, __LINE__);
                     dynsec_rolelist__add(rolelist, role, (int)priority);
                 } else {
                     printf("OUT OF MEMORY %s:%d\n", __FILE__, __LINE__);
-                    free(rolename);
+                    ret = MOSQ_ERR_NOMEM;
                     goto error;
                 }
             }
-
-            printf("%s:%d\n", __FILE__, __LINE__);
     });
 
-    printf("%s:%d\n", __FILE__, __LINE__);
-
-    return 0;
-    error:
+    return MOSQ_ERR_SUCCESS;
+error:
+    mosquitto_free(rolename);
     dynsec_rolelist__cleanup(rolelist);
-    return 1;
+    return ret;
 }
 
 
-int dynsec_rolelist__all_to_yaml(struct dynsec__rolelist *base_rolelist, yaml_emitter_t *emitter, yaml_event_t *event)
+int dynsec_rolelist__all_to_yaml(struct dynsec__rolelist *rolelist, yaml_emitter_t *emitter, yaml_event_t *event)
 {
-    struct dynsec__rolelist *rolelist, *rolelist_tmp;
+    struct dynsec__rolelist *iter, *tmp;
 
     yaml_sequence_start_event_initialize(event, NULL, (yaml_char_t *)YAML_SEQ_TAG,
-                                         1, YAML_ANY_SEQUENCE_STYLE);
-    if (!yaml_emitter_emit(emitter, event)) return 1;
+                                         1, YAML_ANY_MAPPING_STYLE);
+    if (!yaml_emitter_emit(emitter, event)) return MOSQ_ERR_UNKNOWN;
 
 
-    HASH_ITER(hh, base_rolelist, rolelist, rolelist_tmp){
+    HASH_ITER(hh, rolelist, iter, tmp) {
+        if (iter->priority == -1) {
+            yaml_scalar_event_initialize(event, NULL, (yaml_char_t *)YAML_INT_TAG,
+                                         (yaml_char_t *)iter->rolename, (int)strlen(iter->rolename), 1, 1, YAML_PLAIN_SCALAR_STYLE);
+            if (!yaml_emitter_emit(emitter, event)) return MOSQ_ERR_UNKNOWN;
+        } else {
+            yaml_mapping_start_event_initialize(event, NULL, (yaml_char_t *) YAML_MAP_TAG,
+                                                1, YAML_FLOW_MAPPING_STYLE);
+            if (!yaml_emitter_emit(emitter, event)) return MOSQ_ERR_UNKNOWN;
 
-        yaml_mapping_start_event_initialize(event, NULL, (yaml_char_t *)YAML_MAP_TAG,
-                                            1, YAML_ANY_MAPPING_STYLE);
-        if (!yaml_emitter_emit(emitter, event)) return 1;
+            if (!yaml_emit_string_field(emitter, event, "rolename", iter->role->rolename)) return MOSQ_ERR_UNKNOWN;
+            if (iter->priority != -1 && !yaml_emit_int_field(emitter, event, "priority", iter->priority))
+                return MOSQ_ERR_UNKNOWN;
 
-        if (!yaml_emit_string_field(emitter, event, "rolename", rolelist->role->rolename)) return 1;
-        if (rolelist->priority != -1 && !yaml_emit_int_field(emitter, event, "priority", rolelist->priority)) return 1;
-
-        yaml_mapping_end_event_initialize(event);
-        if (!yaml_emitter_emit(emitter, event)) return 1;
+            yaml_mapping_end_event_initialize(event);
+            if (!yaml_emitter_emit(emitter, event)) return MOSQ_ERR_UNKNOWN;
+        }
     }
 
     yaml_sequence_end_event_initialize(event);
-    if (!yaml_emitter_emit(emitter, event)) return 1;
+    if (!yaml_emitter_emit(emitter, event)) return MOSQ_ERR_UNKNOWN;
 
-    return 0;
+    return MOSQ_ERR_SUCCESS;
 }
 
 

@@ -38,15 +38,11 @@
 
 #define YAML_PARSER_SEQUENCE_FOR_ALL(parser, event, on_error, ...)  YAML_PARSER_FOR_ALL(parser, event, YAML_SEQUENCE_START_EVENT, YAML_SEQUENCE_END_EVENT, on_error, __VA_ARGS__)
 #define YAML_PARSER_MAPPING_FOR_ALL(parser, event, key, on_error, ...)  YAML_PARSER_FOR_ALL(parser, event, YAML_MAPPING_START_EVENT, YAML_MAPPING_END_EVENT, on_error, { \
-    printf("1\n");                                                                                                                                                                         \
     PARSER_EXPECT_EVENT_TYPE(event, YAML_SCALAR_EVENT, on_error);                                                                                                        \
-    printf("2\n");                                                                                                                                                                         \
     char *key = mosquitto_strdup((char*)(event)->data.scalar.value);                                                                                                       \
     yaml_event_delete(event);                                               \
     if (!yaml_parser_parse(parser, event)) on_error;                                                                                                                     \
-    printf("3\n");                                                                                                                                                                         \
     do { __VA_ARGS__; } while (0);                                                                                                                                               \
-    printf("4\n");                                                                                                                                                                         \
     mosquitto_free(key);                                                                                                                                                 \
 })
 

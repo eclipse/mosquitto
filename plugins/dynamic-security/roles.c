@@ -96,25 +96,26 @@ struct dynsec__role *dynsec_roles__find(struct dynsec__data *data, const char *r
 	return role;
 }
 
-struct dynsec__role *dynsec_roles__find_or_create(struct dynsec__data *data, const char *rolename)
-{
-    if (!rolename) return NULL;
+/** Allocates memory and sets the rolename for a new role */
+struct dynsec__role *dynsec_roles__create(const char *rolename) {
+    size_t rolename_len = strlen(rolename);
+    struct dynsec__role *role = mosquitto_calloc(1, sizeof(struct dynsec__role) + rolename_len + 1);
+    if(!role) return NULL;
 
-    struct dynsec__role *role = dynsec_roles__find(data, rolename);
-
-    if(!role){
-        size_t rolename_len = strlen(rolename);
-        role = mosquitto_calloc(1, sizeof(struct dynsec__role) + rolename_len + 1);
-        if(!role) return NULL;
-
-        memcpy(role->rolename, rolename, rolename_len);
-
-        HASH_ADD_KEYPTR_INORDER(hh, data->roles, role->rolename, strlen(role->rolename), role, role_cmp);
-    }
+    memcpy(role->rolename, rolename, rolename_len);
 
     return role;
 }
 
+bool dynsec_roles__insert(struct dynsec__data *data, struct dynsec__role* role)
+{
+    if (dynsec_roles__find(data, role->rolename) == NULL) {
+        HASH_ADD_KEYPTR_INORDER(hh, data->roles, role->rolename, strlen(role->rolename), role, role_cmp);
+        return true;
+    } else {
+        return false;
+    }
+}
 
 void dynsec_roles__cleanup(struct dynsec__data *data)
 {
@@ -146,11 +147,6 @@ static void role__kick_all(struct dynsec__data *data, struct dynsec__role *role)
  * # Config file load and save
  * #
  * ################################################################ */
-
-static int insert_acl_cmp(struct dynsec__acl *a, struct dynsec__acl *b)
-{
-	return b->priority - a->priority;
-}
 
 int dynsec_roles__process_create(struct dynsec__data *data, struct control_cmd *cmd, struct mosquitto *context)
 {
@@ -225,12 +221,12 @@ int dynsec_roles__process_create(struct dynsec__data *data, struct control_cmd *
 	/* ACLs */
 	j_acls = cJSON_GetObjectItem(cmd->j_command, "acls");
 	if(j_acls && cJSON_IsArray(j_acls)){
-		if(dynsec_roles__acl_load(j_acls, ACL_TYPE_PUB_C_SEND, &role->acls.publish_c_send) != 0
-				|| dynsec_roles__acl_load(j_acls, ACL_TYPE_PUB_C_RECV, &role->acls.publish_c_recv) != 0
-				|| dynsec_roles__acl_load(j_acls, ACL_TYPE_SUB_LITERAL, &role->acls.subscribe_literal) != 0
-				|| dynsec_roles__acl_load(j_acls, ACL_TYPE_SUB_PATTERN, &role->acls.subscribe_pattern) != 0
-				|| dynsec_roles__acl_load(j_acls, ACL_TYPE_UNSUB_LITERAL, &role->acls.unsubscribe_literal) != 0
-				|| dynsec_roles__acl_load(j_acls, ACL_TYPE_UNSUB_PATTERN, &role->acls.unsubscribe_pattern) != 0
+		if(dynsec_acls__load_json(j_acls, ACL_TYPE_PUB_C_SEND, &role->acls.publish_c_send) != 0
+				|| dynsec_acls__load_json(j_acls, ACL_TYPE_PUB_C_RECV, &role->acls.publish_c_recv) != 0
+				|| dynsec_acls__load_json(j_acls, ACL_TYPE_SUB_LITERAL, &role->acls.subscribe_literal) != 0
+				|| dynsec_acls__load_json(j_acls, ACL_TYPE_SUB_PATTERN, &role->acls.subscribe_pattern) != 0
+				|| dynsec_acls__load_json(j_acls, ACL_TYPE_UNSUB_LITERAL, &role->acls.unsubscribe_literal) != 0
+				|| dynsec_acls__load_json(j_acls, ACL_TYPE_UNSUB_PATTERN, &role->acls.unsubscribe_pattern) != 0
 				){
 
 			control__command_reply(cmd, "Internal error");
@@ -460,7 +456,7 @@ int dynsec_roles__process_add_acl(struct dynsec__data *data, struct control_cmd 
 	json_get_int(cmd->j_command, "priority", &acl->priority, true, 0);
 	json_get_bool(cmd->j_command, "allow", &acl->allow, true, false);
 
-	HASH_ADD_INORDER(hh, *acllist, topic, topic_len, acl, insert_acl_cmp);
+    dynsec_acllist__add(acllist, acl);
 	dynsec__config_batch_save(data);
 	control__command_reply(cmd, NULL);
 
@@ -671,12 +667,12 @@ int dynsec_roles__process_modify(struct dynsec__data *data, struct control_cmd *
 
 	j_acls = cJSON_GetObjectItem(cmd->j_command, "acls");
 	if(j_acls && cJSON_IsArray(j_acls)){
-		if(dynsec_roles__acl_load(j_acls, ACL_TYPE_PUB_C_SEND, &tmp_publish_c_send) != 0
-				|| dynsec_roles__acl_load(j_acls, ACL_TYPE_PUB_C_RECV, &tmp_publish_c_recv) != 0
-				|| dynsec_roles__acl_load(j_acls, ACL_TYPE_SUB_LITERAL, &tmp_subscribe_literal) != 0
-				|| dynsec_roles__acl_load(j_acls, ACL_TYPE_SUB_PATTERN, &tmp_subscribe_pattern) != 0
-				|| dynsec_roles__acl_load(j_acls, ACL_TYPE_UNSUB_LITERAL, &tmp_unsubscribe_literal) != 0
-				|| dynsec_roles__acl_load(j_acls, ACL_TYPE_UNSUB_PATTERN, &tmp_unsubscribe_pattern) != 0
+		if(dynsec_acls__load_json(j_acls, ACL_TYPE_PUB_C_SEND, &tmp_publish_c_send) != 0
+				|| dynsec_acls__load_json(j_acls, ACL_TYPE_PUB_C_RECV, &tmp_publish_c_recv) != 0
+				|| dynsec_acls__load_json(j_acls, ACL_TYPE_SUB_LITERAL, &tmp_subscribe_literal) != 0
+				|| dynsec_acls__load_json(j_acls, ACL_TYPE_SUB_PATTERN, &tmp_subscribe_pattern) != 0
+				|| dynsec_acls__load_json(j_acls, ACL_TYPE_UNSUB_LITERAL, &tmp_unsubscribe_literal) != 0
+				|| dynsec_acls__load_json(j_acls, ACL_TYPE_UNSUB_PATTERN, &tmp_unsubscribe_pattern) != 0
 				){
 
 			/* Free any that were successful */

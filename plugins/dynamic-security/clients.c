@@ -73,30 +73,30 @@ struct dynsec__client *dynsec_clients__find(struct dynsec__data *data, const cha
 	return client;
 }
 
-struct dynsec__client *dynsec_clients__find_or_create(struct dynsec__data *data, const char *username)
+struct dynsec__client *dynsec_clients__create(const char *username)
 {
-    if (!username) return NULL;
+    size_t username_len = strlen(username);
+    if (username_len == 0) return NULL;
 
-    struct dynsec__client *client = dynsec_clients__find(data, username);
+    struct dynsec__client *client = mosquitto_calloc(1, sizeof(struct dynsec__client) + username_len + 1);
+    if(!client) return NULL;
 
-    if(!client) {
-        size_t username_len = strlen(username);
-        if (username_len == 0) return NULL;
+    memcpy(client->username, username, username_len);
 
-        client = mosquitto_calloc(1, sizeof(struct dynsec__client) + username_len + 1);
-        if(!client) return NULL;
-
-        memcpy(client->username, username, username_len);
-
-        client->disabled = 1;
-        client->pw.valid = 0; //Technically should already be 0.
-
-        HASH_ADD_KEYPTR_INORDER(hh, data->clients, client->username, strlen(client->username), client, client_cmp);
-    }
+    client->disabled = 1;
 
     return client;
 }
 
+bool dynsec_clients__insert(struct dynsec__data *data, struct dynsec__client *client)
+{
+    if (dynsec_clients__find(data, client->username) == NULL) {
+        HASH_ADD_KEYPTR_INORDER(hh, data->clients, client->username, strlen(client->username), client, client_cmp);
+        return true;
+    } else {
+        return false;
+    }
+}
 
 static void client__free_item(struct dynsec__data *data, struct dynsec__client *client)
 {

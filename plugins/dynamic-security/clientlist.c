@@ -27,8 +27,6 @@ Contributors:
 #include "json_help.h"
 
 #include "dynamic_security.h"
-#include "yaml.h"
-#include "yaml_help.h"
 
 /* ################################################################
  * #
@@ -93,7 +91,6 @@ int dynsec_clientlist__add(struct dynsec__clientlist **base_clientlist, struct d
 
 	return MOSQ_ERR_SUCCESS;
 }
-
 
 void dynsec_clientlist__cleanup(struct dynsec__clientlist **base_clientlist)
 {

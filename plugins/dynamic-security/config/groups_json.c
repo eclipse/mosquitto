@@ -56,7 +56,7 @@ int dynsec_groups__config_load_json(struct dynsec__data *data, cJSON *tree)
                 continue;
             }
 
-            group = dynsec_groups__find_or_create(data, str);
+            group = dynsec_groups__find(data, str);
 
             /* Text name */
             if(json_get_string(j_group, "textname", &str, false) == MOSQ_ERR_SUCCESS){

@@ -11,6 +11,7 @@ endif
 
 OBJS=	\
 		acl.o \
+		acllist.o \
 		auth.o \
 		base64_mosq.o \
 		clients.o \
@@ -34,7 +35,7 @@ OBJS=	\
 
 ifeq ($(WITH_CJSON),yes)
 PLUGIN_LIBS += -lcjson
-OBJS += config/clients_json.o config/clientlist_json.o config/groups_json.o config/roles_json.o config/rolelist_json.o
+OBJS += config/clients_json.o config/clientlist_json.o config/groups_json.o config/roles_json.o config/rolelist_json.o config/acllist_json.o config/acls_json.o config/config_json.o
 LOCAL_CPPFLAGS += -DWITH_CJSON
 ifeq ($(WITH_TLS),yes)
 LOCAL_CPPFLAGS += -DWITH_TLS
@@ -48,7 +49,7 @@ endif
 
 ifeq ($(WITH_YAML),yes)
 PLUGIN_LIBS += -lyaml
-OBJS += config/yaml_help.o config/clients_yaml.o config/clientlist_yaml.o config/groups_yaml.o config/roles_yaml.o config/rolelist_yaml.o
+OBJS += config/yaml_help.o config/clients_yaml.o config/clientlist_yaml.o config/groups_yaml.o config/roles_yaml.o config/rolelist_yaml.o config/acllist_yaml.o config/acls_yaml.o config/config_yaml.o
 LOCAL_CPPFLAGS += -DWITH_YAML
 endif
 
@@ -59,6 +60,9 @@ ${PLUGIN_NAME}.so : ${OBJS}
 	${CROSS_COMPILE}${CC} $(PLUGIN_LDFLAGS) -fPIC -shared $^ -o $@ $(PLUGIN_LIBS)
 
 acl.o : acl.c dynamic_security.h
+	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) -c $< -o $@
+
+acllist.o : acllist.c dynamic_security.h
 	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) -c $< -o $@
 
 auth.o : auth.c dynamic_security.h
@@ -76,7 +80,10 @@ clientlist.o : clientlist.c dynamic_security.h
 config.o : config.c dynamic_security.h
 	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) -c $< -o $@
 
-config/%.o : config/%.c dynamic_security.h
+config/%_yaml.o : config/%_yaml.c dynamic_security.h config/yaml_help.h
+	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) -c $< -o $@
+
+config/%_json.o : config/%_json.c dynamic_security.h
 	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) -c $< -o $@
 
 config_init.o : config_init.c dynamic_security.h

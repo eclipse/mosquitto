@@ -84,24 +84,27 @@ struct dynsec__group *dynsec_groups__find(struct dynsec__data *data, const char 
 	return group;
 }
 
-struct dynsec__group *dynsec_groups__find_or_create(struct dynsec__data *data, const char *groupname)
+struct dynsec__group *dynsec_groups__create(const char *groupname)
 {
-    if (!groupname) return NULL;
+    size_t groupname_len = strlen(groupname);
+    struct dynsec__group *group = mosquitto_calloc(1, sizeof(struct dynsec__group) + groupname_len + 1);
+    if(!group) return NULL;
 
-    struct dynsec__group *group = dynsec_groups__find(data, groupname);
-
-    if(!group) {
-        size_t groupname_len = strlen(groupname);
-        group = mosquitto_calloc(1, sizeof(struct dynsec__group) + groupname_len + 1);
-        if(!group) return NULL;
-
-        memcpy(group->groupname, groupname, groupname_len);
-
-        HASH_ADD_KEYPTR_INORDER(hh, data->groups, group->groupname, strlen(group->groupname), group, group_cmp);
-    }
+    memcpy(group->groupname, groupname, groupname_len);
 
     return group;
 }
+
+bool dynsec_groups__insert(struct dynsec__data *data, struct dynsec__group *group)
+{
+    if (dynsec_groups__find(data, group->groupname) == NULL) {
+        HASH_ADD_KEYPTR_INORDER(hh, data->groups, group->groupname, strlen(group->groupname), group, group_cmp);
+        return true;
+    } else {
+        return false;
+    }
+}
+
 
 static void group__free_item(struct dynsec__data *data, struct dynsec__group *group)
 {
