@@ -54,6 +54,7 @@ static int str_ends_with(const char *str, const char *suffix) {
            (!memcmp(str + str_len - suffix_len, suffix, suffix_len));
 }
 
+//TODO Conditional compilation of yaml format.
 int dynsec__config_load(struct dynsec__data *data)
 {
     FILE *fptr;
@@ -86,6 +87,7 @@ int dynsec__config_load(struct dynsec__data *data)
     return rc;
 }
 
+//TODO Conditional compilation of yaml format.
 void dynsec__config_save(struct dynsec__data *data)
 {
 	data->need_save = false;
