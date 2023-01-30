@@ -83,6 +83,9 @@ config.o : config.c dynamic_security.h
 config/%_yaml.o : config/%_yaml.c dynamic_security.h config/yaml_help.h
 	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) -c $< -o $@
 
+config/yaml_help.o : config/yaml_help.c dynamic_security.h config/yaml_help.h
+	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) -c $< -o $@
+
 config/%_json.o : config/%_json.c dynamic_security.h
 	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) -c $< -o $@
 

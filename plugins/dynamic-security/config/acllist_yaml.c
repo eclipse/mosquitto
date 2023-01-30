@@ -52,7 +52,7 @@ int dynsec_acllist__to_yaml(yaml_emitter_t *emitter, yaml_event_t *event, struct
     return MOSQ_ERR_SUCCESS;
 }
 
-static int dynsec_acllist_load_yaml(yaml_parser_t *parser, yaml_event_t *event, struct dynsec__acls* acls)
+int dynsec_acllist_load_yaml(yaml_parser_t *parser, yaml_event_t *event, struct dynsec__acls* acls)
 {
     struct dynsec__acl **acllist;
     char* topic;

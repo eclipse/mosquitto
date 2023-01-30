@@ -85,7 +85,7 @@ int dynsec_rolelist__all_to_yaml(struct dynsec__rolelist *rolelist, yaml_emitter
     struct dynsec__rolelist *iter, *tmp;
 
     yaml_sequence_start_event_initialize(event, NULL, (yaml_char_t *)YAML_SEQ_TAG,
-                                         1, YAML_ANY_MAPPING_STYLE);
+                                         1, YAML_ANY_SEQUENCE_STYLE);
     if (!yaml_emitter_emit(emitter, event)) return MOSQ_ERR_UNKNOWN;
 
 
