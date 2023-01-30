@@ -55,28 +55,28 @@ int dynsec_clients__config_load_yaml(yaml_parser_t *parser, yaml_event_t *event,
             rolelist = NULL;
 
             YAML_PARSER_MAPPING_FOR_ALL(parser, event, key, { ret = MOSQ_ERR_INVAL; goto error; }, {
-                if (strcmp(key, "username") == 0) {
+                if (strcasecmp(key, "username") == 0) {
                     char *username;
                     YAML_EVENT_INTO_SCALAR_STRING(event, &username, { ret = MOSQ_ERR_INVAL; goto error; });
                     client = dynsec_clients__find(data, username);
                     if (!client) client = dynsec_clients__create(username); //TODO: Memory allocated for client is not freed if an error occurs later on.
                     if (!client) { ret = MOSQ_ERR_NOMEM; mosquitto_free(username); goto error; }
                     mosquitto_free(username);
-                } else if (strcmp(key, "disabled") == 0) {
+                } else if (strcasecmp(key, "disabled") == 0) {
                     YAML_EVENT_INTO_SCALAR_BOOL(event, &disabled, { ret = MOSQ_ERR_INVAL; goto error; });
-                } else if (strcmp(key, "clientid") == 0) {
+                } else if (strcasecmp(key, "clientid") == 0) {
                     YAML_EVENT_INTO_SCALAR_STRING(event, &clientid, { ret = MOSQ_ERR_INVAL; goto error; });
-                } else if (strcmp(key, "textname") == 0) {
+                } else if (strcasecmp(key, "textname") == 0) {
                     YAML_EVENT_INTO_SCALAR_STRING(event, &textname, { ret = MOSQ_ERR_INVAL; goto error; });
-                } else if (strcmp(key, "textdescription") == 0) {
+                } else if (strcasecmp(key, "textdescription") == 0) {
                     YAML_EVENT_INTO_SCALAR_STRING(event, &textdescription, { ret = MOSQ_ERR_INVAL; goto error; });
-                } else if (strcmp(key, "salt") == 0) {
+                } else if (strcasecmp(key, "salt") == 0) {
                     YAML_EVENT_INTO_SCALAR_STRING(event, &salt, { ret = MOSQ_ERR_INVAL; goto error; });
-                } else if (strcmp(key, "password") == 0) {
+                } else if (strcasecmp(key, "password") == 0) {
                     YAML_EVENT_INTO_SCALAR_STRING(event, &pw, { ret = MOSQ_ERR_INVAL; goto error; });
-                } else if (strcmp(key, "iterations") == 0) {
+                } else if (strcasecmp(key, "iterations") == 0) {
                     YAML_EVENT_INTO_SCALAR_LONG_INT(event, &iterations, { ret = MOSQ_ERR_INVAL; goto error; });
-                } else if (strcmp(key, "roles") == 0) {
+                } else if (strcasecmp(key, "roles") == 0) {
                     if (dynsec_rolelist__load_from_yaml(parser, event, data, &rolelist)) { ret = MOSQ_ERR_INVAL; goto error; };
                 } else {
                     mosquitto_log_printf(MOSQ_LOG_ERR, "Unexpected key for client config %s \n", key);
@@ -84,7 +84,8 @@ int dynsec_clients__config_load_yaml(yaml_parser_t *parser, yaml_event_t *event,
                 }
             });
 
-            if (client) {
+
+        if (client) {
                 client->clientid = clientid;
                 client->text_name = textname;
                 client->text_description = textdescription;
@@ -108,8 +109,9 @@ int dynsec_clients__config_load_yaml(yaml_parser_t *parser, yaml_event_t *event,
                     client->pw.valid = 1;
                     client->pw.iterations = (int)iterations;
 
-                    if(base64__decode(salt, &buf, &buf_len) == MOSQ_ERR_SUCCESS && buf_len == sizeof(client->pw.salt)) {
+                    if(base64__decode(salt, &buf, &buf_len) == MOSQ_ERR_SUCCESS && buf_len <= sizeof(client->pw.salt)) {
                         memcpy(client->pw.salt, buf, (size_t)buf_len);
+                        client->pw.salt_len = buf_len;
                         mosquitto_free(buf);
                         buf = NULL;
                     } else {
@@ -193,7 +195,7 @@ static int dynsec__config_add_clients_yaml(yaml_emitter_t* emitter, yaml_event_t
 
             mosquitto_free(buf);
 
-            if(base64__encode(iter->pw.salt, sizeof(iter->pw.salt), &buf) != MOSQ_ERR_SUCCESS){
+            if(base64__encode(iter->pw.salt, iter->pw.salt_len, &buf) != MOSQ_ERR_SUCCESS){
                 mosquitto_log_printf(MOSQ_LOG_ERR, "dynsec: error encoding password salt to base64");
                 return MOSQ_ERR_UNKNOWN;
             }

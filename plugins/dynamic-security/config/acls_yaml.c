@@ -69,7 +69,7 @@ int dynsec_acls__load_yaml(yaml_parser_t *parser, yaml_event_t *event, struct dy
         allow = false;
 
         YAML_PARSER_MAPPING_FOR_ALL(parser, event, key, { ret = MOSQ_ERR_INVAL; goto error; }, {
-                if (strcmp(key, "acltype") == 0) {
+                if (strcasecmp(key, "acltype") == 0) {
                     char *acltype;
                     YAML_EVENT_INTO_SCALAR_STRING(event, &acltype, { ret = MOSQ_ERR_INVAL; goto error; });
 
@@ -86,11 +86,11 @@ int dynsec_acls__load_yaml(yaml_parser_t *parser, yaml_event_t *event, struct dy
                     }
 
                     mosquitto_free(acltype);
-                } else if (strcmp(key, "topic") == 0) {
+                } else if (strcasecmp(key, "topic") == 0) {
                     YAML_EVENT_INTO_SCALAR_STRING(event, &topic, { ret = MOSQ_ERR_INVAL; goto error; });
-                } else if (strcmp(key, "priority") == 0) {
+                } else if (strcasecmp(key, "priority") == 0) {
                     YAML_EVENT_INTO_SCALAR_LONG_INT(event, &priority, { ret = MOSQ_ERR_INVAL; goto error; });
-                } else if (strcmp(key, "allow") == 0) {
+                } else if (strcasecmp(key, "allow") == 0) {
                     YAML_EVENT_INTO_SCALAR_BOOL(event, &allow, { ret = MOSQ_ERR_INVAL; goto error; });
                 } else {
                     mosquitto_log_printf(MOSQ_LOG_ERR, "Unexpected key for role config %s \n", key);

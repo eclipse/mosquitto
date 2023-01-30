@@ -47,7 +47,7 @@ int dynsec_groups__config_load_yaml(yaml_parser_t *parser, yaml_event_t *event, 
             clientlist = NULL;
 
             YAML_PARSER_MAPPING_FOR_ALL(parser, event, key, { goto error; }, {
-                if (strcmp(key, "groupname") == 0) {
+                if (strcasecmp(key, "groupname") == 0) {
                     char *groupname;
                     YAML_EVENT_INTO_SCALAR_STRING(event, &groupname, { goto error; });
                     group = dynsec_groups__find(data, groupname);
@@ -55,13 +55,13 @@ int dynsec_groups__config_load_yaml(yaml_parser_t *parser, yaml_event_t *event, 
                     if (!group) { ret = MOSQ_ERR_NOMEM; mosquitto_free(groupname); goto error; }
 
                     mosquitto_free(groupname);
-                } else if (strcmp(key, "textname") == 0) {
+                } else if (strcasecmp(key, "textname") == 0) {
                     YAML_EVENT_INTO_SCALAR_STRING(event, &textname, { goto error; });
-                } else if (strcmp(key, "textdescription") == 0) {
+                } else if (strcasecmp(key, "textdescription") == 0) {
                     YAML_EVENT_INTO_SCALAR_STRING(event, &textdescription, { goto error; });
-                } else if (strcmp(key, "roles") == 0) {
+                } else if (strcasecmp(key, "roles") == 0) {
                     if (dynsec_rolelist__load_from_yaml(parser, event, data, &rolelist)) goto error;
-                } else if (strcmp(key, "clients") == 0) {
+                } else if (strcasecmp(key, "clients") == 0) {
                     if (dynsec_clientlist__load_from_yaml(parser, event, data, &clientlist)) goto error;
                 } else {
                     mosquitto_log_printf(MOSQ_LOG_ERR, "Unexpected key for group config %s \n", key);

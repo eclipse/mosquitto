@@ -60,9 +60,7 @@ int dynsec_clients__config_load_json(struct dynsec__data *data, cJSON *tree)
             client = dynsec_clients__create(jtmp->valuestring);
 
             jtmp = cJSON_GetObjectItem(j_client, "disabled");
-            if(jtmp && cJSON_IsBool(jtmp)){
-                client->disabled = cJSON_IsTrue(jtmp);
-            }
+            client->disabled = jtmp && cJSON_IsBool(jtmp) && cJSON_IsTrue(jtmp);
 
             /* Salt */
             j_salt = cJSON_GetObjectItem(j_client, "salt");
@@ -139,6 +137,7 @@ int dynsec_clients__config_load_json(struct dynsec__data *data, cJSON *tree)
                 }
             }
 
+            dynsec_clients__insert(data, client);
             /* Roles */
             j_roles = cJSON_GetObjectItem(j_client, "roles");
             if(j_roles && cJSON_IsArray(j_roles)){
@@ -154,7 +153,6 @@ int dynsec_clients__config_load_json(struct dynsec__data *data, cJSON *tree)
                 }
             }
 
-            dynsec_clients__insert(data, client);
         }
     }
 

@@ -39,6 +39,7 @@ static int add_role_to_yaml(yaml_emitter_t *emitter, yaml_event_t *event, struct
     if (!yaml_emit_string_field(emitter, event, "rolename", role->rolename)) return MOSQ_ERR_UNKNOWN;
     if (role->text_name && !yaml_emit_string_field(emitter, event, "textname", role->text_name)) return MOSQ_ERR_UNKNOWN;
     if (role->text_description && !yaml_emit_string_field(emitter, event, "textdescription", role->text_description)) return MOSQ_ERR_UNKNOWN;
+    if (role->allow_wildcard_subs && !yaml_emit_bool_field(emitter, event, "allowwildcardsubs", role->allow_wildcard_subs)) return MOSQ_ERR_UNKNOWN;
 
     if(dynsec__acls__to_yaml(emitter, event, role)) return MOSQ_ERR_UNKNOWN;
 
@@ -76,25 +77,29 @@ int dynsec_roles__config_load_yaml(yaml_parser_t *parser, yaml_event_t *event, s
     char* textname;
     char* textdescription;
     struct dynsec__acls acls;
+    bool allowwildcardsubs;
     int ret = MOSQ_ERR_SUCCESS;
 
     YAML_PARSER_SEQUENCE_FOR_ALL(parser, event, { ret = MOSQ_ERR_INVAL; goto error; }, {
             memset(&acls, 0, sizeof(acls));
             role = NULL;
             textname = textdescription = NULL;
+            allowwildcardsubs = true;
             YAML_PARSER_MAPPING_FOR_ALL(parser, event, key, { ret = MOSQ_ERR_INVAL; goto error; }, {
-                if (strcmp(key, "rolename") == 0) {
+                if (strcasecmp(key, "rolename") == 0) {
                     char *rolename;
                     YAML_EVENT_INTO_SCALAR_STRING(event, &rolename, { ret = MOSQ_ERR_INVAL; goto error; });
                     role = dynsec_roles__find(data, rolename);
                     if (!role) role = dynsec_roles__create(rolename);
                     if (!role) { ret = MOSQ_ERR_NOMEM; mosquitto_free(rolename); goto error; }
                     mosquitto_free(rolename);
-                } else if (strcmp(key, "textname") == 0) {
+                } else if (strcasecmp(key, "textname") == 0) {
                     YAML_EVENT_INTO_SCALAR_STRING(event, &textname, { ret = MOSQ_ERR_INVAL; goto error; });
-                } else if (strcmp(key, "textdescription") == 0) {
+                } else if (strcasecmp(key, "textdescription") == 0) {
                     YAML_EVENT_INTO_SCALAR_STRING(event, &textdescription, { ret = MOSQ_ERR_INVAL; goto error; });
-                } else if (strcmp(key, "acls") == 0) {
+                } else if (strcasecmp(key, "allowwildcardsubs") == 0) {
+                    YAML_EVENT_INTO_SCALAR_BOOL(event, &allowwildcardsubs, { ret = MOSQ_ERR_INVAL; goto error; });
+                } else if (strcasecmp(key, "acls") == 0) {
                     if (dynsec_acls__load_yaml(parser, event, &acls)) { ret = MOSQ_ERR_INVAL; goto error; } //TODO: Memory allocated for acls is not freed if an error occurs later on.
                 } else {
                     mosquitto_log_printf(MOSQ_LOG_ERR, "Unexpected key for client config %s \n", key);
@@ -105,6 +110,7 @@ int dynsec_roles__config_load_yaml(yaml_parser_t *parser, yaml_event_t *event, s
             if (role) {
                 role->text_name = textname;
                 role->text_description = textdescription;
+                role->allow_wildcard_subs = allowwildcardsubs;
                 role->acls = acls;
                 dynsec_roles__insert(data, role);
             } else {

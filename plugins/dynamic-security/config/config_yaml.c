@@ -34,13 +34,13 @@ Contributors:
 static int dynsec__general_config_load_yaml(yaml_parser_t *parser, yaml_event_t *event, struct dynsec__data *data)
 {
     YAML_PARSER_MAPPING_FOR_ALL(parser, event, key, { return MOSQ_ERR_INVAL; }, {
-        if (strcmp(key, ACL_TYPE_PUB_C_SEND) == 0) {
+        if (strcasecmp(key, ACL_TYPE_PUB_C_SEND) == 0) {
             YAML_EVENT_INTO_SCALAR_BOOL(event, &data->default_access.publish_c_send, { return MOSQ_ERR_INVAL; });
-        } else if (strcmp(key, ACL_TYPE_PUB_C_RECV) == 0) {
+        } else if (strcasecmp(key, ACL_TYPE_PUB_C_RECV) == 0) {
             YAML_EVENT_INTO_SCALAR_BOOL(event, &data->default_access.publish_c_recv, { return MOSQ_ERR_INVAL; });
-        } else if (strcmp(key, ACL_TYPE_SUB_GENERIC) == 0) {
+        } else if (strcasecmp(key, ACL_TYPE_SUB_GENERIC) == 0) {
             YAML_EVENT_INTO_SCALAR_BOOL(event, &data->default_access.subscribe, { return MOSQ_ERR_INVAL; });
-        } else if (strcmp(key, ACL_TYPE_UNSUB_GENERIC) == 0) {
+        } else if (strcasecmp(key, ACL_TYPE_UNSUB_GENERIC) == 0) {
             YAML_EVENT_INTO_SCALAR_BOOL(event, &data->default_access.unsubscribe, { return MOSQ_ERR_INVAL; });
         } else {
             mosquitto_log_printf(MOSQ_LOG_ERR, "Error parsing Dynamic security plugin config. Unknown key %s found on line %d:%d at %s:%d, \n", key, event->start_mark.line, event->start_mark.column, __FILE__, __LINE__ );
@@ -92,15 +92,15 @@ int dynsec__config_load_yaml(struct dynsec__data *data, FILE* fptr)
     if (!yaml_parser_parse(&parser, &event)) { goto print_error; }
 
     YAML_PARSER_MAPPING_FOR_ALL(&parser, &event, key, { goto print_error; }, {
-            if (strcmp(key, "defaultACLAccess") == 0) {
+            if (strcasecmp(key, "defaultACLAccess") == 0) {
                 if (dynsec__general_config_load_yaml(&parser, &event, data)) goto print_error;
-            } else if (strcmp(key, "clients") == 0) {
+            } else if (strcasecmp(key, "clients") == 0) {
                 if (dynsec_clients__config_load_yaml(&parser, &event, data)) goto print_error;
-            } else if (strcmp(key, "groups") == 0) {
+            } else if (strcasecmp(key, "groups") == 0) {
                 if (dynsec_groups__config_load_yaml(&parser, &event, data)) goto print_error;
-            } else  if (strcmp(key, "roles") == 0) {
+            } else  if (strcasecmp(key, "roles") == 0) {
                 if (dynsec_roles__config_load_yaml(&parser, &event, data)) goto print_error;
-            } else  if (strcmp(key, "anonymousGroup") == 0) {
+            } else  if (strcasecmp(key, "anonymousGroup") == 0) {
                 char* anonymousGroup = NULL;
                 YAML_EVENT_INTO_SCALAR_STRING(&event, &anonymousGroup, { goto print_error; });
                 data->anonymous_group = dynsec_groups__find(data, anonymousGroup);
@@ -172,7 +172,6 @@ int dynsec__write_yaml_config(FILE* fptr, void *user_data)
     return MOSQ_ERR_SUCCESS;
 
     error:
-    printf("%s:%d\n", __FILE__, __LINE__);
     fprintf(stderr, "Failed to emit event %d: %s\n", event.type, emitter.problem);
     yaml_event_delete(&event);
     yaml_emitter_delete(&emitter);

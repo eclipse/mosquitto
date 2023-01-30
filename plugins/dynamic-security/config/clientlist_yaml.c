@@ -70,32 +70,25 @@ int dynsec_clientlist__all_to_yaml(struct dynsec__clientlist *clientlist, yaml_e
 int dynsec_clientlist__load_from_yaml(yaml_parser_t *parser, yaml_event_t *event, struct dynsec__data *data, struct dynsec__clientlist **clientlist)
 {
     YAML_PARSER_SEQUENCE_FOR_ALL(parser, event, { goto error; }, {
-            printf("%s:%d\n", __FILE__, __LINE__);
             char* username = NULL;
             long int priority = -1;
 
-            printf("%s:%d\n", __FILE__, __LINE__);
 
             if (event->type == YAML_SCALAR_EVENT) {
                 YAML_EVENT_INTO_SCALAR_STRING(event, &username, { goto error; });
             } else {
                 YAML_PARSER_MAPPING_FOR_ALL(parser, event, key, { goto error; }, {
-                        printf("%s:%d\n", __FILE__, __LINE__);
-                        if (strcmp(key, "username") == 0) {
-                            printf("%s:%d\n", __FILE__, __LINE__);
+                        if (strcasecmp(key, "username") == 0) {
                             YAML_EVENT_INTO_SCALAR_STRING(event, &username, { goto error; });
-                        } else if (strcmp(key, "priority") == 0) {
-                            printf("%s:%d\n", __FILE__, __LINE__);
+                        } else if (strcasecmp(key, "priority") == 0) {
                             YAML_EVENT_INTO_SCALAR_LONG_INT(event, &priority, { goto error; });
                         } else {
-                            printf("%s:%d\n", __FILE__, __LINE__);
                             mosquitto_log_printf(MOSQ_LOG_ERR, "Unexpected key for role config %s \n", key);
                             yaml_dump_block(parser, event);
                         }
                 });
             }
 
-            printf("%s:%d\n", __FILE__, __LINE__);
 
             if (username) {
                 printf("un = %s\n", username);
@@ -107,7 +100,6 @@ int dynsec_clientlist__load_from_yaml(yaml_parser_t *parser, yaml_event_t *event
                 }
 
                 if (client) {
-                    printf("%s:%d\n", __FILE__, __LINE__);
                     dynsec_clientlist__add(clientlist, client, (int)priority);
                 } else {
                     printf("OUT OF MEMORY %s:%d\n", __FILE__, __LINE__);
@@ -116,10 +108,8 @@ int dynsec_clientlist__load_from_yaml(yaml_parser_t *parser, yaml_event_t *event
                 }
             }
 
-            printf("%s:%d\n", __FILE__, __LINE__);
     });
 
-    printf("%s:%d\n", __FILE__, __LINE__);
 
     return 0;
     error:

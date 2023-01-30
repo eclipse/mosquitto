@@ -60,18 +60,16 @@ int dynsec_acllist_load_yaml(yaml_parser_t *parser, yaml_event_t *event, struct 
     bool allow;
 
     YAML_PARSER_SEQUENCE_FOR_ALL(parser, event, { goto error; }, {
-        printf("%s:%d\n", __FILE__, __LINE__);
 
         acllist = NULL;
         topic = NULL;
         priority = 0;
         allow = false;
 
-        printf("%s:%d\n", __FILE__, __LINE__);
 
         YAML_PARSER_MAPPING_FOR_ALL(parser, event, key, { goto error; }, {
                 printf("KEY=%s %s:%d\n", key, __FILE__, __LINE__);
-                if (strcmp(key, "acltype") == 0) {
+                if (strcasecmp(key, "acltype") == 0) {
                     char *acltype;
                     YAML_EVENT_INTO_SCALAR_STRING(event, &acltype, { goto error; });
 
@@ -91,19 +89,15 @@ int dynsec_acllist_load_yaml(yaml_parser_t *parser, yaml_event_t *event, struct 
                     }
 
                     mosquitto_free(acltype);
-                } else if (strcmp(key, "topic") == 0) {
-                    printf("%s:%d\n", __FILE__, __LINE__);
+                } else if (strcasecmp(key, "topic") == 0) {
                     YAML_EVENT_INTO_SCALAR_STRING(event, &topic, { goto error; });
-                } else if (strcmp(key, "priority") == 0) {
-                    printf("%s:%d\n", __FILE__, __LINE__);
+                } else if (strcasecmp(key, "priority") == 0) {
                     YAML_EVENT_INTO_SCALAR_LONG_INT(event, &priority, { goto error; });
-                } else if (strcmp(key, "allow") == 0) {
-                    printf("%s:%d\n", __FILE__, __LINE__);
+                } else if (strcasecmp(key, "allow") == 0) {
                     YAML_EVENT_INTO_SCALAR_BOOL(event, &allow, { goto error; });
                 } else {
                     mosquitto_log_printf(MOSQ_LOG_ERR, "Unexpected key for role config %s \n", key);
                     yaml_dump_block(parser, event);
-                    printf("%s:%d\n", __FILE__, __LINE__);
                 }
         });
 
@@ -122,11 +116,9 @@ int dynsec_acllist_load_yaml(yaml_parser_t *parser, yaml_event_t *event, struct 
             mosquitto_free(topic);
         }
 
-        printf("%s:%d\n", __FILE__, __LINE__);
 
     });
 
-    printf("%s:%d\n", __FILE__, __LINE__);
 
     return 1;
     error:

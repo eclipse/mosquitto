@@ -43,9 +43,9 @@ int dynsec_rolelist__load_from_yaml(yaml_parser_t *parser, yaml_event_t *event, 
                 YAML_EVENT_INTO_SCALAR_STRING(event, &rolename, { ret = MOSQ_ERR_INVAL; goto error; });
             } else {
                 YAML_PARSER_MAPPING_FOR_ALL(parser, event, key, { ret = MOSQ_ERR_INVAL; goto error; }, {
-                        if (strcmp(key, "rolename") == 0) {
+                        if (strcasecmp(key, "rolename") == 0) {
                             YAML_EVENT_INTO_SCALAR_STRING(event, &rolename, { ret = MOSQ_ERR_INVAL; goto error; });
-                        } else if (strcmp(key, "priority") == 0) {
+                        } else if (strcasecmp(key, "priority") == 0) {
                             YAML_EVENT_INTO_SCALAR_LONG_INT(event, &priority, { ret = MOSQ_ERR_INVAL; goto error; });
                         } else {
                             mosquitto_log_printf(MOSQ_LOG_ERR, "Unexpected key for role config %s \n", key);

@@ -81,6 +81,8 @@ int dynsec_groups__config_load_json(struct dynsec__data *data, cJSON *tree)
                 }
             }
 
+            dynsec_groups__insert(data, group);
+
             /* Roles */
             j_roles = cJSON_GetObjectItem(j_group, "roles");
             if(j_roles && cJSON_IsArray(j_roles)){
@@ -109,8 +111,6 @@ int dynsec_groups__config_load_json(struct dynsec__data *data, cJSON *tree)
                     }
                 }
             }
-
-            dynsec_groups__insert(data, group);
         }
     }
 

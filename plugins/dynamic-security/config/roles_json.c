@@ -96,6 +96,14 @@ int dynsec_roles__config_load_json(struct dynsec__data *data, cJSON *tree)
                 }
             }
 
+            /* Allow wildcard subs */
+            jtmp = cJSON_GetObjectItem(j_role, "allowwildcardsubs");
+            if(jtmp != NULL && cJSON_IsBool(jtmp)){
+                role->allow_wildcard_subs = cJSON_IsTrue(jtmp);
+            }else{
+                role->allow_wildcard_subs = true;
+            }
+
             /* ACLs */
             j_acls = cJSON_GetObjectItem(j_role, "acls");
             if(j_acls && cJSON_IsArray(j_acls)){
