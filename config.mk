@@ -136,7 +136,7 @@ WITH_OLD_KEEPALIVE=no
 WITH_SQLITE=yes
 
 # Build with yaml support - this enables the dynamic security plugin to read/write yaml configuration files
-WITH_YAML=yes
+WITH_YAML=no
 
 # =============================================================================
 # End of user configuration
