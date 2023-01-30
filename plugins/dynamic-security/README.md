@@ -3,6 +3,18 @@
 This document describes a topic based mechanism for controlling security in
 Mosquitto. JSON commands are published to topics like `$CONTROL/<feature>/v1`
 
+
+## config.mk build options affecting this plugin:
+  
+  - `WITH_YAML`: build with yaml support, requires installed libyaml.
+
+## Plugin options:
+  - `plugin_opt_password_init_file` - path where the auto-generated passwords are saved in clear text
+  - `plugin_opt_config_file` - sets the config file location where the ACLs are saved
+  - `plugin_opt_config_format` - valid options are `auto`, `json`, `yaml`. Default is `auto`.  
+    - If auto, the format is guessed based on file extension.
+    - If it cannot be guessed, `json` is assumed.
+
 ## Clients
 
 When a client connects to Mosquitto, it can optionally provide a username. The
