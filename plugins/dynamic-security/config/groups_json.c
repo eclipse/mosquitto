@@ -56,7 +56,7 @@ int dynsec_groups__config_load_json(struct dynsec__data *data, cJSON *tree)
                 continue;
             }
 
-            group = dynsec_groups__find(data, str);
+            group = dynsec_groups__create(str);
 
             /* Text name */
             if(json_get_string(j_group, "textname", &str, false) == MOSQ_ERR_SUCCESS){
@@ -109,6 +109,8 @@ int dynsec_groups__config_load_json(struct dynsec__data *data, cJSON *tree)
                     }
                 }
             }
+
+            dynsec_groups__insert(data, group);
         }
     }
 
