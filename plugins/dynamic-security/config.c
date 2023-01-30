@@ -46,16 +46,6 @@ void dynsec__config_batch_save(struct dynsec__data *data)
 	data->need_save = true;
 }
 
-#ifdef WITH_YAML
-static int str_ends_with(const char *str, const char *suffix) {
-    size_t str_len = strlen(str);
-    size_t suffix_len = strlen(suffix);
-
-    return (str_len >= suffix_len) &&
-           (!memcmp(str + str_len - suffix_len, suffix, suffix_len));
-}
-#endif
-
 int dynsec__config_load(struct dynsec__data *data)
 {
     FILE *fptr;
@@ -80,9 +70,7 @@ int dynsec__config_load(struct dynsec__data *data)
     int (*load_config)(struct dynsec__data*, FILE*) = dynsec__config_load_json;
 
 #ifdef WITH_YAML
-    if (str_ends_with(data->config_file, ".yaml") || str_ends_with(data->config_file, ".yml")) {
-        load_config = &dynsec__config_load_yaml;
-    }
+    if (data->config_format == CONFIG_FORMAT_YAML) load_config = &dynsec__config_load_yaml;
 #endif
 
     rc = load_config(data, fptr);
@@ -99,9 +87,7 @@ void dynsec__config_save(struct dynsec__data *data)
     int (*write_config)(FILE*, void*) = &dynsec__write_json_config;
 
 #ifdef WITH_YAML
-    if (str_ends_with(data->config_file, ".yaml") || str_ends_with(data->config_file, ".yml")) {
-        write_config = &dynsec__write_yaml_config;
-    }
+    if (data->config_format == CONFIG_FORMAT_YAML) write_config = &dynsec__write_yaml_config;
 #endif
 
     mosquitto_write_file(data->config_file, true, write_config, data, &dynsec__log_write_error);

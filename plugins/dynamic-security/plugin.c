@@ -41,6 +41,28 @@ MOSQUITTO_PLUGIN_DECLARE_VERSION(5);
 static struct dynsec__data dynsec_data;
 static mosquitto_plugin_id_t *plg_id = NULL;
 
+#ifdef WITH_YAML
+static int str_ends_with(const char *str, const char *suffix) {
+    size_t str_len = strlen(str);
+    size_t suffix_len = strlen(suffix);
+
+    return (str_len >= suffix_len) &&
+           (!memcmp(str + str_len - suffix_len, suffix, suffix_len));
+}
+#endif
+
+static int auto_detect_config_file_format(char* filename) {
+    if (str_ends_with(filename, ".json")) return CONFIG_FORMAT_JSON;
+
+#ifdef WITH_YAML
+    if (str_ends_with(filename, ".yaml")) return CONFIG_FORMAT_YAML;
+    if (str_ends_with(filename, ".yml")) return CONFIG_FORMAT_YAML;
+#endif
+
+    mosquitto_log_printf(MOSQ_LOG_WARNING, "Warning: Cannot guess dynamic security plugin config file format based on extension of %s. Assuming 'json'", filename);
+    return CONFIG_FORMAT_JSON;
+}
+
 int mosquitto_plugin_init(mosquitto_plugin_id_t *identifier, void **user_data, struct mosquitto_opt *options, int option_count)
 {
 	int i;
@@ -49,24 +71,35 @@ int mosquitto_plugin_init(mosquitto_plugin_id_t *identifier, void **user_data, s
 	UNUSED(user_data);
 
 	memset(&dynsec_data, 0, sizeof(struct dynsec__data));
+    dynsec_data.config_format = CONFIG_FORMAT_AUTO;
 
 	for(i=0; i<option_count; i++){
-		if(!strcasecmp(options[i].key, "config_file")){
+		if (!strcasecmp(options[i].key, "config_file")){
 			dynsec_data.config_file = mosquitto_strdup(options[i].value);
-			if(dynsec_data.config_file == NULL){
+			if (dynsec_data.config_file == NULL){
 				return MOSQ_ERR_NOMEM;
 			}
-		}else if(!strcasecmp(options[i].key, "password_init_file")){
+		} else if (!strcasecmp(options[i].key, "password_init_file")){
 			dynsec_data.password_init_file = mosquitto_strdup(options[i].value);
-			if(dynsec_data.password_init_file == NULL){
+			if (dynsec_data.password_init_file == NULL){
 				return MOSQ_ERR_NOMEM;
 			}
-		}
+		} else if (!strcasecmp(options[i].key, "config_format")) {
+            if (!strcasecmp(options[i].value, "auto")) dynsec_data.config_format = CONFIG_FORMAT_AUTO;
+            else if (!strcasecmp(options[i].value, "json")) dynsec_data.config_format = CONFIG_FORMAT_JSON;
+            else if (!strcasecmp(options[i].value, "yaml")) dynsec_data.config_format = CONFIG_FORMAT_YAML;
+            else {
+                mosquitto_log_printf(MOSQ_LOG_WARNING, "Warning: Dynamic security plugin has an invalid value for plugin_opt_config_format '%s'. Assuming 'auto'", options[i].value);
+                dynsec_data.config_format = CONFIG_FORMAT_AUTO;
+            }
+        }
 	}
 	if(dynsec_data.config_file == NULL){
 		mosquitto_log_printf(MOSQ_LOG_WARNING, "Warning: Dynamic security plugin has no plugin_opt_config_file defined. The plugin will not be activated.");
 		return MOSQ_ERR_SUCCESS;
 	}
+
+    if (dynsec_data.config_format == CONFIG_FORMAT_AUTO) dynsec_data.config_format = auto_detect_config_file_format(dynsec_data.config_file);
 
 	plg_id = identifier;
 	mosquitto_plugin_set_info(identifier, "dynamic-security", NULL);

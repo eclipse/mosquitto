@@ -143,8 +143,17 @@ enum dynsec_pw_init_mode{
 	dpwim_random = 3,
 };
 
+enum plugin_config_format{
+    CONFIG_FORMAT_AUTO = 0,
+    CONFIG_FORMAT_JSON = 1,
+#ifdef WITH_YAML
+    CONFIG_FORMAT_YAML = 2,
+#endif
+};
+
 struct dynsec__data{
 	char *config_file;
+    int config_format;
 	char *password_init_file;
 	struct dynsec__client *clients;
 	struct dynsec__group *groups;
