@@ -46,6 +46,7 @@ void dynsec__config_batch_save(struct dynsec__data *data)
 	data->need_save = true;
 }
 
+#ifdef WITH_YAML
 static int str_ends_with(const char *str, const char *suffix) {
     size_t str_len = strlen(str);
     size_t suffix_len = strlen(suffix);
@@ -53,8 +54,8 @@ static int str_ends_with(const char *str, const char *suffix) {
     return (str_len >= suffix_len) &&
            (!memcmp(str + str_len - suffix_len, suffix, suffix_len));
 }
+#endif
 
-//TODO Conditional compilation of yaml format.
 int dynsec__config_load(struct dynsec__data *data)
 {
     FILE *fptr;
@@ -76,25 +77,32 @@ int dynsec__config_load(struct dynsec__data *data)
         }
     }
 
+    int (*load_config)(struct dynsec__data*, FILE*) = dynsec__config_load_json;
+
+#ifdef WITH_YAML
     if (str_ends_with(data->config_file, ".yaml") || str_ends_with(data->config_file, ".yml")) {
-        rc = dynsec__config_load_yaml(data, fptr);
-    } else {
-        rc = dynsec__config_load_json(data, fptr);
+        load_config = &dynsec__config_load_yaml;
     }
+#endif
+
+    rc = load_config(data, fptr);
 
     fclose(fptr);
 
     return rc;
 }
 
-//TODO Conditional compilation of yaml format.
 void dynsec__config_save(struct dynsec__data *data)
 {
 	data->need_save = false;
 
+    int (*write_config)(FILE*, void*) = &dynsec__write_json_config;
+
+#ifdef WITH_YAML
     if (str_ends_with(data->config_file, ".yaml") || str_ends_with(data->config_file, ".yml")) {
-        mosquitto_write_file(data->config_file, true, &dynsec__write_yaml_config, data, &dynsec__log_write_error);
-    } else {
-        mosquitto_write_file(data->config_file, true, &dynsec__write_json_config, data, &dynsec__log_write_error);
+        write_config = &dynsec__write_yaml_config;
     }
+#endif
+
+    mosquitto_write_file(data->config_file, true, write_config, data, &dynsec__log_write_error);
 }
