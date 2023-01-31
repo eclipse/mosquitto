@@ -41,7 +41,6 @@ MOSQUITTO_PLUGIN_DECLARE_VERSION(5);
 static struct dynsec__data dynsec_data;
 static mosquitto_plugin_id_t *plg_id = NULL;
 
-#ifdef WITH_YAML
 static int str_ends_with(const char *str, const char *suffix) {
     size_t str_len = strlen(str);
     size_t suffix_len = strlen(suffix);
@@ -49,7 +48,6 @@ static int str_ends_with(const char *str, const char *suffix) {
     return (str_len >= suffix_len) &&
            (!memcmp(str + str_len - suffix_len, suffix, suffix_len));
 }
-#endif
 
 static int auto_detect_config_file_format(char* filename) {
     if (str_ends_with(filename, ".json")) return CONFIG_FORMAT_JSON;
@@ -87,7 +85,9 @@ int mosquitto_plugin_init(mosquitto_plugin_id_t *identifier, void **user_data, s
 		} else if (!strcasecmp(options[i].key, "config_format")) {
             if (!strcasecmp(options[i].value, "auto")) dynsec_data.config_format = CONFIG_FORMAT_AUTO;
             else if (!strcasecmp(options[i].value, "json")) dynsec_data.config_format = CONFIG_FORMAT_JSON;
+#ifdef WITH_YAML
             else if (!strcasecmp(options[i].value, "yaml")) dynsec_data.config_format = CONFIG_FORMAT_YAML;
+#endif
             else {
                 mosquitto_log_printf(MOSQ_LOG_WARNING, "Warning: Dynamic security plugin has an invalid value for plugin_opt_config_format '%s'. Assuming 'auto'", options[i].value);
                 dynsec_data.config_format = CONFIG_FORMAT_AUTO;
