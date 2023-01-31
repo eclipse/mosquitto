@@ -1,8 +1,14 @@
-include ../../config.mk
+R=../..
+include ${R}/config.mk
 
 .PHONY : all binary check clean reallyclean test install uninstall
 
 PLUGIN_NAME=mosquitto_auth_by_hmac
+PLUGIN_CFLAGS=-I${R}/lib/ -I${R}/src/ -I${R}/plugins/common -I$(CURDIR)
+ifeq ($(WITH_BUNDLED_DEPS),yes)
+	LOCAL_CPPFLAGS:=$(LOCAL_CPPFLAGS) -I${R}/deps
+endif
+
 
 all : binary
 
