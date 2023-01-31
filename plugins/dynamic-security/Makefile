@@ -24,7 +24,6 @@ OBJS=	\
 		groups.o \
 		grouplist.o \
 		hash.o \
-		json_help.o \
 		kicklist.o \
 		misc_mosq.o \
 		password_mosq.o \
@@ -35,7 +34,7 @@ OBJS=	\
 
 ifeq ($(WITH_CJSON),yes)
 PLUGIN_LIBS += -lcjson
-OBJS += config/clients_json.o config/clientlist_json.o config/groups_json.o config/roles_json.o config/rolelist_json.o config/acllist_json.o config/acls_json.o config/config_json.o
+OBJS += config/clients_json.o config/clientlist_json.o config/groups_json.o config/roles_json.o config/rolelist_json.o config/acllist_json.o config/acls_json.o config/config_json.o config/json_help.o
 LOCAL_CPPFLAGS += -DWITH_CJSON
 ifeq ($(WITH_TLS),yes)
 LOCAL_CPPFLAGS += -DWITH_TLS
@@ -107,7 +106,7 @@ grouplist.o : grouplist.c dynamic_security.h
 hash.o : hash.c dynamic_security.h
 	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) -c $< -o $@
 
-json_help.o : ${R}/common/json_help.c ${R}/common/json_help.h
+config/json_help.o : ${R}/common/json_help.c ${R}/common/json_help.h
 	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) -c $< -o $@
 
 kicklist.o : kicklist.c dynamic_security.h
@@ -134,13 +133,9 @@ rolelist.o : rolelist.c dynamic_security.h
 tick.o : tick.c dynamic_security.h
 	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) -c $< -o $@
 
-yaml_help.o : yaml_help.c dynamic_security.h
-	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) -c $< -o $@
-
-
 reallyclean : clean
 clean:
-	-rm -f *.o ${PLUGIN_NAME}.so *.gcda *.gcno
+	-rm -f *.o ${PLUGIN_NAME}.so *.gcda *.gcno config/*.o
 
 test-compile:
 
