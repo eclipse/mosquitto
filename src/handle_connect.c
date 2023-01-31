@@ -811,19 +811,6 @@ int handle__connect(struct mosquitto *context)
 		}
 	}
 
-	/* clientid_prefixes check */
-	if(db.config->clientid_prefixes){
-		if(strncmp(db.config->clientid_prefixes, clientid, strlen(db.config->clientid_prefixes))){
-			if(context->protocol == mosq_p_mqtt5){
-				send__connack(context, 0, MQTT_RC_NOT_AUTHORIZED, NULL);
-			}else{
-				send__connack(context, 0, CONNACK_REFUSED_NOT_AUTHORIZED, NULL);
-			}
-			rc = MOSQ_ERR_AUTH;
-			goto handle_connect_error;
-		}
-	}
-
 	/* Check for an existing delayed auth check, reject if present */
 	HASH_FIND(hh_id, db.contexts_by_id_delayed_auth, clientid, strlen(clientid), found_context);
 	if(found_context){
@@ -888,6 +875,44 @@ int handle__connect(struct mosquitto *context)
 				rc = MOSQ_ERR_PROTOCOL;
 				goto handle_connect_error;
 			}
+		}
+	}
+
+	/* clientid_prefixes check */
+	if(db.config->clientid_prefixes){
+		char* clientid_prefix_iter = db.config->clientid_prefixes;
+		char* clientid_iter = clientid;
+
+		while(1) {
+			char* subs = strstr(clientid_prefix_iter, "%u");
+			if (subs == NULL) break;
+
+			//Found a %u, compare the part before, and check that it is followed by the username.
+			size_t len = strlen(clientid_prefix_iter) - strlen(subs);
+
+			if ((strncmp(clientid_prefix_iter, clientid_iter, len) != 0) || (strncmp(clientid_iter + len, username, strlen(username)) != 0)) {
+				if(context->protocol == mosq_p_mqtt5){
+					send__connack(context, 0, MQTT_RC_NOT_AUTHORIZED, NULL);
+				}else{
+					send__connack(context, 0, CONNACK_REFUSED_NOT_AUTHORIZED, NULL);
+				}
+				rc = MOSQ_ERR_AUTH;
+				goto handle_connect_error;
+			}
+
+			clientid_prefix_iter = subs + strlen("%u");
+			clientid_iter = clientid_iter + len + strlen(username);
+		}
+
+		//The remaining part does not contain a %u anymore.
+		if(strncmp(clientid_prefix_iter, clientid_iter, strlen(clientid_prefix_iter)) != 0){
+			if(context->protocol == mosq_p_mqtt5){
+				send__connack(context, 0, MQTT_RC_NOT_AUTHORIZED, NULL);
+			}else{
+				send__connack(context, 0, CONNACK_REFUSED_NOT_AUTHORIZED, NULL);
+			}
+			rc = MOSQ_ERR_AUTH;
+			goto handle_connect_error;
 		}
 	}
 
