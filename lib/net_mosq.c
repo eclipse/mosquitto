@@ -689,13 +689,18 @@ static int net__init_ssl_ctx(struct mosquitto *mosq)
 		}else if(!strcmp(mosq->tls_version, "tlsv1.3")){
 			SSL_CTX_set_options(mosq->ssl_ctx, SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1 | SSL_OP_NO_TLSv1_2);
 #endif
-		}else if(!strcmp(mosq->tls_version, "tlsv1.2")){
-			SSL_CTX_set_options(mosq->ssl_ctx, SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1);
-		}else if(!strcmp(mosq->tls_version, "tlsv1.1")){
-			SSL_CTX_set_options(mosq->ssl_ctx, SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1);
 		}else{
-			log__printf(mosq, MOSQ_LOG_ERR, "Error: Protocol %s not supported.", mosq->tls_version);
-			return MOSQ_ERR_INVAL;
+#ifdef SSL_OP_NO_TLSv1_3
+			SSL_CTX_set_options(mosq->ssl_ctx, SSL_OP_NO_TLSv1_3);
+#endif
+			if(!strcmp(mosq->tls_version, "tlsv1.2")){
+				SSL_CTX_set_options(mosq->ssl_ctx, SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1);
+			}else if(!strcmp(mosq->tls_version, "tlsv1.1")){
+				SSL_CTX_set_options(mosq->ssl_ctx, SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_2);
+			}else{
+				log__printf(mosq, MOSQ_LOG_ERR, "Error: Protocol %s not supported.", mosq->tls_version);
+				return MOSQ_ERR_INVAL;
+			}
 		}
 
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
