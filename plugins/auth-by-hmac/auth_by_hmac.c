@@ -72,6 +72,8 @@ Contributors:
 #include <openssl/bio.h>
 #include <openssl/evp.h>
 #include <openssl/buffer.h>
+#include "base64_mosq.h"
+
 
 struct keyval {
 	char *key;
@@ -82,8 +84,7 @@ struct plugin_config {
 	//A hash would probably be a good choice as well,
 	//but it is not expected to have more than a few items in this list,
 	//so it would be more of an overhead than a benefit.
-	struct keyval* prefixes;
-	char* noprefix;
+	struct keyval* users;
 };
 
 static void free_plugin_cfg(struct plugin_config* cfg) {
@@ -93,44 +94,17 @@ static void free_plugin_cfg(struct plugin_config* cfg) {
 
 	int i = 0;
 
-	while(cfg->prefixes && cfg->prefixes[i].key && cfg->prefixes[i].value) {
-		mosquitto_free(cfg->prefixes[i].key);
-		mosquitto_free(cfg->prefixes[i].value);
+	while(cfg->users && cfg->users[i].key && cfg->users[i].value) {
+		mosquitto_free(cfg->users[i].key);
+		mosquitto_free(cfg->users[i].value);
 		i++;
 	}
 
-	mosquitto_free(cfg->prefixes);
-	mosquitto_free(cfg->noprefix);
+	mosquitto_free(cfg->users);
 	mosquitto_free(cfg);
 }
 
-
 static mosquitto_plugin_id_t *mosq_pid = NULL;
-
-char* base64_encode(const unsigned char* buffer, int length) { //Encodes a binary safe base 64 string
-	BIO *bio, *b64;
-	BUF_MEM *bufferPtr;
-
-	char* b64text;
-
-	b64 = BIO_new(BIO_f_base64());
-	bio = BIO_new(BIO_s_mem());
-	bio = BIO_push(b64, bio);
-
-	BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL); //Ignore newlines - write everything in one line
-	BIO_write(bio, buffer, length);
-	BIO_flush(bio);
-	BIO_get_mem_ptr(bio, &bufferPtr);
-	BIO_set_close(bio, BIO_NOCLOSE);
-
-	b64text = (char*) mosquitto_malloc((bufferPtr->length + 1) * sizeof(char));
-	memcpy(b64text, bufferPtr->data, bufferPtr->length);
-	b64text[bufferPtr->length] = '\0';
-
-	BIO_free_all(bio);
-
-	return b64text;
-}
 
 static int basic_auth_callback(int event, void *event_data, void *userdata)
 {
@@ -139,21 +113,26 @@ static int basic_auth_callback(int event, void *event_data, void *userdata)
 	struct mosquitto_evt_basic_auth *ed = event_data;
 	struct plugin_config *cfg = userdata;
 
-	mosquitto_log_printf(MOSQ_LOG_WARNING, "basic_auth_callback %p %p", cfg->prefixes, cfg->noprefix);
+	char* client_id = mosquitto_client_id(ed->client);
 
 	if (ed->password == NULL) {
 		mosquitto_log_printf(MOSQ_LOG_DEBUG, "auth_by_hmac: no password received, deferring authentication");
 		return MOSQ_ERR_PLUGIN_DEFER;
 	}
 
+	//If ClientID does not start with the username
+	if (strstr(client_id, ed->username) != client_id) {
+		mosquitto_log_printf(MOSQ_LOG_DEBUG, "auth_by_hmac: clientId does not start with the username, deferring authentication");
+		return MOSQ_ERR_PLUGIN_DEFER;
+	}
 
 	unsigned int hmaclen = 32;
 	unsigned char* hmac = mosquitto_calloc(sizeof(unsigned char), hmaclen);
 
 	int i = 0;
 
-	while(cfg->prefixes && cfg->prefixes[i].key && cfg->prefixes[i].value) {
-		if (strstr(ed->username, cfg->prefixes[i].key) && ed->username[strlen(cfg->prefixes[i].key)] == '-') {
+	while(cfg->users && cfg->users[i].key && cfg->users[i].value) {
+		if (strstr(ed->username, cfg->users[i].key) == ed->username) {
 			break;
 		}
 
@@ -162,23 +141,24 @@ static int basic_auth_callback(int event, void *event_data, void *userdata)
 
 	char* supersecret = NULL;
 
-	if (cfg->prefixes && cfg->prefixes[i].value) {
-		 supersecret = cfg->prefixes[i].value;
-   } else {
-		 supersecret = cfg->noprefix;
+	if (cfg->users && cfg->users[i].value) {
+		 supersecret = cfg->users[i].value;
    }
 
    if (supersecret == NULL) {
-		mosquitto_log_printf(MOSQ_LOG_DEBUG, "auth_by_hmac: no supersecret found, deferring authentication");
-		return MOSQ_ERR_PLUGIN_DEFER;
+	    mosquitto_log_printf(MOSQ_LOG_DEBUG, "auth_by_hmac: no supersecret set up for this username, deferring authentication");
+	    return MOSQ_ERR_PLUGIN_DEFER;
    }
 
-	HMAC(EVP_sha256(), supersecret, (int)strlen(supersecret), (const unsigned char*)ed->username, strlen(ed->username), hmac, &hmaclen);
-	char* hmac_b64 = base64_encode(hmac, (int)hmaclen);
+	HMAC(EVP_sha256(), supersecret, (int)strlen(supersecret), mosquitto_client_id(ed->client), strlen(mosquitto_client_id(ed->client)), hmac, &hmaclen);
 
-	// mosquitto_log_printf(MOSQ_LOG_DEBUG, "Supersecret is %s, expected %s, Got %s", supersecret, hmac_b64, ed->password);
+    char* hmac_b64;
 
-	int ret = strcmp(hmac_b64, ed->password) == 0 ? MOSQ_ERR_SUCCESS : MOSQ_ERR_PLUGIN_DEFER;
+	base64__encode(hmac, hmaclen, &hmac_b64);
+
+    mosquitto_log_printf(MOSQ_LOG_DEBUG, "Supersecret is %s, expected %s, Got %s\n", supersecret, hmac_b64, ed->password);
+
+	int ret = (hmac_b64 != NULL && (strcmp(hmac_b64, ed->password) == 0)) ? MOSQ_ERR_SUCCESS : MOSQ_ERR_PLUGIN_DEFER;
 
 	mosquitto_free(hmac_b64);
 
@@ -198,7 +178,7 @@ int mosquitto_plugin_version(int supported_version_count, const int *supported_v
 }
 
 int mosquitto_plugin_init(mosquitto_plugin_id_t *identifier, void **user_data, struct mosquitto_opt *opts, int opt_count)
-{
+{;
 	UNUSED(user_data);
 
 	struct plugin_config* cfg = mosquitto_calloc(sizeof(struct plugin_config), 1);
@@ -220,20 +200,11 @@ int mosquitto_plugin_init(mosquitto_plugin_id_t *identifier, void **user_data, s
 	}
 
 	if (prefix_count > 0) {
-		cfg->prefixes = mosquitto_calloc(sizeof(struct keyval), prefix_count + 1);
+		cfg->users = mosquitto_calloc(sizeof(struct keyval), prefix_count + 1);
 	}
 
 	for(int i=0; i<opt_count; i++){
-		if(strcmp(opts[i].key, "hmac_secret") == 0) {
-			cfg->noprefix = mosquitto_strdup(opts[i].value);
-
-			if(cfg->noprefix == NULL){
-				free_plugin_cfg(cfg);
-				return MOSQ_ERR_NOMEM;
-			}
-
-			mosquitto_log_printf(MOSQ_LOG_DEBUG, "auth_by_hmac: registering global hmac_secret");
-		} else if (strstr(opts[i].key, "hmac_secret_")) {
+		if (strstr(opts[i].key, "hmac_secret_") == opts[i].key) {
 
 			// Disallow the '-' character in the prefixes to prevent a bunch of problems with ordering and precedence.
 			if (strstr(opts[i].key, "-")) { continue; }
@@ -242,25 +213,25 @@ int mosquitto_plugin_init(mosquitto_plugin_id_t *identifier, void **user_data, s
 			// as they are mutually exclusive, because it is not allowed to have a '-' character in the prefix.
 
 			prefix_count--;
-			cfg->prefixes[prefix_count].key = mosquitto_strdup(opts[i].key + strlen("hmac_secret_"));
+			cfg->users[prefix_count].key = mosquitto_strdup(opts[i].key + strlen("hmac_secret_"));
 
-			if (cfg->prefixes[prefix_count].key == NULL) {
+			if (cfg->users[prefix_count].key == NULL) {
 				free_plugin_cfg(cfg);
 				return MOSQ_ERR_NOMEM;
 			}
 
-			cfg->prefixes[prefix_count].value = mosquitto_strdup(opts[i].value);
+			cfg->users[prefix_count].value = mosquitto_strdup(opts[i].value);
 
-			if (cfg->prefixes[prefix_count].value == NULL) {
+			if (cfg->users[prefix_count].value == NULL) {
 				free_plugin_cfg(cfg);
 				return MOSQ_ERR_NOMEM;
 			}
 
-			mosquitto_log_printf(MOSQ_LOG_DEBUG, "auth_by_hmac: registering hmac_secret for prefix %s", cfg->prefixes[prefix_count].key);
+			mosquitto_log_printf(MOSQ_LOG_DEBUG, "auth_by_hmac: registering hmac_secret for prefix %s", cfg->users[prefix_count].key);
 		}
 	}
 
-	if(cfg->prefixes == NULL && cfg->noprefix == NULL){
+	if(cfg->users == NULL){
 		mosquitto_log_printf(MOSQ_LOG_WARNING, "WARNING: Auth by HMAC has no global or prefixed hmac secrets defined. The plugin will not be activated.");
 		free_plugin_cfg(cfg);
 		return MOSQ_ERR_SUCCESS;
