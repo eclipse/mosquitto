@@ -39,7 +39,7 @@ static int add_role_to_yaml(yaml_emitter_t *emitter, yaml_event_t *event, struct
     if (!yaml_emit_string_field(emitter, event, "rolename", role->rolename)) return MOSQ_ERR_UNKNOWN;
     if (role->text_name && !yaml_emit_string_field(emitter, event, "textname", role->text_name)) return MOSQ_ERR_UNKNOWN;
     if (role->text_description && !yaml_emit_string_field(emitter, event, "textdescription", role->text_description)) return MOSQ_ERR_UNKNOWN;
-    if (role->allow_wildcard_subs && !yaml_emit_bool_field(emitter, event, "allowwildcardsubs", role->allow_wildcard_subs)) return MOSQ_ERR_UNKNOWN;
+    if (!role->allow_wildcard_subs && !yaml_emit_bool_field(emitter, event, "allowwildcardsubs", role->allow_wildcard_subs)) return MOSQ_ERR_UNKNOWN;
 
     if(dynsec__acls__to_yaml(emitter, event, role)) return MOSQ_ERR_UNKNOWN;
 
