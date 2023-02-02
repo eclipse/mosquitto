@@ -27,35 +27,27 @@ Contributors:
  *
  * This is similar to a certificate, but without having to toss around large blobs of data,
  * which can be problematic in an embedded environment.
-
- * Passwords for usernames are derived by base64(HMAC_SHA256(noprefix_supersecret, username))
- * This can be done in the command line using: `echo -n "username" | openssl dgst -sha256 -hmac "supersecret" -binary | base64`
+ *
+ * (!) ClientIDs MUST be prefixed with the username.
+ * Passwords for clients are derived by base64(HMAC_SHA256(supersecret, cilentid))
+ * This can be done in the command line using: `echo -n "<clientid>" | openssl dgst -sha256 -hmac "<supersecret>" -binary | base64`
  *
  * Configuration:
- *   plugin_opt_hmac_secret - default supersecret for all users (optional)
- *   plugin_opt_hmac_secret_XXX - default supersecret for all usernames prefixed with XXX-
- *   plugin_opt_hmac_secret_YYY - default supersecret for all usernames prefixed with YYY-
+ *   plugin_opt_hmac_secret_XXX - default supersecret for all clients connecting with username XXX, with clientIds starting with XXX
+ *   plugin_opt_hmac_secret_YYY - default supersecret for all clients connecting with username YYY, with clientIds starting with YYY
  *
- *   prefixes MAY NOT contain the '-' to make the prefixes mutually exclusive and
+ *   usernames SHOULD NOT contain the separator character'-' to make them mutually exclusive and
  *   avoid a bunch of issues with ordering and precedence.
  *
  * Caveats:
+ *  - clientids MUST be prefixed by the username and a hyphen.
+ *  - Hyphens SHOULD not be used in username (or take extreme caution to keep them prefix-free)
+ *  - if usernames are not prefix-free, the client given the password for clientid foo-bar-baz-quox-123 can connect as any the user foo, foo-bar, foo-bar-baz or foo-bar-baz-quox if they exist.
  *  - passwords cannot be changed (could add a salt in the password to generate new hashes, but old ones would still be valid)
  *  - once a user/pass is delivered, it cannot be revoked, even if the password is leaked (could implement a blacklist)
  *  - passwords currently never expire (although one could encode expiry it in the username / password as a salt, and check that when connecting)
- *  - probably good for users with very limited/segregated access.
+ *  - probably good only for users with very limited/segregated access.
 
-
- This is an extremely basic type of access control, password based or similar
- * authentication is preferred.
- *
- * Compile with:
- *   gcc -I<path to mosquitto-repo/include> -fPIC -shared mosquitto_auth_by_ip.c -o mosquitto_auth_by_ip.so
- *
- * Use in config with:
- *
- *   plugin /path/to/mosquitto_auth_by_ip.so
- *
  * Note that this only works on Mosquitto 2.0 or later.
  */
 #include "config.h"
@@ -120,14 +112,11 @@ static int basic_auth_callback(int event, void *event_data, void *userdata)
 		return MOSQ_ERR_PLUGIN_DEFER;
 	}
 
-	//If ClientID does not start with the username
-	if (strstr(client_id, ed->username) != client_id) {
-		mosquitto_log_printf(MOSQ_LOG_DEBUG, "auth_by_hmac: clientId does not start with the username, deferring authentication");
+	//If ClientID does not start with the username and a hyphen
+	if ((strlen(client_id) <= strlen(ed->username) + 1) || strstr(client_id, ed->username) != client_id || client_id[strlen(ed->username)] != '-') {
+		mosquitto_log_printf(MOSQ_LOG_DEBUG, "auth_by_hmac: clientId does not start with a known username and hyphen, deferring authentication");
 		return MOSQ_ERR_PLUGIN_DEFER;
 	}
-
-	unsigned int hmaclen = 32;
-	unsigned char* hmac = mosquitto_calloc(sizeof(unsigned char), hmaclen);
 
 	int i = 0;
 
@@ -150,11 +139,16 @@ static int basic_auth_callback(int event, void *event_data, void *userdata)
 	    return MOSQ_ERR_PLUGIN_DEFER;
    }
 
+	unsigned int hmaclen = 32;
+	unsigned char* hmac = mosquitto_calloc(sizeof(unsigned char), hmaclen);
+
 	HMAC(EVP_sha256(), supersecret, (int)strlen(supersecret), mosquitto_client_id(ed->client), strlen(mosquitto_client_id(ed->client)), hmac, &hmaclen);
 
     char* hmac_b64;
 
 	base64__encode(hmac, hmaclen, &hmac_b64);
+
+	mosquitto_free(hmac);
 
     mosquitto_log_printf(MOSQ_LOG_DEBUG, "Supersecret is %s, expected %s, Got %s\n", supersecret, hmac_b64, ed->password);
 
