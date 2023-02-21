@@ -139,6 +139,10 @@ WITH_SQLITE=yes
 # currently only suitable for use with oss-fuzz.
 WITH_FUZZING=no
 
+# To also install example plugins,
+# uncomment the following line and replace XXX with the SCREAMING_SNAKE_CASE of the example plugin.
+# INSTALL_XXX_PLUGIN=yes
+
 # =============================================================================
 # End of user configuration
 # =============================================================================
@@ -443,3 +447,5 @@ endif
 BROKER_LDADD:=${BROKER_LDADD} ${LDADD}
 CLIENT_LDADD:=${CLIENT_LDADD} ${LDADD}
 PASSWD_LDADD:=${PASSWD_LDADD} ${LDADD}
+
+INSTALL_PLUGIN_GUARD = $(subst a,A,$(subst b,B,$(subst c,C,$(subst d,D,$(subst e,E,$(subst f,F,$(subst g,G,$(subst h,H,$(subst i,I,$(subst j,J,$(subst k,K,$(subst l,L,$(subst m,M,$(subst n,N,$(subst o,O,$(subst p,P,$(subst q,Q,$(subst r,R,$(subst s,S,$(subst t,T,$(subst u,U,$(subst v,V,$(subst w,W,$(subst x,X,$(subst y,Y,$(subst z,Z,$(subst -,_,$1)))))))))))))))))))))))))))

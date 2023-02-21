@@ -21,9 +21,11 @@ check: test
 test:
 
 install: ${PLUGIN_NAME}.so
-	# Don't install, these are examples only.
-	#$(INSTALL) -d "${DESTDIR}$(libdir)"
-	#$(INSTALL) ${STRIP_OPTS} ${PLUGIN_NAME}.so "${DESTDIR}${libdir}/${PLUGIN_NAME}.so"
+ifdef INSTALL_$(call INSTALL_PLUGIN_GUARD,$(notdir $(CURDIR)))_PLUGIN
+	# Only install example plugins if explicitly asked for them to be by setting INSTALL_[UPPERCASED_PLUGIN_NAME_WITH_UNDERSCORES]_PLUGIN environment variable when invoking make
+	$(INSTALL) -d "${DESTDIR}$(libdir)"
+	$(INSTALL) ${STRIP_OPTS} ${PLUGIN_NAME}.so "${DESTDIR}${libdir}/${PLUGIN_NAME}.so"
+endif
 
 uninstall :
 	-rm -f "${DESTDIR}${libdir}/${PLUGIN_NAME}.so"
