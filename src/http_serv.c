@@ -223,7 +223,7 @@ int http__read(struct mosquitto *mosq)
 						break;
 					}
 				}
-				if(!have_match){
+				if(!have_match && mosq->listener->ws_origin_count > 0){
 					return MOSQ_ERR_HTTP_BAD_ORIGIN;
 				}
 			}
