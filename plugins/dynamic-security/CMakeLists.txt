@@ -1,40 +1,64 @@
-if (CJSON_FOUND AND WITH_TLS)
-	add_definitions("-DWITH_CJSON")
+if(CJSON_FOUND AND WITH_TLS)
+	set(CLIENT_INC
+		"${CJSON_INCLUDE_DIRS}"
+		"${mosquitto_SOURCE_DIR}"
+		"${mosquitto_SOURCE_DIR}/common"
+		"${mosquitto_SOURCE_DIR}/deps"
+		"${mosquitto_SOURCE_DIR}/include"
+		"${mosquitto_SOURCE_DIR}/lib"
+		"${mosquitto_SOURCE_DIR}/plugins/common"
+		"${mosquitto_SOURCE_DIR}/src"
+	)
 
-	set( CLIENT_INC ${mosquitto_SOURCE_DIR} ${mosquitto_SOURCE_DIR}/include
-		${STDBOOL_H_PATH} ${STDINT_H_PATH} ${PTHREAD_INCLUDE_DIR}
-		${OPENSSL_INCLUDE_DIR} ${mosquitto_SOURCE_DIR}/deps
-		${mosquitto_SOURCE_DIR}/src
-		${CJSON_INCLUDE_DIRS} )
-
-	set( CLIENT_DIR ${mosquitto_BINARY_DIR}/lib ${CJSON_DIR})
-
-	include_directories(${CLIENT_INC})
-	link_directories(${CLIENT_DIR} ${mosquitto_SOURCE_DIR})
+	set(CLIENT_DIR "${mosquitto_BINARY_DIR}/lib" "${CJSON_DIR}")
 
 	add_library(mosquitto_dynamic_security MODULE
 		acl.c
 		auth.c
+		../../common/base64_mosq.c ../../common/base64_mosq.h
 		clients.c
 		clientlist.c
+		config.c
+		config_init.c
+		control.c
+		../../common/control_common.c ../../common/control_common.h
+		default_acl.c
 		dynamic_security.h
 		groups.c
 		grouplist.c
-		json_help.c
-		json_help.h
+		hash.c
+		../../common/json_help.c ../../common/json_help.h
+		kicklist.c
+		../../common/misc_mosq.c ../../common/misc_mosq.h
+		../../common/password_mosq.c ../../common/password_mosq.h
 		plugin.c
 		roles.c
 		rolelist.c
-		sub_matches_sub.c)
+		tick.c
+	)
+
+	target_include_directories(mosquitto_dynamic_security PRIVATE
+		${CLIENT_INC}
+	)
+	if(WITH_BUNDLED_DEPS)
+		target_include_directories(mosquitto_dynamic_security PRIVATE
+			"${mosquitto_SOURCE_DIR}/deps"
+		)
+	endif()
 
 	set_target_properties(mosquitto_dynamic_security PROPERTIES
+		PREFIX ""
 		POSITION_INDEPENDENT_CODE 1
 	)
-	set_target_properties(mosquitto_dynamic_security PROPERTIES PREFIX "")
 
-	target_link_libraries(mosquitto_dynamic_security ${CJSON_LIBRARIES} ${OPENSSL_LIBRARIES})
+	target_link_libraries(mosquitto_dynamic_security
+		PRIVATE
+			common-options
+			cJSON
+			OpenSSL::SSL
+	)
+	target_link_libraries(mosquitto_dynamic_security PRIVATE mosquitto)
 	if(WIN32)
-		target_link_libraries(mosquitto_dynamic_security mosquitto)
 		install(TARGETS mosquitto_dynamic_security
 			DESTINATION "${CMAKE_INSTALL_BINDIR}")
 	else()

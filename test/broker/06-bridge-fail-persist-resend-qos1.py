@@ -6,7 +6,7 @@ from mosq_test_helper import *
 
 def write_config(filename, port1, port2, protocol_version):
     with open(filename, 'w') as f:
-        f.write("port %d\n" % (port2))
+        f.write("listener %d\n" % (port2))
         f.write("\n")
         f.write("connection bridge-u-test\n")
         f.write("remote_clientid bridge-u-test\n")
@@ -18,6 +18,7 @@ def write_config(filename, port1, port2, protocol_version):
         f.write("restart_timeout 5\n")
         f.write("try_private false\n")
         f.write("bridge_protocol_version %s\n" % (protocol_version))
+        f.write("bridge_max_topic_alias 0\n")
 
 
 
@@ -34,8 +35,7 @@ def do_test(proto_ver):
     write_config(conf_file, port1, port2, bridge_protocol)
 
     rc = 1
-    keepalive = 60
-    connect_packet = mosq_test.gen_connect("bridge-u-test", keepalive=keepalive, proto_ver=proto_ver)
+    connect_packet = mosq_test.gen_connect("bridge-u-test", proto_ver=proto_ver)
     connack_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
 
     mid = 180
@@ -89,7 +89,9 @@ def do_test(proto_ver):
     finally:
         os.remove(conf_file)
         broker.terminate()
-        broker.wait()
+        if mosq_test.wait_for_subprocess(broker):
+            print("broker not terminated")
+            if rc == 0: rc=1
         (stdo, stde) = broker.communicate()
         sock.close()
         if rc:

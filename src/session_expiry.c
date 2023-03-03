@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2019-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -43,6 +43,26 @@ static int session_expiry__cmp(struct session_expiry_list *i1, struct session_ex
 }
 
 
+static void set_session_expiry_time(struct mosquitto *context)
+{
+	context->session_expiry_time = db.now_real_s;
+
+	if(db.config->persistent_client_expiration == 0){
+		/* No global expiry, so use the client expiration interval */
+		context->session_expiry_time += context->session_expiry_interval;
+	}else{
+		/* We have a global expiry interval */
+		if(db.config->persistent_client_expiration < context->session_expiry_interval){
+			/* The client expiry is longer than the global expiry, so use the global */
+			context->session_expiry_time += db.config->persistent_client_expiration;
+		}else{
+			/* The global expiry is longer than the client expiry, so use the client */
+			context->session_expiry_time += context->session_expiry_interval;
+		}
+	}
+}
+
+
 int session_expiry__add(struct mosquitto *context)
 {
 	struct session_expiry_list *item;
@@ -59,24 +79,12 @@ int session_expiry__add(struct mosquitto *context)
 	if(!item) return MOSQ_ERR_NOMEM;
 
 	item->context = context;
-	item->context->session_expiry_time = db.now_real_s;
-
-	if(db.config->persistent_client_expiration == 0){
-		/* No global expiry, so use the client expiration interval */
-		item->context->session_expiry_time += item->context->session_expiry_interval;
-	}else{
-		/* We have a global expiry interval */
-		if(db.config->persistent_client_expiration < item->context->session_expiry_interval){
-			/* The client expiry is longer than the global expiry, so use the global */
-			item->context->session_expiry_time += db.config->persistent_client_expiration;
-		}else{
-			/* The global expiry is longer than the client expiry, so use the client */
-			item->context->session_expiry_time += item->context->session_expiry_interval;
-		}
-	}
+	set_session_expiry_time(item->context);
 	context->expiry_list_item = item;
 
 	DL_INSERT_INORDER(expiry_list, item, session_expiry__cmp);
+
+	plugin_persist__handle_client_update(context);
 
 	return MOSQ_ERR_SUCCESS;
 }
@@ -98,7 +106,12 @@ int session_expiry__add_from_persistence(struct mosquitto *context, time_t expir
 	if(!item) return MOSQ_ERR_NOMEM;
 
 	item->context = context;
-	item->context->session_expiry_time = expiry_time;
+	if(expiry_time){
+		item->context->session_expiry_time = expiry_time;
+	}else{
+		set_session_expiry_time(item->context);
+
+	}
 	context->expiry_list_item = item;
 
 	DL_INSERT_INORDER(expiry_list, item, session_expiry__cmp);
@@ -111,8 +124,7 @@ void session_expiry__remove(struct mosquitto *context)
 {
 	if(context->expiry_list_item){
 		DL_DELETE(expiry_list, context->expiry_list_item);
-		mosquitto__free(context->expiry_list_item);
-		context->expiry_list_item = NULL;
+		mosquitto__FREE(context->expiry_list_item);
 	}
 }
 
@@ -137,8 +149,20 @@ void session_expiry__check(void)
 {
 	struct session_expiry_list *item, *tmp;
 	struct mosquitto *context;
+	time_t timeout;
 
-	if(db.now_real_s <= last_check) return;
+	if(db.now_real_s <= last_check){
+		if(expiry_list){
+			/* Next event is the first item of the list, we must set the timeout even if we aren't 
+			 * checking the full list */
+			timeout = (expiry_list->context->session_expiry_time - db.now_real_s) * 1000;
+			if(timeout <= 0){
+				timeout = 100;
+			}
+			loop__update_next_event(timeout);
+		}
+		return;
+	}
 
 	last_check = db.now_real_s;
 
@@ -159,10 +183,15 @@ void session_expiry__check(void)
 			context->will_delay_interval = 0;
 			will_delay__remove(context);
 			context__send_will(context);
+			plugin_persist__handle_client_delete(context);
 			context__add_to_disused(context);
 		}else{
+			timeout = (item->context->session_expiry_time - db.now_real_s + 1) * 1000;
+			if(timeout <= 0){
+				timeout = 100;
+			}
+			loop__update_next_event(timeout);
 			return;
 		}
 	}
 }
-

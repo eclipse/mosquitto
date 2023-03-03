@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2021 Roger Light <roger@atchoo.org>
 Copyright (c) 2017 Bayerische Motoren Werke Aktiengesellschaft (BMW AG), Dr. Lars Voelker <lars.voelker@bmw.de>
 
 All rights reserved. This program and the accompanying materials

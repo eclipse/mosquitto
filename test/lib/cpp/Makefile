@@ -1,93 +1,82 @@
-.PHONY: all test 01 02 03 04 08 09 clean reallyclean
+R=../../..
+include ${R}/config.mk
 
-CFLAGS=-I../../../include -I../../../lib/cpp -DDEBUG
-LIBS=../../../lib/libmosquitto.so.1 ../../../lib/cpp/libmosquittopp.so.1
+.PHONY: all test clean reallyclean
 
-all : 01 02 03 04 08 09
+LOCAL_CXXFLAGS=${CXXFLAGS} -I${R}/include -I${R}/test -I${R}/lib/cpp -DDEBUG -Werror -W
+LIBS=${R}/lib/libmosquitto.so.1 ${R}/lib/cpp/libmosquittopp.so.1
 
-01-con-discon-success.test : 01-con-discon-success.cpp
-	$(CXX) $< -o $@ $(CFLAGS) $(LIBS)
+SRC = \
+	01-con-discon-success.cpp \
+	01-con-discon-success-v5.cpp \
+	01-con-discon-will-clear.cpp \
+	01-con-discon-will-v5.cpp \
+	01-con-discon-will.cpp \
+	01-keepalive-pingreq.cpp \
+	01-no-clean-session.cpp \
+	01-pre-connect-callback.cpp \
+	01-server-keepalive-pingreq.cpp \
+	01-unpwd-set.cpp \
+	01-will-set.cpp \
+	01-will-unpwd-set.cpp \
+	02-subscribe-helper-callback-qos2.cpp \
+	02-subscribe-helper-simple-qos2.cpp \
+	02-subscribe-qos0.cpp \
+	02-subscribe-qos1-async1.cpp \
+	02-subscribe-qos1-async2.cpp \
+	02-subscribe-qos1.cpp \
+	02-subscribe-qos2.cpp \
+	02-unsubscribe.cpp \
+	02-unsubscribe-v5.cpp \
+	03-publish-b2c-qos1.cpp \
+	03-publish-b2c-qos1-unexpected-puback.cpp \
+	03-publish-b2c-qos2.cpp \
+	03-publish-b2c-qos2-len.cpp \
+	03-publish-b2c-qos2-unexpected-pubcomp.cpp \
+	03-publish-b2c-qos2-unexpected-pubrel.cpp \
+	03-publish-c2b-qos1-disconnect.cpp \
+	03-publish-c2b-qos1-len.cpp \
+	03-publish-c2b-qos1-receive-maximum.cpp \
+	03-publish-c2b-qos2-disconnect.cpp \
+	03-publish-c2b-qos2.cpp \
+	03-publish-c2b-qos2-len.cpp \
+	03-publish-c2b-qos2-maximum-qos-0.cpp \
+	03-publish-c2b-qos2-maximum-qos-1.cpp \
+	03-publish-c2b-qos2-pubrec-error.cpp \
+	03-publish-c2b-qos2-receive-maximum.cpp \
+	03-publish-loop.cpp \
+	03-publish-loop-forever.cpp \
+	03-publish-loop-manual.cpp \
+	03-publish-loop-start.cpp \
+	03-publish-qos0-no-payload.cpp \
+	03-publish-qos0.cpp \
+	03-request-response-1.cpp \
+	03-request-response-2.cpp \
+	03-request-response-correlation-1.cpp \
+	04-retain-qos0.cpp \
+	08-ssl-bad-cacert.cpp \
+	08-ssl-connect-cert-auth-enc.cpp \
+	08-ssl-connect-cert-auth.cpp \
+	08-ssl-connect-cert-auth-custom-ssl-ctx.cpp \
+	08-ssl-connect-cert-auth-custom-ssl-ctx-default.cpp \
+	08-ssl-connect-no-auth.cpp \
+	08-ssl-connect-san.cpp \
+	08-ssl-fake-cacert.cpp \
+	09-util-topic-tokenise.cpp \
+	11-prop-oversize-packet.cpp \
+	11-prop-send-content-type.cpp \
+	11-prop-send-payload-format.cpp \
+	11-prop-recv.cpp
 
-01-will-set.test : 01-will-set.cpp
-	$(CXX) $< -o $@ $(CFLAGS) $(LIBS)
 
-01-unpwd-set.test : 01-unpwd-set.cpp
-	$(CXX) $< -o $@ $(CFLAGS) $(LIBS)
+LIBS += -lssl -lcrypto
 
-01-will-unpwd-set.test : 01-will-unpwd-set.cpp
-	$(CXX) $< -o $@ $(CFLAGS) $(LIBS)
+TESTS = ${SRC:.cpp=.test}
 
-01-no-clean-session.test : 01-no-clean-session.cpp
-	$(CXX) $< -o $@ $(CFLAGS) $(LIBS)
+all : ${TESTS}
 
-01-keepalive-pingreq.test : 01-keepalive-pingreq.cpp
-	$(CXX) $< -o $@ $(CFLAGS) $(LIBS)
-
-02-subscribe-qos0.test : 02-subscribe-qos0.cpp
-	$(CXX) $< -o $@ $(CFLAGS) $(LIBS)
-
-02-subscribe-qos1.test : 02-subscribe-qos1.cpp
-	$(CXX) $< -o $@ $(CFLAGS) $(LIBS)
-
-02-subscribe-qos2.test : 02-subscribe-qos2.cpp
-	$(CXX) $< -o $@ $(CFLAGS) $(LIBS)
-
-02-unsubscribe.test : 02-unsubscribe.cpp
-	$(CXX) $< -o $@ $(CFLAGS) $(LIBS)
-
-03-publish-qos0.test : 03-publish-qos0.cpp
-	$(CXX) $< -o $@ $(CFLAGS) $(LIBS)
-
-03-publish-qos0-no-payload.test : 03-publish-qos0-no-payload.cpp
-	$(CXX) $< -o $@ $(CFLAGS) $(LIBS)
-
-03-publish-c2b-qos1-disconnect.test : 03-publish-c2b-qos1-disconnect.cpp
-	$(CXX) $< -o $@ $(CFLAGS) $(LIBS)
-
-03-publish-c2b-qos2.test : 03-publish-c2b-qos2.cpp
-	$(CXX) $< -o $@ $(CFLAGS) $(LIBS)
-
-03-publish-c2b-qos2-disconnect.test : 03-publish-c2b-qos2-disconnect.cpp
-	$(CXX) $< -o $@ $(CFLAGS) $(LIBS)
-
-03-publish-b2c-qos1.test : 03-publish-b2c-qos1.cpp
-	$(CXX) $< -o $@ $(CFLAGS) $(LIBS)
-
-03-publish-b2c-qos2.test : 03-publish-b2c-qos2.cpp
-	$(CXX) $< -o $@ $(CFLAGS) $(LIBS)
-
-04-retain-qos0.test : 04-retain-qos0.cpp
-	$(CXX) $< -o $@ $(CFLAGS) $(LIBS)
-
-08-ssl-connect-no-auth.test : 08-ssl-connect-no-auth.cpp
-	$(CXX) $< -o $@ $(CFLAGS) $(LIBS)
-
-08-ssl-connect-cert-auth.test : 08-ssl-connect-cert-auth.cpp
-	$(CXX) $< -o $@ $(CFLAGS) $(LIBS)
-
-08-ssl-connect-cert-auth-enc.test : 08-ssl-connect-cert-auth-enc.cpp
-	$(CXX) $< -o $@ $(CFLAGS) $(LIBS)
-
-08-ssl-bad-cacert.test : 08-ssl-bad-cacert.cpp
-	$(CXX) $< -o $@ $(CFLAGS) $(LIBS)
-
-08-ssl-fake-cacert.test : 08-ssl-fake-cacert.cpp
-	$(CXX) $< -o $@ $(CFLAGS) $(LIBS)
-
-09-util-topic-tokenise.test : 09-util-topic-tokenise.cpp
-	$(CXX) $< -o $@ $(CFLAGS) $(LIBS)
-
-01 : 01-con-discon-success.test 01-will-set.test 01-unpwd-set.test 01-will-unpwd-set.test 01-no-clean-session.test 01-keepalive-pingreq.test
-
-02 : 02-subscribe-qos0.test 02-subscribe-qos1.test 02-subscribe-qos2.test 02-unsubscribe.test
-
-03 : 03-publish-qos0.test 03-publish-qos0-no-payload.test 03-publish-c2b-qos1-disconnect.test 03-publish-c2b-qos2.test 03-publish-c2b-qos2-disconnect.test 03-publish-b2c-qos1.test 03-publish-b2c-qos2.test
-
-04 : 04-retain-qos0.test
-
-08 : 08-ssl-connect-no-auth.test 08-ssl-connect-cert-auth.test 08-ssl-connect-cert-auth-enc.test 08-ssl-bad-cacert.test 08-ssl-fake-cacert.test
-
-09 : 09-util-topic-tokenise.test
+${TESTS} : %.test: %.cpp ${R}/test/path_helper.h
+	$(CXX) -DTEST_SOURCE_DIR='"$(realpath .)"' $< -o $@ $(LOCAL_CXXFLAGS) $(LIBS)
 
 reallyclean : clean
 	-rm -f *.orig

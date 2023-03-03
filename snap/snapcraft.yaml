@@ -1,5 +1,5 @@
 name: mosquitto
-version: 2.0.15
+version: 2.1.0
 summary: Eclipse Mosquitto MQTT broker
 description: This is a message broker that supports version 5.0, 3.1.1, and 3.1 of the MQTT
     protocol.
@@ -10,7 +10,7 @@ description: This is a message broker that supports version 5.0, 3.1.1, and 3.1 
     example.
 confinement: strict
 grade: stable
-base: core18
+base: core20
 
 apps:
   mosquitto:
@@ -58,7 +58,11 @@ parts:
     after:
       - lws
     plugin: make
-    make-parameters: ["prefix=/usr", "WITH_WEBSOCKETS=yes", "WITH_ADNS=yes", "CFLAGS=-Wall -ggdb -O2 -I$SNAPCRAFT_STAGE/include -D_GNU_SOURCE"]
+    make-parameters:
+      - prefix=/usr
+      - WITH_WEBSOCKETS=lws
+      - WITH_ADNS=yes
+      - CFLAGS="-Wall -ggdb -O2 -I$SNAPCRAFT_STAGE/usr/include -D_GNU_SOURCE"
     source: https://github.com/eclipse/mosquitto
     source-type: git
 
@@ -69,7 +73,7 @@ parts:
       - gcc
       - g++
     stage-packages:
-      - libssl1.0.0
+      - libssl1.1
       - ca-certificates
     prime:
       - usr/sbin/mosquitto
@@ -91,21 +95,35 @@ parts:
     after:
       - cjson
     plugin: cmake
-    configflags: ["-DLWS_IPV6=ON", "-DLWS_WITHOUT_CLIENT=ON", "-DLWS_WITHOUT_EXTENSIONS=ON", "-DLWS_WITH_ZIP_FOPS=OFF", "-DLWS_WITH_ZLIB=OFF", "-DLWS_WITH_SHARED=OFF"]
+    cmake-parameters:
+      - -DCMAKE_INSTALL_PREFIX=/usr
+      - -DLWS_IPV6=ON
+      - -DLWS_WITHOUT_CLIENT=ON
+      - -DLWS_WITHOUT_EXTENSIONS=ON
+      - -DLWS_WITH_ZIP_FOPS=OFF
+      - -DLWS_WITH_ZLIB=OFF
+      - -DLWS_WITH_SHARED=OFF
     source: https://github.com/warmcat/libwebsockets/archive/v2.4.2.tar.gz
     source-type: tar
     stage:
-      - include/libwebsockets.h
-      - include/lws_config.h
-      - lib/libwebsockets.a
+      - usr/include/libwebsockets.h
+      - usr/include/lws_config.h
+      - usr/lib/libwebsockets.a
     prime: [-*]
 
   cjson:
     plugin: cmake
-    configflags: ["-DCMAKE_C_FLAGS=-fPIC", "-DBUILD_SHARED_AND_STATIC_LIBS=OFF", "-DBUILD_SHARED_LIBS=OFF", "-DCJSON_BUILD_SHARED_LIBS=OFF", "-DCJSON_OVERRIDE_BUILD_SHARED_LIBS=OFF"]
+    cmake-parameters:
+      - -DCMAKE_INSTALL_PREFIX=/usr
+      - -DCMAKE_C_FLAGS=-fPIC
+      - -DBUILD_SHARED_AND_STATIC_LIBS=OFF
+      - -DBUILD_SHARED_LIBS=OFF
+      - -DCJSON_BUILD_SHARED_LIBS=OFF
+      - -DCJSON_OVERRIDE_BUILD_SHARED_LIBS=OFF
+      - -DENABLE_CJSON_TEST=OFF
     source: https://github.com/DaveGamble/cJSON/archive/v1.7.14.tar.gz
     source-type: tar
     stage:
-      - include/cjson/cJSON.h
-      - lib/libcjson.a
+      - usr/include/cjson/cJSON.h
+      - usr/lib/libcjson.a
     prime: [-*]

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2010-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2010-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -85,17 +85,17 @@ int persist__chunk_client_read_v56(FILE *db_fptr, struct P_client *chunk, uint32
 	chunk->F.id_len = ntohs(chunk->F.id_len);
 
 
-	rc = persist__read_string_len(db_fptr, &chunk->client_id, chunk->F.id_len);
+	rc = persist__read_string_len(db_fptr, &chunk->clientid, chunk->F.id_len);
 	if(rc){
 		return 1;
-	}else if(chunk->client_id == NULL){
+	}else if(chunk->clientid == NULL){
 		return -1;
 	}
 
 	if(chunk->F.username_len > 0){
 		rc = persist__read_string_len(db_fptr, &chunk->username, chunk->F.username_len);
 		if(rc || !chunk->username){
-			mosquitto__free(chunk->client_id);
+			mosquitto__FREE(chunk->clientid);
 			return 1;
 		}
 	}
@@ -109,53 +109,68 @@ error:
 
 int persist__chunk_client_msg_read_v56(FILE *db_fptr, struct P_client_msg *chunk, uint32_t length)
 {
-	mosquitto_property *properties = NULL;
-	struct mosquitto__packet prop_packet;
+	mosquitto_property *properties = NULL, *p;
+	struct mosquitto__packet_in prop_packet;
 	int rc;
+
+	memset(&prop_packet, 0, sizeof(struct mosquitto__packet));
 
 	read_e(db_fptr, &chunk->F, sizeof(struct PF_client_msg));
 	chunk->F.mid = ntohs(chunk->F.mid);
 	chunk->F.id_len = ntohs(chunk->F.id_len);
 
 	length -= (uint32_t)(sizeof(struct PF_client_msg) + chunk->F.id_len);
+	if(length > MQTT_MAX_PAYLOAD) goto error;
 
-	rc = persist__read_string_len(db_fptr, &chunk->client_id, chunk->F.id_len);
-	if(rc){
-		return rc;
-	}
+	rc = persist__read_string_len(db_fptr, &chunk->clientid, chunk->F.id_len);
+	if(rc) return rc;
 
 	if(length > 0){
-		memset(&prop_packet, 0, sizeof(struct mosquitto__packet));
 		prop_packet.remaining_length = length;
 		prop_packet.payload = mosquitto__malloc(length);
 		if(!prop_packet.payload){
-			return MOSQ_ERR_NOMEM;
+			errno = ENOMEM;
+			goto error;
 		}
+
 		read_e(db_fptr, prop_packet.payload, length);
 		rc = property__read_all(CMD_PUBLISH, &prop_packet, &properties);
-		mosquitto__free(prop_packet.payload);
+		mosquitto__FREE(prop_packet.payload);
 		if(rc){
+			mosquitto__FREE(chunk->clientid);
 			return rc;
 		}
+
+		if(properties){
+			p = properties;
+			while(p){
+				if(p->identifier == MQTT_PROP_SUBSCRIPTION_IDENTIFIER){
+					chunk->subscription_identifier = p->value.varint;
+				}
+				p = p->next;
+			}
+			mosquitto_property_free_all(&properties);
+		}
 	}
-	chunk->properties = properties;
 
 	return MOSQ_ERR_SUCCESS;
 error:
+	mosquitto__FREE(chunk->clientid);
+	mosquitto__FREE(prop_packet.payload);
 	log__printf(NULL, MOSQ_LOG_ERR, "Error: %s.", strerror(errno));
 	return 1;
 }
 
 
-int persist__chunk_msg_store_read_v56(FILE *db_fptr, struct P_msg_store *chunk, uint32_t length)
+int persist__chunk_base_msg_read_v56(FILE *db_fptr, struct P_base_msg *chunk, uint32_t length)
 {
 	int rc = 0;
 	mosquitto_property *properties = NULL;
-	struct mosquitto__packet prop_packet;
+	struct mosquitto__packet_in prop_packet;
 
 	memset(&prop_packet, 0, sizeof(struct mosquitto__packet));
 
-	read_e(db_fptr, &chunk->F, sizeof(struct PF_msg_store));
+	read_e(db_fptr, &chunk->F, sizeof(struct PF_base_msg));
 	chunk->F.payloadlen = ntohl(chunk->F.payloadlen);
 	if(chunk->F.payloadlen > MQTT_MAX_PAYLOAD){
 		return MOSQ_ERR_INVAL;
@@ -166,77 +181,56 @@ int persist__chunk_msg_store_read_v56(FILE *db_fptr, struct P_msg_store *chunk, 
 	chunk->F.topic_len = ntohs(chunk->F.topic_len);
 	chunk->F.source_port = ntohs(chunk->F.source_port);
 
-	length -= (uint32_t)(sizeof(struct PF_msg_store) + chunk->F.payloadlen + chunk->F.source_id_len + chunk->F.source_username_len + chunk->F.topic_len);
+	length -= (uint32_t)(sizeof(struct PF_base_msg) + chunk->F.payloadlen + chunk->F.source_id_len + chunk->F.source_username_len + chunk->F.topic_len);
+	if(length > MQTT_MAX_PAYLOAD) goto error;
 
 	if(chunk->F.source_id_len){
 		rc = persist__read_string_len(db_fptr, &chunk->source.id, chunk->F.source_id_len);
-		if(rc){
-			return rc;
-		}
+		if(rc) goto error;
 	}
 	if(chunk->F.source_username_len){
 		rc = persist__read_string_len(db_fptr, &chunk->source.username, chunk->F.source_username_len);
-		if(rc){
-			mosquitto__free(chunk->source.id);
-			chunk->source.id = NULL;
-			return rc;
-		}
+		if(rc) goto error;
 	}
 	rc = persist__read_string_len(db_fptr, &chunk->topic, chunk->F.topic_len);
-	if(rc){
-		mosquitto__free(chunk->source.id);
-		mosquitto__free(chunk->source.username);
-		chunk->source.id = NULL;
-		chunk->source.username = NULL;
-		return rc;
-	}
+	if(rc) goto error;
 
 	if(chunk->F.payloadlen > 0){
 		chunk->payload = mosquitto__malloc(chunk->F.payloadlen+1);
 		if(chunk->payload == NULL){
-			mosquitto__free(chunk->source.id);
-			mosquitto__free(chunk->source.username);
-			mosquitto__free(chunk->topic);
-			chunk->source.id = NULL;
-			chunk->source.username = NULL;
-			chunk->topic = NULL;
-			log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
-			return MOSQ_ERR_NOMEM;
+			rc = MOSQ_ERR_NOMEM;
+			goto error;
 		}
+		read_e(db_fptr, chunk->payload, chunk->F.payloadlen);
 		/* Ensure zero terminated regardless of contents */
 		((uint8_t *)chunk->payload)[chunk->F.payloadlen] = 0;
-		read_e(db_fptr, chunk->payload, chunk->F.payloadlen);
 	}
 
 	if(length > 0){
 		prop_packet.remaining_length = length;
 		prop_packet.payload = mosquitto__malloc(length);
 		if(!prop_packet.payload){
-			mosquitto__free(chunk->source.id);
-			mosquitto__free(chunk->source.username);
-			mosquitto__free(chunk->topic);
-			return MOSQ_ERR_NOMEM;
+			rc = MOSQ_ERR_NOMEM;
+			goto error;
 		}
 		read_e(db_fptr, prop_packet.payload, length);
 		rc = property__read_all(CMD_PUBLISH, &prop_packet, &properties);
-		mosquitto__free(prop_packet.payload);
+		mosquitto__FREE(prop_packet.payload);
 		if(rc){
-			mosquitto__free(chunk->source.id);
-			mosquitto__free(chunk->source.username);
-			mosquitto__free(chunk->topic);
-			return rc;
+			rc = MOSQ_ERR_NOMEM;
+			goto error;
 		}
 	}
 	chunk->properties = properties;
 
 	return MOSQ_ERR_SUCCESS;
 error:
-	log__printf(NULL, MOSQ_LOG_ERR, "Error: %s.", strerror(errno));
-	mosquitto__free(chunk->source.id);
-	mosquitto__free(chunk->source.username);
-	mosquitto__free(chunk->topic);
-	mosquitto__free(prop_packet.payload);
-	return 1;
+	mosquitto__FREE(chunk->payload);
+	mosquitto__FREE(chunk->source.id);
+	mosquitto__FREE(chunk->source.username);
+	mosquitto__FREE(chunk->topic);
+	mosquitto__FREE(prop_packet.payload);
+	return rc;
 }
 
 
@@ -252,28 +246,23 @@ int persist__chunk_retain_read_v56(FILE *db_fptr, struct P_retain *chunk)
 
 int persist__chunk_sub_read_v56(FILE *db_fptr, struct P_sub *chunk)
 {
-	int rc;
+	int rc = MOSQ_ERR_SUCCESS;
 
 	read_e(db_fptr, &chunk->F, sizeof(struct PF_sub));
 	chunk->F.identifier = ntohl(chunk->F.identifier);
 	chunk->F.id_len = ntohs(chunk->F.id_len);
 	chunk->F.topic_len = ntohs(chunk->F.topic_len);
 
-	rc = persist__read_string_len(db_fptr, &chunk->client_id, chunk->F.id_len);
-	if(rc){
-		return rc;
-	}
+	rc = persist__read_string_len(db_fptr, &chunk->clientid, chunk->F.id_len);
+	if(rc) goto error;
+
 	rc = persist__read_string_len(db_fptr, &chunk->topic, chunk->F.topic_len);
-	if(rc){
-		mosquitto__free(chunk->client_id);
-		chunk->client_id = NULL;
-		return rc;
-	}
+	if(rc) goto error;
 
 	return MOSQ_ERR_SUCCESS;
 error:
-	log__printf(NULL, MOSQ_LOG_ERR, "Error: %s.", strerror(errno));
-	return 1;
+	mosquitto__FREE(chunk->clientid);
+	return rc;
 }
 
 #endif

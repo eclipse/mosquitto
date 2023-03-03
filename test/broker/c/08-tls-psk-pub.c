@@ -8,8 +8,10 @@
 static int run = -1;
 static int sent_mid;
 
-void on_connect(struct mosquitto *mosq, void *obj, int rc)
+static void on_connect(struct mosquitto *mosq, void *obj, int rc)
 {
+	(void)obj;
+
 	if(rc){
 		exit(1);
 	}else{
@@ -17,8 +19,10 @@ void on_connect(struct mosquitto *mosq, void *obj, int rc)
 	}
 }
 
-void on_publish(struct mosquitto *mosq, void *obj, int mid)
+static void on_publish(struct mosquitto *mosq, void *obj, int mid)
 {
+	(void)obj;
+
 	if(mid == sent_mid){
 		mosquitto_disconnect(mosq);
 		run = 0;
@@ -27,20 +31,26 @@ void on_publish(struct mosquitto *mosq, void *obj, int mid)
 	}
 }
 
-void on_disconnect(struct mosquitto *mosq, void *obj, int rc)
+static void on_disconnect(struct mosquitto *mosq, void *obj, int rc)
 {
+	(void)mosq;
+	(void)obj;
+
 	run = rc;
 }
 
 int main(int argc, char *argv[])
 {
 	int rc;
-	int port;
 	struct mosquitto *mosq;
+	int port;
+
+	if(argc < 2){
+		return 1;
+	}
+	port = atoi(argv[1]);
 
 	mosquitto_lib_init();
-
-	port = atoi(argv[1]);
 
 	mosq = mosquitto_new("08-tls-psk-pub", true, NULL);
 	mosquitto_tls_opts_set(mosq, 1, "tlsv1", NULL);

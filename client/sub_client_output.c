@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -39,6 +39,10 @@ Contributors:
 #define snprintf sprintf_s
 #endif
 
+#undef uthash_malloc
+#undef uthash_free
+#include <uthash.h>
+
 #ifdef WITH_CJSON
 #  include <cjson/cJSON.h>
 #endif
@@ -53,6 +57,14 @@ Contributors:
 #include "sub_client_output.h"
 
 extern struct mosq_config cfg;
+
+struct watch_topic{
+	UT_hash_handle hh;
+	char *topic;
+	int line;
+};
+static int watch_max = 2;
+static struct watch_topic *watch_items = NULL;
 
 static int get_time(struct tm **ti, long *ns)
 {
@@ -105,7 +117,6 @@ static void write_payload(const unsigned char *payload, int payloadlen, int hex,
 			payloadlen = field_width;
 		}
 		if(hex > 0){
-			payloadlen /= 2;
 			padlen = field_width - payloadlen*2;
 		}else{
 			padlen = field_width - payloadlen;
@@ -163,7 +174,7 @@ static int json_print_properties(cJSON *root, const mosquitto_property *properti
 	uint32_t i32value = 0;
 	char *strname = NULL, *strvalue = NULL;
 	char *binvalue = NULL;
-	cJSON *tmp, *prop_json, *user_json = NULL;
+	cJSON *tmp, *prop_json, *user_props = NULL, *user_json;
 	const mosquitto_property *prop = NULL;
 
 	prop_json = cJSON_CreateObject();
@@ -210,20 +221,30 @@ static int json_print_properties(cJSON *root, const mosquitto_property *properti
 				break;
 
 			case MQTT_PROP_TOPIC_ALIAS:
-				mosquitto_property_read_int16(prop, MQTT_PROP_MESSAGE_EXPIRY_INTERVAL, &i16value, false);
+				mosquitto_property_read_int16(prop, MQTT_PROP_TOPIC_ALIAS, &i16value, false);
 				tmp = cJSON_CreateNumber(i16value);
 				break;
 
 			case MQTT_PROP_USER_PROPERTY:
-				if(user_json == NULL){
-					user_json = cJSON_CreateObject();
-					if(user_json == NULL){
+				if(user_props == NULL){
+					user_props = cJSON_CreateArray();
+					if(user_props == NULL){
 						return MOSQ_ERR_NOMEM;
 					}
-					cJSON_AddItemToObject(prop_json, "user-properties", user_json);
+					cJSON_AddItemToObject(prop_json, "user-properties", user_props);
 				}
+
+				user_json = cJSON_CreateObject();
+				if(user_json == NULL){
+					return MOSQ_ERR_NOMEM;
+				}
+				cJSON_AddItemToArray(user_props, user_json);
 				mosquitto_property_read_string_pair(prop, MQTT_PROP_USER_PROPERTY, &strname, &strvalue, false);
-				if(strname == NULL || strvalue == NULL) return MOSQ_ERR_NOMEM;
+				if(strname == NULL || strvalue == NULL){
+					free(strname);
+					free(strvalue);
+					return MOSQ_ERR_NOMEM;
+				}
 
 				tmp = cJSON_CreateString(strvalue);
 				free(strvalue);
@@ -274,71 +295,30 @@ static int json_print(const struct mosquitto_message *message, const mosquitto_p
 
 	format_time_8601(ti, ns, buf, sizeof(buf));
 
-	tmp = cJSON_CreateStringReference(buf);
-	if(tmp == NULL){
+	if(cJSON_AddStringToObject(root, "tst", buf) == NULL
+			|| cJSON_AddStringToObject(root, "topic", message->topic) == NULL
+			|| cJSON_AddNumberToObject(root, "qos", message->qos) == NULL
+			|| cJSON_AddBoolToObject(root, "retain", message->retain) == NULL
+			|| cJSON_AddNumberToObject(root, "payloadlen", message->payloadlen) == NULL
+			|| (message->qos > 0 && cJSON_AddNumberToObject(root, "mid", message->mid) == NULL)
+			|| (properties && json_print_properties(root, properties))
+			){
+
 		cJSON_Delete(root);
 		return MOSQ_ERR_NOMEM;
-	}
-	cJSON_AddItemToObject(root, "tst", tmp);
-
-	tmp = cJSON_CreateString(message->topic);
-	if(tmp == NULL){
-		cJSON_Delete(root);
-		return MOSQ_ERR_NOMEM;
-	}
-
-	cJSON_AddItemToObject(root, "topic", tmp);
-
-	tmp = cJSON_CreateNumber(message->qos);
-	if(tmp == NULL){
-		cJSON_Delete(root);
-		return MOSQ_ERR_NOMEM;
-	}
-	cJSON_AddItemToObject(root, "qos", tmp);
-
-	tmp = cJSON_CreateNumber(message->retain);
-	if(tmp == NULL){
-		cJSON_Delete(root);
-		return MOSQ_ERR_NOMEM;
-	}
-	cJSON_AddItemToObject(root, "retain", tmp);
-
-	tmp = cJSON_CreateNumber(message->payloadlen);
-	if(tmp == NULL){
-		cJSON_Delete(root);
-		return MOSQ_ERR_NOMEM;
-	}
-	cJSON_AddItemToObject(root, "payloadlen", tmp);
-
-	if(message->qos > 0){
-		tmp = cJSON_CreateNumber(message->mid);
-		if(tmp == NULL){
-			cJSON_Delete(root);
-			return MOSQ_ERR_NOMEM;
-		}
-		cJSON_AddItemToObject(root, "mid", tmp);
-	}
-
-	/* Properties */
-	if(properties){
-		if(json_print_properties(root, properties)){
-			cJSON_Delete(root);
-			return MOSQ_ERR_NOMEM;
-		}
 	}
 
 	/* Payload */
 	if(escaped){
 		if(message->payload){
-			tmp = cJSON_CreateString(message->payload);
+			tmp = cJSON_AddStringToObject(root, "payload", message->payload);
 		}else{
-			tmp = cJSON_CreateNull();
+			tmp = cJSON_AddNullToObject(root, "payload");
 		}
 		if(tmp == NULL){
 			cJSON_Delete(root);
 			return MOSQ_ERR_NOMEM;
 		}
-		cJSON_AddItemToObject(root, "payload", tmp);
 	}else{
 		return_parse_end = NULL;
 		if(message->payload){
@@ -403,6 +383,43 @@ static void formatted_print_blank(char pad, int field_width)
 		putchar(pad);
 	}
 }
+
+
+#ifdef __STDC_IEC_559__
+static int formatted_print_float(const unsigned char *payload, int payloadlen, char format, char align, char pad, int field_width, int precision)
+{
+	float float_value;
+	double value = 0.0;
+
+	if (format == 'f'){
+		if (sizeof(float_value) != payloadlen) {
+			return -1;
+		}
+		memcpy(&float_value, payload, sizeof(float_value));
+		value = float_value;
+	}else if(format == 'd'){
+		if (sizeof(value) != payloadlen) {
+			return -1;
+		}
+		memcpy(&value, payload, sizeof(value));
+	}
+
+	if(field_width == 0) {
+		printf("%.*f", precision, value);
+	}else{
+		if(align == '-'){
+			printf("%-*.*f", field_width, precision, value);
+		}else{
+			if(pad == '0'){
+				printf("%0*.*f", field_width, precision, value);
+			}else{
+				printf("%*.*f", field_width, precision, value);
+			}
+		}
+	}
+	return 0;
+}
+#endif
 
 
 static void formatted_print_int(int value, char align, char pad, int field_width)
@@ -634,6 +651,20 @@ static void formatted_print_percent(const struct mosq_config *lcfg, const struct
 		case 'X':
 			write_payload(message->payload, message->payloadlen, 2, align, pad, field_width, precision);
 			break;
+
+#ifdef __STDC_IEC_559__
+		case 'f':
+			if(formatted_print_float(message->payload, message->payloadlen, 'f', align, pad, field_width, precision)) {
+				err_printf(lcfg, "requested float printing, but non-float data received");
+			}
+			break;
+
+		case 'd':
+			if(formatted_print_float(message->payload, message->payloadlen, 'd', align, pad, field_width, precision)) {
+				err_printf(lcfg, "requested double printing, but non-double data received");
+			}
+			break;
+#endif
 	}
 }
 
@@ -772,7 +803,7 @@ static void formatted_print(const struct mosq_config *lcfg, const struct mosquit
 }
 
 
-void output_init(void)
+static void rand_init(void)
 {
 #ifndef WIN32
 	struct tm *ti = NULL;
@@ -781,11 +812,31 @@ void output_init(void)
 	if(!get_time(&ti, &ns)){
 		srandom((unsigned int)ns);
 	}
-#else
-	/* Disable text translation so binary payloads aren't modified */
-	_setmode(_fileno(stdout), _O_BINARY);
 #endif
 }
+
+#ifndef WIN32
+static void watch_print(const struct mosquitto_message *message)
+{
+	struct watch_topic *item = NULL;
+
+	HASH_FIND(hh, watch_items, message->topic, strlen(message->topic), item);
+	if(item == NULL){
+		item = calloc(1, sizeof(struct watch_topic));
+		if(item == NULL){
+			return;
+		}
+		item->line = watch_max++;
+		item->topic = strdup(message->topic);
+		if(item->topic == NULL){
+			free(item);
+			return;
+		}
+		HASH_ADD_KEYPTR(hh, watch_items, item->topic, strlen(item->topic), item);
+	}
+	printf("\e[%d;1H", item->line);
+}
+#endif
 
 
 void print_message(struct mosq_config *lcfg, const struct mosquitto_message *message, const mosquitto_property *properties)
@@ -796,10 +847,17 @@ void print_message(struct mosq_config *lcfg, const struct mosquitto_message *mes
 	long r = 0;
 #endif
 
+#ifndef WIN32
+	if(lcfg->watch){
+		watch_print(message);
+	}
+#endif
+
 	if(lcfg->random_filter < 10000){
 #ifdef WIN32
 		rand_s(&r);
 #else
+		/* coverity[dont_call] - we don't care about random() not being cryptographically secure here */
 		r = random();
 #endif
 		if((long)(r%10000) >= lcfg->random_filter){
@@ -830,5 +888,24 @@ void print_message(struct mosq_config *lcfg, const struct mosquitto_message *mes
 			fflush(stdout);
 		}
 	}
+#ifndef WIN32
+	if(lcfg->watch){
+		printf("\e[%d;1H\n", watch_max-1);
+	}
+#endif
 }
 
+void output_init(struct mosq_config *lcfg)
+{
+	rand_init();
+#ifndef WIN32
+	if(lcfg->watch){
+		printf("\e[2J\e[1;1H");
+		printf("Broker: %s\n", lcfg->host);
+	}
+#endif
+#ifdef WIN32
+	/* Disable text translation so binary payloads aren't modified */
+	(void)_setmode(_fileno(stdout), _O_BINARY);
+#endif
+}

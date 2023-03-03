@@ -15,10 +15,10 @@ def write_config(filename, port1, port2):
 
 
 def helper(port, proto_ver):
-    connect_packet = mosq_test.gen_connect("test-helper", keepalive=60, proto_ver=proto_ver)
+    connect_packet = mosq_test.gen_connect("10-listener-mount-helper", proto_ver=proto_ver)
     connack_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
 
-    publish_packet = mosq_test.gen_publish("test", qos=0, payload="mount point", proto_ver=proto_ver)
+    publish_packet = mosq_test.gen_publish("10/listener/mount/test", qos=0, payload="mount point", proto_ver=proto_ver)
 
     sock = mosq_test.do_client_connect(connect_packet, connack_packet, port=port, connack_error="helper connack")
     sock.send(publish_packet)
@@ -38,14 +38,14 @@ def do_test(proto_ver):
     connack_packet1 = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
     subscribe_packet1 = mosq_test.gen_subscribe(mid, "#", 0, proto_ver=proto_ver)
     suback_packet1 = mosq_test.gen_suback(mid, 0, proto_ver=proto_ver)
-    publish_packet1 = mosq_test.gen_publish("mount/test", qos=0, payload="mount point", proto_ver=proto_ver)
+    publish_packet1 = mosq_test.gen_publish("mount/10/listener/mount/test", qos=0, payload="mount point", proto_ver=proto_ver)
 
     # Subscriber for listener without mount point
     connect_packet2 = mosq_test.gen_connect("test2", proto_ver=proto_ver)
     connack_packet2 = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
     subscribe_packet2 = mosq_test.gen_subscribe(mid, "#", 0, proto_ver=proto_ver)
     suback_packet2 = mosq_test.gen_suback(mid, 0, proto_ver=proto_ver)
-    publish_packet2 = mosq_test.gen_publish("test", qos=0, payload="mount point", proto_ver=proto_ver)
+    publish_packet2 = mosq_test.gen_publish("10/listener/mount/test", qos=0, payload="mount point", proto_ver=proto_ver)
 
     broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port1)
 
@@ -70,7 +70,9 @@ def do_test(proto_ver):
     finally:
         os.remove(conf_file)
         broker.terminate()
-        broker.wait()
+        if mosq_test.wait_for_subprocess(broker):
+            print("broker not terminated")
+            if rc == 0: rc=1
         (stdo, stde) = broker.communicate()
         if rc:
             print(stde.decode('utf-8'))
@@ -81,4 +83,3 @@ def do_test(proto_ver):
 do_test(proto_ver=4)
 do_test(proto_ver=5)
 exit(0)
-

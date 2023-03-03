@@ -1,0 +1,36 @@
+[
+	{
+		"group": "v3.1.1 FORBIDDEN",
+		"ver":4,
+		"tests": [
+			{ "name": "00 first packet", "connack": false, "msgs": [{"type":"send", "payload":"00 00"}]},
+			{ "name": "01 first packet", "connack": false, "msgs": [{"type":"send", "payload":"01 00"}]},
+			{ "name": "02 first packet", "connack": false, "msgs": [{"type":"send", "payload":"02 00"}]},
+			{ "name": "04 first packet", "connack": false, "msgs": [{"type":"send", "payload":"04 00"}]},
+			{ "name": "08 first packet", "connack": false, "msgs": [{"type":"send", "payload":"08 00"}]},
+			{ "name": "00 long", "msgs": [{"type":"send", "payload":"00 01 00"}]},
+			{ "name": "00", "msgs": [{"type":"send", "payload":"00 00"}]},
+			{ "name": "01", "msgs": [{"type":"send", "payload":"01 00"}]},
+			{ "name": "02", "msgs": [{"type":"send", "payload":"02 00"}]},
+			{ "name": "04", "msgs": [{"type":"send", "payload":"04 00"}]},
+			{ "name": "08", "msgs": [{"type":"send", "payload":"08 00"}]}
+		]
+	},
+	{
+		"group": "v5.0   FORBIDDEN",
+		"ver":5,
+		"tests": [
+			{ "name": "00 first packet", "connack": false, "msgs": [{"type":"send", "payload":"00 00"}]},
+			{ "name": "01 first packet", "connack": false, "msgs": [{"type":"send", "payload":"01 00"}]},
+			{ "name": "02 first packet", "connack": false, "msgs": [{"type":"send", "payload":"02 00"}]},
+			{ "name": "04 first packet", "connack": false, "msgs": [{"type":"send", "payload":"04 00"}]},
+			{ "name": "08 first packet", "connack": false, "msgs": [{"type":"send", "payload":"08 00"}]},
+			{ "name": "00 long", "msgs": [{"type":"send", "payload":"00 01 00"}]},
+			{ "name": "00", "msgs": [{"type":"send", "payload":"00 00"}]},
+			{ "name": "01", "msgs": [{"type":"send", "payload":"01 00"}]},
+			{ "name": "02", "msgs": [{"type":"send", "payload":"02 00"}]},
+			{ "name": "04", "msgs": [{"type":"send", "payload":"04 00"}]},
+			{ "name": "08", "msgs": [{"type":"send", "payload":"08 00"}]}
+		]
+	}
+]

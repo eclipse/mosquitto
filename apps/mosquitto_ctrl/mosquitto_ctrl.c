@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2020-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -46,7 +46,7 @@ static void print_usage(void)
 	print_version();
 	printf("\nGeneral usage: mosquitto_ctrl <module> <module-command> <command-options>\n");
 	printf("For module specific help use: mosquitto_ctrl <module> help\n");
-	printf("\nModules available: dynsec\n");
+	printf("\nModules available: broker dynsec\n");
 	printf("\nFor more information see:\n");
 	printf("    https://mosquitto.org/man/mosquitto_ctrl-1.html\n\n");
 }
@@ -72,7 +72,8 @@ int main(int argc, char *argv[])
 	argc--;
 	argv++;
 
-	ctrl_config_parse(&ctrl.cfg, &argc, &argv);
+	rc = ctrl_config_parse(&ctrl.cfg, &argc, &argv);
+	if(rc) return rc;
 
 	if(argc < 2){
 		print_usage();
@@ -80,7 +81,9 @@ int main(int argc, char *argv[])
 	}
 
 	/* In built modules */
-	if(!strcasecmp(argv[0], "dynsec")){
+	if(!strcasecmp(argv[0], "broker")){
+		l_ctrl_main = broker__main;
+	}else if(!strcasecmp(argv[0], "dynsec")){
 		l_ctrl_main = dynsec__main;
 	}else{
 		/* Attempt external module */
@@ -101,11 +104,13 @@ int main(int argc, char *argv[])
 			/* Usage print */
 			rc = 0;
 		}else if(rc == MOSQ_ERR_SUCCESS){
-			rc = client_request_response(&ctrl);
+			if(ctrl.cfg.data_file == NULL){
+				rc = client_request_response(&ctrl);
+			}
 		}else if(rc == MOSQ_ERR_UNKNOWN){
 			/* Message printed already */
 		}else{
-			fprintf(stderr, "Error: %s\n", mosquitto_strerror(rc));
+			fprintf(stderr, "Error: %s.\n", mosquitto_strerror(rc));
 		}
 	}
 

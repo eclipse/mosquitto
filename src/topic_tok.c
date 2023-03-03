@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2010-2019 Roger Light <roger@atchoo.org>
+Copyright (c) 2010-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -81,7 +81,7 @@ int sub__topic_tokenise(const char *subtopic, char **local_sub, char ***topics, 
 	}
 	*topics = mosquitto__calloc((size_t)(count+3) /* 3=$shared,sharename,NULL */, sizeof(char *));
 	if((*topics) == NULL){
-		mosquitto__free(*local_sub);
+		mosquitto__FREE(*local_sub);
 		return MOSQ_ERR_NOMEM;
 	}
 
@@ -99,8 +99,8 @@ int sub__topic_tokenise(const char *subtopic, char **local_sub, char ***topics, 
 
 	if(!strcmp((*topics)[0], "$share")){
 		if(count < 2){
-			mosquitto__free(*local_sub);
-			mosquitto__free(*topics);
+			mosquitto__FREE(*local_sub);
+			mosquitto__FREE(*topics);
 			return MOSQ_ERR_PROTOCOL;
 		}
 

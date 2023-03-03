@@ -1,66 +1,68 @@
 [
 	{
 		"group": "v3.1.1 PUBACK",
+		"ver":4,
 		"tests": [
-			{ "name": "40 [MQTT-3.1.0-1]", "ver":4, "connect":false, "msgs": [{"type":"send", "payload":"40 02 0001"}]},
-			{ "name": "40 unsolicited long", "ver":4, "msgs": [{"type":"send", "payload":"40 03 0001 00"}]},
-			{ "name": "40 unsolicited mid 0", "ver":4, "msgs": [{"type":"send", "payload":"40 02 0000"}]},
-			{ "name": "40 unsolicited short 0", "ver":4, "msgs": [{"type":"send", "payload":"40 00"}]},
-			{ "name": "40 unsolicited short 1", "ver":4, "msgs": [{"type":"send", "payload":"40 01 01"}]},
-			{ "name": "40 unsolicited", "ver":4, "expect_disconnect":false, "msgs": [{"type":"send", "payload":"40 02 0001"}]},
-			{ "name": "41 unsolicited", "ver":4, "msgs": [{"type":"send", "payload":"41 02 0001"}]},
-			{ "name": "42 unsolicited", "ver":4, "msgs": [{"type":"send", "payload":"42 02 0001"}]},
-			{ "name": "44 unsolicited", "ver":4, "msgs": [{"type":"send", "payload":"44 02 0001"}]},
-			{ "name": "48 unsolicited", "ver":4, "msgs": [{"type":"send", "payload":"48 02 0001"}]}
+			{ "name": "40 [MQTT-3.1.0-1]", "connect":false, "msgs": [{"type":"send", "payload":"40 02 0001"}]},
+			{ "name": "40 unsolicited long", "msgs": [{"type":"send", "payload":"40 03 0001 00"}]},
+			{ "name": "40 unsolicited mid 0", "msgs": [{"type":"send", "payload":"40 02 0000"}]},
+			{ "name": "40 unsolicited short 0", "msgs": [{"type":"send", "payload":"40 00"}]},
+			{ "name": "40 unsolicited short 1", "msgs": [{"type":"send", "payload":"40 01 01"}]},
+			{ "name": "40 unsolicited", "expect_disconnect":false, "msgs": [{"type":"send", "payload":"40 02 0001"}]},
+			{ "name": "41 unsolicited", "msgs": [{"type":"send", "payload":"41 02 0001"}]},
+			{ "name": "42 unsolicited", "msgs": [{"type":"send", "payload":"42 02 0001"}]},
+			{ "name": "44 unsolicited", "msgs": [{"type":"send", "payload":"44 02 0001"}]},
+			{ "name": "48 unsolicited", "msgs": [{"type":"send", "payload":"48 02 0001"}]}
 		]
 	},
 	{
 		"group": "v5.0   PUBACK",
+		"ver":5,
 		"tests": [
-			{ "name": "40 [MQTT-3.1.0-1] (no reason code)", "ver":5, "connect":false, "msgs": [{"type":"send", "payload":"40 02 0001"}]},
-			{ "name": "40 [MQTT-3.1.0-1]", "ver":5, "connect":false, "msgs": [{"type":"send", "payload":"40 03 0001 00"}]},
-			{ "name": "40 unsolicited long", "ver":5, "msgs": [
+			{ "name": "40 [MQTT-3.1.0-1] (no reason code)", "connect":false, "msgs": [{"type":"send", "payload":"40 02 0001"}]},
+			{ "name": "40 [MQTT-3.1.0-1]", "connect":false, "msgs": [{"type":"send", "payload":"40 03 0001 00"}]},
+			{ "name": "40 unsolicited long", "msgs": [
 				{"type":"send", "payload":"40 05 0001 00 00 00"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 unsolicited mid 0", "ver":5, "msgs": [
+			{ "name": "40 unsolicited mid 0", "msgs": [
 				{"type":"send", "payload":"40 03 0000 00"},
 				{"type":"recv", "payload":"E0 01 82"}
 			]},
-			{ "name": "40 unsolicited short 0", "ver":5, "msgs": [
+			{ "name": "40 unsolicited short 0", "msgs": [
 				{"type":"send", "payload":"40 00"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 unsolicited short 1", "ver":5, "msgs": [
+			{ "name": "40 unsolicited short 1", "msgs": [
 				{"type":"send", "payload":"40 01 01"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 unsolicited len=2", "ver":5, "expect_disconnect":false, "msgs": [{"type":"send", "payload":"40 02 0001"}]},
-			{ "name": "40 unsolicited len=3", "ver":5, "expect_disconnect":false, "msgs": [{"type":"send", "payload":"40 03 0001 00"}]},
-			{ "name": "40 unsolicited len=3 fail", "ver":5, "expect_disconnect":false, "msgs": [{"type":"send", "payload":"40 03 0001 80"}]},
-			{ "name": "40 unsolicited len=4 ok", "ver":5, "expect_disconnect":false, "msgs": [{"type":"send", "payload":"40 04 0001 00 00"}]},
-			{ "name": "40 unsolicited len=4 rc=fail", "ver":5, "expect_disconnect":false, "msgs": [{"type":"send", "payload":"40 04 0001 80 00"}]},
-			{ "name": "40 unsolicited len=4 rc=unknown", "ver":5, "msgs": [
+			{ "name": "40 unsolicited len=2", "expect_disconnect":false, "msgs": [{"type":"send", "payload":"40 02 0001"}]},
+			{ "name": "40 unsolicited len=3", "expect_disconnect":false, "msgs": [{"type":"send", "payload":"40 03 0001 00"}]},
+			{ "name": "40 unsolicited len=3 fail", "expect_disconnect":false, "msgs": [{"type":"send", "payload":"40 03 0001 80"}]},
+			{ "name": "40 unsolicited len=4 ok", "expect_disconnect":false, "msgs": [{"type":"send", "payload":"40 04 0001 00 00"}]},
+			{ "name": "40 unsolicited len=4 rc=fail", "expect_disconnect":false, "msgs": [{"type":"send", "payload":"40 04 0001 80 00"}]},
+			{ "name": "40 unsolicited len=4 rc=unknown", "msgs": [
 				{"type":"send", "payload":"40 04 0001 FF 00"},
 				{"type":"recv", "payload":"E0 01 82"}
 			]},
-			{ "name": "40 unsolicited len=4 short", "ver":5, "msgs": [
+			{ "name": "40 unsolicited len=4 short", "msgs": [
 				{"type":"send", "payload":"40 04 0001 00 01"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "41 unsolicited", "ver":5, "msgs": [
+			{ "name": "41 unsolicited", "msgs": [
 				{"type":"send", "payload":"41 03 0001 00"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "42 unsolicited", "ver":5, "msgs": [
+			{ "name": "42 unsolicited", "msgs": [
 				{"type":"send", "payload":"42 03 0001 00"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "44 unsolicited", "ver":5, "msgs": [
+			{ "name": "44 unsolicited", "msgs": [
 				{"type":"send", "payload":"44 03 0001 00"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "48 unsolicited", "ver":5, "msgs": [
+			{ "name": "48 unsolicited", "msgs": [
 				{"type":"send", "payload":"48 03 0001 00"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]}
@@ -68,328 +70,346 @@
 	},
 	{
 		"group": "v5.0   PUBACK ALLOWED PROPERTIES",
+		"ver":5,
 		"tests": [
-			{ "name": "40 with reason-string property", "ver":5, "expect_disconnect":false, "msgs": [{"type":"send", "payload":"40 08 0001 00 04 1F000170"}]},
-			{ "name": "40 with 2*reason-string property", "ver":5, "msgs": [
+			{ "name": "40 with reason-string property", "expect_disconnect":false, "msgs": [{"type":"send", "payload":"40 08 0001 00 04 1F000170"}]},
+			{ "name": "40 with 2*reason-string property", "msgs": [
 				{"type":"send", "payload":"40 0C 0001 00 08 1F000170 1F000171"},
 				{"type":"recv", "payload":"E0 01 82"}
 			]},
-			{ "name": "40 with reason-string property missing", "ver":5, "msgs": [
+			{ "name": "40 with reason-string property missing", "msgs": [
 				{"type":"send", "payload":"40 05 0001 00 01 1F"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with user-property", "ver":5, "expect_disconnect":false, "msgs": [{"type":"send", "payload":"40 0B 0001 00 07 26000170000171"}]},
-			{ "name": "40 with 2*user-property", "ver":5, "expect_disconnect":false, "msgs": [{"type":"send", "payload":"40 12 0001 00 0E 26000170000171 26000170000171"}]},
-			{ "name": "40 with user-property missing value", "ver":5, "msgs": [
-				{"type":"send", "payload":"40 08 0001 00 04 23000170"},
+			{ "name": "40 with reason-string property incomplete string", "msgs": [
+				{"type":"send", "payload":"40 06 0001 00 02 1F 00"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with user-property missing key,value", "ver":5, "msgs": [
-				{"type":"send", "payload":"40 05 0001 00 01 23"},
+			{ "name": "40 with reason-string property empty string", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"40 07 0001 00 03 1F 0000"}
+			]},
+			{ "name": "40 with user-property", "expect_disconnect":false, "msgs": [{"type":"send", "payload":"40 0B 0001 00 07 26000170000171"}]},
+			{ "name": "40 with 2*user-property", "expect_disconnect":false, "msgs": [{"type":"send", "payload":"40 12 0001 00 0E 26000170000171 26000170000171"}]},
+			{ "name": "40 with user-property missing value", "msgs": [
+				{"type":"send", "payload":"40 08 0001 00 04 26000170"},
 				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "40 with user-property missing key,value", "msgs": [
+				{"type":"send", "payload":"40 05 0001 00 01 26"},
+				{"type":"recv", "payload":"E0 01 81"}
+			]},
+			{ "name": "40 with user-property empty key", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"40 0A 0001 00 06 26 0000 0001 70"}
+			]},
+			{ "name": "40 with user-property empty value", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"40 0A 0001 00 06 26 0001 70 0000"}
+			]},
+			{ "name": "40 with user-property empty key,value", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"40 09 0001 00 05 26 0000 0000"}
 			]}
 		]
 	},
 	{
 		"group": "v5.0   PUBACK DISALLOWED PROPERTIES",
+		"ver":5,
 		"tests": [
-			{ "name": "40 with payload-format-indicator (byte)", "ver":5, "msgs": [
+			{ "name": "40 with payload-format-indicator (byte)", "msgs": [
 				{"type":"send", "payload":"40 06 0001 00 02 0100"},
 				{"type":"recv", "payload":"E0 01 82"}
 			]},
-			{ "name": "40 with request-problem-information (byte)", "ver":5, "msgs": [
+			{ "name": "40 with request-problem-information (byte)", "msgs": [
 				{"type":"send", "payload":"40 06 0001 00 02 1700"},
 				{"type":"recv", "payload":"E0 01 82"}
 			]},
-			{ "name": "40 with maximum-qos (byte)", "ver":5, "msgs": [
+			{ "name": "40 with maximum-qos (byte)", "msgs": [
 				{"type":"send", "payload":"40 06 0001 00 02 2400"},
 				{"type":"recv", "payload":"E0 01 82"}
 			]},
-			{ "name": "40 with retain-available (byte)", "ver":5, "msgs": [
+			{ "name": "40 with retain-available (byte)", "msgs": [
 				{"type":"send", "payload":"40 06 0001 00 02 2500"},
 				{"type":"recv", "payload":"E0 01 82"}
 			]},
-			{ "name": "40 with wildcard-subscription-available (byte)", "ver":5, "msgs": [
+			{ "name": "40 with wildcard-subscription-available (byte)", "msgs": [
 				{"type":"send", "payload":"40 06 0001 00 02 2800"},
 				{"type":"recv", "payload":"E0 01 82"}
 			]},
-			{ "name": "40 with subscription-identifier-available (byte)", "ver":5, "msgs": [
+			{ "name": "40 with subscription-identifier-available (byte)", "msgs": [
 				{"type":"send", "payload":"40 06 0001 00 02 2900"},
 				{"type":"recv", "payload":"E0 01 82"}
 			]},
-			{ "name": "40 with shared-subscription-available (byte)", "ver":5, "msgs": [
+			{ "name": "40 with shared-subscription-available (byte)", "msgs": [
 				{"type":"send", "payload":"40 06 0001 00 02 2A00"},
 				{"type":"recv", "payload":"E0 01 82"}
 			]},
 
-			{ "name": "40 with payload-format-indicator (byte) missing", "ver":5, "msgs": [
+			{ "name": "40 with payload-format-indicator (byte) missing", "msgs": [
 				{"type":"send", "payload":"40 05 0001 00 01 01"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with request-problem-information (byte) missing", "ver":5, "msgs": [
+			{ "name": "40 with request-problem-information (byte) missing", "msgs": [
 				{"type":"send", "payload":"40 05 0001 00 01 17"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with maximum-qos (byte) missing", "ver":5, "msgs": [
+			{ "name": "40 with maximum-qos (byte) missing", "msgs": [
 				{"type":"send", "payload":"40 05 0001 00 01 24"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with retain-available (byte) missing", "ver":5, "msgs": [
+			{ "name": "40 with retain-available (byte) missing", "msgs": [
 				{"type":"send", "payload":"40 05 0001 00 01 25"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with wildcard-subscription-available (byte) missing", "ver":5, "msgs": [
+			{ "name": "40 with wildcard-subscription-available (byte) missing", "msgs": [
 				{"type":"send", "payload":"40 05 0001 00 01 28"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with subscription-identifier-available (byte) missing", "ver":5, "msgs": [
+			{ "name": "40 with subscription-identifier-available (byte) missing", "msgs": [
 				{"type":"send", "payload":"40 05 0001 00 01 29"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with shared-subscription-available (byte) missing", "ver":5, "msgs": [
+			{ "name": "40 with shared-subscription-available (byte) missing", "msgs": [
 				{"type":"send", "payload":"40 05 0001 00 01 2A"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
 
-			{ "name": "40 with message-expiry-interval (four byte integer)", "ver":5, "msgs": [
+			{ "name": "40 with message-expiry-interval (four byte integer)", "msgs": [
 				{"type":"send", "payload":"40 09 0001 00 05 0200000001"},
 				{"type":"recv", "payload":"E0 01 82"}
 			]},
-			{ "name": "40 with session-expiry-interval (four byte integer)", "ver":5, "msgs": [
+			{ "name": "40 with session-expiry-interval (four byte integer)", "msgs": [
 				{"type":"send", "payload":"40 09 0001 00 05 1100000001"},
 				{"type":"recv", "payload":"E0 01 82"}
 			]},
-			{ "name": "40 with will-delay-interval (four byte integer)", "ver":5, "msgs": [
+			{ "name": "40 with will-delay-interval (four byte integer)", "msgs": [
 				{"type":"send", "payload":"40 09 0001 00 05 1800000001"},
 				{"type":"recv", "payload":"E0 01 82"}
 			]},
-			{ "name": "40 with maximum-packet-size (four byte integer)", "ver":5, "msgs": [
+			{ "name": "40 with maximum-packet-size (four byte integer)", "msgs": [
 				{"type":"send", "payload":"40 09 0001 00 05 2700000001"},
 				{"type":"recv", "payload":"E0 01 82"}
 			]},
 
-			{ "name": "40 with message-expiry-interval (four byte integer) missing", "ver":5, "msgs": [
+			{ "name": "40 with message-expiry-interval (four byte integer) missing", "msgs": [
 				{"type":"send", "payload":"40 05 0001 00 01 02"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with session-expiry-interval (four byte integer) missing", "ver":5, "msgs": [
+			{ "name": "40 with session-expiry-interval (four byte integer) missing", "msgs": [
 				{"type":"send", "payload":"40 05 0001 00 01 11"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with will-delay-interval (four byte integer) missing", "ver":5, "msgs": [
+			{ "name": "40 with will-delay-interval (four byte integer) missing", "msgs": [
 				{"type":"send", "payload":"40 05 0001 00 01 18"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with maximum-packet-size (four byte integer) missing", "ver":5, "msgs": [
+			{ "name": "40 with maximum-packet-size (four byte integer) missing", "msgs": [
 				{"type":"send", "payload":"40 05 0001 00 01 27"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
 
-			{ "name": "40 with content-type (UTF-8 string)", "ver":5, "msgs": [
+			{ "name": "40 with content-type (UTF-8 string)", "msgs": [
 				{"type":"send", "payload":"40 08 0001 00 04 03000170"},
 				{"type":"recv", "payload":"E0 01 82"}
 			]},
-			{ "name": "40 with response-topic (UTF-8 string)", "ver":5, "msgs": [
+			{ "name": "40 with response-topic (UTF-8 string)", "msgs": [
 				{"type":"send", "payload":"40 08 0001 00 04 08000170"},
 				{"type":"recv", "payload":"E0 01 82"}
 			]},
-			{ "name": "40 with assigned-client-identifier (UTF-8 string)", "ver":5, "msgs": [
+			{ "name": "40 with assigned-client-identifier (UTF-8 string)", "msgs": [
 				{"type":"send", "payload":"40 08 0001 00 04 12000170"},
 				{"type":"recv", "payload":"E0 01 82"}
 			]},
-			{ "name": "40 with authentication-method (UTF-8 string)", "ver":5, "msgs": [
+			{ "name": "40 with authentication-method (UTF-8 string)", "msgs": [
 				{"type":"send", "payload":"40 08 0001 00 04 15000170"},
 				{"type":"recv", "payload":"E0 01 82"}
 			]},
-			{ "name": "40 with response-information (UTF-8 string)", "ver":5, "msgs": [
+			{ "name": "40 with response-information (UTF-8 string)", "msgs": [
 				{"type":"send", "payload":"40 08 0001 00 04 1A000170"},
 				{"type":"recv", "payload":"E0 01 82"}
 			]},
-			{ "name": "40 with server-reference (UTF-8 string)", "ver":5, "msgs": [
+			{ "name": "40 with server-reference (UTF-8 string)", "msgs": [
 				{"type":"send", "payload":"40 08 0001 00 04 1C000170"},
 				{"type":"recv", "payload":"E0 01 82"}
 			]},
 
-			{ "name": "40 with content-type (UTF-8 string) missing", "ver":5, "msgs": [
+			{ "name": "40 with content-type (UTF-8 string) missing", "msgs": [
 				{"type":"send", "payload":"40 05 0001 00 01 03"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with response-topic (UTF-8 string) missing", "ver":5, "msgs": [
+			{ "name": "40 with response-topic (UTF-8 string) missing", "msgs": [
 				{"type":"send", "payload":"40 05 0001 00 01 08"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with assigned-client-identifier (UTF-8 string) missing", "ver":5, "msgs": [
+			{ "name": "40 with assigned-client-identifier (UTF-8 string) missing", "msgs": [
 				{"type":"send", "payload":"40 05 0001 00 01 12"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with authentication-method (UTF-8 string) missing", "ver":5, "msgs": [
+			{ "name": "40 with authentication-method (UTF-8 string) missing", "msgs": [
 				{"type":"send", "payload":"40 05 0001 00 01 15"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with response-information (UTF-8 string) missing", "ver":5, "msgs": [
+			{ "name": "40 with response-information (UTF-8 string) missing", "msgs": [
 				{"type":"send", "payload":"40 05 0001 00 01 1A"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with server-reference (UTF-8 string) missing", "ver":5, "msgs": [
+			{ "name": "40 with server-reference (UTF-8 string) missing", "msgs": [
 				{"type":"send", "payload":"40 05 0001 00 01 1C"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
 
-			{ "name": "40 with correlation-data (binary data)", "ver":5, "msgs": [
+			{ "name": "40 with correlation-data (binary data)", "msgs": [
 				{"type":"send", "payload":"40 08 0001 00 04 09000170"},
 				{"type":"recv", "payload":"E0 01 82"}
 			]},
-			{ "name": "40 with authentication-data (binary data)", "ver":5, "msgs": [
+			{ "name": "40 with authentication-data (binary data)", "msgs": [
 				{"type":"send", "payload":"40 08 0001 00 04 16000170"},
 				{"type":"recv", "payload":"E0 01 82"}
 			]},
 
-			{ "name": "40 with correlation-data (binary data) missing", "ver":5, "msgs": [
+			{ "name": "40 with correlation-data (binary data) missing", "msgs": [
 				{"type":"send", "payload":"40 05 0001 00 01 09"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with authentication-data (binary data) missing", "ver":5, "msgs": [
+			{ "name": "40 with authentication-data (binary data) missing", "msgs": [
 				{"type":"send", "payload":"40 05 0001 00 01 16"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
 
-			{ "name": "40 with subscription-identifier (variable byte integer)", "ver":5, "msgs": [
+			{ "name": "40 with subscription-identifier (variable byte integer)", "msgs": [
 				{"type":"send", "payload":"40 06 0001 00 02 0B01"},
 				{"type":"recv", "payload":"E0 01 82"}
 			]},
 
-			{ "name": "40 with subscription-identifier (variable byte integer) missing", "ver":5, "msgs": [
+			{ "name": "40 with subscription-identifier (variable byte integer) missing", "msgs": [
 				{"type":"send", "payload":"40 05 0001 00 01 0B"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
 
-			{ "name": "40 with server-keep-alive (two byte integer)", "ver":5, "msgs": [
+			{ "name": "40 with server-keep-alive (two byte integer)", "msgs": [
 				{"type":"send", "payload":"40 07 0001 00 03 130101"},
 				{"type":"recv", "payload":"E0 01 82"}
 			]},
-			{ "name": "40 with receive-maximum (two byte integer)", "ver":5, "msgs": [
+			{ "name": "40 with receive-maximum (two byte integer)", "msgs": [
 				{"type":"send", "payload":"40 07 0001 00 03 210101"},
 				{"type":"recv", "payload":"E0 01 82"}
 			]},
-			{ "name": "40 with topic-alias-maximum (two byte integer)", "ver":5, "msgs": [
+			{ "name": "40 with topic-alias-maximum (two byte integer)", "msgs": [
 				{"type":"send", "payload":"40 07 0001 00 03 220101"},
 				{"type":"recv", "payload":"E0 01 82"}
 			]},
-			{ "name": "40 with topic-alias (two byte integer)", "ver":5, "msgs": [
+			{ "name": "40 with topic-alias (two byte integer)", "msgs": [
 				{"type":"send", "payload":"40 07 0001 00 03 230101"},
 				{"type":"recv", "payload":"E0 01 82"}
 			]},
 
-			{ "name": "40 with server-keep-alive (two byte integer) missing", "ver":5, "msgs": [
+			{ "name": "40 with server-keep-alive (two byte integer) missing", "msgs": [
 				{"type":"send", "payload":"40 05 0001 00 01 13"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with receive-maximum (two byte integer) missing", "ver":5, "msgs": [
+			{ "name": "40 with receive-maximum (two byte integer) missing", "msgs": [
 				{"type":"send", "payload":"40 05 0001 00 01 21"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with topic-alias-maximum (two byte integer) missing", "ver":5, "msgs": [
+			{ "name": "40 with topic-alias-maximum (two byte integer) missing", "msgs": [
 				{"type":"send", "payload":"40 05 0001 00 01 22"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with topic-alias (two byte integer) missing", "ver":5, "msgs": [
+			{ "name": "40 with topic-alias (two byte integer) missing", "msgs": [
 				{"type":"send", "payload":"40 05 0001 00 01 23"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
 
-			{ "name": "40 with invalid-property 0x00 (byte)", "ver":5, "msgs": [
+			{ "name": "40 with invalid-property 0x00 (byte)", "msgs": [
 				{"type":"send", "payload":"40 06 0001 00 02 0001"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with unknown-property 0x04 (byte)", "ver":5, "msgs": [
+			{ "name": "40 with unknown-property 0x04 (byte)", "msgs": [
 				{"type":"send", "payload":"40 06 0001 00 02 0401"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with unknown-property 0x05 (byte)", "ver":5, "msgs": [
+			{ "name": "40 with unknown-property 0x05 (byte)", "msgs": [
 				{"type":"send", "payload":"40 06 0001 00 02 0501"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with unknown-property 0x06 (byte)", "ver":5, "msgs": [
+			{ "name": "40 with unknown-property 0x06 (byte)", "msgs": [
 				{"type":"send", "payload":"40 06 0001 00 02 0601"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with unknown-property 0x07 (byte)", "ver":5, "msgs": [
+			{ "name": "40 with unknown-property 0x07 (byte)", "msgs": [
 				{"type":"send", "payload":"40 06 0001 00 02 0701"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with unknown-property 0x0A (byte)", "ver":5, "msgs": [
+			{ "name": "40 with unknown-property 0x0A (byte)", "msgs": [
 				{"type":"send", "payload":"40 06 0001 00 02 0A01"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with unknown-property 0x0C (byte)", "ver":5, "msgs": [
+			{ "name": "40 with unknown-property 0x0C (byte)", "msgs": [
 				{"type":"send", "payload":"40 06 0001 00 02 0C01"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with unknown-property 0x0D (byte)", "ver":5, "msgs": [
+			{ "name": "40 with unknown-property 0x0D (byte)", "msgs": [
 				{"type":"send", "payload":"40 06 0001 00 02 0D01"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with unknown-property 0x0E (byte)", "ver":5, "msgs": [
+			{ "name": "40 with unknown-property 0x0E (byte)", "msgs": [
 				{"type":"send", "payload":"40 06 0001 00 02 0E01"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with unknown-property 0x0F (byte)", "ver":5, "msgs": [
+			{ "name": "40 with unknown-property 0x0F (byte)", "msgs": [
 				{"type":"send", "payload":"40 06 0001 00 02 0F01"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with unknown-property 0x10 (byte)", "ver":5, "msgs": [
+			{ "name": "40 with unknown-property 0x10 (byte)", "msgs": [
 				{"type":"send", "payload":"40 06 0001 00 02 1001"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with unknown-property 0x14 (byte)", "ver":5, "msgs": [
+			{ "name": "40 with unknown-property 0x14 (byte)", "msgs": [
 				{"type":"send", "payload":"40 06 0001 00 02 1401"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with unknown-property 0x1B (byte)", "ver":5, "msgs": [
+			{ "name": "40 with unknown-property 0x1B (byte)", "msgs": [
 				{"type":"send", "payload":"40 06 0001 00 02 1B01"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with unknown-property 0x1D (byte)", "ver":5, "msgs": [
+			{ "name": "40 with unknown-property 0x1D (byte)", "msgs": [
 				{"type":"send", "payload":"40 06 0001 00 02 1D01"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with unknown-property 0x1E (byte)", "ver":5, "msgs": [
+			{ "name": "40 with unknown-property 0x1E (byte)", "msgs": [
 				{"type":"send", "payload":"40 06 0001 00 02 1E01"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with unknown-property 0x20 (byte)", "ver":5, "msgs": [
+			{ "name": "40 with unknown-property 0x20 (byte)", "msgs": [
 				{"type":"send", "payload":"40 06 0001 00 02 2001"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with unknown-property 0x7F (byte)", "ver":5, "msgs": [
+			{ "name": "40 with unknown-property 0x7F (byte)", "msgs": [
 				{"type":"send", "payload":"40 06 0001 00 02 7F01"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with invalid-property 0x8000 (byte)", "ver":5, "msgs": [
+			{ "name": "40 with invalid-property 0x8000 (byte)", "msgs": [
 				{"type":"send", "payload":"40 07 0001 00 03 800001"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with unknown-property 0x8001 (byte)", "ver":5, "msgs": [
+			{ "name": "40 with unknown-property 0x8001 (byte)", "msgs": [
 				{"type":"send", "payload":"40 07 0001 00 03 800101"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with unknown-property 0xFF7F (byte)", "ver":5, "msgs": [
+			{ "name": "40 with unknown-property 0xFF7F (byte)", "msgs": [
 				{"type":"send", "payload":"40 07 0001 00 03 FF7F01"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with unknown-property 0x808001 (byte)", "ver":5, "msgs": [
+			{ "name": "40 with unknown-property 0x808001 (byte)", "msgs": [
 				{"type":"send", "payload":"40 08 0001 00 04 80800101"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with unknown-property 0xFFFF7F (byte)", "ver":5, "msgs": [
+			{ "name": "40 with unknown-property 0xFFFF7F (byte)", "msgs": [
 				{"type":"send", "payload":"40 08 0001 00 04 FFFF7F01"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with unknown-property 0x80808001 (byte)", "ver":5, "msgs": [
+			{ "name": "40 with unknown-property 0x80808001 (byte)", "msgs": [
 				{"type":"send", "payload":"40 09 0001 00 05 8080800101"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]},
-			{ "name": "40 with unknown-property 0xFFFFFF7F (byte)", "ver":5, "msgs": [
+			{ "name": "40 with unknown-property 0xFFFFFF7F (byte)", "msgs": [
 				{"type":"send", "payload":"40 09 0001 00 05 FFFFFF7F01"},
 				{"type":"recv", "payload":"E0 01 81"}
 			]}

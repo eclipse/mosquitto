@@ -24,14 +24,13 @@
 
 from mosq_test_helper import *
 
-def do_test(proto_ver):
+def do_test(start_broker, proto_ver):
     rc = 1
-    keepalive = 60
-    connect_packet_sub_persistent = mosq_test.gen_connect("flipflop-test", keepalive=keepalive, clean_session=False, proto_ver=proto_ver)
-    connect_packet_sub_clean = mosq_test.gen_connect("flipflop-test", keepalive=keepalive, clean_session=True, proto_ver=proto_ver)
+    connect_packet_sub_persistent = mosq_test.gen_connect("flipflop-test", clean_session=False, proto_ver=proto_ver)
+    connect_packet_sub_clean = mosq_test.gen_connect("flipflop-test", clean_session=True, proto_ver=proto_ver)
     connack_packet_sub = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
 
-    connect_packet_pub = mosq_test.gen_connect("flipflop-test-pub", keepalive=keepalive, proto_ver=proto_ver)
+    connect_packet_pub = mosq_test.gen_connect("flipflop-test-pub", proto_ver=proto_ver)
     connack_packet_pub = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
 
     mid=1
@@ -44,7 +43,8 @@ def do_test(proto_ver):
 
 
     port = mosq_test.get_port()
-    broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port)
+    if start_broker:
+        broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port)
 
     try:
         # mosquitto_sub -i sub -t 'topic' -q 1 -d -c
@@ -73,18 +73,34 @@ def do_test(proto_ver):
         rc = 0
 
         sub_sock.close()
+
+        sub_sock = mosq_test.do_client_connect(connect_packet_sub_clean, connack_packet_sub, port=port)
+        sub_sock.close()
     except mosq_test.TestError:
         pass
     finally:
-        broker.terminate()
-        broker.wait()
-        (stdo, stde) = broker.communicate()
-        if rc:
-            print(stde.decode('utf-8'))
-            print("proto_ver=%d" % (proto_ver))
-            exit(rc)
+        if start_broker:
+            broker.terminate()
+            if mosq_test.wait_for_subprocess(broker):
+                print("broker not terminated")
+                if rc == 0: rc=1
+            (stdo, stde) = broker.communicate()
+            if rc:
+                print(stde.decode('utf-8'))
+                print("proto_ver=%d" % (proto_ver))
+                exit(rc)
+        else:
+            return rc
 
 
-do_test(proto_ver=4)
-do_test(proto_ver=5)
-exit(0)
+def all_tests(start_broker=False):
+    rc = do_test(start_broker, proto_ver=4)
+    if rc:
+        return rc;
+    rc = do_test(start_broker, proto_ver=5)
+    if rc:
+        return rc;
+    return 0
+
+if __name__ == '__main__':
+    all_tests(True)

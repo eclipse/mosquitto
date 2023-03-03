@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2018-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2018-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -42,7 +42,7 @@ struct mqtt5__property {
 };
 
 
-int property__read_all(int command, struct mosquitto__packet *packet, mosquitto_property **property);
+int property__read_all(int command, struct mosquitto__packet_in *packet, mosquitto_property **property);
 int property__write_all(struct mosquitto__packet *packet, const mosquitto_property *property, bool write_len);
 void property__free(mosquitto_property **property);
 

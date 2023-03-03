@@ -1,0 +1,28 @@
+[
+	{
+		"group": "v3.1.1 PINGRESP",
+		"ver":4,
+		"tests": [
+			{ "name": "D0 [MQTT-3.1.0-1]", "connack": false, "msgs": [{"type":"send", "payload":"D0 00"}]},
+			{ "name": "D0 long", "msgs": [{"type":"send", "payload":"D0 01 00"}]},
+			{ "name": "D0", "expect_disconnect":false, "msgs": [{"type":"send", "payload":"D0 00"}]},
+			{ "name": "D1", "msgs": [{"type":"send", "payload":"D1 00"}]},
+			{ "name": "D2", "msgs": [{"type":"send", "payload":"D2 00"}]},
+			{ "name": "D4", "msgs": [{"type":"send", "payload":"D4 00"}]},
+			{ "name": "D8", "msgs": [{"type":"send", "payload":"D8 00"}]}
+		]
+	},
+	{
+		"group": "v5.0   PINGRESP",
+		"ver":5,
+		"tests": [
+			{ "name": "D0 [MQTT-3.1.0-1]", "connack": false, "msgs": [{"type":"send", "payload":"D0 00"}]},
+			{ "name": "D0 long", "msgs": [{"type":"send", "payload":"D0 01 00"}]},
+			{ "name": "D0", "expect_disconnect":false, "msgs": [{"type":"send", "payload":"D0 00"}]},
+			{ "name": "D1", "msgs": [{"type":"send", "payload":"D1 00"}]},
+			{ "name": "D2", "msgs": [{"type":"send", "payload":"D2 00"}]},
+			{ "name": "D4", "msgs": [{"type":"send", "payload":"D4 00"}]},
+			{ "name": "D8", "msgs": [{"type":"send", "payload":"D8 00"}]}
+		]
+	}
+]

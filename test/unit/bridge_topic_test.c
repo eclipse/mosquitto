@@ -4,9 +4,6 @@
 #include <CUnit/CUnit.h>
 #include <CUnit/Basic.h>
 
-#define WITH_BRIDGE
-#define WITH_BROKER
-
 #include "mosquitto_broker_internal.h"
 #include "property_mosq.h"
 #include "packet_mosq.h"
@@ -30,7 +27,7 @@ static void map_valid_helper(const char *topic, const char *local_prefix, const 
 	rc = bridge__remap_topic_in(&mosq, &map_topic);
 	CU_ASSERT_EQUAL(rc, 0);
 	CU_ASSERT_PTR_NOT_NULL(map_topic);
-	if(topic){
+	if(map_topic){
 		CU_ASSERT_STRING_EQUAL(map_topic, expected);
 		free(map_topic);
 	}
@@ -59,7 +56,7 @@ static void TEST_remap_valid(void)
 	map_valid_helper("pattern", "L/", NULL, "pattern", "L/pattern");
 	map_valid_helper("pattern", NULL, "R/", "R/pattern", "pattern");
 	map_valid_helper("pattern", NULL, NULL, "pattern", "pattern");
-	map_valid_helper(NULL, "local", "remote", "local", "remote");
+	map_valid_helper(NULL, "local", "remote", "remote", "local");
 }
 
 static void TEST_remap_invalid(void)

@@ -13,59 +13,19 @@
 
 from mosq_test_helper import *
 
-port = mosq_test.get_lib_port()
+def do_test(conn, data):
+    connect_packet = mosq_test.gen_connect("publish-qos1-test")
+    connack_packet = mosq_test.gen_connack(rc=0)
 
-rc = 1
-keepalive = 60
-connect_packet = mosq_test.gen_connect("publish-qos1-test", keepalive=keepalive)
-connack_packet = mosq_test.gen_connack(rc=0)
+    disconnect_packet = mosq_test.gen_disconnect()
 
-disconnect_packet = mosq_test.gen_disconnect()
-
-mid = 123
-publish_packet = mosq_test.gen_publish("pub/qos1/receive", qos=1, mid=mid, payload="message")
-puback_packet = mosq_test.gen_puback(mid)
-
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-sock.settimeout(10)
-sock.bind(('', port))
-sock.listen(5)
-
-client_args = sys.argv[1:]
-env = dict(os.environ)
-env['LD_LIBRARY_PATH'] = '../../lib:../../lib/cpp'
-try:
-    pp = env['PYTHONPATH']
-except KeyError:
-    pp = ''
-env['PYTHONPATH'] = '../../lib/python:'+pp
-client = mosq_test.start_client(filename=sys.argv[1].replace('/', '-'), cmd=client_args, env=env, port=port)
-
-try:
-    (conn, address) = sock.accept()
-    conn.settimeout(10)
+    mid = 123
+    publish_packet = mosq_test.gen_publish("pub/qos1/receive", qos=1, mid=mid, payload="message")
+    puback_packet = mosq_test.gen_puback(mid)
 
     mosq_test.do_receive_send(conn, connect_packet, connack_packet, "connect")
     mosq_test.do_send_receive(conn, publish_packet, puback_packet, "puback")
-    rc = 0
 
-    conn.close()
-except mosq_test.TestError:
-    pass
-finally:
-    for i in range(0, 5):
-        if client.returncode != None:
-            break
-        time.sleep(0.1)
 
-    try:
-        client.terminate()
-    except OSError:
-        pass
-    client.wait()
-    sock.close()
-    if client.returncode != 0:
-        exit(1)
-
-exit(rc)
+mosq_test.client_test("c/03-publish-b2c-qos1.test", [], do_test, None)
+mosq_test.client_test("cpp/03-publish-b2c-qos1.test", [], do_test, None)

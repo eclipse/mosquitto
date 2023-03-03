@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -35,8 +35,9 @@ int handle__connack(struct mosquitto *context)
 	uint8_t reason_code;
 	mosquitto_property *properties = NULL;
 	uint32_t maximum_packet_size;
-	uint8_t retain_available;
 	uint16_t server_keepalive;
+	uint16_t max_topic_alias;
+	uint8_t retain_available;
 	uint16_t inflight_maximum;
 	uint8_t max_qos = 255;
 
@@ -106,6 +107,17 @@ int handle__connack(struct mosquitto *context)
 					&server_keepalive, false)){
 
 			context->keepalive = server_keepalive;
+		}
+
+		/* topic-alias-maximum */
+		if(mosquitto_property_read_int16(properties, MQTT_PROP_TOPIC_ALIAS_MAXIMUM,
+					&max_topic_alias, false)){
+
+			if(max_topic_alias < context->bridge->max_topic_alias){
+				context->alias_max_l2r = max_topic_alias;
+			}else{
+				context->alias_max_l2r = context->bridge->max_topic_alias;
+			}
 		}
 
 		mosquitto_property_free_all(&properties);

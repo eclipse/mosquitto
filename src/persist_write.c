@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2010-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2010-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -38,10 +38,10 @@ Contributors:
 #include "misc_mosq.h"
 #include "util_mosq.h"
 
-static int persist__client_messages_save(FILE *db_fptr, struct mosquitto *context, struct mosquitto_client_msg *queue)
+static int persist__client_messages_save(FILE *db_fptr, struct mosquitto *context, struct mosquitto__client_msg *queue)
 {
 	struct P_client_msg chunk;
-	struct mosquitto_client_msg *cmsg;
+	struct mosquitto__client_msg *cmsg;
 	int rc;
 
 	assert(db_fptr);
@@ -51,9 +51,9 @@ static int persist__client_messages_save(FILE *db_fptr, struct mosquitto *contex
 
 	cmsg = queue;
 	while(cmsg){
-		if(!strncmp(cmsg->store->topic, "$SYS", 4)
-				&& cmsg->store->ref_count <= 1
-				&& cmsg->store->dest_id_count == 0){
+		if(!strncmp(cmsg->base_msg->data.topic, "$SYS", 4)
+				&& cmsg->base_msg->ref_count <= 1
+				&& cmsg->base_msg->dest_id_count == 0){
 
 			/* This $SYS message won't have been persisted, so we can't persist
 			 * this client message. */
@@ -61,15 +61,15 @@ static int persist__client_messages_save(FILE *db_fptr, struct mosquitto *contex
 			continue;
 		}
 
-		chunk.F.store_id = cmsg->store->db_id;
-		chunk.F.mid = cmsg->mid;
+		chunk.F.store_id = cmsg->base_msg->data.store_id;
+		chunk.F.mid = cmsg->data.mid;
 		chunk.F.id_len = (uint16_t)strlen(context->id);
-		chunk.F.qos = cmsg->qos;
-		chunk.F.retain_dup = (uint8_t)((cmsg->retain&0x0F)<<4 | (cmsg->dup&0x0F));
-		chunk.F.direction = (uint8_t)cmsg->direction;
-		chunk.F.state = (uint8_t)cmsg->state;
-		chunk.client_id = context->id;
-		chunk.properties = cmsg->properties;
+		chunk.F.qos = cmsg->data.qos;
+		chunk.F.retain_dup = (uint8_t)((cmsg->data.retain&0x0F)<<4 | (cmsg->data.dup&0x0F));
+		chunk.F.direction = (uint8_t)cmsg->data.direction;
+		chunk.F.state = (uint8_t)cmsg->data.state;
+		chunk.clientid = context->id;
+		chunk.subscription_identifier = cmsg->data.subscription_identifier;
 
 		rc = persist__chunk_client_msg_write_v6(db_fptr, &chunk);
 		if(rc){
@@ -85,25 +85,23 @@ static int persist__client_messages_save(FILE *db_fptr, struct mosquitto *contex
 
 static int persist__message_store_save(FILE *db_fptr)
 {
-	struct P_msg_store chunk;
-	struct mosquitto_msg_store *stored;
+	struct P_base_msg chunk;
+	struct mosquitto__base_msg *base_msg, *base_msg_tmp;
 	int rc;
 
 	assert(db_fptr);
 
-	memset(&chunk, 0, sizeof(struct P_msg_store));
+	memset(&chunk, 0, sizeof(struct P_base_msg));
 
-	stored = db.msg_store;
-	while(stored){
-		if(stored->ref_count < 1 || stored->topic == NULL){
-			stored = stored->next;
+	base_msg = db.msg_store;
+	HASH_ITER(hh, db.msg_store, base_msg, base_msg_tmp){
+		if(base_msg->ref_count < 1 || base_msg->data.topic == NULL){
 			continue;
 		}
 
-		if(!strncmp(stored->topic, "$SYS", 4)){
-			if(stored->ref_count <= 1 && stored->dest_id_count == 0){
+		if(!strncmp(base_msg->data.topic, "$SYS", 4)){
+			if(base_msg->ref_count <= 1 && base_msg->dest_id_count == 0){
 				/* $SYS messages that are only retained shouldn't be persisted. */
-				stored = stored->next;
 				continue;
 			}
 			/* Don't save $SYS messages as retained otherwise they can give
@@ -112,45 +110,44 @@ static int persist__message_store_save(FILE *db_fptr)
 			 * queue. */
 			chunk.F.retain = 0;
 		}else{
-			chunk.F.retain = (uint8_t)stored->retain;
+			chunk.F.retain = (uint8_t)base_msg->data.retain;
 		}
 
-		chunk.F.store_id = stored->db_id;
-		chunk.F.expiry_time = stored->message_expiry_time;
-		chunk.F.payloadlen = stored->payloadlen;
-		chunk.F.source_mid = stored->source_mid;
-		if(stored->source_id){
-			chunk.F.source_id_len = (uint16_t)strlen(stored->source_id);
-			chunk.source.id = stored->source_id;
+		chunk.F.store_id = base_msg->data.store_id;
+		chunk.F.expiry_time = base_msg->data.expiry_time;
+		chunk.F.payloadlen = base_msg->data.payloadlen;
+		chunk.F.source_mid = base_msg->data.source_mid;
+		if(base_msg->data.source_id){
+			chunk.F.source_id_len = (uint16_t)strlen(base_msg->data.source_id);
+			chunk.source.id = base_msg->data.source_id;
 		}else{
 			chunk.F.source_id_len = 0;
 			chunk.source.id = NULL;
 		}
-		if(stored->source_username){
-			chunk.F.source_username_len = (uint16_t)strlen(stored->source_username);
-			chunk.source.username = stored->source_username;
+		if(base_msg->data.source_username){
+			chunk.F.source_username_len = (uint16_t)strlen(base_msg->data.source_username);
+			chunk.source.username = base_msg->data.source_username;
 		}else{
 			chunk.F.source_username_len = 0;
 			chunk.source.username = NULL;
 		}
 
-		chunk.F.topic_len = (uint16_t)strlen(stored->topic);
-		chunk.topic = stored->topic;
+		chunk.F.topic_len = (uint16_t)strlen(base_msg->data.topic);
+		chunk.topic = base_msg->data.topic;
 
-		if(stored->source_listener){
-			chunk.F.source_port = stored->source_listener->port;
+		if(base_msg->source_listener){
+			chunk.F.source_port = base_msg->source_listener->port;
 		}else{
 			chunk.F.source_port = 0;
 		}
-		chunk.F.qos = stored->qos;
-		chunk.payload = stored->payload;
-		chunk.properties = stored->properties;
+		chunk.F.qos = base_msg->data.qos;
+		chunk.payload = base_msg->data.payload;
+		chunk.properties = base_msg->data.properties;
 
 		rc = persist__chunk_message_store_write_v6(db_fptr, &chunk);
 		if(rc){
 			return rc;
 		}
-		stored = stored->next;
 	}
 
 	return MOSQ_ERR_SUCCESS;
@@ -181,7 +178,7 @@ static int persist__client_save(FILE *db_fptr)
 			chunk.F.session_expiry_interval = context->session_expiry_interval;
 			chunk.F.last_mid = context->last_mid;
 			chunk.F.id_len = (uint16_t)strlen(context->id);
-			chunk.client_id = context->id;
+			chunk.clientid = context->id;
 			if(context->username){
 				chunk.F.username_len = (uint16_t)strlen(context->username);
 				chunk.username = context->username;
@@ -238,14 +235,14 @@ static int persist__subs_save(FILE *db_fptr, struct mosquitto__subhier *node, co
 			sub_chunk.F.identifier = sub->identifier;
 			sub_chunk.F.id_len = (uint16_t)strlen(sub->context->id);
 			sub_chunk.F.topic_len = (uint16_t)strlen(thistopic);
-			sub_chunk.F.qos = (uint8_t)sub->qos;
-			sub_chunk.F.options = (uint8_t)(sub->no_local<<2 | sub->retain_as_published<<3);
-			sub_chunk.client_id = sub->context->id;
+			sub_chunk.F.qos = MQTT_SUB_OPT_GET_QOS(sub->subscription_options);
+			sub_chunk.F.options = sub->subscription_options & 0xFC;
+			sub_chunk.clientid = sub->context->id;
 			sub_chunk.topic = thistopic;
 
 			rc = persist__chunk_sub_write_v6(db_fptr, &sub_chunk);
 			if(rc){
-				mosquitto__free(thistopic);
+				mosquitto__FREE(thistopic);
 				return rc;
 			}
 		}
@@ -255,7 +252,7 @@ static int persist__subs_save(FILE *db_fptr, struct mosquitto__subhier *node, co
 	HASH_ITER(hh, node->children, subhier, subhier_tmp){
 		persist__subs_save(db_fptr, subhier, thistopic, level+1);
 	}
-	mosquitto__free(thistopic);
+	mosquitto__FREE(thistopic);
 	return MOSQ_ERR_SUCCESS;
 }
 
@@ -280,9 +277,9 @@ static int persist__retain_save(FILE *db_fptr, struct mosquitto__retainhier *nod
 
 	memset(&retain_chunk, 0, sizeof(struct P_retain));
 
-	if(node->retained && strncmp(node->retained->topic, "$SYS", 4)){
+	if(node->retained && strncmp(node->retained->data.topic, "$SYS", 4)){
 		/* Don't save $SYS messages. */
-		retain_chunk.F.store_id = node->retained->db_id;
+		retain_chunk.F.store_id = node->retained->data.store_id;
 		rc = persist__chunk_retain_write_v6(db_fptr, &retain_chunk);
 		if(rc){
 			return rc;
@@ -308,67 +305,32 @@ static int persist__retain_save_all(FILE *db_fptr)
 	return MOSQ_ERR_SUCCESS;
 }
 
+static int persist__write_data(FILE* db_fptr, void* user_data);
+
+static void persist__log_write_error(const char* msg)
+{
+	log__printf(NULL, MOSQ_LOG_ERR, "Error saving in-memory database, %s", msg);
+}
+
 int persist__backup(bool shutdown)
 {
-	int rc = 0;
-	FILE *db_fptr = NULL;
-	uint32_t db_version_w = htonl(MOSQ_DB_VERSION);
-	uint32_t crc = 0;
-	char *err;
-	char *outfile = NULL;
-	size_t len;
-	struct PF_cfg cfg_chunk;
-
 	if(db.config == NULL) return MOSQ_ERR_INVAL;
 	if(db.config->persistence == false) return MOSQ_ERR_SUCCESS;
 	if(db.config->persistence_filepath == NULL) return MOSQ_ERR_INVAL;
 
 	log__printf(NULL, MOSQ_LOG_INFO, "Saving in-memory database to %s.", db.config->persistence_filepath);
 
-	len = strlen(db.config->persistence_filepath)+5;
-	outfile = mosquitto__malloc(len+1);
-	if(!outfile){
-		log__printf(NULL, MOSQ_LOG_INFO, "Error saving in-memory database, out of memory.");
-		return MOSQ_ERR_NOMEM;
-	}
-	snprintf(outfile, len, "%s.new", db.config->persistence_filepath);
-	outfile[len] = '\0';
+	return mosquitto_write_file(db.config->persistence_filepath, true, &persist__write_data, &shutdown, &persist__log_write_error);
+}
 
-#ifndef WIN32
-	/**
- 	*
-	* If a system lost power during the rename operation at the
-	* end of this file the filesystem could potentially be left
-	* with a directory that looks like this after powerup:
-	*
-	* 24094 -rw-r--r--    2 root     root          4099 May 30 16:27 mosquitto.db
-	* 24094 -rw-r--r--    2 root     root          4099 May 30 16:27 mosquitto.db.new
-	*
-	* The 24094 shows that mosquitto.db.new is hard-linked to the
-	* same file as mosquitto.db.  If fopen(outfile, "wb") is naively
-	* called then mosquitto.db will be truncated and the database
-	* potentially corrupted.
-	*
-	* Any existing mosquitto.db.new file must be removed prior to
-	* opening to guarantee that it is not hard-linked to
-	* mosquitto.db.
-	*
-	*/
-	rc = unlink(outfile);
-	if (rc != 0) {
-		rc = 0;
-		if (errno != ENOENT) {
-			log__printf(NULL, MOSQ_LOG_INFO, "Error saving in-memory database, unable to remove %s.", outfile);
-			goto error;
-		}
-	}
-#endif
-
-	db_fptr = mosquitto__fopen(outfile, "wb", true);
-	if(db_fptr == NULL){
-		log__printf(NULL, MOSQ_LOG_INFO, "Error saving in-memory database, unable to open %s for writing.", outfile);
-		goto error;
-	}
+static int persist__write_data(FILE* db_fptr, void* user_data)
+{
+	bool shutdown = *(bool*)(user_data);
+	uint32_t db_version_w = htonl(MOSQ_DB_VERSION);
+	uint32_t crc = 0;
+	const char* err;
+	struct PF_cfg cfg_chunk;
+	int rc = MOSQ_ERR_UNKNOWN;
 
 	/* Header */
 	write_e(db_fptr, magic, 15);
@@ -387,57 +349,18 @@ int persist__backup(bool shutdown)
 		goto error;
 	}
 
-	persist__client_save(db_fptr);
-	persist__subs_save_all(db_fptr);
-	persist__retain_save_all(db_fptr);
-
-#ifndef WIN32
-	/**
-	*
-	* Closing a file does not guarantee that the contents are
-	* written to disk.  Need to flush to send data from app to OS
-	* buffers, then fsync to deliver data from OS buffers to disk
-	* (as well as disk hardware permits).
-	*
-	* man close (http://linux.die.net/man/2/close, 2016-06-20):
-	*
-	*   "successful close does not guarantee that the data has
-	*   been successfully saved to disk, as the kernel defers
-	*   writes.  It is not common for a filesystem to flush
-	*   the  buffers  when  the stream is closed.  If you need
-	*   to be sure that the data is physically stored, use
-	*   fsync(2).  (It will depend on the disk hardware at this
-	*   point."
-	*
-	* This guarantees that the new state file will not overwrite
-	* the old state file before its contents are valid.
-	*
-	*/
-
-	fflush(db_fptr);
-	fsync(fileno(db_fptr));
-#endif
-	fclose(db_fptr);
-
-#ifdef WIN32
-	if(remove(db.config->persistence_filepath) != 0){
-		if(errno != ENOENT){
-			goto error;
-		}
-	}
-#endif
-	if(rename(outfile, db.config->persistence_filepath) != 0){
+	if (persist__client_save(db_fptr)
+			|| persist__subs_save_all(db_fptr)
+			|| persist__retain_save_all(db_fptr)){
 		goto error;
 	}
-	mosquitto__free(outfile);
-	outfile = NULL;
-	return rc;
+	return MOSQ_ERR_SUCCESS;
+
 error:
-	mosquitto__free(outfile);
 	err = strerror(errno);
-	log__printf(NULL, MOSQ_LOG_ERR, "Error: %s.", err);
+	log__printf(NULL, MOSQ_LOG_ERR, "Error during saving in-memory database %s: %s.", db.config->persistence_filepath, err);
 	if(db_fptr) fclose(db_fptr);
-	return 1;
+	return rc;
 }
 
 

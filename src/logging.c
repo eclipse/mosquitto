@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -17,6 +17,7 @@ Contributors:
 */
 #include "config.h"
 
+#include <inttypes.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -42,6 +43,11 @@ Contributors:
 
 #ifdef WIN32
 HANDLE syslog_h;
+#endif
+
+#ifdef ANDROID
+#include <android/log.h>
+static const char* LOG_TAG = "mosquitto";
 #endif
 
 static char log_fptr_buffer[BUFSIZ];
@@ -187,6 +193,28 @@ DltLogLevelType get_dlt_level(unsigned int priority)
 }
 #endif
 
+#ifdef ANDROID
+android_LogPriority get_android_level(unsigned int priority)
+{
+	switch (priority) {
+		case MOSQ_LOG_ERR:
+			return ANDROID_LOG_ERROR;
+		case MOSQ_LOG_WARNING:
+			return ANDROID_LOG_WARN;
+		case MOSQ_LOG_INFO:
+			return ANDROID_LOG_INFO;
+		case MOSQ_LOG_DEBUG:
+			return ANDROID_LOG_DEBUG;
+		case MOSQ_LOG_NOTICE:
+		case MOSQ_LOG_SUBSCRIBE:
+		case MOSQ_LOG_UNSUBSCRIBE:
+			return ANDROID_LOG_VERBOSE;
+		default:
+			return ANDROID_LOG_DEBUG;
+	}
+}
+#endif
+
 static int log__vprintf(unsigned int priority, const char *fmt, va_list va)
 {
 	const char *topic;
@@ -264,7 +292,7 @@ static int log__vprintf(unsigned int priority, const char *fmt, va_list va)
 				syslog_priority = EVENTLOG_INFORMATION_TYPE;
 #endif
 				break;
-#ifdef WITH_WEBSOCKETS
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
 			case MOSQ_LOG_WEBSOCKETS:
 				topic = "$SYS/broker/log/WS";
 #ifndef WIN32
@@ -291,7 +319,7 @@ static int log__vprintf(unsigned int priority, const char *fmt, va_list va)
 					log_line_pos = (size_t)snprintf(log_line, sizeof(log_line), "Time error");
 				}
 			}else{
-				log_line_pos = (size_t)snprintf(log_line, sizeof(log_line), "%d", (int)db.now_real_s);
+				log_line_pos = (size_t)snprintf(log_line, sizeof(log_line), "%" PRIu64, (uint64_t)db.now_real_s);
 			}
 			if(log_line_pos < sizeof(log_line)-3){
 				log_line[log_line_pos] = ':';
@@ -332,6 +360,11 @@ static int log__vprintf(unsigned int priority, const char *fmt, va_list va)
 #ifdef WITH_DLT
 		if(log_destinations & MQTT3_LOG_DLT && priority != MOSQ_LOG_INTERNAL){
 			DLT_LOG_STRING(dltContext, get_dlt_level(priority), log_line);
+		}
+#endif
+#ifdef ANDROID
+		if(log_destinations & MQTT3_LOG_ANDROID && priority != MOSQ_LOG_INTERNAL){
+			__android_log_write(get_android_level(priority), LOG_TAG, log_line);
 		}
 #endif
 	}
@@ -375,12 +408,12 @@ void log__internal(const char *fmt, ...)
 #endif
 }
 
-int mosquitto_log_vprintf(int level, const char *fmt, va_list va)
+BROKER_EXPORT int mosquitto_log_vprintf(int level, const char *fmt, va_list va)
 {
 	return log__vprintf((unsigned int)level, fmt, va);
 }
 
-void mosquitto_log_printf(int level, const char *fmt, ...)
+BROKER_EXPORT void mosquitto_log_printf(int level, const char *fmt, ...)
 {
 	va_list va;
 

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -20,36 +20,61 @@ Contributors:
 
 #include <assert.h>
 #include <time.h>
+#ifdef __APPLE__
+#include <sys/socket.h>
+#endif
 
 #include "mosquitto_broker_internal.h"
 #include "alias_mosq.h"
 #include "memory_mosq.h"
 #include "packet_mosq.h"
 #include "property_mosq.h"
+#include "sys_tree.h"
 #include "time_mosq.h"
 #include "util_mosq.h"
 #include "will_mosq.h"
 
 #include "uthash.h"
 
-struct mosquitto *context__init(mosq_sock_t sock)
+int context__init_sock(struct mosquitto *context, mosq_sock_t sock)
+{
+	char address[1024];
+
+	context->sock = sock;
+
+	if((int)context->sock >= 0){
+		if(!net__socket_get_address(context->sock,
+					address, sizeof(address),
+					&context->remote_port)){
+
+			context->address = mosquitto__strdup(address);
+		}
+		if(!context->address){
+			/* getpeername and inet_ntop failed and not a bridge */
+			return MOSQ_ERR_NOMEM;
+		}
+		HASH_ADD(hh_sock, db.contexts_by_sock, sock, sizeof(context->sock), context);
+	}
+	return MOSQ_ERR_SUCCESS;
+}
+
+struct mosquitto *context__init(void)
 {
 	struct mosquitto *context;
-	char address[1024];
 
 	context = mosquitto__calloc(1, sizeof(struct mosquitto));
 	if(!context) return NULL;
 
-#ifdef WITH_EPOLL
+#if defined(WITH_EPOLL) || defined(WITH_KQUEUE)
 	context->ident = id_client;
 #else
 	context->pollfd_index = -1;
 #endif
 	mosquitto__set_state(context, mosq_cs_new);
-	context->sock = sock;
+	context->sock = INVALID_SOCKET;
 	context->last_msg_in = db.now_s;
-	context->next_msg_out = db.now_s + 60;
-	context->keepalive = 60; /* Default to 60s */
+	context->next_msg_out = db.now_s + 20;
+	context->keepalive = 20; /* Default to 20s */
 	context->clean_start = true;
 	context->id = NULL;
 	context->last_mid = 0;
@@ -59,6 +84,12 @@ struct mosquitto *context__init(mosq_sock_t sock)
 	context->listener = NULL;
 	context->acl_list = NULL;
 	context->retain_available = true;
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_BUILTIN
+	memset(&context->wsd, 0, sizeof(context->wsd));
+	context->wsd.opcode = UINT8_MAX;
+	context->wsd.mask = UINT8_MAX;
+	context->wsd.disconnect_reason = 0xE8;
+#endif
 
 	/* is_bridge records whether this client is a bridge or not. This could be
 	 * done by looking at context->bridge for bridges that we create ourself,
@@ -68,20 +99,10 @@ struct mosquitto *context__init(mosq_sock_t sock)
 	context->in_packet.payload = NULL;
 	packet__cleanup(&context->in_packet);
 	context->out_packet = NULL;
-	context->current_out_packet = NULL;
 	context->out_packet_count = 0;
+	context->out_packet_bytes = 0;
 
 	context->address = NULL;
-	if((int)sock >= 0){
-		if(!net__socket_get_address(sock, address, 1024, &context->remote_port)){
-			context->address = mosquitto__strdup(address);
-		}
-		if(!context->address){
-			/* getpeername and inet_ntop failed and not a bridge */
-			mosquitto__free(context);
-			return NULL;
-		}
-	}
 	context->bridge = NULL;
 	context->msgs_in.inflight_maximum = db.config->max_inflight_messages;
 	context->msgs_out.inflight_maximum = db.config->max_inflight_messages;
@@ -92,9 +113,6 @@ struct mosquitto *context__init(mosq_sock_t sock)
 	context->ssl = NULL;
 #endif
 
-	if((int)context->sock >= 0){
-		HASH_ADD(hh_sock, db.contexts_by_sock, sock, sizeof(context->sock), context);
-	}
 	return context;
 }
 
@@ -121,15 +139,11 @@ void context__cleanup(struct mosquitto *context, bool force_free)
 #endif
 
 	alias__free_all(context);
+	keepalive__remove(context);
 
-	mosquitto__free(context->auth_method);
-	context->auth_method = NULL;
-
-	mosquitto__free(context->username);
-	context->username = NULL;
-
-	mosquitto__free(context->password);
-	context->password = NULL;
+	mosquitto__FREE(context->auth_method);
+	mosquitto__FREE(context->username);
+	mosquitto__FREE(context->password);
 
 	net__socket_close(context);
 	if(force_free){
@@ -137,38 +151,38 @@ void context__cleanup(struct mosquitto *context, bool force_free)
 	}
 	db__messages_delete(context, force_free);
 
-	mosquitto__free(context->address);
-	context->address = NULL;
+	mosquitto__FREE(context->address);
 
 	context__send_will(context);
 
 	if(context->id){
 		context__remove_from_by_id(context);
-		mosquitto__free(context->id);
-		context->id = NULL;
+		mosquitto__FREE(context->id);
 	}
 	packet__cleanup(&(context->in_packet));
-	if(context->current_out_packet){
-		packet__cleanup(context->current_out_packet);
-		mosquitto__free(context->current_out_packet);
-		context->current_out_packet = NULL;
-	}
 	while(context->out_packet){
-		packet__cleanup(context->out_packet);
 		packet = context->out_packet;
 		context->out_packet = context->out_packet->next;
-		mosquitto__free(packet);
+		mosquitto__FREE(packet);
 	}
+	G_OUT_PACKET_COUNT_DEC(context->out_packet_count);
+	G_OUT_PACKET_BYTES_DEC(context->out_packet_bytes);
 	context->out_packet_count = 0;
+	context->out_packet_bytes = 0;
 #if defined(WITH_BROKER) && defined(__GLIBC__) && defined(WITH_ADNS)
 	if(context->adns){
 		gai_cancel(context->adns);
-		mosquitto__free((struct addrinfo *)context->adns->ar_request);
-		mosquitto__free(context->adns);
+		struct addrinfo *ar_request = (struct addrinfo *)context->adns->ar_request;
+		mosquitto__FREE(ar_request);
+		mosquitto__FREE(context->adns);
 	}
 #endif
+
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_BUILTIN
+	mosquitto__FREE(context->http_request);
+#endif
 	if(force_free){
-		mosquitto__free(context);
+		mosquitto__FREE(context);
 	}
 }
 
@@ -210,11 +224,19 @@ void context__disconnect(struct mosquitto *context)
 		return;
 	}
 
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_BUILTIN
+	if(context->transport == mosq_t_ws){
+		uint8_t buf[4] = {0x88, 0x02, 0x03, context->wsd.disconnect_reason};
+		/* Send the disconnect reason, but don't care if it fails */
+		if(send(context->sock, buf, 4, 0)){};
+	}
+#endif
 	plugin__handle_disconnect(context, -1);
 
 	context__send_will(context);
 	net__socket_close(context);
 	if(context->session_expiry_interval == 0){
+		plugin_persist__handle_client_delete(context);
 		/* Client session is due to be expired now */
 #ifdef WITH_BRIDGE
 		if(context->bridge == NULL)
@@ -230,6 +252,7 @@ void context__disconnect(struct mosquitto *context)
 	}
 	keepalive__remove(context);
 	mosquitto__set_state(context, mosq_cs_disconnected);
+	alias__free_all(context);
 }
 
 void context__add_to_disused(struct mosquitto *context)
@@ -238,11 +261,7 @@ void context__add_to_disused(struct mosquitto *context)
 
 	mosquitto__set_state(context, mosq_cs_disused);
 
-	if(context->id){
-		context__remove_from_by_id(context);
-		mosquitto__free(context->id);
-		context->id = NULL;
-	}
+	context__remove_from_by_id(context);
 
 	context->for_free_next = db.ll_for_free;
 	db.ll_for_free = context;
@@ -251,14 +270,14 @@ void context__add_to_disused(struct mosquitto *context)
 void context__free_disused(void)
 {
 	struct mosquitto *context, *next;
-#ifdef WITH_WEBSOCKETS
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
 	struct mosquitto *last = NULL;
 #endif
 
 	context = db.ll_for_free;
 	db.ll_for_free = NULL;
 	while(context){
-#ifdef WITH_WEBSOCKETS
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
 		if(context->wsi){
 			/* Don't delete yet, lws hasn't finished with it */
 			if(last){
@@ -295,6 +314,11 @@ void context__remove_from_by_id(struct mosquitto *context)
 	struct mosquitto *context_found;
 
 	if(context->in_by_id == true && context->id){
+		HASH_FIND(hh_id, db.contexts_by_id_delayed_auth, context->id, strlen(context->id), context_found);
+		if(context_found){
+			HASH_DELETE(hh_id, db.contexts_by_id_delayed_auth, context_found);
+		}
+
 		HASH_FIND(hh_id, db.contexts_by_id, context->id, strlen(context->id), context_found);
 		if(context_found){
 			HASH_DELETE(hh_id, db.contexts_by_id, context_found);
@@ -302,4 +326,3 @@ void context__remove_from_by_id(struct mosquitto *context)
 		context->in_by_id = false;
 	}
 }
-

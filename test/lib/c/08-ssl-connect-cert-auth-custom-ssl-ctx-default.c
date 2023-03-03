@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <errno.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -5,16 +6,21 @@
 #include <stdlib.h>
 #include <mosquitto.h>
 #include <openssl/ssl.h>
+#include "path_helper.h"
 
 static int run = -1;
 
 void handle_sigint(int signal)
 {
+	(void)signal;
+
 	run = 0;
 }
 
 void on_connect(struct mosquitto *mosq, void *obj, int rc)
 {
+	(void)obj;
+
 	if(rc){
 		exit(1);
 	}else{
@@ -24,14 +30,17 @@ void on_connect(struct mosquitto *mosq, void *obj, int rc)
 
 void on_disconnect(struct mosquitto *mosq, void *obj, int rc)
 {
+	(void)mosq;
+	(void)obj;
+
 	run = rc;
 }
 
 int main(int argc, char *argv[])
 {
-	int rc;
 	struct mosquitto *mosq;
 	SSL_CTX *ssl_ctx;
+	assert(argc == 2);
 	int port = atoi(argv[1]);
 
 	mosquitto_lib_init();
@@ -49,11 +58,20 @@ int main(int argc, char *argv[])
 	mosquitto_int_option(mosq, MOSQ_OPT_SSL_CTX_WITH_DEFAULTS, 1);
 	mosquitto_void_option(mosq, MOSQ_OPT_SSL_CTX, ssl_ctx);
 
-	mosquitto_tls_set(mosq, "../ssl/test-root-ca.crt", "../ssl/certs", "../ssl/client.crt", "../ssl/client.key", NULL);
+	char cafile[4096];
+	cat_sourcedir_with_relpath(cafile, "/../../ssl/test-root-ca.crt");
+	char capath[4096];
+	cat_sourcedir_with_relpath(capath, "/../../ssl/certs");
+	char certfile[4096];
+	cat_sourcedir_with_relpath(certfile, "/../../ssl/client.crt");
+	char keyfile[4096];
+	cat_sourcedir_with_relpath(keyfile, "/../../ssl/client.key");
+
+	mosquitto_tls_set(mosq, cafile, capath, certfile, keyfile, NULL);
 	mosquitto_connect_callback_set(mosq, on_connect);
 	mosquitto_disconnect_callback_set(mosq, on_disconnect);
 
-	rc = mosquitto_connect(mosq, "localhost", port, 60);
+	mosquitto_connect(mosq, "localhost", port, 60);
 
 	signal(SIGINT, handle_sigint);
 	while(run == -1){

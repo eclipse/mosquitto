@@ -1,8 +1,8 @@
 #!/bin/sh
 
 MAJOR=2
-MINOR=0
-REVISION=15
+MINOR=1
+REVISION=0
 
 sed -i "s/^VERSION=.*/VERSION=${MAJOR}.${MINOR}.${REVISION}/" config.mk
 

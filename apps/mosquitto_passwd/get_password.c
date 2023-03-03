@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2012-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2012-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -38,7 +38,6 @@ Contributors:
 #include "get_password.h"
 
 #define MAX_BUFFER_LEN 65500
-#define SALT_LEN 12
 
 void get_password__reset_term(void)
 {

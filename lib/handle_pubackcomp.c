@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -26,6 +26,7 @@ Contributors:
 #  include "mosquitto_broker_internal.h"
 #endif
 
+#include "callbacks.h"
 #include "mosquitto.h"
 #include "logging_mosq.h"
 #include "memory_mosq.h"
@@ -100,6 +101,7 @@ int handle__pubackcomp(struct mosquitto *mosq, const char *type)
 					&& reason_code != MQTT_RC_PAYLOAD_FORMAT_INVALID
 					){
 
+				mosquitto_property_free_all(&properties);
 				return MOSQ_ERR_PROTOCOL;
 			}
 		}else{
@@ -107,14 +109,13 @@ int handle__pubackcomp(struct mosquitto *mosq, const char *type)
 					&& reason_code != MQTT_RC_PACKET_ID_NOT_FOUND
 					){
 
+				mosquitto_property_free_all(&properties);
 				return MOSQ_ERR_PROTOCOL;
 			}
 		}
 	}
 	if(mosq->in_packet.pos < mosq->in_packet.remaining_length){
-#ifdef WITH_BROKER
 		mosquitto_property_free_all(&properties);
-#endif
 		return MOSQ_ERR_MALFORMED_PACKET;
 	}
 
@@ -137,22 +138,16 @@ int handle__pubackcomp(struct mosquitto *mosq, const char *type)
 	rc = message__delete(mosq, mid, mosq_md_out, qos);
 	if(rc == MOSQ_ERR_SUCCESS){
 		/* Only inform the client the message has been sent once. */
-		pthread_mutex_lock(&mosq->callback_mutex);
-		if(mosq->on_publish){
-			mosq->in_callback = true;
-			mosq->on_publish(mosq, mosq->userdata, mid);
-			mosq->in_callback = false;
-		}
-		if(mosq->on_publish_v5){
-			mosq->in_callback = true;
-			mosq->on_publish_v5(mosq, mosq->userdata, mid, reason_code, properties);
-			mosq->in_callback = false;
-		}
-		pthread_mutex_unlock(&mosq->callback_mutex);
+		callback__on_publish(mosq, mid, reason_code, properties);
 		mosquitto_property_free_all(&properties);
-	}else if(rc != MOSQ_ERR_NOT_FOUND){
-		return rc;
+	}else{
+		mosquitto_property_free_all(&properties);
+
+		if(rc != MOSQ_ERR_NOT_FOUND){
+			return rc;
+		}
 	}
+
 	pthread_mutex_lock(&mosq->msgs_out.mutex);
 	message__release_to_inflight(mosq, mosq_md_out);
 	pthread_mutex_unlock(&mosq->msgs_out.mutex);
@@ -160,4 +155,3 @@ int handle__pubackcomp(struct mosquitto *mosq, const char *type)
 	return MOSQ_ERR_SUCCESS;
 #endif
 }
-

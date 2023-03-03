@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2019 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -18,7 +18,7 @@ Contributors:
 
 #include "config.h"
 
-#ifndef WITH_EPOLL
+#if !defined(WITH_EPOLL) && !defined(WITH_KQUEUE)
 
 #ifndef WIN32
 #  define _GNU_SOURCE
@@ -43,7 +43,7 @@ Contributors:
 #endif
 #include <time.h>
 
-#ifdef WITH_WEBSOCKETS
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
 #  include <libwebsockets.h>
 #endif
 
@@ -59,24 +59,11 @@ Contributors:
 static void loop_handle_reads_writes(void);
 
 static struct pollfd *pollfds = NULL;
-static size_t pollfd_max, pollfd_current_max;
-#ifndef WIN32
-static sigset_t my_sigblock;
-#endif
+static size_t pollfd_max, pollfd_current_max = 0;
 
-int mux_poll__init(struct mosquitto__listener_sock *listensock, int listensock_count)
+int mux_poll__init(void)
 {
 	size_t i;
-	size_t pollfd_index = 0;
-
-#ifndef WIN32
-	sigemptyset(&my_sigblock);
-	sigaddset(&my_sigblock, SIGINT);
-	sigaddset(&my_sigblock, SIGTERM);
-	sigaddset(&my_sigblock, SIGUSR1);
-	sigaddset(&my_sigblock, SIGUSR2);
-	sigaddset(&my_sigblock, SIGHUP);
-#endif
 
 #ifdef WIN32
 	pollfd_max = (size_t)_getmaxstdio();
@@ -94,6 +81,15 @@ int mux_poll__init(struct mosquitto__listener_sock *listensock, int listensock_c
 		pollfds[i].fd = INVALID_SOCKET;
 	}
 
+	return MOSQ_ERR_SUCCESS;
+}
+
+
+int mux_poll__add_listeners(struct mosquitto__listener_sock *listensock, int listensock_count)
+{
+	size_t i;
+	size_t pollfd_index = 0;
+
 	for(i=0; i<(size_t )listensock_count; i++){
 		pollfds[pollfd_index].fd = listensock[i].sock;
 		pollfds[pollfd_index].events = POLLIN;
@@ -101,7 +97,27 @@ int mux_poll__init(struct mosquitto__listener_sock *listensock, int listensock_c
 		pollfd_index++;
 	}
 
-	pollfd_current_max = pollfd_index-1;
+	if(pollfd_current_max == 0){
+		pollfd_current_max = pollfd_index-1;
+	}
+	return MOSQ_ERR_SUCCESS;
+}
+
+
+int mux_poll__delete_listeners(struct mosquitto__listener_sock *listensock, int listensock_count)
+{
+	size_t i;
+	size_t pollfd_index = 0;
+
+	UNUSED(listensock);
+
+	for(i=0; i<(size_t )listensock_count; i++){
+		pollfds[pollfd_index].fd = INVALID_SOCKET;
+		pollfds[pollfd_index].events = 0;
+		pollfds[pollfd_index].revents = 0;
+		pollfd_index++;
+	}
+
 	return MOSQ_ERR_SUCCESS;
 }
 
@@ -147,14 +163,14 @@ int mux_poll__add_out(struct mosquitto *context)
 int mux_poll__remove_out(struct mosquitto *context)
 {
 	if(context->events & POLLOUT) {
-		return mux_poll__add_in(context);
+		return mux_poll__new(context);
 	}else{
 		return MOSQ_ERR_SUCCESS;
 	}
 }
 
 
-int mux_poll__add_in(struct mosquitto *context)
+int mux_poll__new(struct mosquitto *context)
 {
 	return mux_poll__add(context, POLLIN);
 }
@@ -192,16 +208,18 @@ int mux_poll__handle(struct mosquitto__listener_sock *listensock, int listensock
 	struct mosquitto *context;
 	int i;
 	int fdcount;
-#ifndef WIN32
-	sigset_t origsig;
+	int timeout;
+
+#ifdef WITH_WEBSOCKETS
+	timeout = 100;
+#else
+	timeout = db.next_event_ms;
 #endif
 
 #ifndef WIN32
-	sigprocmask(SIG_SETMASK, &my_sigblock, &origsig);
-	fdcount = poll(pollfds, pollfd_current_max+1, 100);
-	sigprocmask(SIG_SETMASK, &origsig, NULL);
+	fdcount = poll(pollfds, pollfd_current_max+1, timeout);
 #else
-	fdcount = WSAPoll(pollfds, pollfd_current_max+1, 100);
+	fdcount = WSAPoll(pollfds, pollfd_current_max+1, timeout);
 #endif
 
 	db.now_s = mosquitto_time();
@@ -225,7 +243,7 @@ int mux_poll__handle(struct mosquitto__listener_sock *listensock, int listensock
 
 		for(i=0; i<listensock_count; i++){
 			if(pollfds[i].revents & POLLIN){
-#ifdef WITH_WEBSOCKETS
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
 				if(listensock[i].listener->ws_context){
 					/* Nothing needs to happen here, because we always call lws_service in the loop.
 					 * The important point is we've been woken up for this listener. */
@@ -233,8 +251,6 @@ int mux_poll__handle(struct mosquitto__listener_sock *listensock, int listensock
 #endif
 				{
 					while((context = net__socket_accept(&listensock[i])) != NULL){
-						context->pollfd_index = -1;
-						mux__add_in(context);
 					}
 				}
 			}
@@ -246,8 +262,7 @@ int mux_poll__handle(struct mosquitto__listener_sock *listensock, int listensock
 
 int mux_poll__cleanup(void)
 {
-	mosquitto__free(pollfds);
-	pollfds = NULL;
+	mosquitto__FREE(pollfds);
 
 	return MOSQ_ERR_SUCCESS;
 }
@@ -271,7 +286,7 @@ static void loop_handle_reads_writes(void)
 
 		assert(pollfds[context->pollfd_index].fd == context->sock);
 
-#ifdef WITH_WEBSOCKETS
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
 		if(context->wsi){
 			struct lws_pollfd wspoll;
 			wspoll.fd = pollfds[context->pollfd_index].fd;
@@ -306,7 +321,22 @@ static void loop_handle_reads_writes(void)
 					continue;
 				}
 			}
-			rc = packet__write(context);
+			switch(context->transport){
+				case mosq_t_tcp:
+					rc = packet__write(context);
+					break;
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_BUILTIN
+				case mosq_t_ws:
+					rc = packet__write(context);
+					break;
+				case mosq_t_http:
+					rc = http__write(context);
+					break;
+#endif
+				default:
+					rc = MOSQ_ERR_INVAL;
+					break;
+			}
 			if(rc){
 				do_disconnect(context, rc);
 				continue;
@@ -318,7 +348,7 @@ static void loop_handle_reads_writes(void)
 		if(context->pollfd_index < 0){
 			continue;
 		}
-#ifdef WITH_WEBSOCKETS
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
 		if(context->wsi){
 			// Websocket are already handled above
 			continue;
@@ -332,7 +362,20 @@ static void loop_handle_reads_writes(void)
 		if(pollfds[context->pollfd_index].revents & POLLIN){
 #endif
 			do{
-				rc = packet__read(context);
+				switch(context->transport){
+					case mosq_t_tcp:
+					case mosq_t_ws:
+						rc = packet__read(context);
+						break;
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_BUILTIN
+					case mosq_t_http:
+						rc = http__read(context);
+						break;
+#endif
+					default:
+						rc = MOSQ_ERR_INVAL;
+						break;
+				}
 				if(rc){
 					do_disconnect(context, rc);
 					continue;

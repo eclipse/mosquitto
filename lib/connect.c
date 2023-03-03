@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2010-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2010-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -20,6 +20,8 @@ Contributors:
 
 #include <string.h>
 
+#include "callbacks.h"
+#include "http_client.h"
 #include "mosquitto.h"
 #include "mosquitto_internal.h"
 #include "logging_mosq.h"
@@ -67,7 +69,7 @@ static int mosquitto__connect_init(struct mosquitto *mosq, const char *host, int
 		}
 	}
 
-	mosquitto__free(mosq->host);
+	mosquitto__FREE(mosq->host);
 	mosq->host = mosquitto__strdup(host);
 	if(!mosq->host) return MOSQ_ERR_NOMEM;
 	mosq->port = (uint16_t)port;
@@ -192,9 +194,11 @@ static int mosquitto__reconnect(struct mosquitto *mosq, bool blocking)
 
 	message__reconnect_reset(mosq, false);
 
-	if(mosq->sock != INVALID_SOCKET){
+	if(net__is_connected(mosq)){
         net__socket_close(mosq);
     }
+
+	callback__on_pre_connect(mosq);
 
 #ifdef WITH_SOCKS
 	if(mosq->socks5_host){
@@ -217,11 +221,17 @@ static int mosquitto__reconnect(struct mosquitto *mosq, bool blocking)
 #endif
 	{
 		mosquitto__set_state(mosq, mosq_cs_connected);
-		rc = send__connect(mosq, mosq->keepalive, mosq->clean_start, outgoing_properties);
-		if(rc){
-			packet__cleanup_all(mosq);
-			net__socket_close(mosq);
-			mosquitto__set_state(mosq, mosq_cs_new);
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_BUILTIN
+		if(mosq->transport == mosq_t_ws){
+			http_c__context_init(mosq);
+		}else
+#endif
+		{
+			rc = send__connect(mosq, mosq->keepalive, mosq->clean_start, outgoing_properties);
+			if(rc){
+				packet__cleanup_all(mosq);
+				net__socket_close(mosq);
+			}
 		}
 		return rc;
 	}
@@ -257,7 +267,7 @@ int mosquitto_disconnect_v5(struct mosquitto *mosq, int reason_code, const mosqu
 
 	mosquitto__set_state(mosq, mosq_cs_disconnected);
 	mosquitto__set_request_disconnect(mosq, true);
-	if(mosq->sock == INVALID_SOCKET){
+	if(!net__is_connected(mosq)){
 		return MOSQ_ERR_NO_CONN;
 	}else{
 		return send__disconnect(mosq, (uint8_t)reason_code, outgoing_properties);
@@ -271,33 +281,12 @@ void do_client_disconnect(struct mosquitto *mosq, int reason_code, const mosquit
 	net__socket_close(mosq);
 
 	/* Free data and reset values */
-	pthread_mutex_lock(&mosq->out_packet_mutex);
-	mosq->current_out_packet = mosq->out_packet;
-	if(mosq->out_packet){
-		mosq->out_packet = mosq->out_packet->next;
-		if(!mosq->out_packet){
-			mosq->out_packet_last = NULL;
-		}
-		mosq->out_packet_count--;
-	}
-	pthread_mutex_unlock(&mosq->out_packet_mutex);
+	packet__cleanup_all(mosq);
 
 	pthread_mutex_lock(&mosq->msgtime_mutex);
 	mosq->next_msg_out = mosquitto_time() + mosq->keepalive;
 	pthread_mutex_unlock(&mosq->msgtime_mutex);
 
-	pthread_mutex_lock(&mosq->callback_mutex);
-	if(mosq->on_disconnect){
-		mosq->in_callback = true;
-		mosq->on_disconnect(mosq, mosq->userdata, reason_code);
-		mosq->in_callback = false;
-	}
-	if(mosq->on_disconnect_v5){
-		mosq->in_callback = true;
-		mosq->on_disconnect_v5(mosq, mosq->userdata, reason_code, properties);
-		mosq->in_callback = false;
-	}
-	pthread_mutex_unlock(&mosq->callback_mutex);
-	pthread_mutex_unlock(&mosq->current_out_packet_mutex);
+	callback__on_disconnect(mosq, reason_code, properties);
 }
 

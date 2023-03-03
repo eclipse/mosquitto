@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from pathlib import Path
 import paho.mqtt.client as paho
 import random
 import sys
@@ -115,7 +116,9 @@ def main():
             mqttc.username_pw_set("bad", "bad")
 
     if use_tls:
-        mqttc.tls_set(ca_certs="../ssl/all-ca.crt")
+        source_dir = Path(__file__).resolve().parent
+        ssl_dir = source_dir.parent / "ssl"
+        mqttc.tls_set(ca_certs=f"{ssl_dir}/all-ca.crt")
 
     mqttc.connect("localhost", port)
     mqttc.loop_start()

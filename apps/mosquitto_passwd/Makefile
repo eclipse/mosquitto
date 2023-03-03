@@ -1,22 +1,31 @@
-include ../../config.mk
+R=../..
+include ${R}/config.mk
 
 .PHONY: all install uninstall clean reallyclean
 
 OBJS=	mosquitto_passwd.o \
 		get_password.o \
+		base64_mosq.o \
 		memory_mosq.o \
 		memory_public.o \
 		misc_mosq.o \
 		password_mosq.o
 
 ifeq ($(WITH_TLS),yes)
-all: mosquitto_passwd
+ifeq ($(WITH_FUZZING),yes)
+all : mosquitto_passwd.a
+else
+all : mosquitto_passwd
+endif
 else
 all:
 endif
 
 mosquitto_passwd : ${OBJS}
-	${CROSS_COMPILE}${CC} ${APP_LDFLAGS} $^ -o $@ $(PASSWD_LDADD)
+	${CROSS_COMPILE}${CC} ${LDFLAGS} ${APP_LDFLAGS} $^ -o $@ $(PASSWD_LDADD)
+
+mosquitto_passwd.a : ${OBJS}
+	${CROSS_COMPILE}$(AR) cr $@ $^
 
 mosquitto_passwd.o : mosquitto_passwd.c
 	${CROSS_COMPILE}${CC} $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@
@@ -24,16 +33,19 @@ mosquitto_passwd.o : mosquitto_passwd.c
 get_password.o : get_password.c
 	${CROSS_COMPILE}${CC} $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@
 
-memory_mosq.o : ../../lib/memory_mosq.c
+base64_mosq.o : ${R}/common/base64_mosq.c ${R}/common/base64_mosq.h
 	${CROSS_COMPILE}${CC} $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@
 
-memory_public.o : ../../src/memory_public.c
+memory_mosq.o : ${R}/lib/memory_mosq.c
 	${CROSS_COMPILE}${CC} $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@
 
-misc_mosq.o : ../../lib/misc_mosq.c ../../lib/misc_mosq.h
+memory_public.o : ${R}/src/memory_public.c
 	${CROSS_COMPILE}${CC} $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@
 
-password_mosq.o : ../../src/password_mosq.c ../../src/password_mosq.h
+misc_mosq.o : ${R}/common/misc_mosq.c ${R}/common/misc_mosq.h
+	${CROSS_COMPILE}${CC} $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@
+
+password_mosq.o : ${R}/common/password_mosq.c ${R}/common/password_mosq.h
 	${CROSS_COMPILE}${CC} $(APP_CPPFLAGS) $(APP_CFLAGS) -c $< -o $@
 
 install : all
@@ -46,7 +58,7 @@ uninstall :
 	-rm -f "${DESTDIR}${prefix}/bin/mosquitto_passwd"
 
 clean :
-	-rm -f *.o mosquitto_passwd *.gcda *.gcno
+	-rm -f *.o *.a mosquitto_passwd *.gcda *.gcno
 
 reallyclean : clean
 	-rm -rf *.orig *.db

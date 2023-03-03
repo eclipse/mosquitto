@@ -191,6 +191,22 @@
 		<itemizedlist mark="circle">
 			<listitem><para>mosquitto_passwd <literal>-c</literal> /etc/mosquitto/passwd <literal>ral</literal></para></listitem>
 		</itemizedlist>
+		<para>Add a user to an existing password file:</para>
+		<itemizedlist mark="circle">
+			<listitem><para>mosquitto_passwd /etc/mosquitto/passwd <literal>ral</literal></para></listitem>
+		</itemizedlist>
+		<para>Add a user to an existing password file, passing the password on the command line:</para>
+		<itemizedlist mark="circle">
+			<listitem><para>mosquitto_passwd -b /etc/mosquitto/passwd <literal>ral</literal> <literal>z2Dr0BsvtZ</literal></para></listitem>
+		</itemizedlist>
+		<para>Update the password for a user in an existing password file:</para>
+		<itemizedlist mark="circle">
+			<listitem><para>mosquitto_passwd /etc/mosquitto/passwd <literal>ral</literal></para></listitem>
+		</itemizedlist>
+		<para>Add a user to an existing password file using the sha512 hash for Mosquitto 1.6 compatibility:</para>
+		<itemizedlist mark="circle">
+			<listitem><para>mosquitto_passwd -H sha512 /etc/mosquitto/passwd <literal>ral</literal></para></listitem>
+		</itemizedlist>
 		<para>Delete a user from a password file</para>
 		<itemizedlist mark="circle">
 			<listitem><para>mosquitto_passwd <literal>-D</literal> /etc/mosquitto/passwd <literal>ral</literal></para></listitem>

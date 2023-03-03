@@ -20,7 +20,7 @@ trap "kill $MOSQ_PID" EXIT
 
 
 # Simple subscribe test - single message from $SYS
-${BASE_PATH}/client/mosquitto_sub -p ${PORT} -W ${SUB_TIMEOUT} -C 1 -t '$SYS/broker/uptime' >/dev/null
+${BASE_PATH}/client/mosquitto_sub -p ${PORT} -W ${SUB_TIMEOUT} -C 1 -t '$SYS/broker/version' >/dev/null
 echo "Simple subscribe ok"
 
 # Simple publish/subscribe test - single message from mosquitto_pub

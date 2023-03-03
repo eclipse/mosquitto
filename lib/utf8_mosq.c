@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2016-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2016-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -21,7 +21,7 @@ Contributors:
 #include <stdio.h>
 #include "mosquitto.h"
 
-int mosquitto_validate_utf8(const char *str, int len)
+BROKER_EXPORT int mosquitto_validate_utf8(const char *str, int len)
 {
 	int i;
 	int j;
@@ -64,7 +64,7 @@ int mosquitto_validate_utf8(const char *str, int len)
 		}
 
 		/* Reconstruct full code point */
-		if(i == len-codelen+1){
+		if(i >= len-codelen+1){
 			/* Not enough data */
 			return MOSQ_ERR_MALFORMED_UTF8;
 		}
@@ -108,4 +108,3 @@ int mosquitto_validate_utf8(const char *str, int len)
 	}
 	return MOSQ_ERR_SUCCESS;
 }
-

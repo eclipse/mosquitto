@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2020-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -24,6 +24,7 @@ Contributors:
 
 #include "mosquitto.h"
 #include "mosquitto_ctrl.h"
+#include "json_help.h"
 #include "password_mosq.h"
 
 int dynsec_group__create(int argc, char *argv[], cJSON *j_command)

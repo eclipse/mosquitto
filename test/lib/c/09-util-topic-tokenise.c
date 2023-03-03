@@ -2,7 +2,7 @@
 #include <string.h>
 #include <mosquitto.h>
 
-void print_error(const char *topic, char **topics, int topic_count)
+static void print_error(const char *topic, char **topics, int topic_count)
 {
 	int i;
 	printf("TOPIC: %s\n", topic);
@@ -20,7 +20,9 @@ int main(int argc, char *argv[])
 {
 	char **topics;
 	int topic_count;
-	bool match;
+
+	(void)argc;
+	(void)argv;
 
 	if(mosquitto_sub_topic_tokenise("topic", &topics, &topic_count)){
 		printf("Out of memory.\n");

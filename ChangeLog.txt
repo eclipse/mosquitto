@@ -1,3 +1,189 @@
+2.1.0 - 2021-xx-xx
+==================
+
+Broker:
+- Add support for broker created topic aliases. Topics are allocated on a
+  first come first serve basis.
+- Add support for bridges to allow remote brokers to create topic aliases when
+  running in MQTT v5 mode.
+- Increase maximum connection count on Windows from 2048 to 8192 where
+  supported. Closes #2122.
+- Add kqueue support.
+- Enforce receive maximum on MQTT v5.
+- Report on what compile time options are enabled. Closes #2193.
+- Add `--tls-keylog` option which can be used to generate a file that can be
+  used by wireshark to decrypt TLS traffic for debugging purposes. Closes #1818.
+- Add `mosquitto_topic_matches_sub_with_pattern()`, which can match against
+  subscriptions with `%c` and `%u` patterns for client id / username
+  substitution.
+- Performance: reduce memory allocations when sending packets.
+- The `allow_duplicate_messages` now defaults to `true`.
+- Return protocol error if a client attemps to subscribe to a shared
+  subscription and also sets no-local.
+- Log protocol version and ciphers that a client negotiates when connecting.
+- Password salts are now 64 bytes long.
+- Add the `global_plugin` option, which gives global plugin loaded regardless
+  of `per_listener_settings`.
+- Protocol version numbers reported in the log when a client connects now
+  match the MQTT protocol version numbers, not internal Mosquitto values.
+- Add the `websockets_origin` option to allow optional enforcement of origin
+  when a connection attempts an upgrade to WebSockets.
+- Allow mosquitto_ctrl dynsec module to update passwords in files rather than
+  having to connect to a broker.
+- Add support for `listPlugins` to mosquitto_ctrl.
+- Add `global_max_clients` option to allow limiting client sessions globally
+  on the broker.
+- Add `global_max_connections` option to allow limiting client connections globally
+  on the broker.
+- Add `accept_protocol_versions` option to allow limiting which MQTT protocol
+  versions are allowed for a particular listener.
+- Add `disable_client_cert_date_checks` option to allow expired client
+  certificate to be considered valid.
+- Improve idle performance. The broker now calculates when the next event of
+  interest is, and uses that as the timeout for e.g. epoll_wait(). This can
+  reduce the number of process wakeups by 100x on an idle broker.
+- Add more efficient keepalive check.
+- Send DISCONNECT With session-takeover return code to MQTT v5 clients when a
+  client connects with the same client id. Closes #2340.
+- Add support for sending the SIGRTMIN signal to trigger log rotation.
+  Closes #2337.
+- Allow multiple instances of mosquitto to run as services on Windows. See
+  README-windows.txt.
+- Add ability to deny wildcard subscriptions for a role to the dynsec plugin.
+- Add bridge_receive_maximum option for MQTT v5.0 bridges.
+- Add bridge_session_expiry_interval option for MQTT v5.0 bridges.
+- Bridge reconnection backoff improvements.
+- Add bridge_tls_use_os_certs option to allow bridges to be easily configured
+  to trust default CA certificates. Closes #2473.
+- Add `--test-config` option which can be used to test a configuration file
+  before trying to use it in a live broker. Closes #2521.
+- Print messages in mosquitto_passwd when adding/updating passwords.
+  Closes #2544.
+- Add support for PUID/PGID environment variables for setting the user/group
+  to drop privileges to. Closes #2441.
+- Add built-in websockets support that doesn't use libwebsockets. This is the
+  preferred websockets implementation.
+- Add support for X-Forwarded-For header for built in websockets.
+- Report persistence stats when starting.
+- $SYS updates are now aligned to `sys_interval` seconds, meaning that if set
+  to 10, for example, updates will be sent at times matching x0 seconds.
+  Previously update intervals were aligned to the time the broker was started.
+- Add `log_dest android` for logging to the Android logd daemon.
+- Fix some retained topic memory not being cleared immediately after used.
+- TLS v1.1 now not enabled by default. It is still possible to explicitly
+  choose TLS v1.1, but this is not recommended and will be removed in a future
+  version.
+- Add -q option to allow logging to be disabled at the command line.
+
+Plugins / plugin interface:
+- Add support for modifying outgoing messages using MOSQ_EVT_MESSAGE_OUT.
+- Add persist-sqlite plugin.
+- Add mosquitto_client() function for retrieving a client struct if that
+  client is connected.
+- Add MOSQ_ERR_PLUGIN_IGNORE to allow plugins to register basic auth or acl
+  check callbacks, but still act as though they are not registered. A plugin
+  that wanted to act as a blocklist for certain usernames, but wasn't carrying
+  out authentication could return MOSQ_ERR_PLUGIN_IGNORE for usernames not on
+  its blocklist. If no other plugins were configured, the client would be
+  authenticated. Using MOSQ_ERR_PLUGIN_DEFER instead would mean the clients
+  would be denied if no other plugins were configured.
+- Add `mosquitto_client_port()` function for plugins.
+- Add MOSQ_EVT_CONNECT, to allow plugins to know when a client has
+  successfully authenticated to the broker.
+- Add connection-state example plugin to demonstrate MOSQ_EVT_CONNECT.
+- Plugins on non-Windows platforms now no longer make their symbols globally
+  available, which means they are self contained.
+- Add support for delayed basic authentication in plugins.
+- Plugins using the MOSQ_EVT_MESSAGE_WRITE callback can now return
+  MOSQ_ERR_QUOTA_EXCEEDED to have the message be rejected. MQTT v5 clients
+  using QoS 1 or 2 will receive the quota-exceeded reason code in the
+  corresponding PUBACK/PUBREC.
+- MOSQ_EVT_TICK is now passed to plugins when `per_listener_settings` is true.
+- The dynamic security plugin now supports `%c` and `%u` patterns for
+  substituting client id and username respectively, in all ACLs except for
+  subscribeLiteral and unsubscribeLiteral.
+- The dynamic security plugin now supports multiple ways to initialise the
+  first configuration file.
+- Add `mosquitto_sub_matches_acl()`, which can match one topic filter (a
+  subscription) against another topic filter (an ACL).
+- Registration of the MOSQ_EVT_CONTROL plugin event is now handled globally
+  across the broker, so only a single plugin can register for a given $CONTROL
+  topic.
+- Add `mosquitto_plugin_set_info()` to allow plugins to tell the broker their
+  name and version.
+- Add builtin $CONTROL/broker/v1 control topic with the `listPlugins`
+  command. This is disabled by default, but can be enabled with the
+  `enable_control_api` option.
+- Plugins no longer need to define mosquitto_plugin_cleanup() if they do not
+  need to do any of their own cleanup. Callbacks will be unregistered
+  automatically.
+- The dynamic security plugin now reports client connections in getClient and
+  listClients.
+- The dynamic security plugin now generates an initial configuration if none
+  is present, including a set of default roles.
+- Add `mosquitto_set_clientid()` to allow plugins to force a client id for a
+  client.
+- The dynamic security plugin now only kicks clients at the start of the next
+  network loop, to give chance for PUBACK/PUBREC to be sent. Closes #2474.
+- Add MOSQ_EVT_SUBSCRIBE and MOSQ_EVT_UNSUBSCRIBE events that are called when
+  subscribe/unsubscribes actually succeed. Allow modifying topic and qos.
+- Add `mosquitto_persistence_location()` for plugins to use to find a valid
+  location for storing persistent data.
+
+Client library:
+- Add MOSQ_OPT_DISABLE_SOCKETPAIR to allow the disabling of the socketpair
+  feature that allows the network thread to be woken from select() by another
+  thread when e.g.  mosquitto_publish() is called. This reduces the number of
+  sockets used by each client by two.
+- Add `on_pre_connect()` callback to allow clients to update
+  username/password/TLS parameters before an automatic reconnection.
+- Callbacks no longer block other callbacks, and can be set from within a
+  callback. Closes #2127.
+- Add support for MQTT v5 broker to client topic aliases.
+- Add `mosquitto_topic_matches_sub_with_pattern()`, which can match against
+  subscriptions with `%c` and `%u` patterns for client id / username
+  substitution.
+- Add `mosquitto_sub_matches_acl()`, which can match one topic filter (a
+  subscription) against another topic filter (an ACL).
+- Add `mosquitto_sub_matches_acl_with_pattern()`, which can match one topic
+  filter (a subscription) against another topic filter (an ACL), with `%c` and
+  `%u` patterns for client id / username substitution.
+- Performance: reduce memory allocations when sending packets.
+- Reintroduce threading support for Windows. Closes #1509.
+- `mosquitto_subscribe*()` now returns MOSQ_ERR_INVAL if an empty string is
+  passed as a topic filter.
+- `mosquitto_unsubscribe*()` now returns MOSQ_ERR_INVAL if an empty string is
+  passed as a topic filter.
+- Add websockets support.
+- `mosquitto_property_read_binary/string/string_pair` will now set the
+  name/value parameter to NULL if the binary/string is empty. This aligns the
+  behaviour with other property functions. Closes #2648.
+- TLS v1.1 now not enabled by default. It is still possible to explicitly
+  choose TLS v1.1, but this is not recommended and will be removed in a future
+  version.
+- Add `mosquitto_unsubscribe2_v5_callback_set`, which provides a callback that
+  gives access to reason codes for each of the unsubscription requests.
+- Add `mosquitto_property_remove`, for removing properties from property
+  lists.
+
+Clients:
+- Add `-W` timeout support to Windows.
+- The `--insecure` option now disables all server certificate verification.
+- Fix incorrect output formatting in mosquitto_sub when using field widths
+  with `%x` and `%X` for printing the payload in hex.
+- Add float printing option to mosquitto_sub.
+- Fix `-f` and `-s` options in mosquitto_rr.
+- Add websockets support.
+- Using `-x` now sets the clients to use MQTT v5.0.
+- Fix parsing of IPv6 addresses in socks proxy urls.
+
+Build:
+- Increased CMake minimal required version to 3.14, which is required for the
+  preinstalled SQLite3 find module.
+- Add an CMake option `WITH_LTO` to enable/disable link time optimization.
+- Set C99 as the explicit, rather than implicit, build standard.
+
+
 2.0.15 - 2022-08-16
 ===================
 
@@ -167,6 +353,16 @@ Apps:
 - Fix `mosquitto_ctrl dynsec setDefaultACLAccess` command not working.
 
 Clients:
+- Add `-o` option for all clients loading options from a specific file.
+- Add `--no-tls` option for all clients which disables all TLS options for
+  that instance. This is useful for negating TLS options provided in a config
+  file, or to disable the automatic use of TLS when using port 8883.
+  Closes #2180.
+- Add `-w`/`--watch` to mosquitto_sub which means messages will be printed on a
+  fixed line number based on the topic and order in which messages were
+  received. Requires ANSI escape code support in the terminal.
+- mosquitto_sub now only needs `-t` or `-U` to run - this means that `-t` is
+  not required in all situations.
 - mosquitto_sub and mosquitto_rr now open stdout in binary mode on Windows
   so binary payloads are not modified when printing.
 - Document TLS certificate behaviour when using `-p 8883`.
@@ -176,6 +372,7 @@ Build:
 - Fix builds with libressl 3.4.0. Closes #2198.
 - Remove some unnecessary code guards related to libressl.
 - Fix printf format build warning on MIPS. Closes #2271.
+
 
 
 2.0.11 - 2021-06-08
@@ -357,7 +554,6 @@ Build:
 
 
 2.0.6 - 2021-01-28
-==================
 
 Broker:
 - Fix calculation of remaining length parameter for websockets clients that

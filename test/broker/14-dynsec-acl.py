@@ -10,7 +10,7 @@ def write_config(filename, port):
     with open(filename, 'w') as f:
         f.write("listener %d\n" % (port))
         f.write("allow_anonymous false\n")
-        f.write("plugin ../../plugins/dynamic-security/mosquitto_dynamic_security.so\n")
+        f.write(f"plugin {mosq_test.get_build_root()}/plugins/dynamic-security/mosquitto_dynamic_security.so\n")
         f.write("plugin_opt_config_file %d/dynamic-security.json\n" % (port))
 
 def command_check(sock, command_payload, expected_response):
@@ -44,6 +44,11 @@ add_client_group_role_command = {"commands":[
     { "command": "addRoleACL", "rolename": "myrole", "acltype": "subscribePattern", "topic": "single-wildcard/+/topic", "allow": True },
     { "command": "addRoleACL", "rolename": "myrole", "acltype": "subscribePattern", "topic": "multilevel-wildcard/#", "allow": True },
     { "command": "addRoleACL", "rolename": "myrole", "acltype": "unsubscribeLiteral", "topic": "simple/topic", "allow": False },
+    { "command": "addRoleACL", "rolename": "myrole", "acltype": "subscribePattern", "topic": "pattern/#", "allow": True },
+    { "command": "addRoleACL", "rolename": "myrole", "acltype": "subscribePattern", "topic": "subscribe/pattern/c/%c/allowed", "allow": True },
+    { "command": "addRoleACL", "rolename": "myrole", "acltype": "subscribePattern", "topic": "subscribe/pattern/c/%c/denied", "allow": False },
+    { "command": "addRoleACL", "rolename": "myrole", "acltype": "subscribePattern", "topic": "subscribe/pattern/u/%u/allowed", "allow": True },
+    { "command": "addRoleACL", "rolename": "myrole", "acltype": "subscribePattern", "topic": "subscribe/pattern/u/%u/denied", "allow": False },
     { "command": "addGroupClient", "groupname": "mygroup", "username": "user_one" }
     ]}
 
@@ -53,6 +58,9 @@ add_client_group_role_response = {'responses': [
     {'command': 'addGroupRole'},
     {'command': 'addRoleACL'}, {'command': 'addRoleACL'},
     {'command': 'addRoleACL'}, {'command': 'addRoleACL'},
+    {'command': 'addRoleACL'}, {'command': 'addRoleACL'},
+    {'command': 'addRoleACL'}, {'command': 'addRoleACL'},
+    {'command': 'addRoleACL'},
     {'command': 'addGroupClient'}
     ]}
 
@@ -61,11 +69,23 @@ add_publish_acl_command = {"commands":[
     { "command": "addRoleACL", "rolename": "myrole", "acltype": "publishClientSend", "topic": "single-wildcard/deny/deny", "priority":10, "allow": False },
     { "command": "addRoleACL", "rolename": "myrole", "acltype": "publishClientSend", "topic": "single-wildcard/+/+", "allow": True },
     { "command": "addRoleACL", "rolename": "myrole", "acltype": "publishClientSend", "topic": "multilevel-wildcard/topic/#", "allow": True },
+    { "command": "addRoleACL", "rolename": "myrole", "acltype": "publishClientSend", "topic": "pattern/u/%u/topic/#", "allow": True },
+    { "command": "addRoleACL", "rolename": "myrole", "acltype": "publishClientSend", "topic": "pattern/u/%u/denied", "allow": False },
+    { "command": "addRoleACL", "rolename": "myrole", "acltype": "publishClientSend", "topic": "pattern/c/%c/topic/#", "allow": True },
+    { "command": "addRoleACL", "rolename": "myrole", "acltype": "publishClientSend", "topic": "pattern/c/%c/denied", "allow": False },
     { "command": "addRoleACL", "rolename": "myrole", "acltype": "publishClientReceive", "topic": "single-wildcard/bob/bob", "allow": False },
     { "command": "addRoleACL", "rolename": "myrole", "acltype": "publishClientReceive", "topic": "multilevel-wildcard/topic/topic/denied", "allow": False },
+    { "command": "addRoleACL", "rolename": "myrole", "acltype": "publishClientReceive", "topic": "pattern/u/%u/topic/#", "allow": True },
+    { "command": "addRoleACL", "rolename": "myrole", "acltype": "publishClientReceive", "topic": "pattern/u/%u/denied", "allow": False },
+    { "command": "addRoleACL", "rolename": "myrole", "acltype": "publishClientReceive", "topic": "pattern/c/%c/topic/#", "allow": True },
+    { "command": "addRoleACL", "rolename": "myrole", "acltype": "publishClientReceive", "topic": "pattern/c/%c/denied", "allow": False },
     ]}
 
 add_publish_acl_response = {'responses': [
+    {'command': 'addRoleACL'}, {'command': 'addRoleACL'},
+    {'command': 'addRoleACL'}, {'command': 'addRoleACL'},
+    {'command': 'addRoleACL'}, {'command': 'addRoleACL'},
+    {'command': 'addRoleACL'}, {'command': 'addRoleACL'},
     {'command': 'addRoleACL'}, {'command': 'addRoleACL'},
     {'command': 'addRoleACL'}, {'command': 'addRoleACL'},
     {'command': 'addRoleACL'}, {'command': 'addRoleACL'}
@@ -77,8 +97,7 @@ delete_role_command = {"commands":[
 delete_role_response = {'responses': [{'command': 'deleteRole'}]}
 
 rc = 1
-keepalive = 10
-connect_packet_admin = mosq_test.gen_connect("ctrl-test", keepalive=keepalive, username="admin", password="admin")
+connect_packet_admin = mosq_test.gen_connect("ctrl-test", username="admin", password="admin")
 connack_packet_admin = mosq_test.gen_connack(rc=0)
 
 mid = 2
@@ -86,7 +105,7 @@ subscribe_packet_admin = mosq_test.gen_subscribe(mid, "$CONTROL/dynamic-security
 suback_packet_admin = mosq_test.gen_suback(mid, 1)
 
 # Success
-connect_packet_with_id1 = mosq_test.gen_connect("cid", keepalive=keepalive, username="user_one", password="password", proto_ver=5)
+connect_packet_with_id1 = mosq_test.gen_connect("cid", username="user_one", password="password", proto_ver=5)
 connack_packet_with_id1 = mosq_test.gen_connack(rc=0, proto_ver=5)
 
 mid = 4
@@ -146,11 +165,59 @@ mid = 13
 unsubscribe_multi_packet = mosq_test.gen_unsubscribe(mid, "multilevel-wildcard/topic/topic/#", proto_ver=5)
 unsuback_multi_packet_success = mosq_test.gen_unsuback(mid, 0, proto_ver=5)
 
+mid = 14
+subscribe_pattern_packet = mosq_test.gen_subscribe(mid, "pattern/#", 0, proto_ver=5)
+suback_pattern_packet = mosq_test.gen_suback(mid, 0, proto_ver=5)
+
 disconnect_kick_packet = mosq_test.gen_disconnect(reason_code=mqtt5_rc.MQTT_RC_ADMINISTRATIVE_ACTION, proto_ver=5)
 
+mid = 15
+publish_u_pattern_packet = mosq_test.gen_publish(mid=mid, topic="pattern/u/user_one/topic", qos=1, proto_ver=5, payload="test")
+puback_u_packet_success = mosq_test.gen_puback(mid=mid, proto_ver=5)
+publish_u_pattern_packet_r = mosq_test.gen_publish(topic="pattern/u/user_one/topic", qos=0, proto_ver=5, payload="test")
+
+mid = 16
+publish_u_pattern_packet_denied = mosq_test.gen_publish(mid=mid, topic="pattern/u/user_one/denied", qos=1, proto_ver=5, payload="test")
+puback_u_packet_denied = mosq_test.gen_puback(mid=mid, reason_code=mqtt5_rc.MQTT_RC_NOT_AUTHORIZED, proto_ver=5)
+
+mid = 17
+publish_c_pattern_packet = mosq_test.gen_publish(mid=mid, topic="pattern/c/cid/topic", qos=1, proto_ver=5, payload="test")
+puback_c_packet_success = mosq_test.gen_puback(mid=mid, proto_ver=5)
+publish_c_pattern_packet_r = mosq_test.gen_publish(topic="pattern/c/cid/topic", qos=0, proto_ver=5, payload="test")
+
+mid = 18
+publish_c_pattern_packet_denied = mosq_test.gen_publish(mid=mid, topic="pattern/c/cid/denied", qos=1, proto_ver=5, payload="test")
+puback_c_packet_denied = mosq_test.gen_puback(mid=mid, reason_code=mqtt5_rc.MQTT_RC_NOT_AUTHORIZED, proto_ver=5)
+
+mid = 19
+subscribe_u_pattern_packet_allowed_success = mosq_test.gen_subscribe(mid, "subscribe/pattern/u/user_one/allowed", qos=1, proto_ver=5)
+suback_u_pattern_packet_allowed_success = mosq_test.gen_suback(mid, 1, proto_ver=5)
+
+mid = 20
+subscribe_u_pattern_packet_allowed_fail = mosq_test.gen_subscribe(mid, "subscribe/pattern/u/bad/allowed", qos=1, proto_ver=5)
+suback_u_pattern_packet_allowed_fail = mosq_test.gen_suback(mid, mqtt5_rc.MQTT_RC_NOT_AUTHORIZED, proto_ver=5)
+
+mid = 21
+subscribe_u_pattern_packet_denied_success = mosq_test.gen_subscribe(mid, "subscribe/pattern/u/user_one/denied", qos=1, proto_ver=5)
+suback_u_pattern_packet_denied_success = mosq_test.gen_suback(mid, mqtt5_rc.MQTT_RC_NOT_AUTHORIZED, proto_ver=5)
+
+mid = 22
+subscribe_c_pattern_packet_allowed_success = mosq_test.gen_subscribe(mid, "subscribe/pattern/c/cid/allowed", qos=1, proto_ver=5)
+suback_c_pattern_packet_allowed_success = mosq_test.gen_suback(mid, 1, proto_ver=5)
+
+mid = 23
+subscribe_c_pattern_packet_allowed_fail = mosq_test.gen_subscribe(mid, "subscribe/pattern/c/bad/allowed", qos=1, proto_ver=5)
+suback_c_pattern_packet_allowed_fail = mosq_test.gen_suback(mid, mqtt5_rc.MQTT_RC_NOT_AUTHORIZED, proto_ver=5)
+
+mid = 24
+subscribe_c_pattern_packet_denied_success = mosq_test.gen_subscribe(mid, "subscribe/pattern/c/cid/denied", qos=1, proto_ver=5)
+suback_c_pattern_packet_denied_success = mosq_test.gen_suback(mid, mqtt5_rc.MQTT_RC_NOT_AUTHORIZED, proto_ver=5)
+
+
 try:
-    os.mkdir(str(port))
-    shutil.copyfile("dynamic-security-init.json", "%d/dynamic-security.json" % (port))
+    if not os.path.exists(str(port)):
+        os.mkdir(str(port))
+    shutil.copyfile(str(Path(__file__).resolve().parent) + "/dynamic-security-init.json", "%d/dynamic-security.json" % (port))
 except FileExistsError:
     pass
 
@@ -230,6 +297,9 @@ try:
     # Subscribe to "multilevel-wildcard/topic/topic/allowed" - this is now allowed
     mosq_test.do_send_receive(csock, subscribe_multi_packet, suback_multi_packet_success, "suback multi 3")
 
+    # Subscribe to "pattern/#" - allowed
+    mosq_test.do_send_receive(csock, subscribe_pattern_packet, suback_pattern_packet, "suback")
+
     # Publish to "simple/topic" - this is now allowed
     csock.send(publish_simple_packet)
     mosq_test.receive_unordered(csock, publish_simple_packet_r, puback_simple_packet_success, "puback simple 3 / publish r")
@@ -257,6 +327,39 @@ try:
 
     # Multi unsubscribe should be allowed
     mosq_test.do_send_receive(csock, unsubscribe_multi_packet, unsuback_multi_packet_success, "unsuback multi 1")
+
+    # Publish to "pattern/u/user_one/topic" - this is allowed
+    csock.send(publish_u_pattern_packet)
+    mosq_test.receive_unordered(csock, publish_u_pattern_packet_r, puback_u_packet_success, "puback pattern 1 / publish r")
+
+    # Publish to "pattern/u/user_one/denied" - this is not allowed
+    mosq_test.do_send_receive(csock, publish_u_pattern_packet_denied, puback_u_packet_denied, "puback pattern 2")
+
+    # Publish to "pattern/c/cid/topic" - this is allowed
+    csock.send(publish_c_pattern_packet)
+    mosq_test.receive_unordered(csock, publish_c_pattern_packet_r, puback_c_packet_success, "puback pattern 3 / publish r")
+
+    # Publish to "pattern/c/cid/denied" - this is not allowed
+    mosq_test.do_send_receive(csock, publish_c_pattern_packet_denied, puback_c_packet_denied, "puback pattern 4")
+
+    # Subscribe to "subscribe/pattern/u/user_one/allowed" - this is allowed
+    mosq_test.do_send_receive(csock, subscribe_u_pattern_packet_allowed_success, suback_u_pattern_packet_allowed_success, "suback pattern 1")
+
+    # Subscribe to "subscribe/pattern/u/bad/allowed" - this is not allowed
+    mosq_test.do_send_receive(csock, subscribe_u_pattern_packet_allowed_fail, suback_u_pattern_packet_allowed_fail, "suback pattern 2")
+
+    # Subscribe to "subscribe/pattern/u/user_one/denied" - this is not allowed
+    mosq_test.do_send_receive(csock, subscribe_u_pattern_packet_denied_success, suback_u_pattern_packet_denied_success, "suback pattern 3")
+
+    # Subscribe to "subscribe/pattern/c/cid/allowed" - this is allowed
+    mosq_test.do_send_receive(csock, subscribe_c_pattern_packet_allowed_success, suback_c_pattern_packet_allowed_success, "suback pattern 4")
+
+    # Subscribe to "subscribe/pattern/c/bad/allowed" - this is not allowed
+    mosq_test.do_send_receive(csock, subscribe_c_pattern_packet_allowed_fail, suback_c_pattern_packet_allowed_fail, "suback pattern 5")
+
+    # Subscribe to "subscribe/pattern/c/cid/denied" - this is not allowed
+    mosq_test.do_send_receive(csock, subscribe_c_pattern_packet_denied_success, suback_c_pattern_packet_denied_success, "suback pattern 6")
+
 
     # Delete the role, client should be kicked
     command_check(sock, delete_role_command, delete_role_response)
@@ -298,17 +401,14 @@ finally:
         os.remove(f"{port}/dynamic-security.json")
     except FileNotFoundError:
         pass
-    os.rmdir(f"{port}")
+    shutil.rmtree(f"{port}")
     broker.terminate()
-    broker.wait()
+    if mosq_test.wait_for_subprocess(broker):
+        print("broker not terminated")
+        if rc == 0: rc=1
     (stdo, stde) = broker.communicate()
     if rc:
         print(stde.decode('utf-8'))
 
 
 exit(rc)
-
-publishClientSend
-publishClientReceive
-subscribeLiteral
-subscribePattern

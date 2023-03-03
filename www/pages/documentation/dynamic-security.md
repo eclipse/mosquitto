@@ -190,6 +190,22 @@ the ACL topic filter and the topic provided in the SUBSCRIBE or UNSUBSCRIBE
 message. This means that setting a `subscribePattern` ACL with topic filter `#`
 to deny would prevent matching devices from subscribing to any topic at all.
 
+#### ACL pattern substitution
+
+The `publishClientSend`, `publishClientReceive`, `subscribePattern`, and
+`unsubscribePattern` ACL types can make use of pattern substitution. This means
+that the strings `%c` and `%u` will be replaced with the client id and username
+of the client being checked, respectively. The pattern strings must be the only
+item in that level of hierarchy, so the ACL `topic/%count` will not be
+considered as a pattern.
+
+For example, with an ACL of `room/%c/temperature`, a client connecting with
+client id `kitchen` would be allowed to use the topic
+`room/kitchen/temperature` only.
+
+If a client does not have a username, a pattern that includes `%u` will always
+fail to match against that client.
+
 #### Text name
 
 This is an optional text field to give a human friendly name to this role.
@@ -309,8 +325,67 @@ listeners use the same authentication and access control.
 
 The `dynamic-security.json` file is where the plugin configuration will be
 stored. This file will be updated each time you make client/group/role changes,
-during normal operation the configuration stays in memory. To generate an
-initial file, use the `mosquitto_ctrl` utility.
+during normal operation the configuration stays in memory.
+
+### Generating the configuration file - 2.1 onwards
+
+To generate your initial configuration file there are a few choices. In version
+2.0.x, you must use the `mosquitto_ctrl` utility as described below. From
+version 2.1 onwards, if the configuration file does not exist, the plugin will
+attempt to generate a default configuration file with some sensible defaults.
+
+The roles created are:
+
+* `broker-admin` - grants access to administer general broker settings
+* `client` - read/write access to the full application topic hierarchy '#'
+* `dynsec-admin` - grants access to administer clients/groups/roles
+* `super-admin` - grants access to administer any `$CONTROL` APIs
+* `sys-notify` - allow bridges to publish connection state messages
+* `sys-observe` - allow read only access to the $SYS/# topic hierarchy
+* `topic-observe` - allow read only access to the full application topic hierarchy '#'
+
+The groups created are:
+
+* `unauthenticated` - automatic group that anonymous/unauthenticated clients
+  are placed in, if anonymous access is allowed.
+
+The initial users can be generated in three different ways, as described below.
+
+#### Initialisation file
+
+Create a text file with a single line. This line will be used as the password
+for the `admin` user, which will have access to administer the dynamic security
+plugin.
+
+Set the configuration option to trigger the use of this file:
+```
+plugin_opt_password_init_file path/to/init-file
+```
+
+Once the initial run of the broker has been done, the init file can be deleted.
+
+This method is well suited to use with e.g. docker secrets inside a container.
+
+#### Environment variable
+
+Set the `MOSQUITTO_DYNSEC_PASSWORD` environment variable to a string text and
+it will be used as the password for the `admin` user, which will have access to
+administer the dynamic security plugin.
+
+#### Default
+
+If neither `plugin_opt_password_init_file` nor `MOSQUITTO_DYNSEC_PASSWORD` are
+set, then the plugin will generate random passwords and store them in *plain
+text* at `<plugin_opt_config_file>.pw`, for example `dynamic-security.json.pw`.
+This file should be deleted once the passwords are known.
+
+Two users will be created, `admin`, which will have access to administer the
+dynamic security plugin, and `democlient`, which will have read/write access to
+the application topic hierarchy `#`.
+
+### Generating the configuration file - 2.0 onwards
+
+To generate an initial file using the `mosquitto_ctrl` utility:
 
 ```
 mosquitto_ctrl dynsec init path/to/dynamic-security.json admin-user
@@ -577,6 +652,13 @@ To list all clients:
 
 ```
 mosquitto_ctrl <options> dynsec listClients
+```
+
+This gives an output that is a list of client usernames:
+
+```
+client1
+client2
 ```
 
 The `modifyClient` command also exists in the topic API, but is not currently available in `mosquitto_ctrl`.

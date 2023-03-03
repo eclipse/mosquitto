@@ -21,6 +21,9 @@ int main(int argc, char *argv[])
 	char **topics;
 	int topic_count;
 
+	(void)argc;
+	(void)argv;
+
 	if(mosqpp::sub_topic_tokenise("topic", &topics, &topic_count)){
 		printf("Out of memory.\n");
 		return 1;

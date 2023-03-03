@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2020-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -62,12 +62,12 @@ static int dynsec_clientlist__cmp(void *a, void *b)
 }
 
 
-void dynsec_clientlist__kick_all(struct dynsec__clientlist *base_clientlist)
+void dynsec_clientlist__kick_all(struct dynsec__data *data, struct dynsec__clientlist *base_clientlist)
 {
 	struct dynsec__clientlist *clientlist, *clientlist_tmp;
 
 	HASH_ITER(hh, base_clientlist, clientlist, clientlist_tmp){
-		mosquitto_kick_client_by_username(clientlist->client->username, false);
+		dynsec_kicklist__add(data, clientlist->client->username);
 	}
 }
 

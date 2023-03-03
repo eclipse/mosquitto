@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -24,9 +24,6 @@ Contributors:
 
 #ifdef WITH_BROKER
 #  include "mosquitto_broker_internal.h"
-#  include "sys_tree.h"
-#else
-#  define G_PUB_BYTES_SENT_INC(A)
 #endif
 
 #include "mosquitto.h"
@@ -122,30 +119,27 @@ int send__command_with_mid(struct mosquitto *mosq, uint8_t command, uint16_t mid
 {
 	struct mosquitto__packet *packet = NULL;
 	int rc;
+	uint32_t remaining_length;
 
 	assert(mosq);
-	packet = mosquitto__calloc(1, sizeof(struct mosquitto__packet));
-	if(!packet) return MOSQ_ERR_NOMEM;
 
-	packet->command = command;
 	if(dup){
-		packet->command |= 8;
+		command |= 8;
 	}
-	packet->remaining_length = 2;
+	remaining_length = 2;
 
 	if(mosq->protocol == mosq_p_mqtt5){
 		if(reason_code != 0 || properties){
-			packet->remaining_length += 1;
+			remaining_length += 1;
 		}
 
 		if(properties){
-			packet->remaining_length += property__get_remaining_length(properties);
+			remaining_length += property__get_remaining_length(properties);
 		}
 	}
 
-	rc = packet__alloc(packet);
+	rc = packet__alloc(&packet, command, remaining_length);
 	if(rc){
-		mosquitto__free(packet);
 		return rc;
 	}
 
@@ -170,15 +164,9 @@ int send__simple_command(struct mosquitto *mosq, uint8_t command)
 	int rc;
 
 	assert(mosq);
-	packet = mosquitto__calloc(1, sizeof(struct mosquitto__packet));
-	if(!packet) return MOSQ_ERR_NOMEM;
 
-	packet->command = command;
-	packet->remaining_length = 0;
-
-	rc = packet__alloc(packet);
+	rc = packet__alloc(&packet, command, 0);
 	if(rc){
-		mosquitto__free(packet);
 		return rc;
 	}
 

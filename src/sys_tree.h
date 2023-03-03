@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2015-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2015-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -24,12 +24,14 @@ extern uint64_t g_bytes_received;
 extern uint64_t g_bytes_sent;
 extern uint64_t g_pub_bytes_received;
 extern uint64_t g_pub_bytes_sent;
+extern int64_t g_out_packet_bytes;
 extern unsigned long g_msgs_received;
 extern unsigned long g_msgs_sent;
 extern unsigned long g_pub_msgs_received;
 extern unsigned long g_pub_msgs_sent;
 extern unsigned long g_msgs_dropped;
-extern int g_clients_expired;
+extern long g_out_packet_count;
+extern unsigned int g_clients_expired;
 extern unsigned int g_socket_connections;
 extern unsigned int g_connection_count;
 
@@ -45,6 +47,10 @@ extern unsigned int g_connection_count;
 #define G_CLIENTS_EXPIRED_INC() (g_clients_expired++)
 #define G_SOCKET_CONNECTIONS_INC() (g_socket_connections++)
 #define G_CONNECTION_COUNT_INC() (g_connection_count++)
+#define G_OUT_PACKET_COUNT_INC(A) (g_out_packet_count+=(A))
+#define G_OUT_PACKET_COUNT_DEC(A) (g_out_packet_count-=(A))
+#define G_OUT_PACKET_BYTES_INC(A) (g_out_packet_bytes+=(A))
+#define G_OUT_PACKET_BYTES_DEC(A) (g_out_packet_bytes-=(A))
 
 #else
 
@@ -60,6 +66,10 @@ extern unsigned int g_connection_count;
 #define G_CLIENTS_EXPIRED_INC()
 #define G_SOCKET_CONNECTIONS_INC()
 #define G_CONNECTION_COUNT_INC()
+#define G_OUT_PACKET_COUNT_INC(A)
+#define G_OUT_PACKET_COUNT_DEC(A)
+#define G_OUT_PACKET_BYTES_INC(A)
+#define G_OUT_PACKET_BYTES_DEC(A)
 
 #endif
 

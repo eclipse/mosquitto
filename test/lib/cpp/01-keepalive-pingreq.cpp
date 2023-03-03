@@ -1,3 +1,4 @@
+#include <cassert>
 #include <mosquittopp.h>
 
 static int run = -1;
@@ -25,7 +26,9 @@ int main(int argc, char *argv[])
 {
 	struct mosquittopp_test *mosq;
 
+	assert(argc == 2);
 	int port = atoi(argv[1]);
+	int rc;
 
 	mosqpp::lib_init();
 
@@ -34,7 +37,8 @@ int main(int argc, char *argv[])
 	mosq->connect("localhost", port, 5);
 
 	while(run == -1){
-		mosq->loop();
+		rc = mosq->loop();
+		if(rc) break;
 	}
 	delete mosq;
 

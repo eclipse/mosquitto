@@ -404,3 +404,10 @@ tsa_name		= yes	# Must the TSA name be included in the reply?
 				# (optional, default: no)
 ess_cert_id_chain	= no	# Must the ESS cert id chain be included?
 				# (optional, default: no)
+
+[ test_SAN ]
+basicConstraints = CA:FALSE
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid,issuer
+subjectAltName = "IP:127.0.0.1,DNS:localhost,IP:::1"
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment

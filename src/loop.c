@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -42,7 +42,7 @@ Contributors:
 #include <time.h>
 #include <utlist.h>
 
-#ifdef WITH_WEBSOCKETS
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
 #  include <libwebsockets.h>
 #endif
 
@@ -55,14 +55,9 @@ Contributors:
 #include "time_mosq.h"
 #include "util_mosq.h"
 
-extern bool flag_reload;
-#ifdef WITH_PERSISTENCE
-extern bool flag_db_backup;
-#endif
-extern bool flag_tree_print;
-extern int run;
+extern int g_run;
 
-#if defined(WITH_WEBSOCKETS) && LWS_LIBRARY_VERSION_NUMBER == 3002000
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS && LWS_LIBRARY_VERSION_NUMBER == 3002000
 void lws__sul_callback(struct lws_sorted_usec_list *l)
 {
 }
@@ -70,40 +65,40 @@ void lws__sul_callback(struct lws_sorted_usec_list *l)
 static struct lws_sorted_usec_list sul;
 #endif
 
-static int single_publish(struct mosquitto *context, struct mosquitto_message_v5 *msg, uint32_t message_expiry)
+static int single_publish(struct mosquitto *context, struct mosquitto__message_v5 *pub_msg, uint32_t message_expiry)
 {
-	struct mosquitto_msg_store *stored;
+	struct mosquitto__base_msg *base_msg;
 	uint16_t mid;
 
-	stored = mosquitto__calloc(1, sizeof(struct mosquitto_msg_store));
-	if(stored == NULL) return MOSQ_ERR_NOMEM;
+	base_msg = mosquitto__calloc(1, sizeof(struct mosquitto__base_msg));
+	if(base_msg == NULL) return MOSQ_ERR_NOMEM;
 
-	stored->topic = msg->topic;
-	msg->topic = NULL;
-	stored->retain = 0;
-	stored->payloadlen = (uint32_t)msg->payloadlen;
-	stored->payload = mosquitto__malloc(stored->payloadlen+1);
-	if(stored->payload == NULL){
-		db__msg_store_free(stored);
+	base_msg->data.topic = pub_msg->topic;
+	pub_msg->topic = NULL;
+	base_msg->data.retain = 0;
+	base_msg->data.payloadlen = (uint32_t)pub_msg->payloadlen;
+	base_msg->data.payload = mosquitto__malloc(base_msg->data.payloadlen+1);
+	if(base_msg->data.payload == NULL){
+		db__msg_store_free(base_msg);
 		return MOSQ_ERR_NOMEM;
 	}
 	/* Ensure payload is always zero terminated, this is the reason for the extra byte above */
-	((uint8_t *)stored->payload)[stored->payloadlen] = 0;
-	memcpy(stored->payload, msg->payload, stored->payloadlen);
+	((uint8_t *)base_msg->data.payload)[base_msg->data.payloadlen] = 0;
+	memcpy(base_msg->data.payload, pub_msg->payload, base_msg->data.payloadlen);
 
-	if(msg->properties){
-		stored->properties = msg->properties;
-		msg->properties = NULL;
+	if(pub_msg->properties){
+		base_msg->data.properties = pub_msg->properties;
+		pub_msg->properties = NULL;
 	}
 
-	if(db__message_store(context, stored, message_expiry, 0, mosq_mo_broker)) return 1;
+	if(db__message_store(context, base_msg, message_expiry, mosq_mo_broker)) return 1;
 
-	if(msg->qos){
+	if(pub_msg->qos){
 		mid = mosquitto__mid_generate(context);
 	}else{
 		mid = 0;
 	}
-	return db__message_insert(context, mid, mosq_md_out, (uint8_t)msg->qos, 0, stored, msg->properties, true);
+	return db__message_insert_outgoing(context, 0, mid, (uint8_t)pub_msg->qos, 0, base_msg, 0, true, true);
 }
 
 
@@ -135,7 +130,7 @@ static void read_message_expiry_interval(mosquitto_property **proplist, uint32_t
 
 static void queue_plugin_msgs(void)
 {
-	struct mosquitto_message_v5 *msg, *tmp;
+	struct mosquitto__message_v5 *msg, *tmp;
 	struct mosquitto *context;
 	uint32_t message_expiry;
 
@@ -152,30 +147,35 @@ static void queue_plugin_msgs(void)
 		}else{
 			db__messages_easy_queue(NULL, msg->topic, (uint8_t)msg->qos, (uint32_t)msg->payloadlen, msg->payload, msg->retain, message_expiry, &msg->properties);
 		}
-		mosquitto__free(msg->topic);
-		mosquitto__free(msg->payload);
+		mosquitto__FREE(msg->topic);
+		mosquitto__FREE(msg->payload);
 		mosquitto_property_free_all(&msg->properties);
-		mosquitto__free(msg->clientid);
-		mosquitto__free(msg);
+		mosquitto__FREE(msg->clientid);
+		mosquitto__FREE(msg);
+	}
+}
+
+
+void loop__update_next_event(time_t new_ms)
+{
+	if(new_ms > 0 && new_ms < db.next_event_ms){
+		db.next_event_ms = (int)new_ms;
 	}
 }
 
 
 int mosquitto_main_loop(struct mosquitto__listener_sock *listensock, int listensock_count)
 {
-#ifdef WITH_SYS_TREE
-	time_t start_time = mosquitto_time();
-#endif
 #ifdef WITH_PERSISTENCE
 	time_t last_backup = mosquitto_time();
 #endif
-#ifdef WITH_WEBSOCKETS
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
 	int i;
 #endif
 	int rc;
 
 
-#if defined(WITH_WEBSOCKETS) && LWS_LIBRARY_VERSION_NUMBER == 3002000
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS && LWS_LIBRARY_VERSION_NUMBER == 3002000
 	memset(&sul, 0, sizeof(struct lws_sorted_usec_list));
 #endif
 
@@ -187,12 +187,14 @@ int mosquitto_main_loop(struct mosquitto__listener_sock *listensock, int listens
 	if(rc) return rc;
 #endif
 
-	while(run){
+	while(g_run){
 		queue_plugin_msgs();
 		context__free_disused();
+
+		db.next_event_ms = 86400000;
 #ifdef WITH_SYS_TREE
 		if(db.config->sys_interval > 0){
-			sys_tree__update(db.config->sys_interval, start_time);
+			sys_tree__update();
 		}
 #endif
 
@@ -201,12 +203,13 @@ int mosquitto_main_loop(struct mosquitto__listener_sock *listensock, int listens
 #ifdef WITH_BRIDGE
 		bridge_check();
 #endif
+		plugin__handle_tick();
+		session_expiry__check();
+		will_delay__check();
 
 		rc = mux__handle(listensock, listensock_count);
 		if(rc) return rc;
 
-		session_expiry__check();
-		will_delay__check();
 #ifdef WITH_PERSISTENCE
 		if(db.config->persistence && db.config->autosave_interval){
 			if(db.config->autosave_on_changes){
@@ -223,31 +226,8 @@ int mosquitto_main_loop(struct mosquitto__listener_sock *listensock, int listens
 		}
 #endif
 
-#ifdef WITH_PERSISTENCE
-		if(flag_db_backup){
-			persist__backup(false);
-			flag_db_backup = false;
-		}
-#endif
-		if(flag_reload){
-			log__printf(NULL, MOSQ_LOG_INFO, "Reloading config.");
-			config__read(db.config, true);
-			listeners__reload_all_certificates();
-			mosquitto_security_cleanup(true);
-			mosquitto_security_init(true);
-			mosquitto_security_apply();
-			log__close(db.config);
-			log__init(db.config);
-			flag_reload = false;
-		}
-		if(flag_tree_print){
-			sub__tree_print(db.subs, 0);
-			flag_tree_print = false;
-#ifdef WITH_XTREPORT
-			xtreport();
-#endif
-		}
-#ifdef WITH_WEBSOCKETS
+		signal__flag_check();
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
 		for(i=0; i<db.config->listener_count; i++){
 			/* Extremely hacky, should be using the lws provided external poll
 			 * interface, but their interface has changed recently and ours
@@ -266,7 +246,6 @@ int mosquitto_main_loop(struct mosquitto__listener_sock *listensock, int listens
 			}
 		}
 #endif
-		plugin__handle_tick();
 	}
 
 	mux__cleanup();
@@ -277,14 +256,14 @@ int mosquitto_main_loop(struct mosquitto__listener_sock *listensock, int listens
 void do_disconnect(struct mosquitto *context, int reason)
 {
 	const char *id;
-#ifdef WITH_WEBSOCKETS
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
 	bool is_duplicate = false;
 #endif
 
 	if(context->state == mosq_cs_disconnected){
 		return;
 	}
-#ifdef WITH_WEBSOCKETS
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
 	if(context->wsi){
 		if(context->state == mosq_cs_duplicate){
 			is_duplicate = true;
@@ -356,6 +335,42 @@ void do_disconnect(struct mosquitto *context, int reason)
 					case MOSQ_ERR_ERRNO:
 						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s disconnected: %s.", id, strerror(errno));
 						break;
+					case MOSQ_ERR_RECEIVE_MAXIMUM_EXCEEDED:
+						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s disconnected due to exceeding the receive maximum.", id);
+						break;
+					case MOSQ_ERR_IMPLEMENTATION_SPECIFIC:
+						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s disconnected, implementation specific error.", id);
+						break;
+					case MOSQ_ERR_CLIENT_IDENTIFIER_NOT_VALID:
+						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s disconnected, client identifier not valid.", id);
+						break;
+					case MOSQ_ERR_BAD_USERNAME_OR_PASSWORD:
+						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s disconnected, bad username or password.", id);
+						break;
+					case MOSQ_ERR_SERVER_UNAVAILABLE:
+						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s disconnected, server unavailable.", id);
+						break;
+					case MOSQ_ERR_SERVER_BUSY:
+						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s disconnected, server busy.", id);
+						break;
+					case MOSQ_ERR_BANNED:
+						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s disconnected, client banned.", id);
+						break;
+					case MOSQ_ERR_BAD_AUTHENTICATION_METHOD:
+						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s disconnected, bad authentication method.", id);
+						break;
+					case MOSQ_ERR_QUOTA_EXCEEDED:
+						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s disconnected, quota exceeded.", id);
+						break;
+					case MOSQ_ERR_CONNECTION_RATE_EXCEEDED:
+						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s disconnected, connection rate exceeded.", id);
+						break;
+					case MOSQ_ERR_SESSION_TAKEN_OVER:
+						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s disconnected, session taken over.", id);
+						break;
+					case MOSQ_ERR_HTTP_BAD_ORIGIN:
+						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s disconnected, non-matching http origin.", id);
+						break;
 					default:
 						log__printf(NULL, MOSQ_LOG_NOTICE, "Bad socket read/write on client %s: %s", id, mosquitto_strerror(reason));
 						break;
@@ -372,5 +387,3 @@ void do_disconnect(struct mosquitto *context, int reason)
 		context__disconnect(context);
 	}
 }
-
-

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2011-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2011-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -87,7 +87,11 @@ int mosquitto_loop_stop(struct mosquitto *mosq, bool force)
 	}
 #endif
 	pthread_join(mosq->thread_id, NULL);
+#ifdef WIN32
+	mosq->thread_id = NULL;
+#else
 	mosq->thread_id = pthread_self();
+#endif
 	mosq->threaded = mosq_ts_none;
 
 	return MOSQ_ERR_SUCCESS;

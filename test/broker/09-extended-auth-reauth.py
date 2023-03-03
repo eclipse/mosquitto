@@ -16,7 +16,7 @@ rc = 1
 # First authentication succeeds
 props = mqtt5_props.gen_string_prop(mqtt5_props.PROP_AUTHENTICATION_METHOD, "repeat")
 props += mqtt5_props.gen_string_prop(mqtt5_props.PROP_AUTHENTICATION_DATA, "repeat")
-connect_packet = mosq_test.gen_connect("client-params-test", keepalive=42, proto_ver=5, properties=props)
+connect_packet = mosq_test.gen_connect("client-params-test", proto_ver=5, properties=props)
 
 props = mqtt5_props.gen_uint16_prop(mqtt5_props.PROP_TOPIC_ALIAS_MAXIMUM, 10)
 props += mqtt5_props.gen_string_prop(mqtt5_props.PROP_AUTHENTICATION_METHOD, "repeat")
@@ -42,7 +42,9 @@ except mosq_test.TestError:
 finally:
     os.remove(conf_file)
     broker.terminate()
-    broker.wait()
+    if mosq_test.wait_for_subprocess(broker):
+        print("broker not terminated")
+        if rc == 0: rc=1
     (stdo, stde) = broker.communicate()
     if rc:
         print(stde.decode('utf-8'))

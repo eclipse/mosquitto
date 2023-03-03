@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2010-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2010-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -80,11 +80,8 @@ int mosquitto_username_pw_set(struct mosquitto *mosq, const char *username, cons
 		}
 	}
 
-	mosquitto__free(mosq->username);
-	mosq->username = NULL;
-
-	mosquitto__free(mosq->password);
-	mosq->password = NULL;
+	mosquitto__FREE(mosq->username);
+	mosquitto__FREE(mosq->password);
 
 	if(username){
 		slen = strlen(username);
@@ -101,8 +98,7 @@ int mosquitto_username_pw_set(struct mosquitto *mosq, const char *username, cons
 	if(password){
 		mosq->password = mosquitto__strdup(password);
 		if(!mosq->password){
-			mosquitto__free(mosq->username);
-			mosq->username = NULL;
+			mosquitto__FREE(mosq->username);
 			return MOSQ_ERR_NOMEM;
 		}
 	}
@@ -131,8 +127,7 @@ int mosquitto_tls_set(struct mosquitto *mosq, const char *cafile, const char *ca
 
 	if(!mosq || (!cafile && !capath) || (certfile && !keyfile) || (!certfile && keyfile)) return MOSQ_ERR_INVAL;
 
-	mosquitto__free(mosq->tls_cafile);
-	mosq->tls_cafile = NULL;
+	mosquitto__FREE(mosq->tls_cafile);
 	if(cafile){
 		fptr = mosquitto__fopen(cafile, "rt", false);
 		if(fptr){
@@ -147,8 +142,7 @@ int mosquitto_tls_set(struct mosquitto *mosq, const char *cafile, const char *ca
 		}
 	}
 
-	mosquitto__free(mosq->tls_capath);
-	mosq->tls_capath = NULL;
+	mosquitto__FREE(mosq->tls_capath);
 	if(capath){
 		mosq->tls_capath = mosquitto__strdup(capath);
 		if(!mosq->tls_capath){
@@ -156,18 +150,14 @@ int mosquitto_tls_set(struct mosquitto *mosq, const char *cafile, const char *ca
 		}
 	}
 
-	mosquitto__free(mosq->tls_certfile);
-	mosq->tls_certfile = NULL;
+	mosquitto__FREE(mosq->tls_certfile);
 	if(certfile){
 		fptr = mosquitto__fopen(certfile, "rt", false);
 		if(fptr){
 			fclose(fptr);
 		}else{
-			mosquitto__free(mosq->tls_cafile);
-			mosq->tls_cafile = NULL;
-
-			mosquitto__free(mosq->tls_capath);
-			mosq->tls_capath = NULL;
+			mosquitto__FREE(mosq->tls_cafile);
+			mosquitto__FREE(mosq->tls_capath);
 			return MOSQ_ERR_INVAL;
 		}
 		mosq->tls_certfile = mosquitto__strdup(certfile);
@@ -176,21 +166,15 @@ int mosquitto_tls_set(struct mosquitto *mosq, const char *cafile, const char *ca
 		}
 	}
 
-	mosquitto__free(mosq->tls_keyfile);
-	mosq->tls_keyfile = NULL;
+	mosquitto__FREE(mosq->tls_keyfile);
 	if(keyfile){
 		fptr = mosquitto__fopen(keyfile, "rt", false);
 		if(fptr){
 			fclose(fptr);
 		}else{
-			mosquitto__free(mosq->tls_cafile);
-			mosq->tls_cafile = NULL;
-
-			mosquitto__free(mosq->tls_capath);
-			mosq->tls_capath = NULL;
-
-			mosquitto__free(mosq->tls_certfile);
-			mosq->tls_certfile = NULL;
+			mosquitto__FREE(mosq->tls_cafile);
+			mosquitto__FREE(mosq->tls_capath);
+			mosquitto__FREE(mosq->tls_certfile);
 			return MOSQ_ERR_INVAL;
 		}
 		mosq->tls_keyfile = mosquitto__strdup(keyfile);
@@ -228,22 +212,30 @@ int mosquitto_tls_opts_set(struct mosquitto *mosq, int cert_reqs, const char *tl
 				|| !strcasecmp(tls_version, "tlsv1.2")
 				|| !strcasecmp(tls_version, "tlsv1.1")){
 
+			mosquitto__FREE(mosq->tls_version);
 			mosq->tls_version = mosquitto__strdup(tls_version);
 			if(!mosq->tls_version) return MOSQ_ERR_NOMEM;
 		}else{
 			return MOSQ_ERR_INVAL;
 		}
 	}else{
+		mosquitto__FREE(mosq->tls_version);
 		mosq->tls_version = mosquitto__strdup("tlsv1.2");
 		if(!mosq->tls_version) return MOSQ_ERR_NOMEM;
 	}
-	if(ciphers){
-		mosq->tls_ciphers = mosquitto__strdup(ciphers);
-		if(!mosq->tls_ciphers) return MOSQ_ERR_NOMEM;
-	}else{
-		mosq->tls_ciphers = NULL;
-	}
 
+	mosquitto__FREE(mosq->tls_ciphers);
+	mosquitto__FREE(mosq->tls_13_ciphers);
+
+	if(ciphers){
+		if(!strcasecmp(mosq->tls_version, "tlsv1.3")){
+			mosq->tls_13_ciphers = mosquitto__strdup(ciphers);
+			if(!mosq->tls_13_ciphers) return MOSQ_ERR_NOMEM;
+		}else{
+			mosq->tls_ciphers = mosquitto__strdup(ciphers);
+			if(!mosq->tls_ciphers) return MOSQ_ERR_NOMEM;
+		}
+	}
 
 	return MOSQ_ERR_SUCCESS;
 #else
@@ -274,7 +266,7 @@ int mosquitto_tls_insecure_set(struct mosquitto *mosq, bool value)
 
 int mosquitto_string_option(struct mosquitto *mosq, enum mosq_opt_t option, const char *value)
 {
-#ifdef WITH_TLS
+#if defined(WITH_TLS) && !defined(OPENSSL_NO_ENGINE) && OPENSSL_API_LEVEL < 30000
 	ENGINE *eng;
 	char *str;
 #endif
@@ -283,8 +275,8 @@ int mosquitto_string_option(struct mosquitto *mosq, enum mosq_opt_t option, cons
 
 	switch(option){
 		case MOSQ_OPT_TLS_ENGINE:
-#if defined(WITH_TLS) && !defined(OPENSSL_NO_ENGINE)
-			mosquitto__free(mosq->tls_engine);
+#if defined(WITH_TLS) && !defined(OPENSSL_NO_ENGINE) && OPENSSL_API_LEVEL < 30000
+			mosquitto__FREE(mosq->tls_engine);
 			if(value){
 				eng = ENGINE_by_id(value);
 				if(!eng){
@@ -303,7 +295,7 @@ int mosquitto_string_option(struct mosquitto *mosq, enum mosq_opt_t option, cons
 			break;
 
 		case MOSQ_OPT_TLS_KEYFORM:
-#ifdef WITH_TLS
+#if defined(WITH_TLS) && !defined(OPENSSL_NO_ENGINE) && OPENSSL_API_LEVEL < 30000
 			if(!value) return MOSQ_ERR_INVAL;
 			if(!strcasecmp(value, "pem")){
 				mosq->tls_keyform = mosq_k_pem;
@@ -320,7 +312,8 @@ int mosquitto_string_option(struct mosquitto *mosq, enum mosq_opt_t option, cons
 
 
 		case MOSQ_OPT_TLS_ENGINE_KPASS_SHA1:
-#ifdef WITH_TLS
+#if defined(WITH_TLS) && !defined(OPENSSL_NO_ENGINE) && OPENSSL_API_LEVEL < 30000
+			mosquitto__FREE(mosq->tls_engine_kpass_sha1);
 			if(mosquitto__hex2bin_sha1(value, (unsigned char**)&str) != MOSQ_ERR_SUCCESS){
 				return MOSQ_ERR_INVAL;
 			}
@@ -333,6 +326,7 @@ int mosquitto_string_option(struct mosquitto *mosq, enum mosq_opt_t option, cons
 
 		case MOSQ_OPT_TLS_ALPN:
 #ifdef WITH_TLS
+			mosquitto__FREE(mosq->tls_alpn);
 			mosq->tls_alpn = mosquitto__strdup(value);
 			if(!mosq->tls_alpn){
 				return MOSQ_ERR_NOMEM;
@@ -344,7 +338,7 @@ int mosquitto_string_option(struct mosquitto *mosq, enum mosq_opt_t option, cons
 			break;
 
 		case MOSQ_OPT_BIND_ADDRESS:
-			mosquitto__free(mosq->bind_address);
+			mosquitto__FREE(mosq->bind_address);
 			if(value){
 				mosq->bind_address = mosquitto__strdup(value);
 				if(mosq->bind_address){
@@ -356,6 +350,22 @@ int mosquitto_string_option(struct mosquitto *mosq, enum mosq_opt_t option, cons
 				return MOSQ_ERR_SUCCESS;
 			}
 
+		case MOSQ_OPT_HTTP_PATH:
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_BUILTIN
+			mosquitto__FREE(mosq->wsd.http_path);
+			if(value){
+				mosq->wsd.http_path = mosquitto__strdup(value);
+				if(mosq->wsd.http_path){
+					return MOSQ_ERR_SUCCESS;
+				}else{
+					return MOSQ_ERR_NOMEM;
+				}
+			}else{
+				return MOSQ_ERR_SUCCESS;
+			}
+#else
+			return MOSQ_ERR_NOT_SUPPORTED;
+#endif
 
 		default:
 			return MOSQ_ERR_INVAL;
@@ -377,7 +387,7 @@ int mosquitto_tls_psk_set(struct mosquitto *mosq, const char *psk, const char *i
 
 	mosq->tls_psk_identity = mosquitto__strdup(identity);
 	if(!mosq->tls_psk_identity){
-		mosquitto__free(mosq->tls_psk);
+		mosquitto__FREE(mosq->tls_psk);
 		return MOSQ_ERR_NOMEM;
 	}
 	if(ciphers){
@@ -426,6 +436,10 @@ int mosquitto_int_option(struct mosquitto *mosq, enum mosq_opt_t option, int val
 	if(!mosq) return MOSQ_ERR_INVAL;
 
 	switch(option){
+		case MOSQ_OPT_DISABLE_SOCKETPAIR:
+			mosq->disable_socketpair = (bool)value;
+			break;
+
 		case MOSQ_OPT_PROTOCOL_VERSION:
 			if(value == MQTT_PROTOCOL_V31){
 				mosq->protocol = mosq_p_mqtt31;
@@ -494,6 +508,32 @@ int mosquitto_int_option(struct mosquitto *mosq, enum mosq_opt_t option, int val
 
 		case MOSQ_OPT_TCP_NODELAY:
 			mosq->tcp_nodelay = (bool)value;
+			break;
+
+		case MOSQ_OPT_TRANSPORT:
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_BUILTIN
+			if(value == mosq_t_tcp || value == mosq_t_ws){
+				mosq->transport = (uint8_t)value;
+			}else{
+				return MOSQ_ERR_INVAL;
+			}
+#else
+			return MOSQ_ERR_NOT_SUPPORTED;
+#endif
+			break;
+
+		case MOSQ_OPT_HTTP_HEADER_SIZE:
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_BUILTIN
+			if(value < 100){ /* arbitrary limit */
+				return MOSQ_ERR_INVAL;
+			}else if(mosq->http_request){
+				/* Don't want to resize if part way through the handshake */
+				return MOSQ_ERR_INVAL;
+			}
+			mosq->wsd.http_header_size = value;
+#else
+			return MOSQ_ERR_NOT_SUPPORTED;
+#endif
 			break;
 
 		default:

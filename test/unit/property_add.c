@@ -5,6 +5,25 @@
 #include "property_mosq.h"
 #include "packet_mosq.h"
 
+static void check_count(mosquitto_property *proplist, int expected)
+{
+	mosquitto_property *p;
+	int count;
+
+	if(proplist == NULL){
+		CU_ASSERT_EQUAL(expected, 0);
+		return;
+	}
+
+	p = proplist;
+	count = 0;
+	while(p){
+		count++;
+		p = p->next;
+	}
+	CU_ASSERT_EQUAL(count, expected);
+}
+
 /* ========================================================================
  * BAD IDENTIFIER
  * ======================================================================== */
@@ -459,8 +478,6 @@ static void TEST_add_single_string_pair(void)
 static void TEST_add_all_connect(void)
 {
 	mosquitto_property *proplist = NULL;
-	mosquitto_property *p;
-	int count;
 	int rc;
 
 	rc = mosquitto_property_add_int32(&proplist, MQTT_PROP_SESSION_EXPIRY_INTERVAL, 86400);
@@ -491,13 +508,7 @@ static void TEST_add_all_connect(void)
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 	CU_ASSERT_PTR_NOT_NULL(proplist);
 
-	p = proplist;
-	count = 0;
-	while(p){
-		count++;
-		p = p->next;
-	}
-	CU_ASSERT_EQUAL(count, 9);
+	check_count(proplist, 9);
 
 	mosquitto_property_free_all(&proplist);
 }
@@ -506,8 +517,6 @@ static void TEST_add_all_connect(void)
 static void TEST_add_all_connack(void)
 {
 	mosquitto_property *proplist = NULL;
-	mosquitto_property *p;
-	int count;
 	int rc;
 
 	rc = mosquitto_property_add_int32(&proplist, MQTT_PROP_SESSION_EXPIRY_INTERVAL, 86400);
@@ -562,13 +571,7 @@ static void TEST_add_all_connack(void)
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 	CU_ASSERT_PTR_NOT_NULL(proplist);
 
-	p = proplist;
-	count = 0;
-	while(p){
-		count++;
-		p = p->next;
-	}
-	CU_ASSERT_EQUAL(count, 17);
+	check_count(proplist, 17);
 
 	mosquitto_property_free_all(&proplist);
 }
@@ -579,8 +582,8 @@ static void TEST_check_length(void)
 	mosquitto_property *proplist = NULL;
 	int rc;
 	unsigned int len;
-	int varbytes;
-	int i;
+	unsigned int varbytes;
+	unsigned int i;
 
 	len = property__get_remaining_length(proplist);
 	CU_ASSERT_EQUAL(len, 1);
@@ -602,6 +605,128 @@ static void TEST_check_length(void)
 		}else{
 			break;
 		}
+	}
+	mosquitto_property_free_all(&proplist);
+}
+
+static void TEST_remove_single(void)
+{
+	mosquitto_property *proplist = NULL, *property;
+	int rc;
+	unsigned int len;
+
+	len = property__get_remaining_length(proplist);
+	CU_ASSERT_EQUAL(len, 1);
+
+	for(int i=1; i<10; i++){
+		rc = mosquitto_property_add_byte(&proplist, MQTT_PROP_SHARED_SUB_AVAILABLE, 0);
+		CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
+		CU_ASSERT_PTR_NOT_NULL(proplist);
+	}
+	check_count(proplist, 9);
+
+	/* Remove end item */
+	property = proplist;
+	while(property && property->next){
+		property = property->next;
+	}
+
+	rc = mosquitto_property_remove(&proplist, property);
+	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
+	mosquitto_property_free_all(&property);
+
+	check_count(proplist, 8);
+
+	/* Remove middle item */
+	property = proplist;
+	for(int i=0; i<4; i++){
+		property = property->next;
+	}
+	rc = mosquitto_property_remove(&proplist, property);
+	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
+	mosquitto_property_free_all(&property);
+
+	check_count(proplist, 7);
+
+	/* Remove front item */
+	property = proplist;
+	rc = mosquitto_property_remove(&proplist, property);
+	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
+	CU_ASSERT_PTR_NOT_EQUAL(proplist, property);
+	mosquitto_property_free_all(&property);
+
+	check_count(proplist, 6);
+
+	mosquitto_property_free_all(&proplist);
+}
+
+static void TEST_remove_all(void)
+{
+	mosquitto_property *proplist = NULL, *property;
+	int rc;
+
+	for(int i=0; i<100; i++){
+		rc = mosquitto_property_add_byte(&proplist, MQTT_PROP_SHARED_SUB_AVAILABLE, 0);
+		CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
+		CU_ASSERT_PTR_NOT_NULL(proplist);
+	}
+
+	for(int i=0; i<100; i++){
+		property = proplist;
+		rc = mosquitto_property_remove(&proplist, property);
+		CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
+		mosquitto_property_free_all(&property);
+		check_count(proplist, 100-i-1);
+	}
+	CU_ASSERT_PTR_NULL(proplist);
+	mosquitto_property_free_all(&proplist);
+}
+
+static void TEST_remove_non_existent(void)
+{
+	mosquitto_property *proplist = NULL, *property = NULL;
+	int rc;
+	unsigned int len;
+
+	len = property__get_remaining_length(proplist);
+	CU_ASSERT_EQUAL(len, 1);
+
+	rc = mosquitto_property_add_byte(&proplist, MQTT_PROP_SHARED_SUB_AVAILABLE, 0);
+	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
+	CU_ASSERT_PTR_NOT_NULL(proplist);
+	if(proplist){
+		rc = mosquitto_property_add_byte(&property, MQTT_PROP_SHARED_SUB_AVAILABLE, 0);
+		CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
+		CU_ASSERT_PTR_NOT_NULL(property);
+		if(property){
+			rc = mosquitto_property_remove(&proplist, property);
+			CU_ASSERT_EQUAL(rc, MOSQ_ERR_NOT_FOUND);
+		}
+	}
+	mosquitto_property_free_all(&proplist);
+	mosquitto_property_free_all(&property);
+}
+
+static void TEST_remove_invalid(void)
+{
+	mosquitto_property *proplist = NULL;
+	int rc;
+	unsigned int len;
+
+	rc = mosquitto_property_remove(NULL, NULL);
+	CU_ASSERT_EQUAL(rc, MOSQ_ERR_INVAL);
+
+	len = property__get_remaining_length(proplist);
+	CU_ASSERT_EQUAL(len, 1);
+
+	rc = mosquitto_property_add_byte(&proplist, MQTT_PROP_SHARED_SUB_AVAILABLE, 0);
+	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
+	CU_ASSERT_PTR_NOT_NULL(proplist);
+	if(proplist){
+		rc = mosquitto_property_remove(&proplist, NULL);
+		CU_ASSERT_EQUAL(rc, MOSQ_ERR_INVAL);
+		rc = mosquitto_property_remove(NULL, proplist);
+		CU_ASSERT_EQUAL(rc, MOSQ_ERR_INVAL);
 	}
 	mosquitto_property_free_all(&proplist);
 }
@@ -638,6 +763,10 @@ int init_property_add_tests(void)
 			|| !CU_add_test(test_suite, "Add single string pair", TEST_add_single_string_pair)
 			|| !CU_add_test(test_suite, "Add all CONNECT", TEST_add_all_connect)
 			|| !CU_add_test(test_suite, "Add all CONNACK", TEST_add_all_connack)
+			|| !CU_add_test(test_suite, "Remove single", TEST_remove_single)
+			|| !CU_add_test(test_suite, "Remove all", TEST_remove_all)
+			|| !CU_add_test(test_suite, "Remove non-existent", TEST_remove_non_existent)
+			|| !CU_add_test(test_suite, "Remove invalid", TEST_remove_invalid)
 			){
 
 		printf("Error adding Property Add CUnit tests.\n");

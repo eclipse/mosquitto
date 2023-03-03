@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2011-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2011-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -26,6 +26,7 @@ Contributors:
 #include "memory_mosq.h"
 #include "mqtt_protocol.h"
 #include "send_mosq.h"
+#include "base64_mosq.h"
 #include "misc_mosq.h"
 #include "util_mosq.h"
 
@@ -37,7 +38,7 @@ static int psk__file_parse(struct mosquitto__unpwd **psk_id, const char *psk_fil
 #ifdef WITH_TLS
 static int pw__digest(const char *password, const unsigned char *salt, unsigned int salt_len, unsigned char *hash, unsigned int *hash_len, enum mosquitto_pwhash_type hashtype, int iterations);
 #endif
-static int mosquitto_unpwd_check_default(int event, void *event_data, void *userdata);
+static int mosquitto_basic_auth_default(int event, void *event_data, void *userdata);
 static int mosquitto_acl_check_default(int event, void *event_data, void *userdata);
 
 
@@ -54,12 +55,14 @@ int mosquitto_security_init_default(bool reload)
 	/* Configure plugin identifier */
 	if(db.config->per_listener_settings){
 		for(i=0; i<db.config->listener_count; i++){
-			db.config->listeners[i].security_options.pid = mosquitto__calloc(1, sizeof(mosquitto_plugin_id_t));
-			if(db.config->listeners[i].security_options.pid == NULL){
+			db.config->listeners[i].security_options->pid = mosquitto__calloc(1, sizeof(mosquitto_plugin_id_t));
+			if(db.config->listeners[i].security_options->pid == NULL){
 				log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 				return MOSQ_ERR_NOMEM;
 			}
-			db.config->listeners[i].security_options.pid->listener = &db.config->listeners[i];
+			db.config->listeners[i].security_options->pid->plugin_name = mosquitto__strdup("builtin-security");
+			db.config->listeners[i].security_options->pid->listener = &db.config->listeners[i];
+			config__plugin_add_secopt(db.config->listeners[i].security_options->pid, db.config->listeners[i].security_options);
 		}
 	}else{
 		db.config->security_options.pid = mosquitto__calloc(1, sizeof(mosquitto_plugin_id_t));
@@ -67,20 +70,22 @@ int mosquitto_security_init_default(bool reload)
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 			return MOSQ_ERR_NOMEM;
 		}
+		db.config->security_options.pid->plugin_name = mosquitto__strdup("builtin-security");
+		config__plugin_add_secopt(db.config->security_options.pid, &db.config->security_options);
 	}
 
 	/* Load username/password data if required. */
 	if(db.config->per_listener_settings){
 		for(i=0; i<db.config->listener_count; i++){
-			pwf = db.config->listeners[i].security_options.password_file;
+			pwf = db.config->listeners[i].security_options->password_file;
 			if(pwf){
-				rc = unpwd__file_parse(&db.config->listeners[i].security_options.unpwd, pwf);
+				rc = unpwd__file_parse(&db.config->listeners[i].security_options->unpwd, pwf);
 				if(rc){
 					log__printf(NULL, MOSQ_LOG_ERR, "Error opening password file \"%s\".", pwf);
 					return rc;
 				}
-				mosquitto_callback_register(db.config->listeners[i].security_options.pid,
-						MOSQ_EVT_BASIC_AUTH, mosquitto_unpwd_check_default, NULL, NULL);
+				mosquitto_callback_register(db.config->listeners[i].security_options->pid,
+						MOSQ_EVT_BASIC_AUTH, mosquitto_basic_auth_default, NULL, NULL);
 			}
 		}
 	}else{
@@ -94,20 +99,24 @@ int mosquitto_security_init_default(bool reload)
 				}
 			}
 			mosquitto_callback_register(db.config->security_options.pid,
-					MOSQ_EVT_BASIC_AUTH, mosquitto_unpwd_check_default, NULL, NULL);
+					MOSQ_EVT_BASIC_AUTH, mosquitto_basic_auth_default, NULL, NULL);
 		}
 	}
 
 	/* Load acl data if required. */
 	if(db.config->per_listener_settings){
 		for(i=0; i<db.config->listener_count; i++){
-			if(db.config->listeners[i].security_options.acl_file){
-				rc = aclfile__parse(&db.config->listeners[i].security_options);
+			if(db.config->listeners[i].security_options->acl_file){
+				rc = aclfile__parse(db.config->listeners[i].security_options);
 				if(rc){
-					log__printf(NULL, MOSQ_LOG_ERR, "Error opening acl file \"%s\".", db.config->listeners[i].security_options.acl_file);
+					log__printf(NULL, MOSQ_LOG_ERR, "Error opening acl file \"%s\".", db.config->listeners[i].security_options->acl_file);
 					return rc;
 				}
-				mosquitto_callback_register(db.config->listeners[i].security_options.pid,
+				if(db.config->listeners[i].security_options->plugin_count == 0){
+					config__plugin_add_secopt(db.config->listeners[i].security_options->pid, db.config->listeners[i].security_options);
+				}
+
+				mosquitto_callback_register(db.config->listeners[i].security_options->pid,
 						MOSQ_EVT_ACL_CHECK, mosquitto_acl_check_default, NULL, NULL);
 			}
 		}
@@ -118,6 +127,10 @@ int mosquitto_security_init_default(bool reload)
 				log__printf(NULL, MOSQ_LOG_ERR, "Error opening acl file \"%s\".", db.config->security_options.acl_file);
 				return rc;
 			}
+			if(db.config->security_options.plugin_count == 0){
+				config__plugin_add_secopt(db.config->security_options.pid, &db.config->security_options);
+			}
+
 			mosquitto_callback_register(db.config->security_options.pid,
 					MOSQ_EVT_ACL_CHECK, mosquitto_acl_check_default, NULL, NULL);
 		}
@@ -126,9 +139,9 @@ int mosquitto_security_init_default(bool reload)
 	/* Load psk data if required. */
 	if(db.config->per_listener_settings){
 		for(i=0; i<db.config->listener_count; i++){
-			pskf = db.config->listeners[i].security_options.psk_file;
+			pskf = db.config->listeners[i].security_options->psk_file;
 			if(pskf){
-				rc = psk__file_parse(&db.config->listeners[i].security_options.psk_id, pskf);
+				rc = psk__file_parse(&db.config->listeners[i].security_options->psk_id, pskf);
 				if(rc){
 					log__printf(NULL, MOSQ_LOG_ERR, "Error opening psk file \"%s\".", pskf);
 					return rc;
@@ -161,8 +174,8 @@ int mosquitto_security_cleanup_default(bool reload)
 	if(rc != MOSQ_ERR_SUCCESS) return rc;
 
 	for(i=0; i<db.config->listener_count; i++){
-		if(db.config->listeners[i].security_options.unpwd){
-			rc = unpwd__cleanup(&db.config->listeners[i].security_options.unpwd, reload);
+		if(db.config->listeners[i].security_options->unpwd){
+			rc = unpwd__cleanup(&db.config->listeners[i].security_options->unpwd, reload);
 			if(rc != MOSQ_ERR_SUCCESS) return rc;
 		}
 	}
@@ -171,31 +184,35 @@ int mosquitto_security_cleanup_default(bool reload)
 	if(rc != MOSQ_ERR_SUCCESS) return rc;
 
 	for(i=0; i<db.config->listener_count; i++){
-		if(db.config->listeners[i].security_options.psk_id){
-			rc = unpwd__cleanup(&db.config->listeners[i].security_options.psk_id, reload);
+		if(db.config->listeners[i].security_options->psk_id){
+			rc = unpwd__cleanup(&db.config->listeners[i].security_options->psk_id, reload);
 			if(rc != MOSQ_ERR_SUCCESS) return rc;
 		}
 	}
 
 	if(db.config->per_listener_settings){
 		for(i=0; i<db.config->listener_count; i++){
-			if(db.config->listeners[i].security_options.pid){
-				mosquitto_callback_unregister(db.config->listeners[i].security_options.pid,
-						MOSQ_EVT_BASIC_AUTH, mosquitto_unpwd_check_default, NULL);
-				mosquitto_callback_unregister(db.config->listeners[i].security_options.pid,
+			if(db.config->listeners[i].security_options->pid){
+				mosquitto_callback_unregister(db.config->listeners[i].security_options->pid,
+						MOSQ_EVT_BASIC_AUTH, mosquitto_basic_auth_default, NULL);
+				mosquitto_callback_unregister(db.config->listeners[i].security_options->pid,
 						MOSQ_EVT_ACL_CHECK, mosquitto_acl_check_default, NULL);
 
-				mosquitto__free(db.config->listeners[i].security_options.pid);
+				mosquitto__FREE(db.config->listeners[i].security_options->pid->plugin_name);
+				mosquitto__FREE(db.config->listeners[i].security_options->pid->config.security_options);
+				mosquitto__FREE(db.config->listeners[i].security_options->pid);
 			}
 		}
 	}else{
 		if(db.config->security_options.pid){
 			mosquitto_callback_unregister(db.config->security_options.pid,
-					MOSQ_EVT_BASIC_AUTH, mosquitto_unpwd_check_default, NULL);
+					MOSQ_EVT_BASIC_AUTH, mosquitto_basic_auth_default, NULL);
 			mosquitto_callback_unregister(db.config->security_options.pid,
 					MOSQ_EVT_ACL_CHECK, mosquitto_acl_check_default, NULL);
 
-			mosquitto__free(db.config->security_options.pid);
+			mosquitto__FREE(db.config->security_options.pid->plugin_name);
+			mosquitto__FREE(db.config->security_options.pid->config.security_options);
+			mosquitto__FREE(db.config->security_options.pid);
 		}
 	}
 	return MOSQ_ERR_SUCCESS;
@@ -234,15 +251,15 @@ static int add__acl(struct mosquitto__security_options *security_opts, const cha
 	if(!acl_user){
 		acl_user = mosquitto__malloc(sizeof(struct mosquitto__acl_user));
 		if(!acl_user){
-			mosquitto__free(local_topic);
+			mosquitto__FREE(local_topic);
 			return MOSQ_ERR_NOMEM;
 		}
 		new_user = true;
 		if(user){
 			acl_user->username = mosquitto__strdup(user);
 			if(!acl_user->username){
-				mosquitto__free(local_topic);
-				mosquitto__free(acl_user);
+				mosquitto__FREE(local_topic);
+				mosquitto__FREE(acl_user);
 				return MOSQ_ERR_NOMEM;
 			}
 		}else{
@@ -254,9 +271,9 @@ static int add__acl(struct mosquitto__security_options *security_opts, const cha
 
 	acl = mosquitto__malloc(sizeof(struct mosquitto__acl));
 	if(!acl){
-		mosquitto__free(local_topic);
-		mosquitto__free(acl_user->username);
-		mosquitto__free(acl_user);
+		mosquitto__FREE(local_topic);
+		mosquitto__FREE(acl_user->username);
+		mosquitto__FREE(acl_user);
 		return MOSQ_ERR_NOMEM;
 	}
 	acl->access = access;
@@ -313,7 +330,7 @@ static int add__acl_pattern(struct mosquitto__security_options *security_opts, c
 
 	acl = mosquitto__malloc(sizeof(struct mosquitto__acl));
 	if(!acl){
-		mosquitto__free(local_topic);
+		mosquitto__FREE(local_topic);
 		return MOSQ_ERR_NOMEM;
 	}
 	acl->access = access;
@@ -368,12 +385,8 @@ static int add__acl_pattern(struct mosquitto__security_options *security_opts, c
 static int mosquitto_acl_check_default(int event, void *event_data, void *userdata)
 {
 	struct mosquitto_evt_acl_check *ed = event_data;
-	char *local_acl;
 	struct mosquitto__acl *acl_root;
 	bool result;
-	size_t i;
-	size_t len, tlen, clen, ulen;
-	char *s;
 	struct mosquitto__security_options *security_opts = NULL;
 
 	UNUSED(event);
@@ -384,12 +397,12 @@ static int mosquitto_acl_check_default(int event, void *event_data, void *userda
 
 	if(db.config->per_listener_settings){
 		if(!ed->client->listener) return MOSQ_ERR_ACL_DENIED;
-		security_opts = &ed->client->listener->security_options;
+		security_opts = ed->client->listener->security_options;
 	}else{
 		security_opts = &db.config->security_options;
 	}
 	if(!security_opts->acl_file && !security_opts->acl_list && !security_opts->acl_patterns){
-		return MOSQ_ERR_PLUGIN_DEFER;
+		return MOSQ_ERR_PLUGIN_IGNORE;
 	}
 
 	if(!ed->client->acl_list && !security_opts->acl_patterns) return MOSQ_ERR_ACL_DENIED;
@@ -446,47 +459,16 @@ static int mosquitto_acl_check_default(int event, void *event_data, void *userda
 
 	/* Loop through all pattern ACLs. ACL denial patterns are iterated over first. */
 	if(!ed->client->id) return MOSQ_ERR_ACL_DENIED;
-	clen = strlen(ed->client->id);
 
 	while(acl_root){
-		tlen = strlen(acl_root->topic);
-
 		if(acl_root->ucount && !ed->client->username){
 			acl_root = acl_root->next;
 			continue;
 		}
 
-		if(ed->client->username){
-			ulen = strlen(ed->client->username);
-			len = tlen + (size_t)acl_root->ccount*(clen-2) + (size_t)acl_root->ucount*(ulen-2);
-		}else{
-			ulen = 0;
-			len = tlen + (size_t)acl_root->ccount*(clen-2);
+		if(mosquitto_topic_matches_sub_with_pattern(acl_root->topic, ed->topic, ed->client->id, ed->client->username, &result)){
+			return MOSQ_ERR_ACL_DENIED;
 		}
-		local_acl = mosquitto__malloc(len+1);
-		if(!local_acl) return MOSQ_ERR_NOMEM;
-		s = local_acl;
-		for(i=0; i<tlen; i++){
-			if(i<tlen-1 && acl_root->topic[i] == '%'){
-				if(acl_root->topic[i+1] == 'c'){
-					i++;
-					strncpy(s, ed->client->id, clen);
-					s+=clen;
-					continue;
-				}else if(ed->client->username && acl_root->topic[i+1] == 'u'){
-					i++;
-					strncpy(s, ed->client->username, ulen);
-					s+=ulen;
-					continue;
-				}
-			}
-			s[0] = acl_root->topic[i];
-			s++;
-		}
-		local_acl[len] = '\0';
-
-		mosquitto_topic_matches_sub(local_acl, ed->topic, &result);
-		mosquitto__free(local_acl);
 		if(result){
 			if(acl_root->access == MOSQ_ACL_NONE){
 				/* Access was explicitly denied for this topic pattern. */
@@ -532,7 +514,7 @@ static int aclfile__parse(struct mosquitto__security_options *security_opts)
 
 	aclfptr = mosquitto__fopen(security_opts->acl_file, "rt", false);
 	if(!aclfptr){
-		mosquitto__free(buf);
+		mosquitto__FREE(buf);
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to open acl_file \"%s\".", security_opts->acl_file);
 		return MOSQ_ERR_UNKNOWN;
 	}
@@ -613,7 +595,7 @@ static int aclfile__parse(struct mosquitto__security_options *security_opts)
 						rc = MOSQ_ERR_INVAL;
 						break;
 					}
-					mosquitto__free(user);
+					mosquitto__FREE(user);
 					user = mosquitto__strdup(token);
 					if(!user){
 						rc = MOSQ_ERR_NOMEM;
@@ -632,8 +614,8 @@ static int aclfile__parse(struct mosquitto__security_options *security_opts)
 		}
 	}
 
-	mosquitto__free(buf);
-	mosquitto__free(user);
+	mosquitto__FREE(buf);
+	mosquitto__FREE(user);
 	fclose(aclfptr);
 
 	return rc;
@@ -646,8 +628,8 @@ static void free__acl(struct mosquitto__acl *acl)
 	if(acl->next){
 		free__acl(acl->next);
 	}
-	mosquitto__free(acl->topic);
-	mosquitto__free(acl);
+	mosquitto__FREE(acl->topic);
+	mosquitto__FREE(acl);
 }
 
 
@@ -659,8 +641,8 @@ static void acl__cleanup_single(struct mosquitto__security_options *security_opt
 		user_tail = security_opts->acl_list->next;
 
 		free__acl(security_opts->acl_list->acl);
-		mosquitto__free(security_opts->acl_list->username);
-		mosquitto__free(security_opts->acl_list);
+		mosquitto__FREE(security_opts->acl_list->username);
+		mosquitto__FREE(security_opts->acl_list);
 
 		security_opts->acl_list = user_tail;
 	}
@@ -691,7 +673,7 @@ static int acl__cleanup(bool reload)
 
 	if(db.config->per_listener_settings){
 		for(i=0; i<db.config->listener_count; i++){
-			acl__cleanup_single(&db.config->listeners[i].security_options);
+			acl__cleanup_single(db.config->listeners[i].security_options);
 		}
 	}else{
 		acl__cleanup_single(&db.config->security_options);
@@ -711,7 +693,7 @@ int acl__find_acls(struct mosquitto *context)
 		if(!context->listener){
 			return MOSQ_ERR_INVAL;
 		}
-		security_opts = &context->listener->security_options;
+		security_opts = context->listener->security_options;
 	}else{
 		security_opts = &db.config->security_options;
 	}
@@ -758,7 +740,7 @@ static int pwfile__parse(const char *file, struct mosquitto__unpwd **root)
 	pwfile = mosquitto__fopen(file, "rt", false);
 	if(!pwfile){
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to open pwfile \"%s\".", file);
-		mosquitto__free(buf);
+		mosquitto__FREE(buf);
 		return MOSQ_ERR_UNKNOWN;
 	}
 
@@ -772,20 +754,20 @@ static int pwfile__parse(const char *file, struct mosquitto__unpwd **root)
 				unpwd = mosquitto__calloc(1, sizeof(struct mosquitto__unpwd));
 				if(!unpwd){
 					fclose(pwfile);
-					mosquitto__free(buf);
+					mosquitto__FREE(buf);
 					return MOSQ_ERR_NOMEM;
 				}
 				username = misc__trimblanks(username);
 				if(strlen(username) > 65535){
 					log__printf(NULL, MOSQ_LOG_NOTICE, "Warning: Invalid line in password file '%s', username too long.", file);
-					mosquitto__free(unpwd);
+					mosquitto__FREE(unpwd);
 					continue;
 				}
 
 				unpwd->username = mosquitto__strdup(username);
 				if(!unpwd->username){
-					mosquitto__free(unpwd);
-					mosquitto__free(buf);
+					mosquitto__FREE(unpwd);
+					mosquitto__FREE(buf);
 					fclose(pwfile);
 					return MOSQ_ERR_NOMEM;
 				}
@@ -795,31 +777,31 @@ static int pwfile__parse(const char *file, struct mosquitto__unpwd **root)
 
 					if(strlen(password) > 65535){
 						log__printf(NULL, MOSQ_LOG_NOTICE, "Warning: Invalid line in password file '%s', password too long.", file);
-						mosquitto__free(unpwd->username);
-						mosquitto__free(unpwd);
+						mosquitto__FREE(unpwd->username);
+						mosquitto__FREE(unpwd);
 						continue;
 					}
 
 					unpwd->password = mosquitto__strdup(password);
 					if(!unpwd->password){
 						fclose(pwfile);
-						mosquitto__free(unpwd->username);
-						mosquitto__free(unpwd);
-						mosquitto__free(buf);
+						mosquitto__FREE(unpwd->username);
+						mosquitto__FREE(unpwd);
+						mosquitto__FREE(buf);
 						return MOSQ_ERR_NOMEM;
 					}
 
 					HASH_ADD_KEYPTR(hh, *root, unpwd->username, strlen(unpwd->username), unpwd);
 				}else{
 					log__printf(NULL, MOSQ_LOG_NOTICE, "Warning: Invalid line in password file '%s': %s", file, buf);
-					mosquitto__free(unpwd->username);
-					mosquitto__free(unpwd);
+					mosquitto__FREE(unpwd->username);
+					mosquitto__FREE(unpwd);
 				}
 			}
 		}
 	}
 	fclose(pwfile);
-	mosquitto__free(buf);
+	mosquitto__FREE(buf);
 
 	return MOSQ_ERR_SUCCESS;
 }
@@ -827,13 +809,13 @@ static int pwfile__parse(const char *file, struct mosquitto__unpwd **root)
 
 void unpwd__free_item(struct mosquitto__unpwd **unpwd, struct mosquitto__unpwd *item)
 {
-	mosquitto__free(item->username);
-	mosquitto__free(item->password);
+	mosquitto__FREE(item->username);
+	mosquitto__FREE(item->password);
 #ifdef WITH_TLS
-	mosquitto__free(item->salt);
+	mosquitto__FREE(item->salt);
 #endif
 	HASH_DEL(*unpwd, item);
-	mosquitto__free(item);
+	mosquitto__FREE(item);
 }
 
 
@@ -896,14 +878,14 @@ static int unpwd__decode_passwords(struct mosquitto__unpwd **unpwd)
 			continue;
 		}
 		rc = base64__decode(token, &salt, &salt_len);
-		if(rc == MOSQ_ERR_SUCCESS && salt_len == 12){
+		if(rc == MOSQ_ERR_SUCCESS && (salt_len == 12 || salt_len == HASH_LEN)){
 			u->salt = salt;
 			u->salt_len = salt_len;
 			token = strtok(NULL, "$");
 			if(token){
 				rc = base64__decode(token, &password, &password_len);
-				if(rc == MOSQ_ERR_SUCCESS && password_len == 64){
-					mosquitto__free(u->password);
+				if(rc == MOSQ_ERR_SUCCESS && password_len == HASH_LEN){
+					mosquitto__FREE(u->password);
 					u->password = (char *)password;
 					u->password_len = password_len;
 					u->hashtype = hashtype;
@@ -971,25 +953,7 @@ static int psk__file_parse(struct mosquitto__unpwd **psk_id, const char *psk_fil
 }
 
 
-#ifdef WITH_TLS
-static int mosquitto__memcmp_const(const void *a, const void *b, size_t len)
-{
-	size_t i;
-	int rc = 0;
-
-	if(!a || !b) return 1;
-
-	for(i=0; i<len; i++){
-		if( ((char *)a)[i] != ((char *)b)[i] ){
-			rc = 1;
-		}
-	}
-	return rc;
-}
-#endif
-
-
-static int mosquitto_unpwd_check_default(int event, void *event_data, void *userdata)
+static int mosquitto_basic_auth_default(int event, void *event_data, void *userdata)
 {
 	struct mosquitto_evt_basic_auth *ed = event_data;
 	struct mosquitto__unpwd *u;
@@ -1004,13 +968,13 @@ static int mosquitto_unpwd_check_default(int event, void *event_data, void *user
 	UNUSED(userdata);
 
 	if(ed->client->username == NULL){
-		return MOSQ_ERR_PLUGIN_DEFER;
+		return MOSQ_ERR_PLUGIN_IGNORE;
 	}
 
 	if(db.config->per_listener_settings){
 		if(ed->client->bridge) return MOSQ_ERR_SUCCESS;
 		if(!ed->client->listener) return MOSQ_ERR_INVAL;
-		unpwd_ref = ed->client->listener->security_options.unpwd;
+		unpwd_ref = ed->client->listener->security_options->unpwd;
 	}else{
 		unpwd_ref = db.config->security_options.unpwd;
 	}
@@ -1022,7 +986,7 @@ static int mosquitto_unpwd_check_default(int event, void *event_data, void *user
 #ifdef WITH_TLS
 				rc = pw__digest(ed->client->password, u->salt, u->salt_len, hash, &hash_len, u->hashtype, u->iterations);
 				if(rc == MOSQ_ERR_SUCCESS){
-					if(hash_len == u->password_len && !mosquitto__memcmp_const(u->password, hash, hash_len)){
+					if(hash_len == u->password_len && !pw__memcmp_const(u->password, hash, hash_len)){
 						return MOSQ_ERR_SUCCESS;
 					}else{
 						return MOSQ_ERR_AUTH;
@@ -1056,12 +1020,12 @@ static int unpwd__cleanup(struct mosquitto__unpwd **root, bool reload)
 
 	HASH_ITER(hh, *root, u, tmp){
 		HASH_DEL(*root, u);
-		mosquitto__free(u->password);
-		mosquitto__free(u->username);
+		mosquitto__FREE(u->password);
+		mosquitto__FREE(u->username);
 #ifdef WITH_TLS
-		mosquitto__free(u->salt);
+		mosquitto__FREE(u->salt);
 #endif
-		mosquitto__free(u);
+		mosquitto__FREE(u);
 	}
 
 	*root = NULL;
@@ -1129,7 +1093,7 @@ int mosquitto_security_apply_default(void)
 		/* Check for anonymous clients when allow_anonymous is false */
 		if(db.config->per_listener_settings){
 			if(context->listener){
-				allow_anonymous = context->listener->security_options.allow_anonymous;
+				allow_anonymous = context->listener->security_options->allow_anonymous;
 			}else{
 				/* Client not currently connected, so defer judgement until it does connect */
 				allow_anonymous = true;
@@ -1167,10 +1131,8 @@ int mosquitto_security_apply_default(void)
 #endif /* FINAL_WITH_TLS_PSK */
 			{
 				/* Free existing credentials and then recover them. */
-				mosquitto__free(context->username);
-				context->username = NULL;
-				mosquitto__free(context->password);
-				context->password = NULL;
+				mosquitto__FREE(context->username);
+				mosquitto__FREE(context->password);
 
 				client_cert = SSL_get_peer_certificate(context->ssl);
 				if(!client_cert){
@@ -1251,7 +1213,7 @@ int mosquitto_security_apply_default(void)
 #endif
 		{
 			/* Username/password check only if the identity/subject check not used */
-			if(mosquitto_unpwd_check(context) != MOSQ_ERR_SUCCESS){
+			if(mosquitto_basic_auth(context) != MOSQ_ERR_SUCCESS){
 				mosquitto__set_state(context, mosq_cs_disconnecting);
 				do_disconnect(context, MOSQ_ERR_AUTH);
 				continue;
@@ -1262,7 +1224,7 @@ int mosquitto_security_apply_default(void)
 		/* Check for ACLs and apply to user. */
 		if(db.config->per_listener_settings){
 			if(context->listener){
-				security_opts = &context->listener->security_options;
+				security_opts = context->listener->security_options;
 			}else{
 				if(context->state != mosq_cs_active){
 					mosquitto__set_state(context, mosq_cs_disconnecting);
@@ -1306,11 +1268,11 @@ int mosquitto_psk_key_get_default(struct mosquitto *context, const char *hint, c
 
 	if(db.config->per_listener_settings){
 		if(!context->listener) return MOSQ_ERR_INVAL;
-		psk_id_ref = context->listener->security_options.psk_id;
+		psk_id_ref = context->listener->security_options->psk_id;
 	}else{
 		psk_id_ref = db.config->security_options.psk_id;
 	}
-	if(!psk_id_ref) return MOSQ_ERR_PLUGIN_DEFER;
+	if(!psk_id_ref) return MOSQ_ERR_PLUGIN_IGNORE;
 
 	HASH_ITER(hh, psk_id_ref, u, tmp){
 		if(!strcmp(u->username, identity)){

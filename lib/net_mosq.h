@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2010-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2010-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -75,8 +75,10 @@ int net__try_connect_step2(struct mosquitto *mosq, uint16_t port, mosq_sock_t *s
 int net__socket_connect_step3(struct mosquitto *mosq, const char *host);
 int net__socket_nonblock(mosq_sock_t *sock);
 int net__socketpair(mosq_sock_t *sp1, mosq_sock_t *sp2);
+bool net__is_connected(struct mosquitto *mosq);
 
 ssize_t net__read(struct mosquitto *mosq, void *buf, size_t count);
+ssize_t net__read_ws(struct mosquitto *mosq, void *buf, size_t count);
 ssize_t net__write(struct mosquitto *mosq, const void *buf, size_t count);
 
 #ifdef WITH_TLS
@@ -89,6 +91,12 @@ UI_METHOD *net__get_ui_method(void);
 #define ENGINE_SECRET_MODE "SECRET_MODE"
 #define ENGINE_SECRET_MODE_SHA 0x1000
 #define ENGINE_PIN "PIN"
+#endif
+
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_BUILTIN
+void ws__context_init(struct mosquitto *mosq);
+void ws__prepare_packet(struct mosquitto *mosq, struct mosquitto__packet *packet);
+int ws__create_accept_key(const char *client_key, size_t client_key_len, char **encoded);
 #endif
 
 #endif

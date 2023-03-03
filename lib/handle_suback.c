@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -24,6 +24,7 @@ Contributors:
 #  include "mosquitto_broker_internal.h"
 #endif
 
+#include "callbacks.h"
 #include "mosquitto.h"
 #include "mosquitto_internal.h"
 #include "logging_mosq.h"
@@ -75,18 +76,14 @@ int handle__suback(struct mosquitto *mosq)
 	qos_count = (int)(mosq->in_packet.remaining_length - mosq->in_packet.pos);
 	granted_qos = mosquitto__malloc((size_t)qos_count*sizeof(int));
 	if(!granted_qos){
-#ifdef WITH_BROKER
 		mosquitto_property_free_all(&properties);
-#endif
 		return MOSQ_ERR_NOMEM;
 	}
 	while(mosq->in_packet.pos < mosq->in_packet.remaining_length){
 		rc = packet__read_byte(&mosq->in_packet, &qos);
 		if(rc){
-			mosquitto__free(granted_qos);
-#ifdef WITH_BROKER
+			mosquitto__FREE(granted_qos);
 			mosquitto_property_free_all(&properties);
-#endif
 			return rc;
 		}
 		granted_qos[i] = (int)qos;
@@ -96,21 +93,10 @@ int handle__suback(struct mosquitto *mosq)
 	/* Immediately free, we don't do anything with Reason String or User Property at the moment */
 	mosquitto_property_free_all(&properties);
 #else
-	pthread_mutex_lock(&mosq->callback_mutex);
-	if(mosq->on_subscribe){
-		mosq->in_callback = true;
-		mosq->on_subscribe(mosq, mosq->userdata, mid, qos_count, granted_qos);
-		mosq->in_callback = false;
-	}
-	if(mosq->on_subscribe_v5){
-		mosq->in_callback = true;
-		mosq->on_subscribe_v5(mosq, mosq->userdata, mid, qos_count, granted_qos, properties);
-		mosq->in_callback = false;
-	}
-	pthread_mutex_unlock(&mosq->callback_mutex);
+	callback__on_subscribe(mosq, mid, qos_count, granted_qos, properties);
 	mosquitto_property_free_all(&properties);
 #endif
-	mosquitto__free(granted_qos);
+	mosquitto__FREE(granted_qos);
 
 	return MOSQ_ERR_SUCCESS;
 }

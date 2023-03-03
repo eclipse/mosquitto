@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2012-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2012-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -28,6 +28,7 @@ Contributors:
 #include <string.h>
 
 #include "get_password.h"
+#include "base64_mosq.h"
 #include "password_mosq.h"
 
 #ifdef WIN32
@@ -53,7 +54,6 @@ Contributors:
 #endif
 
 #define MAX_BUFFER_LEN 65500
-#define SALT_LEN 12
 
 #include "misc_mosq.h"
 
@@ -109,10 +109,7 @@ static FILE *mpw_tmpfile(void)
 int log__printf(void *mosq, unsigned int level, const char *fmt, ...)
 {
 	/* Stub for misc_mosq.c */
-	UNUSED(mosq);
-	UNUSED(level);
-	UNUSED(fmt);
-	return 0;
+	UNUSED(mosq); UNUSED(level); UNUSED(fmt); return 0;
 }
 
 
@@ -145,35 +142,30 @@ static int output_new_password(FILE *fptr, const char *username, const char *pas
 
 	pw.hashtype = hashtype;
 
-	if(pw__hash(password, &pw, true, iterations)){
+	rc = pw__hash(password, &pw, true, iterations);
+	if(rc){
 		fprintf(stderr, "Error: Unable to hash password.\n");
-		return 1;
-	}
-
-	rc = base64__encode(pw.salt, sizeof(pw.salt), &salt64);
-	if(rc){
-		free(salt64);
-		fprintf(stderr, "Error: Unable to encode salt.\n");
-		return 1;
-	}
-
-	rc = base64__encode(pw.password_hash, sizeof(pw.password_hash), &hash64);
-	if(rc){
-		free(salt64);
-		free(hash64);
-		fprintf(stderr, "Error: Unable to encode hash.\n");
-		return 1;
-	}
-
-	if(pw.hashtype == pw_sha512_pbkdf2){
-		fprintf(fptr, "%s:$%d$%d$%s$%s\n", username, hashtype, iterations, salt64, hash64);
 	}else{
-		fprintf(fptr, "%s:$%d$%s$%s\n", username, hashtype, salt64, hash64);
+		rc = base64__encode(pw.salt, pw.salt_len, &salt64);
+		if(rc){
+			fprintf(stderr, "Error: Unable to encode salt.\n");
+		}else{
+			rc = base64__encode(pw.password_hash, sizeof(pw.password_hash), &hash64);
+			if(rc){
+				fprintf(stderr, "Error: Unable to encode hash.\n");
+			}else{
+				if(pw.hashtype == pw_sha512_pbkdf2){
+					fprintf(fptr, "%s:$%d$%d$%s$%s\n", username, hashtype, iterations, salt64, hash64);
+				}else{
+					fprintf(fptr, "%s:$%d$%s$%s\n", username, hashtype, salt64, hash64);
+				}
+			}
+		}
 	}
 	free(salt64);
 	free(hash64);
 
-	return 0;
+	return rc;
 }
 
 
@@ -336,8 +328,10 @@ static int update_pwuser(FILE *fptr, FILE *ftmp, const char *username, const cha
 	rc = pwfile_iterate(fptr, ftmp, update_pwuser_cb, &helper);
 
 	if(helper.found){
+		printf("Updating password for user %s\n", username);
 		return rc;
 	}else{
+		printf("Adding password for user %s\n", username);
 		return output_new_password(ftmp, username, password, iterations);
 	}
 }
@@ -606,6 +600,7 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 		free(password_file);
+		printf("Adding password for user %s\n", username);
 		rc = output_new_password(fptr, username, password_cmd, iterations);
 		fclose(fptr);
 		return rc;

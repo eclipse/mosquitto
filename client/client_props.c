@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2018-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2018-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -79,13 +79,13 @@ int cfg_parse_property(struct mosq_config *cfg, int argc, char *argv[], int *idx
 
 	cmdname = argv[*idx];
 	if(mosquitto_string_to_command(cmdname, &cmd)){
-		fprintf(stderr, "Error: Invalid command given in --property argument.\n\n");
+		fprintf(stderr, "Error: Invalid command %s given in --property argument.\n\n", cmdname);
 		return MOSQ_ERR_INVAL;
 	}
 
 	propname = argv[(*idx)+1];
 	if(mosquitto_string_to_property_info(propname, &identifier, &type)){
-		fprintf(stderr, "Error: Invalid property name given in --property argument.\n\n");
+		fprintf(stderr, "Error: Invalid property name %s given in --property argument.\n\n", propname);
 		return MOSQ_ERR_INVAL;
 	}
 
@@ -218,4 +218,3 @@ int cfg_parse_property(struct mosq_config *cfg, int argc, char *argv[], int *idx
 	}
 	return MOSQ_ERR_SUCCESS;
 }
-

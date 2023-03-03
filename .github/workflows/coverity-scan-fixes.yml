@@ -14,7 +14,7 @@ jobs:
         ref: fixes
 
     - name: Dependencies
-      run: sudo apt-get install -y libcjson-dev libsqlite3-dev libssl-dev uthash-dev
+      run: sudo apt-get install -y libcjson-dev libcunit1-dev libsqlite3-dev libssl-dev uthash-dev
 
     - uses: vapier/coverity-scan-action@v1
       with:
@@ -22,5 +22,4 @@ jobs:
         project: "eclipse/mosquitto"
         token: ${{ secrets.COVERITY_SCAN_TOKEN }}
         email: ${{ secrets.COVERITY_SCAN_EMAIL }}
-        command: "make binary"
-
+        command: "make binary-all"

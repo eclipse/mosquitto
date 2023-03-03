@@ -31,6 +31,18 @@ IF( CJSON_FOUND )
 		CJSON_INCLUDE_DIR
 		CJSON_DIR
 	)
+
+	add_library(cJSON SHARED IMPORTED)
+	set_target_properties(cJSON
+		PROPERTIES
+			INTERFACE_INCLUDE_DIRECTORIES "${CJSON_INCLUDE_DIRS}"
+	)
+
+	set_target_properties(cJSON
+		PROPERTIES
+			IMPORTED_LOCATION "${CJSON_LIBRARY}"
+			IMPORTED_IMPLIB "${CJSON_LIBRARY}"
+	)
 ELSE()
 	SET( CJSON_DIR "" CACHE STRING
 		"An optional hint to a directory for finding `cJSON`"

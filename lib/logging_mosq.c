@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -53,7 +53,7 @@ int log__printf(struct mosquitto *mosq, unsigned int priority, const char *fmt, 
 
 		mosq->on_log(mosq, mosq->userdata, (int)priority, s);
 
-		mosquitto__free(s);
+		mosquitto__FREE(s);
 	}
 	pthread_mutex_unlock(&mosq->log_callback_mutex);
 

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -20,6 +20,7 @@ Contributors:
 
 #include <assert.h>
 
+#include "callbacks.h"
 #include "mosquitto.h"
 #include "logging_mosq.h"
 #include "memory_mosq.h"
@@ -29,32 +30,7 @@ Contributors:
 #include "packet_mosq.h"
 #include "property_mosq.h"
 #include "read_handle.h"
-
-static void connack_callback(struct mosquitto *mosq, uint8_t reason_code, uint8_t connect_flags, const mosquitto_property *properties)
-{
-	log__printf(mosq, MOSQ_LOG_DEBUG, "Client %s received CONNACK (%d)", SAFE_PRINT(mosq->id), reason_code);
-	if(reason_code == MQTT_RC_SUCCESS){
-		mosq->reconnects = 0;
-	}
-	pthread_mutex_lock(&mosq->callback_mutex);
-	if(mosq->on_connect){
-		mosq->in_callback = true;
-		mosq->on_connect(mosq, mosq->userdata, reason_code);
-		mosq->in_callback = false;
-	}
-	if(mosq->on_connect_with_flags){
-		mosq->in_callback = true;
-		mosq->on_connect_with_flags(mosq, mosq->userdata, reason_code, connect_flags);
-		mosq->in_callback = false;
-	}
-	if(mosq->on_connect_v5){
-		mosq->in_callback = true;
-		mosq->on_connect_v5(mosq, mosq->userdata, reason_code, connect_flags, properties);
-		mosq->in_callback = false;
-	}
-	pthread_mutex_unlock(&mosq->callback_mutex);
-}
-
+#include "util_mosq.h"
 
 int handle__connack(struct mosquitto *mosq)
 {
@@ -63,14 +39,32 @@ int handle__connack(struct mosquitto *mosq)
 	int rc;
 	mosquitto_property *properties = NULL;
 	char *clientid = NULL;
+	enum mosquitto_client_state state;
 
 	assert(mosq);
-	if(mosq->in_packet.command != CMD_CONNACK){
+	state = mosquitto__get_state(mosq);
+	if(state != mosq_cs_new && state != mosq_cs_connected){
+		log__printf(mosq, MOSQ_LOG_DEBUG, "Client %s received duplicate CONNACK", mosq->id);
+		return MOSQ_ERR_PROTOCOL;
+	}
+
+	if(mosq->in_packet.command != CMD_CONNACK
+			|| ((mosq->protocol == 3 || mosq->protocol == 4) && mosq->in_packet.remaining_length != 2)){
+
 		return MOSQ_ERR_MALFORMED_PACKET;
 	}
 
 	rc = packet__read_byte(&mosq->in_packet, &connect_flags);
 	if(rc) return rc;
+	if((mosq->protocol == mosq_p_mqtt311 || mosq->protocol == mosq_p_mqtt5) && (connect_flags & 0xFE)){
+		log__printf(mosq, MOSQ_LOG_DEBUG, "Client %s received CONNACK with invalid connect flags (%d)", mosq->id, connect_flags);
+		return MOSQ_ERR_PROTOCOL;
+	}
+	if(mosq->clean_start && connect_flags){
+		log__printf(mosq, MOSQ_LOG_DEBUG, "Client %s received CONNACK with session present when clean start was set", mosq->id);
+		return MOSQ_ERR_PROTOCOL;
+	}
+
 	rc = packet__read_byte(&mosq->in_packet, &reason_code);
 	if(rc) return rc;
 
@@ -82,7 +76,8 @@ int handle__connack(struct mosquitto *mosq)
 			 * it has replied with "unacceptable protocol version", but with a
 			 * v3 CONNACK. */
 
-			connack_callback(mosq, MQTT_RC_UNSUPPORTED_PROTOCOL_VERSION, connect_flags, NULL);
+			log__printf(mosq, MOSQ_LOG_DEBUG, "Client %s received CONNACK (%d)", mosq->id, reason_code);
+			callback__on_connect(mosq, MQTT_RC_UNSUPPORTED_PROTOCOL_VERSION, connect_flags, NULL);
 			return rc;
 		}else if(rc){
 			return rc;
@@ -94,7 +89,7 @@ int handle__connack(struct mosquitto *mosq)
 		if(mosq->id){
 			/* We've been sent a client identifier but already have one. This
 			 * shouldn't happen. */
-			free(clientid);
+			SAFE_FREE(clientid);
 			mosquitto_property_free_all(&properties);
 			return MOSQ_ERR_PROTOCOL;
 		}else{
@@ -112,7 +107,11 @@ int handle__connack(struct mosquitto *mosq)
 	mosq->msgs_out.inflight_quota = mosq->msgs_out.inflight_maximum;
 	message__reconnect_reset(mosq, true);
 
-	connack_callback(mosq, reason_code, connect_flags, properties);
+	log__printf(mosq, MOSQ_LOG_DEBUG, "Client %s received CONNACK (%d)", mosq->id, reason_code);
+	if(reason_code == MQTT_RC_SUCCESS){
+		mosq->reconnects = 0;
+	}
+	callback__on_connect(mosq, reason_code, connect_flags, properties);
 	mosquitto_property_free_all(&properties);
 
 	switch(reason_code){

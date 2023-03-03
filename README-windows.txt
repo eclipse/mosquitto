@@ -28,27 +28,7 @@ Capabilities
 Some versions of Windows have limitations on the number of concurrent
 connections due to the Windows API being used. In modern versions of Windows,
 e.g. Windows 10 or Windows Server 2019, this is approximately 8192 connections.
-In earlier versions of Windows, t his limit is 2048 connections.
-
-
-Websockets
-----------
-
-The broker executables provided in the installers have Websockets support
-through a statically compiled version of libwebsockets and is being distributed
-under the Static Linking Exception (Section 2) of the License. As a result, the
-content is not subject to the LGPL 2.1.
-
-
-Library Thread Support
-----------------------
-
-libmosquitto on Windows is currently compiled without thread support, so
-neither of mosquitto_loop_start() nor "mosquitto_pub -l" are available.
-
-A better solution that the old pthreads-win32 is being looked into, so support
-will return in the future. If you need thread support, the code still supports
-it just fine. Support has been dropped to simplify installation.
+In earlier versions of Windows, this limit is 2048 connections.
 
 
 Windows Service
@@ -59,13 +39,32 @@ start/stop it from the control panel as well as running it as a normal
 executable.
 
 When running as a service, the configuration file used is mosquitto.conf in the
-directory that you installed to.
+directory defined by the %MOSQUITTO_DIR% environment variable. This will be set
+to the directory that you installed to by default.
 
 If you want to install/uninstall mosquitto as a Windows service run from the
 command line as follows:
 
 C:\Program Files\mosquitto\mosquitto install
 C:\Program Files\mosquitto\mosquitto uninstall
+
+It is possible to install and run multiple instances of a Mosquitto service, as
+of version 2.1. To do this, copy the mosquitto executable to a new *name* and
+run the service install as above. The service will load a configuration file
+mosquitto.conf from the directory defined by the environment variable
+"<executable_name>_DIR". For this reason it is suggested to keep the executable
+name consisting of alphanumeric and '_' characters. Any other character will be
+replaced with '_'.
+
+For example, if you copy mosquitto.exe to eclipse_mosquitto.exe, you would run
+these commands to install/uninstall:
+
+C:\Program Files\mosquitto\eclipse_mosquitto install
+C:\Program Files\mosquitto\eclipse_mosquitto uninstall
+
+And the service would try to load the config file at %ECLIPSE_MOSQUITTO_DIR%/mosquitto.conf
+
+The new service will appear in the service list as "Mosquitto Broker (eclipse_mosquitto.exe)".
 
 Logging
 -------

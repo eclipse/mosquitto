@@ -4,15 +4,21 @@
 #include <string.h>
 #include <mosquitto.h>
 
-void on_connect(struct mosquitto *mosq, void *obj, int rc)
+static void on_connect(struct mosquitto *mosq, void *obj, int rc)
 {
+	(void)mosq;
+	(void)obj;
+
 	if(rc){
 		exit(1);
 	}
 }
 
-void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg)
+static void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg)
 {
+	(void)mosq;
+	(void)obj;
+
 	if(msg->mid != 123){
 		printf("Invalid mid (%d)\n", msg->mid);
 		exit(1);
@@ -45,8 +51,12 @@ int main(int argc, char *argv[])
 {
 	int rc;
 	struct mosquitto *mosq;
+	int port;
 
-	int port = atoi(argv[1]);
+	if(argc < 2){
+		return 1;
+	}
+	port = atoi(argv[1]);
 
 	mosquitto_lib_init();
 
@@ -56,9 +66,9 @@ int main(int argc, char *argv[])
 	}
 	mosquitto_connect_callback_set(mosq, on_connect);
 	mosquitto_message_callback_set(mosq, on_message);
-	mosquitto_message_retry_set(mosq, 3);
 
 	rc = mosquitto_connect(mosq, "localhost", port, 60);
+	if(rc != MOSQ_ERR_SUCCESS) return rc;
 
 	while(1){
 		mosquitto_loop(mosq, 300, 1);

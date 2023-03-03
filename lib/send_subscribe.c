@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -60,15 +60,9 @@ int send__subscribe(struct mosquitto *mosq, int *mid, int topic_count, char *con
 		packetlen += 2U+(uint16_t)tlen + 1U;
 	}
 
-	packet = mosquitto__calloc(1, sizeof(struct mosquitto__packet));
-	if(!packet) return MOSQ_ERR_NOMEM;
-
-
-	packet->command = CMD_SUBSCRIBE | (1<<1);
-	packet->remaining_length = packetlen;
-	rc = packet__alloc(packet);
+	rc = packet__alloc(&packet, CMD_SUBSCRIBE | 2, packetlen);
 	if(rc){
-		mosquitto__free(packet);
+		mosquitto__FREE(packet);
 		return rc;
 	}
 

@@ -8,13 +8,19 @@
 static int run = -1;
 static int sent_mid;
 
-void on_log(struct mosquitto *mosq, void *obj, int level, const char *str)
+static void on_log(struct mosquitto *mosq, void *obj, int level, const char *str)
 {
+	(void)mosq;
+	(void)obj;
+	(void)level;
+
 	printf("%s\n", str);
 }
 
-void on_connect(struct mosquitto *mosq, void *obj, int rc)
+static void on_connect(struct mosquitto *mosq, void *obj, int rc)
 {
+	(void)obj;
+
 	if(rc){
 		exit(1);
 	}else{
@@ -22,8 +28,10 @@ void on_connect(struct mosquitto *mosq, void *obj, int rc)
 	}
 }
 
-void on_publish(struct mosquitto *mosq, void *obj, int mid)
+static void on_publish(struct mosquitto *mosq, void *obj, int mid)
 {
+	(void)obj;
+
 	if(mid == sent_mid){
 		mosquitto_disconnect(mosq);
 		run = 0;
@@ -32,8 +40,11 @@ void on_publish(struct mosquitto *mosq, void *obj, int mid)
 	}
 }
 
-void on_disconnect(struct mosquitto *mosq, void *obj, int rc)
+static void on_disconnect(struct mosquitto *mosq, void *obj, int rc)
 {
+	(void)mosq;
+	(void)obj;
+
 	run = rc;
 }
 
@@ -43,6 +54,9 @@ int main(int argc, char *argv[])
 	struct mosquitto *mosq;
 	int port;
 
+	if(argc < 2){
+		return 1;
+	}
 	port = atoi(argv[1]);
 
 	mosquitto_lib_init();

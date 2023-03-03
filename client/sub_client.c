@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -46,8 +46,29 @@ int last_mid = 0;
 static bool timed_out = false;
 static int connack_result = 0;
 bool connack_received = false;
+#ifdef WIN32
+static HANDLE timeout_h = NULL;
+#endif
 
-#ifndef WIN32
+#ifdef WIN32
+void CALLBACK timeout_cb(PVOID lpParameter, BOOLEAN TimerOrWaitFired)
+{
+	UNUSED(lpParameter);
+	UNUSED(TimerOrWaitFired);
+
+	if (connack_received) {
+		process_messages = false;
+		mosquitto_disconnect_v5(g_mosq, MQTT_RC_DISCONNECT_WITH_WILL_MSG, cfg.disconnect_props);
+	}
+	else {
+		exit(-1);
+	}
+
+	timed_out = true;
+	(void)DeleteTimerQueueTimer(NULL, timeout_h, NULL);
+	timeout_h = NULL;
+}
+#else
 static void my_signal_handler(int signum)
 {
 	if(signum == SIGALRM || signum == SIGTERM || signum == SIGINT){
@@ -192,9 +213,9 @@ static void print_usage(void)
 	mosquitto_lib_version(&major, &minor, &revision);
 	printf("mosquitto_sub is a simple mqtt client that will subscribe to a set of topics and print all messages it receives.\n");
 	printf("mosquitto_sub version %s running on libmosquitto %d.%d.%d.\n\n", VERSION, major, minor, revision);
-	printf("Usage: mosquitto_sub {[-h host] [--unix path] [-p port] [-u username] [-P password] -t topic | -L URL [-t topic]}\n");
+	printf("Usage: mosquitto_sub {[-h host] [--unix path] [-p port] [-u username] [-P password] {-t topic | -U topic} [--ws] | -L URL [-t topic]}\n");
 	printf("                     [-c] [-k keepalive] [-q qos] [-x session-expiry-interval]\n");
-	printf("                     [-C msg_count] [-E] [-R] [--retained-only] [--remove-retained] [-T filter_out] [-U topic ...]\n");
+	printf("                     [-C msg_count] [-E] [-R] [--retained-only] [--remove-retained] [-T filter_out]\n");
 	printf("                     [-F format]\n");
 #ifndef WIN32
 	printf("                     [-W timeout_secs]\n");
@@ -205,9 +226,10 @@ static void print_usage(void)
 	printf("                     [-A bind_address] [--nodelay]\n");
 #endif
 	printf("                     [-i id] [-I id_prefix]\n");
-	printf("                     [-d] [-N] [--quiet] [-v]\n");
+	printf("                     [-d] [-N] [--quiet] [-v] [-w|--watch]\n");
 	printf("                     [--will-topic [--will-payload payload] [--will-qos qos] [--will-retain]]\n");
 #ifdef WITH_TLS
+	printf("                     [--no-tls]\n");
 	printf("                     [{--cafile file | --capath dir} [--cert file] [--key file]\n");
 	printf("                       [--ciphers ciphers] [--insecure]\n");
 	printf("                       [--tls-alpn protocol]\n");
@@ -221,6 +243,7 @@ static void print_usage(void)
 	printf("                     [--proxy socks-url]\n");
 #endif
 	printf("                     [-D command identifier value]\n");
+	printf("                     [-o options-file]\n");
 	printf("       mosquitto_sub --help\n\n");
 	printf(" -A : bind the outgoing socket to this host/ip address. Use to control which interface\n");
 	printf("      the client communicates over.\n");
@@ -241,7 +264,10 @@ static void print_usage(void)
 	printf(" -k : keep alive in seconds for this client. Defaults to 60.\n");
 	printf(" -L : specify user, password, hostname, port and topic as a URL in the form:\n");
 	printf("      mqtt(s)://[username[:password]@]host[:port]/topic\n");
+	printf("      ws(s)://[username[:password]@]host[:port]/topic\n");
 	printf(" -N : do not add an end of line character when printing the payload.\n");
+	printf(" -o : provide options in a file rather than on the command line.\n");
+	printf("      See the Options section of https://mosquitto.org/man/mosquitto_pub-1.html\n");
 	printf(" -p : network port to connect to. Defaults to 1883 for plain MQTT and 8883 for MQTT over TLS.\n");
 	printf(" -P : provide a password\n");
 	printf(" -q : quality of service level to use for the subscription. Defaults to 0.\n");
@@ -259,6 +285,9 @@ static void print_usage(void)
 #ifndef WIN32
 	printf(" -W : Specifies a timeout in seconds how long to process incoming MQTT messages.\n");
 #endif
+	printf(" -w : messages will be printed on a fixed line number based on the topic and order in\n");
+	printf("      which topics are received. Useful for monitoring multiple topics that have\n");
+	printf("      single line payloads.\n");
 	printf(" -x : Set the session-expiry-interval property on the CONNECT packet. Applies to MQTT v5\n");
 	printf("      clients only. Set to 0-4294967294 to specify the session will expire in that many\n");
 	printf("      seconds after the client disconnects, or use -1, 4294967295, or ∞ for a session\n");
@@ -284,6 +313,7 @@ static void print_usage(void)
 	printf(" --will-qos : QoS level for the client Will.\n");
 	printf(" --will-retain : if given, make the client Will retained.\n");
 	printf(" --will-topic : the topic on which to publish the client Will.\n");
+	printf(" --ws : connect using WebSockets.\n");
 #ifdef WITH_TLS
 	printf(" --cafile : path to a file containing trusted CA certificates to enable encrypted\n");
 	printf("            certificate based communication.\n");
@@ -295,9 +325,9 @@ static void print_usage(void)
 	printf(" --ciphers : openssl compatible list of TLS ciphers to support.\n");
 	printf(" --tls-version : TLS protocol version, can be one of tlsv1.3 tlsv1.2 or tlsv1.1.\n");
 	printf("                 Defaults to tlsv1.2 if available.\n");
-	printf(" --insecure : do not check that the server certificate hostname matches the remote\n");
-	printf("              hostname. Using this option means that you cannot be sure that the\n");
-	printf("              remote host is the server you wish to connect to and so is insecure.\n");
+	printf(" --insecure : do not verify the the server certificate. Using this option means that\n");
+	printf("              you cannot be sure that the remote host is the server you wish to connect\n");
+	printf("              to and so is insecure.\n");
 	printf("              Do not use this option in a production environment.\n");
 	printf(" --tls-engine : If set, enables the use of a SSL engine device.\n");
 	printf(" --tls-engine-kpass-sha1 : SHA1 of the key password to be used with the selected SSL engine.\n");
@@ -324,8 +354,6 @@ int main(int argc, char *argv[])
 
 	mosquitto_lib_init();
 
-	output_init();
-
 	rc = client_config_load(&cfg, CLIENT_SUB, argc, argv);
 	if(rc){
 		if(rc == 2){
@@ -345,7 +373,7 @@ int main(int argc, char *argv[])
 		goto cleanup;
 	}
 
-	if(client_id_generate(&cfg)){
+	if(clientid_generate(&cfg)){
 		goto cleanup;
 	}
 
@@ -371,12 +399,21 @@ int main(int argc, char *argv[])
 	mosquitto_connect_v5_callback_set(g_mosq, my_connect_callback);
 	mosquitto_message_v5_callback_set(g_mosq, my_message_callback);
 
+	output_init(&cfg);
+
 	rc = client_connect(g_mosq, &cfg);
 	if(rc){
 		goto cleanup;
 	}
 
-#ifndef WIN32
+#ifdef WIN32
+	if(cfg.timeout){
+		if(!CreateTimerQueueTimer(&timeout_h, NULL, timeout_cb, NULL, cfg.timeout*1000, 0, WT_EXECUTEDEFAULT)){
+			err_printf(&cfg, "Error: Unable to create timer for -W.\n");
+			goto cleanup;
+		}
+	}
+#else
 	sigact.sa_handler = my_signal_handler;
 	sigemptyset(&sigact.sa_mask);
 	sigact.sa_flags = 0;

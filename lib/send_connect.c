@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -95,9 +95,6 @@ int send__connect(struct mosquitto *mosq, uint16_t keepalive, bool clean_session
 		return MOSQ_ERR_INVAL;
 	}
 
-	packet = mosquitto__calloc(1, sizeof(struct mosquitto__packet));
-	if(!packet) return MOSQ_ERR_NOMEM;
-
 	if(clientid){
 		payloadlen = (uint32_t)(2U+strlen(clientid));
 	}else{
@@ -122,7 +119,6 @@ int send__connect(struct mosquitto *mosq, uint16_t keepalive, bool clean_session
 	 * username before checking password. */
 	if(mosq->protocol == mosq_p_mqtt31 || mosq->protocol == mosq_p_mqtt311){
 		if(password != NULL && username == NULL){
-			mosquitto__free(packet);
 			return MOSQ_ERR_INVAL;
 		}
 	}
@@ -134,11 +130,9 @@ int send__connect(struct mosquitto *mosq, uint16_t keepalive, bool clean_session
 		payloadlen += (uint32_t)(2+strlen(password));
 	}
 
-	packet->command = CMD_CONNECT;
-	packet->remaining_length = headerlen + payloadlen;
-	rc = packet__alloc(packet);
+	rc = packet__alloc(&packet, CMD_CONNECT, headerlen + payloadlen);
 	if(rc){
-		mosquitto__free(packet);
+		mosquitto__FREE(packet);
 		return rc;
 	}
 

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2010-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2010-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -34,7 +34,11 @@ Contributors:
 #include <stdlib.h>
 
 #if defined(WITH_THREADING) && !defined(WITH_BROKER)
-#  include <pthread.h>
+#  ifdef WIN32
+#    include "winthread_mosq.h"
+#  else
+#    include <pthread.h>
+#  endif
 #else
 #  include <dummypthread.h>
 #endif
@@ -63,7 +67,13 @@ Contributors:
 #    include <netdb.h>
 #  endif
 #  include "uthash.h"
-struct mosquitto_client_msg;
+struct mosquitto__client_msg;
+#endif
+
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
+#  define WS_PACKET_OFFSET LWS_PRE
+#else
+#  define WS_PACKET_OFFSET 16
 #endif
 
 #ifdef WIN32
@@ -116,13 +126,14 @@ enum mosquitto_client_state {
 	mosq_cs_disused = 19, /* client that has been added to the disused list to be freed */
 	mosq_cs_authenticating = 20, /* Client has sent CONNECT but is still undergoing extended authentication */
 	mosq_cs_reauthenticating = 21, /* Client is undergoing reauthentication and shouldn't do anything else until complete */
+	mosq_cs_delayed_auth = 22, /* Client is awaiting an authentication result from a plugin */
 };
 
 enum mosquitto__protocol {
 	mosq_p_invalid = 0,
-	mosq_p_mqtt31 = 1,
-	mosq_p_mqtt311 = 2,
-	mosq_p_mqtts = 3,
+	mosq_p_mqtts = 1,
+	mosq_p_mqtt31 = 3,
+	mosq_p_mqtt311 = 4,
 	mosq_p_mqtt5 = 5,
 };
 
@@ -136,9 +147,13 @@ enum mosquitto__transport {
 	mosq_t_invalid = 0,
 	mosq_t_tcp = 1,
 	mosq_t_ws = 2,
-	mosq_t_sctp = 3
+	mosq_t_sctp = 3,
+	mosq_t_http = 4, /* not valid for MQTT, just as a ws precursor */
 };
 
+/* Alias direction - local <-> remote */
+#define ALIAS_DIR_L2R 1
+#define ALIAS_DIR_R2L 2
 
 struct mosquitto__alias{
 	char *topic;
@@ -152,14 +167,24 @@ struct session_expiry_list {
 };
 
 struct mosquitto__packet{
-	uint8_t *payload;
 	struct mosquitto__packet *next;
-	uint32_t remaining_mult;
 	uint32_t remaining_length;
 	uint32_t packet_length;
 	uint32_t to_process;
 	uint32_t pos;
 	uint16_t mid;
+	uint8_t command;
+	int8_t remaining_count;
+	uint8_t payload[];
+};
+
+struct mosquitto__packet_in{
+	uint8_t *payload;
+	uint32_t remaining_mult;
+	uint32_t remaining_length;
+	uint32_t packet_length;
+	uint32_t to_process;
+	uint32_t pos;
 	uint8_t command;
 	int8_t remaining_count;
 };
@@ -168,7 +193,6 @@ struct mosquitto_message_all{
 	struct mosquitto_message_all *next;
 	struct mosquitto_message_all *prev;
 	mosquitto_property *properties;
-	time_t timestamp;
 	enum mosquitto_msg_state state;
 	bool dup;
 	struct mosquitto_message msg;
@@ -190,8 +214,8 @@ struct will_delay_list {
 
 struct mosquitto_msg_data{
 #ifdef WITH_BROKER
-	struct mosquitto_client_msg *inflight;
-	struct mosquitto_client_msg *queued;
+	struct mosquitto__client_msg *inflight;
+	struct mosquitto__client_msg *queued;
 	long inflight_bytes;
 	long inflight_bytes12;
 	int inflight_count;
@@ -212,8 +236,39 @@ struct mosquitto_msg_data{
 };
 
 
+#define WS_CONTINUATION 0x00
+#define WS_TEXT 0x01
+#define WS_BINARY 0x02
+#define WS_CLOSE 0x08
+#define WS_PING 0x09
+#define WS_PONG 0x0A
+
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_BUILTIN
+struct ws_data{
+	struct mosquitto__packet *out_packet;
+	char *http_path;
+	char *accept_key;
+	uint64_t payloadlen;
+	ssize_t pos;
+	int http_header_size;
+	uint8_t maskingkey[4];
+	uint8_t disconnect_reason;
+	uint8_t opcode;
+	uint8_t mask;
+	uint8_t mask_bytes;
+	uint8_t payloadlen_bytes;
+	bool is_client;
+};
+#endif
+
+struct client_stats{
+	uint64_t messages_received;
+	uint64_t messages_sent;
+	uint64_t messages_dropped;
+};
+
 struct mosquitto {
-#if defined(WITH_BROKER) && defined(WITH_EPOLL)
+#if defined(WITH_BROKER) && (defined(WITH_EPOLL) || defined(WITH_KQUEUE))
 	/* This *must* be the first element in the struct. */
 	int ident;
 #endif
@@ -225,6 +280,10 @@ struct mosquitto {
 #if defined(__GLIBC__) && defined(WITH_ADNS)
 	struct gaicb *adns; /* For getaddrinfo_a */
 #endif
+	uint64_t last_cmsg_id;
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_BUILTIN
+	struct ws_data wsd;
+#endif
 	enum mosquitto__protocol protocol;
 	char *address;
 	char *id;
@@ -233,18 +292,22 @@ struct mosquitto {
 	uint16_t keepalive;
 	uint16_t last_mid;
 	enum mosquitto_client_state state;
+	uint8_t transport;
 	time_t last_msg_in;
 	time_t next_msg_out;
 	time_t ping_t;
-	struct mosquitto__packet in_packet;
-	struct mosquitto__packet *current_out_packet;
+	struct mosquitto__packet_in in_packet;
 	struct mosquitto__packet *out_packet;
 	struct mosquitto_message_all *will;
-	struct mosquitto__alias *aliases;
+	struct mosquitto__alias *aliases_l2r;
+	struct mosquitto__alias *aliases_r2l;
 	struct will_delay_list *will_delay_entry;
-	int alias_count;
-	int out_packet_count;
+	uint16_t alias_count_l2r;
+	uint16_t alias_count_r2l;
+	uint16_t alias_max_l2r;
 	uint32_t will_delay_interval;
+	int out_packet_count;
+	int64_t out_packet_bytes;
 	time_t will_delay_time;
 #ifdef WITH_TLS
 	SSL *ssl;
@@ -259,6 +322,7 @@ struct mosquitto {
 	int (*tls_pw_callback)(char *buf, int size, int rwflag, void *userdata);
 	char *tls_version;
 	char *tls_ciphers;
+	char *tls_13_ciphers;
 	char *tls_psk;
 	char *tls_psk_identity;
 	char *tls_engine;
@@ -277,7 +341,6 @@ struct mosquitto {
 	pthread_mutex_t log_callback_mutex;
 	pthread_mutex_t msgtime_mutex;
 	pthread_mutex_t out_packet_mutex;
-	pthread_mutex_t current_out_packet_mutex;
 	pthread_mutex_t state_mutex;
 	pthread_mutex_t mid_mutex;
 	pthread_t thread_id;
@@ -289,22 +352,25 @@ struct mosquitto {
 	bool in_by_id;
 	bool is_dropping;
 	bool is_bridge;
+	bool is_persisted;
 	struct mosquitto__bridge *bridge;
 	struct mosquitto_msg_data msgs_in;
 	struct mosquitto_msg_data msgs_out;
 	struct mosquitto__acl_user *acl_list;
 	struct mosquitto__listener *listener;
 	struct mosquitto__packet *out_packet_last;
-	struct mosquitto__client_sub **subs;
+	struct mosquitto__subleaf **subs;
 	char *auth_method;
-	int sub_count;
+	int subs_capacity; /* allocated size of the subs instance */
+	int subs_count; /* number of currently active subscriptions */
 #  ifndef WITH_EPOLL
 	int pollfd_index;
 #  endif
 #  ifdef WITH_WEBSOCKETS
+#    if WITH_WEBSOCKETS == WS_IS_LWS
 	struct lws *wsi;
+#    endif
 #  endif
-	bool ws_want_write;
 	bool assigned_id;
 #else
 #  ifdef WITH_SOCKS
@@ -314,9 +380,9 @@ struct mosquitto {
 	char *socks5_password;
 #  endif
 	void *userdata;
-	bool in_callback;
 	struct mosquitto_msg_data msgs_in;
 	struct mosquitto_msg_data msgs_out;
+	void (*on_pre_connect)(struct mosquitto *, void *userdata);
 	void (*on_connect)(struct mosquitto *, void *userdata, int rc);
 	void (*on_connect_with_flags)(struct mosquitto *, void *userdata, int rc, int flags);
 	void (*on_connect_v5)(struct mosquitto *, void *userdata, int rc, int flags, const mosquitto_property *props);
@@ -330,14 +396,17 @@ struct mosquitto {
 	void (*on_subscribe_v5)(struct mosquitto *, void *userdata, int mid, int qos_count, const int *granted_qos, const mosquitto_property *props);
 	void (*on_unsubscribe)(struct mosquitto *, void *userdata, int mid);
 	void (*on_unsubscribe_v5)(struct mosquitto *, void *userdata, int mid, const mosquitto_property *props);
+	void (*on_unsubscribe2_v5)(struct mosquitto *, void *userdata, int mid, int reason_code_count, const int *reason_codes, const mosquitto_property *props);
 	void (*on_log)(struct mosquitto *, void *userdata, int level, const char *str);
 	/*void (*on_error)();*/
 	char *host;
-	uint16_t port;
 	char *bind_address;
 	unsigned int reconnects;
 	unsigned int reconnect_delay;
 	unsigned int reconnect_delay_max;
+	int callback_depth;
+	uint16_t port;
+	bool disable_socketpair;
 	bool reconnect_exponential_backoff;
 	bool request_disconnect;
 	char threaded;
@@ -350,6 +419,9 @@ struct mosquitto {
 	uint8_t max_qos;
 	uint8_t retain_available;
 	bool tcp_nodelay;
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_BUILTIN
+	char *http_request;
+#endif
 
 #ifdef WITH_BROKER
 	UT_hash_handle hh_id;
@@ -357,8 +429,19 @@ struct mosquitto {
 	struct mosquitto *for_free_next;
 	struct session_expiry_list *expiry_list_item;
 	uint16_t remote_port;
+#  ifndef WITH_OLD_KEEPALIVE
+	struct mosquitto *keepalive_next;
+	struct mosquitto *keepalive_prev;
+#  endif
+	struct client_stats stats;
 #endif
+#ifdef WITH_EPOLL
 	uint32_t events;
+#elif defined(WITH_KQUEUE)
+	short events;
+#else
+	uint32_t events;
+#endif
 };
 
 #define STREMPTY(str) (str[0] == '\0')
@@ -366,4 +449,3 @@ struct mosquitto {
 void do_client_disconnect(struct mosquitto *mosq, int reason_code, const mosquitto_property *properties);
 
 #endif
-

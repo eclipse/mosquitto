@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -242,7 +242,10 @@ static int pub_stdin_line_loop(struct mosquitto *mosq)
 	int read_len;
 	bool stdin_finished = false;
 
-	mosquitto_loop_start(mosq);
+	rc = mosquitto_loop_start(mosq);
+	if(rc != MOSQ_ERR_SUCCESS){
+		return rc;
+	}
 	stdin_finished = false;
 	do{
 		if(status == STATUS_CONNECTING){
@@ -401,7 +404,7 @@ static void print_usage(void)
 	mosquitto_lib_version(&major, &minor, &revision);
 	printf("mosquitto_pub is a simple mqtt client that will publish a message on a single topic and exit.\n");
 	printf("mosquitto_pub version %s running on libmosquitto %d.%d.%d.\n\n", VERSION, major, minor, revision);
-	printf("Usage: mosquitto_pub {[-h host] [--unix path] [-p port] [-u username] [-P password] -t topic | -L URL}\n");
+	printf("Usage: mosquitto_pub {[-h host] [--unix path] [-p port] [-u username] [-P password] [--ws] -t topic | -L URL}\n");
 	printf("                     {-f file | -l | -n | -m message}\n");
 	printf("                     [-c] [-k keepalive] [-q qos] [-r] [--repeat N] [--repeat-delay time] [-x session-expiry]\n");
 #ifdef WITH_SRV
@@ -415,6 +418,7 @@ static void print_usage(void)
 	printf("                     [-u username [-P password]]\n");
 	printf("                     [--will-topic [--will-payload payload] [--will-qos qos] [--will-retain]]\n");
 #ifdef WITH_TLS
+	printf("                     [--no-tls]\n");
 	printf("                     [{--cafile file | --capath dir} [--cert file] [--key file]\n");
 	printf("                       [--ciphers ciphers] [--insecure]\n");
 	printf("                       [--tls-alpn protocol]\n");
@@ -429,6 +433,7 @@ static void print_usage(void)
 #endif
 	printf("                     [--property command identifier value]\n");
 	printf("                     [-D command identifier value]\n");
+	printf("                     [-o options-file]\n");
 	printf("       mosquitto_pub --help\n\n");
 	printf(" -A : bind the outgoing socket to this host/ip address. Use to control which interface\n");
 	printf("      the client communicates over.\n");
@@ -447,10 +452,13 @@ static void print_usage(void)
 	printf(" -k : keep alive in seconds for this client. Defaults to 60.\n");
 	printf(" -L : specify user, password, hostname, port and topic as a URL in the form:\n");
 	printf("      mqtt(s)://[username[:password]@]host[:port]/topic\n");
+	printf("      ws(s)://[username[:password]@]host[:port]/topic\n");
 	printf(" -l : read messages from stdin, sending a separate message for each line.\n");
 	printf(" -m : message payload to send.\n");
 	printf(" -M : the maximum inflight messages for QoS 1/2..\n");
 	printf(" -n : send a null (zero length) message.\n");
+	printf(" -o : provide options in a file rather than on the command line.\n");
+	printf("      See the Options section of https://mosquitto.org/man/mosquitto_pub-1.html\n");
 	printf(" -p : network port to connect to. Defaults to 1883 for plain MQTT and 8883 for MQTT over TLS.\n");
 	printf(" -P : provide a password\n");
 	printf(" -q : quality of service level to use for all messages. Defaults to 0.\n");
@@ -481,6 +489,7 @@ static void print_usage(void)
 	printf(" --will-qos : QoS level for the client Will.\n");
 	printf(" --will-retain : if given, make the client Will retained.\n");
 	printf(" --will-topic : the topic on which to publish the client Will.\n");
+	printf(" --ws : connect using WebSockets.\n");
 #ifdef WITH_TLS
 	printf(" --cafile : path to a file containing trusted CA certificates to enable encrypted\n");
 	printf("            communication.\n");
@@ -492,9 +501,9 @@ static void print_usage(void)
 	printf(" --ciphers : openssl compatible list of TLS ciphers to support.\n");
 	printf(" --tls-version : TLS protocol version, can be one of tlsv1.3 tlsv1.2 or tlsv1.1.\n");
 	printf("                 Defaults to tlsv1.2 if available.\n");
-	printf(" --insecure : do not check that the server certificate hostname matches the remote\n");
-	printf("              hostname. Using this option means that you cannot be sure that the\n");
-	printf("              remote host is the server you wish to connect to and so is insecure.\n");
+	printf(" --insecure : do not verify the the server certificate. Using this option means that\n");
+	printf("              you cannot be sure that the remote host is the server you wish to connect\n");
+	printf("              to and so is insecure.\n");
 	printf("              Do not use this option in a production environment.\n");
 	printf(" --tls-engine : If set, enables the use of a TLS engine device.\n");
 	printf(" --tls-engine-kpass-sha1 : SHA1 of the key password to be used with the selected SSL engine.\n");
@@ -560,7 +569,7 @@ int main(int argc, char *argv[])
 	}
 
 
-	if(client_id_generate(&cfg)){
+	if(clientid_generate(&cfg)){
 		goto cleanup;
 	}
 

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2014-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2014-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -16,8 +16,8 @@ Contributors:
    Roger Light - initial implementation and documentation.
 */
 
-#ifndef CLIENT_CONFIG_H
-#define CLIENT_CONFIG_H
+#ifndef CLIENT_SHARED_H
+#define CLIENT_SHARED_H
 
 #include <stdio.h>
 
@@ -115,6 +115,10 @@ struct mosq_config {
 	int sub_opts; /* sub */
 	long session_expiry_interval;
 	int random_filter; /* sub */
+	int transport;
+#ifndef WIN32
+	bool watch; /* sub */
+#endif
 #ifdef WITH_SOCKS
 	char *socks5_host;
 	int socks5_port;
@@ -127,15 +131,17 @@ struct mosq_config {
 	mosquitto_property *unsubscribe_props;
 	mosquitto_property *disconnect_props;
 	mosquitto_property *will_props;
-	bool have_topic_alias; /* pub */
 	char *response_topic; /* rr */
+	char *options_file;
+	bool have_topic_alias; /* pub */
 	bool tcp_nodelay;
+	bool no_tls;
 };
 
 int client_config_load(struct mosq_config *config, int pub_or_sub, int argc, char *argv[]);
 void client_config_cleanup(struct mosq_config *cfg);
 int client_opts_set(struct mosquitto *mosq, struct mosq_config *cfg);
-int client_id_generate(struct mosq_config *cfg);
+int clientid_generate(struct mosq_config *cfg);
 int client_connect(struct mosquitto *mosq, struct mosq_config *cfg);
 
 int cfg_parse_property(struct mosq_config *cfg, int argc, char *argv[], int *idx);

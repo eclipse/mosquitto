@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -26,6 +26,7 @@ Contributors:
 #  include "mosquitto_broker_internal.h"
 #endif
 
+#include "callbacks.h"
 #include "mosquitto.h"
 #include "logging_mosq.h"
 #include "memory_mosq.h"
@@ -93,7 +94,7 @@ int handle__pubrec(struct mosquitto *mosq)
 	log__printf(NULL, MOSQ_LOG_DEBUG, "Received PUBREC from %s (Mid: %d)", SAFE_PRINT(mosq->id), mid);
 
 	if(reason_code < 0x80){
-		rc = db__message_update_outgoing(mosq, mid, mosq_ms_wait_for_pubcomp, 2);
+		rc = db__message_update_outgoing(mosq, mid, mosq_ms_wait_for_pubcomp, 2, true);
 	}else{
 		return db__message_delete_outgoing(mosq, mid, mosq_ms_wait_for_pubrec, 2);
 	}
@@ -106,13 +107,7 @@ int handle__pubrec(struct mosquitto *mosq)
 	}else{
 		if(!message__delete(mosq, mid, mosq_md_out, 2)){
 			/* Only inform the client the message has been sent once. */
-			pthread_mutex_lock(&mosq->callback_mutex);
-			if(mosq->on_publish_v5){
-				mosq->in_callback = true;
-				mosq->on_publish_v5(mosq, mosq->userdata, mid, reason_code, properties);
-				mosq->in_callback = false;
-			}
-			pthread_mutex_unlock(&mosq->callback_mutex);
+			callback__on_publish(mosq, mid, reason_code, properties);
 		}
 		util__increment_send_quota(mosq);
 		pthread_mutex_lock(&mosq->msgs_out.mutex);

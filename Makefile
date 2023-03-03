@@ -7,6 +7,7 @@ DISTFILES= \
 	apps/ \
 	client/ \
 	cmake/ \
+	common/ \
 	deps/ \
 	examples/ \
 	include/ \
@@ -44,7 +45,7 @@ DISTFILES= \
 	README-windows.txt \
 	README.md
 
-.PHONY : all mosquitto api docs binary check clean reallyclean test install uninstall dist sign copy localdocker
+.PHONY : all mosquitto api docs binary check clean reallyclean test test-compile install uninstall dist sign copy localdocker
 
 all : $(MAKE_ALL)
 
@@ -58,17 +59,22 @@ docs :
 
 binary : mosquitto
 
+binary-all : mosquitto test-compile
+
 mosquitto :
 ifeq ($(UNAME),Darwin)
 	$(error Please compile using CMake on Mac OS X)
 endif
-
 	set -e; for d in ${DIRS}; do $(MAKE) -C $${d}; done
+
+fuzzing : mosquitto
+	$(MAKE) -C fuzzing
 
 clean :
 	set -e; for d in ${DIRS}; do $(MAKE) -C $${d} clean; done
 	set -e; for d in ${DOCDIRS}; do $(MAKE) -C $${d} clean; done
 	$(MAKE) -C test clean
+	$(MAKE) -C fuzzing clean
 
 reallyclean :
 	set -e; for d in ${DIRS}; do $(MAKE) -C $${d} reallyclean; done
@@ -78,8 +84,13 @@ reallyclean :
 
 check : test
 
-test : mosquitto
+test-compile: mosquitto lib
+	$(MAKE) -C test test-compile
+	$(MAKE) -C plugins test-compile
+
+test : mosquitto lib apps
 	$(MAKE) -C test test
+	$(MAKE) -C plugins test
 
 ptest : mosquitto
 	$(MAKE) -C test ptest
@@ -119,7 +130,7 @@ copy : sign
 	scp ChangeLog.txt mosquitto:site/mosquitto.org/
 
 coverage :
-	lcov --capture --directory . --output-file coverage.info
+	lcov --capture -d apps -d client -d common -d lib -d plugins -d src --output-file coverage.info --no-external
 	genhtml coverage.info --output-directory out
 
 localdocker : reallyclean

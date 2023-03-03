@@ -36,25 +36,25 @@
 
 from mosq_test_helper import *
 
-def do_test(proto_ver):
+def do_test(start_broker, proto_ver):
     rc = 1
-    keepalive = 60
-    pub_connect_packet = mosq_test.gen_connect("pub", keepalive=keepalive, clean_session=False, proto_ver=proto_ver, session_expiry=60)
+    pub_connect_packet = mosq_test.gen_connect("02-subpub-qos2-1322-pub", clean_session=False, proto_ver=proto_ver, session_expiry=60)
     pub_connack1_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
     pub_connack2_packet = mosq_test.gen_connack(rc=0, flags=1, proto_ver=proto_ver)
+    pub_connect_packet_clear = mosq_test.gen_connect("02-subpub-qos2-1322-pub", proto_ver=proto_ver)
 
-    sub1_connect_packet = mosq_test.gen_connect("sub1", keepalive=keepalive, proto_ver=proto_ver)
+    sub1_connect_packet = mosq_test.gen_connect("02-subpub-qos2-1322-sub1", proto_ver=proto_ver)
     sub1_connack_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
 
-    sub2_connect_packet = mosq_test.gen_connect("sub2", keepalive=keepalive, proto_ver=proto_ver)
+    sub2_connect_packet = mosq_test.gen_connect("02-subpub-qos2-1322-sub2", proto_ver=proto_ver)
     sub2_connack_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
 
     mid = 1
-    subscribe1_packet = mosq_test.gen_subscribe(mid, "topic1", 0, proto_ver=proto_ver)
+    subscribe1_packet = mosq_test.gen_subscribe(mid, "02/subpub/qos2/1322/topic1", 0, proto_ver=proto_ver)
     suback1_packet = mosq_test.gen_suback(mid, 0, proto_ver=proto_ver)
 
     mid = 1
-    subscribe2_packet = mosq_test.gen_subscribe(mid, "topic2", 0, proto_ver=proto_ver)
+    subscribe2_packet = mosq_test.gen_subscribe(mid, "02/subpub/qos2/1322/topic2", 0, proto_ver=proto_ver)
     suback2_packet = mosq_test.gen_suback(mid, 0, proto_ver=proto_ver)
 
     # All publishes have the same mid
@@ -63,20 +63,21 @@ def do_test(proto_ver):
     pubrel_packet = mosq_test.gen_pubrel(mid, proto_ver=proto_ver)
     pubcomp_packet = mosq_test.gen_pubcomp(mid, proto_ver=proto_ver)
 
-    publish1s_packet = mosq_test.gen_publish("topic1", qos=2, mid=mid, payload="message1", proto_ver=proto_ver)
-    publish2s_packet = mosq_test.gen_publish("topic2", qos=2, mid=mid, payload="message2", proto_ver=proto_ver)
-    publish3s_packet = mosq_test.gen_publish("topic1", qos=2, mid=mid, payload="message3", proto_ver=proto_ver)
-    publish4s_packet = mosq_test.gen_publish("topic1", qos=2, mid=mid, payload="message4", proto_ver=proto_ver)
-    publish5s_packet = mosq_test.gen_publish("topic1", qos=2, mid=mid, payload="message5", proto_ver=proto_ver)
+    publish1s_packet = mosq_test.gen_publish("02/subpub/qos2/1322/topic1", qos=2, mid=mid, payload="message1", proto_ver=proto_ver)
+    publish2s_packet = mosq_test.gen_publish("02/subpub/qos2/1322/topic2", qos=2, mid=mid, payload="message2", proto_ver=proto_ver)
+    publish3s_packet = mosq_test.gen_publish("02/subpub/qos2/1322/topic1", qos=2, mid=mid, payload="message3", proto_ver=proto_ver)
+    publish4s_packet = mosq_test.gen_publish("02/subpub/qos2/1322/topic1", qos=2, mid=mid, payload="message4", proto_ver=proto_ver)
+    publish5s_packet = mosq_test.gen_publish("02/subpub/qos2/1322/topic1", qos=2, mid=mid, payload="message5", proto_ver=proto_ver)
 
-    publish1r_packet = mosq_test.gen_publish("topic1", qos=0, payload="message1", proto_ver=proto_ver)
-    publish2r_packet = mosq_test.gen_publish("topic2", qos=0, payload="message2", proto_ver=proto_ver)
-    publish3r_packet = mosq_test.gen_publish("topic1", qos=0, payload="message3", proto_ver=proto_ver)
-    publish4r_packet = mosq_test.gen_publish("topic1", qos=0, payload="message4", proto_ver=proto_ver)
-    publish5r_packet = mosq_test.gen_publish("topic1", qos=0, payload="message5", proto_ver=proto_ver)
+    publish1r_packet = mosq_test.gen_publish("02/subpub/qos2/1322/topic1", qos=0, payload="message1", proto_ver=proto_ver)
+    publish2r_packet = mosq_test.gen_publish("02/subpub/qos2/1322/topic2", qos=0, payload="message2", proto_ver=proto_ver)
+    publish3r_packet = mosq_test.gen_publish("02/subpub/qos2/1322/topic1", qos=0, payload="message3", proto_ver=proto_ver)
+    publish4r_packet = mosq_test.gen_publish("02/subpub/qos2/1322/topic1", qos=0, payload="message4", proto_ver=proto_ver)
+    publish5r_packet = mosq_test.gen_publish("02/subpub/qos2/1322/topic1", qos=0, payload="message5", proto_ver=proto_ver)
 
     port = mosq_test.get_port()
-    broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port)
+    if start_broker:
+        broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port)
 
     try:
         sub1 = mosq_test.do_client_connect(sub1_connect_packet, sub1_connack_packet, timeout=10, port=port)
@@ -127,18 +128,35 @@ def do_test(proto_ver):
 
         sub2.close()
         sub1.close()
+
+        # Clear session
+        pub = mosq_test.do_client_connect(pub_connect_packet_clear, pub_connack1_packet, timeout=10, port=port)
+        pub.close()
     except mosq_test.TestError:
         pass
     finally:
-        broker.terminate()
-        broker.wait()
-        (stdo, stde) = broker.communicate()
-        if rc:
-            print(stde.decode('utf-8'))
-            print("proto_ver=%d" % (proto_ver))
-            exit(rc)
+        if start_broker:
+            broker.terminate()
+            if mosq_test.wait_for_subprocess(broker):
+                print("broker not terminated")
+                if rc == 0: rc=1
+            (stdo, stde) = broker.communicate()
+            if rc:
+                print(stde.decode('utf-8'))
+                print("proto_ver=%d" % (proto_ver))
+                exit(rc)
+        else:
+            return rc
 
 
-do_test(proto_ver=4)
-do_test(proto_ver=5)
-exit(0)
+def all_tests(start_broker=False):
+    rc = do_test(start_broker, proto_ver=4)
+    if rc:
+        return rc;
+    rc = do_test(start_broker, proto_ver=5)
+    if rc:
+        return rc;
+    return 0
+
+if __name__ == '__main__':
+    all_tests(True)

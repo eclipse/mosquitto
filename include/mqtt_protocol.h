@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -222,7 +222,7 @@ enum mqtt5_property {
 	MQTT_PROP_REQUEST_RESPONSE_INFORMATION = 25,/* Byte :				CONNECT */
 	MQTT_PROP_RESPONSE_INFORMATION = 26,		/* UTF-8 string :		CONNACK */
 	MQTT_PROP_SERVER_REFERENCE = 28,			/* UTF-8 string :		CONNACK, DISCONNECT */
-	MQTT_PROP_REASON_STRING = 31,				/* UTF-8 string :		All except Will properties */
+	MQTT_PROP_REASON_STRING = 31,				/* UTF-8 string :		CONNACK, PUBACK, PUBREC, PUBREL, PUBCOMP, SUBACK, UNSUBACK, DISCONNECT, AUTH */
 	MQTT_PROP_RECEIVE_MAXIMUM = 33,				/* 2 byte int :			CONNECT, CONNACK */
 	MQTT_PROP_TOPIC_ALIAS_MAXIMUM = 34,			/* 2 byte int :			CONNECT, CONNACK */
 	MQTT_PROP_TOPIC_ALIAS = 35,					/* 2 byte int :			PUBLISH */
@@ -278,5 +278,15 @@ enum mqtt5_sub_options {
 };
 
 #define MQTT_MAX_PAYLOAD 268435455U
+
+#define MQTT_SUB_OPT_GET_QOS(opt) ((opt) & 0x03)
+#define MQTT_SUB_OPT_GET_NO_LOCAL(opt) ((opt) & MQTT_SUB_OPT_NO_LOCAL)
+#define MQTT_SUB_OPT_GET_RETAIN_AS_PUBLISHED(opt) ((opt) & MQTT_SUB_OPT_RETAIN_AS_PUBLISHED)
+#define MQTT_SUB_OPT_GET_SEND_RETAIN(opt) ((opt) & (MQTT_SUB_OPT_SEND_RETAIN_NEW | MQTT_SUB_OPT_SEND_RETAIN_NEVER))
+
+#define MQTT_SUB_OPT_SET_QOS(opt, qos) ((opt) = ((opt) & 0xFC) | ((qos) & 0x03))
+
+#define MQTT_SUB_OPT_SET(opt, val) ((opt) |= val)
+#define MQTT_SUB_OPT_CLEAR(opt, val) ((opt) = (opt) & !val)
 
 #endif

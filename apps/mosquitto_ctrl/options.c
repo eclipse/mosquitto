@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2014-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2014-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -81,6 +81,7 @@ void client_config_cleanup(struct mosq_config *cfg)
 	free(cfg->socks5_username);
 	free(cfg->socks5_password);
 #endif
+	free(cfg->data_file);
 }
 
 int ctrl_config_parse(struct mosq_config *cfg, int *argc, char **argv[])
@@ -188,8 +189,17 @@ static int client_config_line_proc(struct mosq_config *cfg, int *argc, char **ar
 #endif
 		}else if(!strcmp(argv[0], "-d") || !strcmp(argv[0], "--debug")){
 			cfg->debug = true;
+		}else if(!strcmp(argv[0], "-f")){
+			if((*argc) == 1){
+				fprintf(stderr, "Error: -f argument given but no data file specified.\n\n");
+				return 1;
+			}else{
+				cfg->data_file = strdup(argv[1]);
+			}
+			argv++;
+			(*argc)--;
 		}else if(!strcmp(argv[0], "--help")){
-			return 2;
+			return 1;
 		}else if(!strcmp(argv[0], "-h") || !strcmp(argv[0], "--host")){
 			if((*argc) == 1){
 				fprintf(stderr, "Error: -h argument given but no host specified.\n\n");
@@ -248,7 +258,7 @@ static int client_config_line_proc(struct mosq_config *cfg, int *argc, char **ar
 					url += 8;
 					cfg->port = 8883;
 				} else {
-					fprintf(stderr, "Error: unsupported URL scheme.\n\n");
+					fprintf(stderr, "Error: Unsupported URL scheme.\n\n");
 					return 1;
 				}
 				topic = strchr(url, '/');
@@ -266,6 +276,10 @@ static int client_config_line_proc(struct mosq_config *cfg, int *argc, char **ar
 						*colon = 0;
 						cfg->password = strdup(colon + 1);
 					}
+					if(strlen(url) == 0){
+						fprintf(stderr, "Error: Empty username in URL.\n");
+						return 1;
+					}
 					cfg->username = strdup(url);
 					url = tmp;
 				}
@@ -274,6 +288,10 @@ static int client_config_line_proc(struct mosq_config *cfg, int *argc, char **ar
 				tmp = strchr(url, ':');
 				if(tmp) {
 					*tmp++ = 0;
+					if(strlen(tmp) == 0){
+						fprintf(stderr, "Error: Empty port in URL.\n");
+						return 1;
+					}
 					cfg->port = atoi(tmp);
 				}
 				/* Now we've removed the port, time to get the host on the heap */
@@ -438,7 +456,7 @@ static int client_config_line_proc(struct mosq_config *cfg, int *argc, char **ar
 		}else if(!strcmp(argv[0], "-v") || !strcmp(argv[0], "--verbose")){
 			cfg->verbose = 1;
 		}else if(!strcmp(argv[0], "--version")){
-			return 3;
+			return 1;
 		}else{
 			goto unknown_option;
 		}
@@ -691,7 +709,7 @@ int client_connect(struct mosquitto *mosq, struct mosq_config *cfg)
 #else
 			FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, errno, 0, (LPTSTR)&err, 1024, NULL);
 #endif
-			fprintf(stderr, "Error: %s\n", err);
+			fprintf(stderr, "Error: %s.\n", err);
 		}else{
 			fprintf(stderr, "Unable to connect (%s).\n", mosquitto_strerror(rc));
 		}
@@ -705,7 +723,7 @@ int client_connect(struct mosquitto *mosq, struct mosq_config *cfg)
 /* Convert %25 -> %, %3a, %3A -> :, %40 -> @ */
 static int mosquitto__urldecode(char *str)
 {
-	int i, j;
+	size_t i, j;
 	size_t len;
 	if(!str) return 0;
 

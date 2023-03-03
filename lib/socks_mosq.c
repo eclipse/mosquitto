@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2014-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2014-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -69,9 +69,7 @@ int mosquitto_socks5_set(struct mosquitto *mosq, const char *host, int port, con
 	if(!host || strlen(host) > 256) return MOSQ_ERR_INVAL;
 	if(port < 1 || port > UINT16_MAX) return MOSQ_ERR_INVAL;
 
-	mosquitto__free(mosq->socks5_host);
-	mosq->socks5_host = NULL;
-
+	mosquitto__FREE(mosq->socks5_host);
 	mosq->socks5_host = mosquitto__strdup(host);
 	if(!mosq->socks5_host){
 		return MOSQ_ERR_NOMEM;
@@ -79,11 +77,8 @@ int mosquitto_socks5_set(struct mosquitto *mosq, const char *host, int port, con
 
 	mosq->socks5_port = (uint16_t)port;
 
-	mosquitto__free(mosq->socks5_username);
-	mosq->socks5_username = NULL;
-
-	mosquitto__free(mosq->socks5_password);
-	mosq->socks5_password = NULL;
+	mosquitto__FREE(mosq->socks5_username);
+	mosquitto__FREE(mosq->socks5_password);
 
 	if(username){
 		if(strlen(username) > UINT8_MAX){
@@ -100,7 +95,7 @@ int mosquitto_socks5_set(struct mosquitto *mosq, const char *host, int port, con
 			}
 			mosq->socks5_password = mosquitto__strdup(password);
 			if(!mosq->socks5_password){
-				mosquitto__free(mosq->socks5_username);
+				mosquitto__FREE(mosq->socks5_username);
 				return MOSQ_ERR_NOMEM;
 			}
 		}
@@ -119,11 +114,22 @@ int mosquitto_socks5_set(struct mosquitto *mosq, const char *host, int port, con
 }
 
 #ifdef WITH_SOCKS
+static void socks5__packet_alloc(struct mosquitto__packet **packet, uint32_t packet_length)
+{
+	*packet = mosquitto__calloc(1, sizeof(struct mosquitto__packet) + packet_length + WS_PACKET_OFFSET);
+	if(!(*packet)) return;
+	(*packet)->pos = WS_PACKET_OFFSET;
+	(*packet)->packet_length = packet_length + WS_PACKET_OFFSET;
+	(*packet)->to_process = packet_length;
+}
+
+
 int socks5__send(struct mosquitto *mosq)
 {
 	struct mosquitto__packet *packet;
 	size_t slen;
 	uint8_t ulen, plen;
+	uint32_t packet_length;
 
 	struct in_addr addr_ipv4;
 	struct in6_addr addr_ipv6;
@@ -134,24 +140,23 @@ int socks5__send(struct mosquitto *mosq)
 	state = mosquitto__get_state(mosq);
 
 	if(state == mosq_cs_socks5_new){
-		packet = mosquitto__calloc(1, sizeof(struct mosquitto__packet));
+		if(mosq->socks5_username){
+			packet_length = 4;
+		}else{
+			packet_length = 3;
+		}
+
+		socks5__packet_alloc(&packet, packet_length);
 		if(!packet) return MOSQ_ERR_NOMEM;
 
+		packet->payload[0 + WS_PACKET_OFFSET] = 0x05;
 		if(mosq->socks5_username){
-			packet->packet_length = 4;
+			packet->payload[1 + WS_PACKET_OFFSET] = 2;
+			packet->payload[2 + WS_PACKET_OFFSET] = SOCKS_AUTH_NONE;
+			packet->payload[3 + WS_PACKET_OFFSET] = SOCKS_AUTH_USERPASS;
 		}else{
-			packet->packet_length = 3;
-		}
-		packet->payload = mosquitto__malloc(sizeof(uint8_t)*packet->packet_length);
-
-		packet->payload[0] = 0x05;
-		if(mosq->socks5_username){
-			packet->payload[1] = 2;
-			packet->payload[2] = SOCKS_AUTH_NONE;
-			packet->payload[3] = SOCKS_AUTH_USERPASS;
-		}else{
-			packet->payload[1] = 1;
-			packet->payload[2] = SOCKS_AUTH_NONE;
+			packet->payload[1 + WS_PACKET_OFFSET] = 1;
+			packet->payload[2 + WS_PACKET_OFFSET] = SOCKS_AUTH_NONE;
 		}
 
 		mosquitto__set_state(mosq, mosq_cs_socks5_start);
@@ -161,64 +166,54 @@ int socks5__send(struct mosquitto *mosq)
 		mosq->in_packet.to_process = 2;
 		mosq->in_packet.payload = mosquitto__malloc(sizeof(uint8_t)*2);
 		if(!mosq->in_packet.payload){
-			mosquitto__free(packet->payload);
-			mosquitto__free(packet);
+			mosquitto__FREE(packet);
 			return MOSQ_ERR_NOMEM;
 		}
 
 		return packet__queue(mosq, packet);
 	}else if(state == mosq_cs_socks5_auth_ok){
-		packet = mosquitto__calloc(1, sizeof(struct mosquitto__packet));
-		if(!packet) return MOSQ_ERR_NOMEM;
-
 		ipv4_pton_result = inet_pton(AF_INET, mosq->host, &addr_ipv4);
 		ipv6_pton_result = inet_pton(AF_INET6, mosq->host, &addr_ipv6);
 
 		if(ipv4_pton_result == 1){
-			packet->packet_length = 10;
-			packet->payload = mosquitto__malloc(sizeof(uint8_t)*packet->packet_length);
-			if(!packet->payload){
-				mosquitto__free(packet);
-				return MOSQ_ERR_NOMEM;
-			}
-			packet->payload[3] = SOCKS_ATYPE_IP_V4;
-			memcpy(&(packet->payload[4]), (const void*)&addr_ipv4, 4);
-			packet->payload[4+4] = MOSQ_MSB(mosq->port);
-			packet->payload[4+4+1] = MOSQ_LSB(mosq->port);
+			packet_length = 10;
 
+			socks5__packet_alloc(&packet, packet_length);
+			if(!packet) return MOSQ_ERR_NOMEM;
+
+			packet->payload[3 + WS_PACKET_OFFSET] = SOCKS_ATYPE_IP_V4;
+			memcpy(&(packet->payload[4 + WS_PACKET_OFFSET]), (const void*)&addr_ipv4, 4);
+			packet->payload[4+4 + WS_PACKET_OFFSET] = MOSQ_MSB(mosq->port);
+			packet->payload[4+4+1 + WS_PACKET_OFFSET] = MOSQ_LSB(mosq->port);
 		}else if(ipv6_pton_result == 1){
-			packet->packet_length = 22;
-			packet->payload = mosquitto__malloc(sizeof(uint8_t)*packet->packet_length);
-			if(!packet->payload){
-				mosquitto__free(packet);
-				return MOSQ_ERR_NOMEM;
-			}
-			packet->payload[3] = SOCKS_ATYPE_IP_V6;
-			memcpy(&(packet->payload[4]), (const void*)&addr_ipv6, 16);
-			packet->payload[4+16] = MOSQ_MSB(mosq->port);
-			packet->payload[4+16+1] = MOSQ_LSB(mosq->port);
+			packet_length = 22;
 
+			socks5__packet_alloc(&packet, packet_length);
+			if(!packet) return MOSQ_ERR_NOMEM;
+
+			packet->payload[3 + WS_PACKET_OFFSET] = SOCKS_ATYPE_IP_V6;
+			memcpy(&(packet->payload[4 + WS_PACKET_OFFSET]), (const void*)&addr_ipv6, 16);
+			packet->payload[4+16 + WS_PACKET_OFFSET] = MOSQ_MSB(mosq->port);
+			packet->payload[4+16+1 + WS_PACKET_OFFSET] = MOSQ_LSB(mosq->port);
 		}else{
 			slen = strlen(mosq->host);
 			if(slen > UCHAR_MAX){
-				mosquitto__free(packet);
 				return MOSQ_ERR_NOMEM;
 			}
-			packet->packet_length = 7U + (uint32_t)slen;
-			packet->payload = mosquitto__malloc(sizeof(uint8_t)*packet->packet_length);
-			if(!packet->payload){
-				mosquitto__free(packet);
-				return MOSQ_ERR_NOMEM;
-			}
-			packet->payload[3] = SOCKS_ATYPE_DOMAINNAME;
-			packet->payload[4] = (uint8_t)slen;
-			memcpy(&(packet->payload[5]), mosq->host, slen);
-			packet->payload[5+slen] = MOSQ_MSB(mosq->port);
-			packet->payload[6+slen] = MOSQ_LSB(mosq->port);
+			packet_length = 7U + (uint32_t)slen;
+
+			socks5__packet_alloc(&packet, packet_length);
+			if(!packet) return MOSQ_ERR_NOMEM;
+
+			packet->payload[3 + WS_PACKET_OFFSET] = SOCKS_ATYPE_DOMAINNAME;
+			packet->payload[4 + WS_PACKET_OFFSET] = (uint8_t)slen;
+			memcpy(&(packet->payload[5 + WS_PACKET_OFFSET]), mosq->host, slen);
+			packet->payload[5+slen + WS_PACKET_OFFSET] = MOSQ_MSB(mosq->port);
+			packet->payload[6+slen + WS_PACKET_OFFSET] = MOSQ_LSB(mosq->port);
 		}
-		packet->payload[0] = 0x05;
-		packet->payload[1] = 0x01;
-		packet->payload[2] = 0x00;
+		packet->payload[0 + WS_PACKET_OFFSET] = 0x05;
+		packet->payload[1 + WS_PACKET_OFFSET] = 0x01;
+		packet->payload[2 + WS_PACKET_OFFSET] = 0x00;
 
 		mosquitto__set_state(mosq, mosq_cs_socks5_request);
 
@@ -227,27 +222,24 @@ int socks5__send(struct mosquitto *mosq)
 		mosq->in_packet.to_process = 5;
 		mosq->in_packet.payload = mosquitto__malloc(sizeof(uint8_t)*5);
 		if(!mosq->in_packet.payload){
-			mosquitto__free(packet->payload);
-			mosquitto__free(packet);
+			mosquitto__FREE(packet);
 			return MOSQ_ERR_NOMEM;
 		}
 
 		return packet__queue(mosq, packet);
 	}else if(state == mosq_cs_socks5_send_userpass){
-		packet = mosquitto__calloc(1, sizeof(struct mosquitto__packet));
-		if(!packet) return MOSQ_ERR_NOMEM;
-
 		ulen = (uint8_t)strlen(mosq->socks5_username);
 		plen = (uint8_t)strlen(mosq->socks5_password);
-		packet->packet_length = 3U + ulen + plen;
-		packet->payload = mosquitto__malloc(sizeof(uint8_t)*packet->packet_length);
+		packet_length = 3U + ulen + plen;
 
+		socks5__packet_alloc(&packet, packet_length);
+		if(!packet) return MOSQ_ERR_NOMEM;
 
-		packet->payload[0] = 0x01;
-		packet->payload[1] = ulen;
-		memcpy(&(packet->payload[2]), mosq->socks5_username, ulen);
-		packet->payload[2+ulen] = plen;
-		memcpy(&(packet->payload[3+ulen]), mosq->socks5_password, plen);
+		packet->payload[0 + WS_PACKET_OFFSET] = 0x01;
+		packet->payload[1 + WS_PACKET_OFFSET] = ulen;
+		memcpy(&(packet->payload[2 + WS_PACKET_OFFSET]), mosq->socks5_username, ulen);
+		packet->payload[2+ulen + WS_PACKET_OFFSET] = plen;
+		memcpy(&(packet->payload[3+ulen + WS_PACKET_OFFSET]), mosq->socks5_password, plen);
 
 		mosquitto__set_state(mosq, mosq_cs_socks5_userpass_reply);
 
@@ -256,8 +248,7 @@ int socks5__send(struct mosquitto *mosq)
 		mosq->in_packet.to_process = 2;
 		mosq->in_packet.payload = mosquitto__malloc(sizeof(uint8_t)*2);
 		if(!mosq->in_packet.payload){
-			mosquitto__free(packet->payload);
-			mosquitto__free(packet);
+			mosquitto__FREE(packet);
 			return MOSQ_ERR_NOMEM;
 		}
 
@@ -415,6 +406,14 @@ int socks5__read(struct mosquitto *mosq)
 				packet__cleanup(&mosq->in_packet);
 				return MOSQ_ERR_PROTOCOL;
 			}
+			/* We know the value of mosq->in_packet.packet_lenth is within a
+			 * bound. At the start of this if statement, it was 5. The next set
+			 * of if statements add either (4+2-1)=5 to its value, or
+			 * (16+2-1)=17 to its value, or the contents of a uint8_t, which
+			 * can be a maximum of 255. So the range is 10 to 260 bytes.
+			 * Coverity most likely doesn't realise this because the +=
+			 * promotes to the size of packet_length. */
+			/* coverity[tainted_data] */
 			payload = mosquitto__realloc(mosq->in_packet.payload, mosq->in_packet.packet_length);
 			if(payload){
 				mosq->in_packet.payload = payload;

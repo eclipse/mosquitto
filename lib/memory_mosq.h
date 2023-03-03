@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2010-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2010-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -41,5 +41,8 @@ char *mosquitto__strdup(const char *s);
 #ifdef WITH_BROKER
 void memory__set_limit(size_t lim);
 #endif
+
+#define mosquitto__FREE(A) do { mosquitto__free(A); (A) = NULL;} while(0)
+#define SAFE_FREE(A) do { free(A); (A) = NULL;} while(0)
 
 #endif

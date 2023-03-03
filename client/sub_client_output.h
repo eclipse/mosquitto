@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 Roger Light <roger@atchoo.org>
+Copyright (c) 2019-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -22,7 +22,7 @@ Contributors:
 #include "mosquitto.h"
 #include "client_shared.h"
 
-void output_init(void);
+void output_init(struct mosq_config *cfg);
 void print_message(struct mosq_config *cfg, const struct mosquitto_message *message, const mosquitto_property *properties);
 
 #endif

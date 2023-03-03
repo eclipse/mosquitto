@@ -1,4 +1,5 @@
-include ../config.mk
+R=..
+include ${R}/config.mk
 
 .PHONY : all clean install uninstall dist
 
@@ -56,37 +57,7 @@ uninstall :
 	-rm -f "${DESTDIR}${mandir}/man7/mosquitto-tls.7"
 	-rm -f "${DESTDIR}${mandir}/man3/libmosquitto.3"
 
-mosquitto.8 : mosquitto.8.xml manpage.xsl
-	$(XSLTPROC) $<
-
-mosquitto.conf.5 : mosquitto.conf.5.xml manpage.xsl
-	$(XSLTPROC) $<
-
-mosquitto_ctrl.1 : mosquitto_ctrl.1.xml manpage.xsl
-	$(XSLTPROC) $<
-
-mosquitto_ctrl_dynsec.1 : mosquitto_ctrl_dynsec.1.xml manpage.xsl
-	$(XSLTPROC) $<
-
-mosquitto_passwd.1 : mosquitto_passwd.1.xml manpage.xsl
-	$(XSLTPROC) $<
-
-mosquitto_pub.1 : mosquitto_pub.1.xml manpage.xsl
-	$(XSLTPROC) $<
-
-mosquitto_sub.1 : mosquitto_sub.1.xml manpage.xsl
-	$(XSLTPROC) $<
-
-mosquitto_rr.1 : mosquitto_rr.1.xml manpage.xsl
-	$(XSLTPROC) $<
-
-mqtt.7 : mqtt.7.xml manpage.xsl
-	$(XSLTPROC) $<
-
-mosquitto-tls.7 : mosquitto-tls.7.xml manpage.xsl
-	$(XSLTPROC) $<
-
-libmosquitto.3 : libmosquitto.3.xml manpage.xsl
+% : %.xml %.meta manpage.xsl
 	$(XSLTPROC) $<
 
 html : *.xml

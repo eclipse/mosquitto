@@ -54,6 +54,7 @@
 			<arg><option>-v</option></arg>
 			<arg><option>-V</option> <replaceable>protocol-version</replaceable></arg>
 			<arg><option>-W</option> <replaceable>message-processing-timeout</replaceable></arg>
+			<arg><option>--ws</option></arg>
 			<arg><option>-x</option> <replaceable>session-expiry-interval</replaceable></arg>
 			<arg><option>--proxy</option> <replaceable>socks-url</replaceable></arg>
 			<arg><option>--quiet</option></arg>
@@ -63,6 +64,7 @@
 				<arg><option>--will-qos</option> <replaceable>qos</replaceable></arg>
 				<arg><option>--will-retain</option></arg>
 			</arg>
+			<arg><option>--no-tls</option></arg>
 			<group>
 				<arg>
 					<group choice='req'>
@@ -132,18 +134,44 @@
 
 	<refsect1>
 		<title>Options</title>
-		<para>The options below may be given on the command line, but may also
-			be placed in a config file located at
+		<para>
+			There are three ways to provide options to mosquitto_rr: the
+			default config file, a specified config file, or options on
+			the command line.
+		</para>
+		<para>
+			The default config file is located at
 			<option>$XDG_CONFIG_HOME/mosquitto_rr</option> or
-			<option>$HOME/.config/mosquitto_rr</option> with one pair of
-			<option>-option <replaceable>value</replaceable></option>
-			per line. The values in the config file will be used as defaults
-			and can be overridden by using the command line. The exceptions to
-			this is <option>-t</option>, which if given in the config file will
-			not be overridden. Note also that currently some options cannot be
-			negated, e.g. <option>-S</option>. Config file lines that have a
-			<option>#</option> as the first character are treated as comments
-			and not processed any further.</para>
+			<option>$HOME/.config/mosquitto_rr</option> on POSIX systems, or
+			<option>%USERPROFILE%\mosquitto_rr</option> on Windows.
+		</para>
+		<para>
+			A config file can be specified on the command line using
+			<option>-o <replaceable>config-file</replaceable></option>.
+			If the <option>-o</option> option is used, the default config
+			file will not be loaded.
+		</para>
+		<para>
+			In both cases, the contents of the config file should consist of
+			options, one per line in the format:
+			<option>-option <replaceable>value</replaceable></option>. If
+			options are also specified on the command line, those
+			options will override the same options set in the config
+			file. The exceptions to this are the message type options, of which
+			only one can be specified. Note also that currently some options
+			cannot be negated, e.g. <option>-S</option>. TLS encryption options
+			can be negated with the <option>--no-tls</option> option.
+		</para>
+		<para>
+			Config file lines that have a <option>#</option> as the first
+			character are treated as comments and not processed any further.
+		</para>
+		<para>
+			It is suggested that config files are primarily used for
+			authentication purposes. Use of a config file allows you to
+			authenticate without the need to show the username and password
+			on the command line.
+		</para>
 		<variablelist>
 			<varlistentry>
 				<term><option>-A</option></term>
@@ -325,15 +353,15 @@
 				<term><option>--insecure</option></term>
 				<listitem>
 					<para>When using certificate based encryption, this option
-						disables verification of the server hostname in the
-						server certificate. This can be useful when testing
-						initial server configurations but makes it possible for
-						a malicious third party to impersonate your server
-						through DNS spoofing, for example. Use this option in
-						testing <emphasis>only</emphasis>. If you need to
-						resort to using this option in a production
-						environment, your setup is at fault and there is no
-						point using encryption.</para>
+						disables verification of the server certificate. This
+						can be useful when testing initial server configurations
+						but means there are no guarantees whatsoever about
+						whether the server you are connecting to is the server
+						you expect. Use this option in testing
+						<emphasis>only</emphasis>. If you need to resort to using
+						this option in a production environment, your setup is at
+						fault and there is little point using encryption.
+					</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
@@ -370,12 +398,17 @@
 				<term><option>-L</option></term>
 				<term><option>--url</option></term>
 				<listitem>
-					<para>Specify specify user, password, hostname, port and
+					<para>
+						Specify specify user, password, hostname, port and
 						topic at once as a URL.  The URL must be in the form:
-						mqtt(s)://[username[:password]@]host[:port]/topic</para>
-					<para>If the scheme is mqtt:// then the port defaults to
-						1883. If the scheme is mqtts:// then the port defaults
-						to 8883.</para>
+						mqtt(s)://[username[:password]@]host[:port]/topic
+						or ws(s)://[username[:password]@]host[:port]/path
+					</para>
+					<para>
+                        Depending on the scheme, the port will default to
+						different values. mqtt:// - 1883, mqtts:// - 8883,
+						ws:// - 80, wss:// - 443.
+					</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
@@ -413,12 +446,29 @@
 				</listitem>
 			</varlistentry>
 			<varlistentry>
+				<term><option>--no-tls</option></term>
+				<listitem>
+                    <para>
+                        Disable all use of TLS encryption. This is useful if you
+                        specify TLS options in a configuration file but want to
+                        disable those options. It also stops the automatic use
+                        of TLS when connecting to port 8883.
+                    </para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
 				<term><option>-p</option></term>
 				<term><option>--port</option></term>
 				<listitem>
-					<para>Connect to the port specified. If not given, the
-						default of 1883 for plain MQTT or 8883 for MQTT over
-						TLS will be used.</para>
+                    <para>
+                        Connect to the port specified. If not given, the
+                        default of 1883 for plain MQTT or 8883 for MQTT over
+                        TLS will be used.
+                    </para>
+					<para>
+						See the <option>--no-tls</option> if you want to use
+						port 8883 without TLS.
+                    </para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
@@ -456,6 +506,12 @@
 					<para>If username is not given, then no authentication is
 						attempted. If the port is not given, then the default
 						of 1080 is used.</para>
+					<para>
+						If the host is given as an IPv6 address, it must be enclosed in
+						square brackets, e.g. <option>socks5h://[::1]:1080</option>.
+						Note that square brackets have special meaning in some shells,
+						so the proxy url may need quoting in double or single quotes.
+					</para>
 					<para>More SOCKS versions may be available in the future,
 						depending on demand, and will use different protocol
 						prefixes as described in <citerefentry>
@@ -670,10 +726,19 @@
 				</listitem>
 			</varlistentry>
 			<varlistentry>
+				<term><option>--ws</option></term>
+				<listitem>
+					<para>
+						Connect using WebSockets instead of plain TCP.
+					</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
 				<term><option>-x</option></term>
 				<listitem>
 					<para>Set the session-expiry-interval property on the CONNECT packet.
-						Applies to MQTT v5 clients only. Set to 0-4294967294 to specify
+						If you use this option, the client will be set to be an MQTT v5
+						client. Set to 0-4294967294 to specify
 						the session will expire in that many seconds after the client
 						disconnects, or use -1, 4294967295, or ∞ for a session that does
 						not expire. Defaults to -1 if -c is also given, or 0 if -c not

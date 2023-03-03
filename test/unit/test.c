@@ -10,6 +10,7 @@ int init_property_add_tests(void);
 int init_property_read_tests(void);
 int init_property_user_read_tests(void);
 int init_property_write_tests(void);
+int init_strings_tests(void);
 int init_utf8_tests(void);
 int init_util_topic_tests(void);
 int init_misc_trim_tests(void);
@@ -36,13 +37,14 @@ int main(int argc, char *argv[])
 			|| init_property_write_tests()
 			|| init_util_topic_tests()
 			|| init_misc_trim_tests()
+			|| init_strings_tests()
 			){
 
         CU_cleanup_registry();
         return 1;
     }
 
-    CU_basic_set_mode(CU_BRM_VERBOSE);
+    CU_basic_set_mode(CU_BRM_NORMAL);
     CU_basic_run_tests();
 	fails = CU_get_number_of_failures();
     CU_cleanup_registry();

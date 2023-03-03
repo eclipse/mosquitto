@@ -5,71 +5,42 @@
 
 from mosq_test_helper import *
 
-def len_test(test, puback_packet):
-    port = mosq_test.get_lib_port()
-
-    rc = 1
-    keepalive = 60
-    connect_packet = mosq_test.gen_connect("publish-qos1-test", keepalive=keepalive, proto_ver=5)
+def do_test(conn, data):
+    connect_packet = mosq_test.gen_connect("publish-qos1-test", proto_ver=5)
     connack_packet = mosq_test.gen_connack(rc=0, proto_ver=5)
 
     disconnect_packet = mosq_test.gen_disconnect(proto_ver=5)
 
-    mid = 1
-    publish_packet = mosq_test.gen_publish("pub/qos1/test", qos=1, mid=mid, payload="message", proto_ver=5)
+    publish_packet = mosq_test.gen_publish("pub/qos1/test", qos=1, mid=data['mid'], payload="message", proto_ver=5)
 
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    sock.settimeout(10)
-    sock.bind(('', port))
-    sock.listen(5)
-
-    client_args = sys.argv[1:]
-    env = dict(os.environ)
-    env['LD_LIBRARY_PATH'] = '../../lib:../../lib/cpp'
-    try:
-        pp = env['PYTHONPATH']
-    except KeyError:
-        pp = ''
-    env['PYTHONPATH'] = '../../lib/python:'+pp
-
-    client = mosq_test.start_client(filename=sys.argv[1].replace('/', '-'), cmd=client_args, env=env, port=port)
-
-    try:
-        (conn, address) = sock.accept()
-        conn.settimeout(15)
-
-        mosq_test.do_receive_send(conn, connect_packet, connack_packet, "connect")
-        mosq_test.do_receive_send(conn, publish_packet, puback_packet, "publish")
-        mosq_test.expect_packet(conn, "disconnect", disconnect_packet)
-        rc = 0
-
-        conn.close()
-    except mosq_test.TestError:
-        pass
-    finally:
-        client.terminate()
-        client.wait()
-        sock.close()
-
-    if rc != 0:
-        print(test)
-        exit(rc)
+    mosq_test.do_receive_send(conn, connect_packet, connack_packet, "connect")
+    mosq_test.do_receive_send(conn, publish_packet, data['puback_packet'], "publish")
+    mosq_test.expect_packet(conn, "disconnect", disconnect_packet)
 
 
+data = {}
+data['mid'] = 1
 # No reason code, no properties
-puback_packet = mosq_test.gen_puback(1)
-len_test("qos1 len 2", puback_packet)
+data['puback_packet'] = mosq_test.gen_puback(data['mid'])
+data['label'] = "qos1 len 2"
+mosq_test.client_test("c/03-publish-c2b-qos1-len.test", [], do_test, data)
+mosq_test.client_test("cpp/03-publish-c2b-qos1-len.test", [], do_test, data)
 
 # Reason code, no properties
-puback_packet = mosq_test.gen_puback(1, proto_ver=5, reason_code=0x00)
-len_test("qos1 len 3", puback_packet)
+data['puback_packet'] = mosq_test.gen_puback(data['mid'], proto_ver=5, reason_code=0x00)
+data['label'] = "qos1 len 3"
+mosq_test.client_test("c/03-publish-c2b-qos1-len.test", [], do_test, data)
+mosq_test.client_test("cpp/03-publish-c2b-qos1-len.test", [], do_test, data)
 
 # Reason code, empty properties
-puback_packet = mosq_test.gen_puback(1, proto_ver=5, reason_code=0x00, properties="")
-len_test("qos1 len 4", puback_packet)
+data['puback_packet'] = mosq_test.gen_puback(data['mid'], proto_ver=5, reason_code=0x00, properties="")
+data['label'] = "qos1 len 4"
+mosq_test.client_test("c/03-publish-c2b-qos1-len.test", [], do_test, data)
+mosq_test.client_test("cpp/03-publish-c2b-qos1-len.test", [], do_test, data)
 
 # Reason code, one property
 props = mqtt5_props.gen_string_pair_prop(mqtt5_props.PROP_USER_PROPERTY, "key", "value")
-puback_packet = mosq_test.gen_puback(1, proto_ver=5, reason_code=0x00, properties=props)
-len_test("qos1 len >5", puback_packet)
+data['puback_packet'] = mosq_test.gen_puback(data['mid'], proto_ver=5, reason_code=0x00, properties=props)
+data['label'] = "qos1 len >5"
+mosq_test.client_test("c/03-publish-c2b-qos1-len.test", [], do_test, data)
+mosq_test.client_test("cpp/03-publish-c2b-qos1-len.test", [], do_test, data)

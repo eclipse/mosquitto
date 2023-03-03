@@ -10,7 +10,7 @@ def write_config(filename, port):
     with open(filename, 'w') as f:
         f.write("listener %d\n" % (port))
         f.write("allow_anonymous false\n")
-        f.write("plugin ../../plugins/dynamic-security/mosquitto_dynamic_security.so\n")
+        f.write(f"plugin {mosq_test.get_build_root()}/plugins/dynamic-security/mosquitto_dynamic_security.so\n")
         f.write("plugin_opt_config_file %d/dynamic-security.json\n" % (port))
 
 def command_check(sock, command_payload, expected_response):
@@ -94,15 +94,14 @@ allow_unsubscribe_command = { "commands": [
 allow_unsubscribe_response = {'responses': [{'command': 'setDefaultACLAccess', 'correlationData': '7'}]}
 
 rc = 1
-keepalive = 10
-connect_packet_admin = mosq_test.gen_connect("ctrl-test", keepalive=keepalive, username="admin", password="admin")
+connect_packet_admin = mosq_test.gen_connect("ctrl-test", username="admin", password="admin")
 connack_packet_admin = mosq_test.gen_connack(rc=0)
 
 mid = 2
 subscribe_packet_admin = mosq_test.gen_subscribe(mid, "$CONTROL/dynamic-security/#", 1)
 suback_packet_admin = mosq_test.gen_suback(mid, 1)
 
-connect_packet = mosq_test.gen_connect("cid", keepalive=keepalive, username="user_one", password="password", proto_ver=5)
+connect_packet = mosq_test.gen_connect("cid", username="user_one", password="password", proto_ver=5)
 connack_packet = mosq_test.gen_connack(rc=0, proto_ver=5)
 
 mid = 3
@@ -124,7 +123,7 @@ publish_packet_recv = mosq_test.gen_publish(topic="topic", qos=0, payload="messa
 
 try:
     os.mkdir(str(port))
-    shutil.copyfile("dynamic-security-init.json", "%d/dynamic-security.json" % (port))
+    shutil.copyfile(str(Path(__file__).resolve().parent / "dynamic-security-init.json"), "%d/dynamic-security.json" % (port))
 except FileExistsError:
     pass
 
@@ -195,7 +194,9 @@ finally:
         pass
     os.rmdir(f"{port}")
     broker.terminate()
-    broker.wait()
+    if mosq_test.wait_for_subprocess(broker):
+        print("broker not terminated")
+        if rc == 0: rc=1
     (stdo, stde) = broker.communicate()
     if rc:
         print(stde.decode('utf-8'))

@@ -23,7 +23,9 @@
 				<arg choice='plain'>--daemon</arg>
 			</group>
 			<arg>-p <replaceable>port number</replaceable></arg>
+			<arg>-q</arg>
 			<arg>-v</arg>
+			<arg>--tls-keylog <replaceable>file</replaceable></arg>
 		</cmdsynopsis>
 	</refsynopsisdiv>
 
@@ -68,12 +70,41 @@
 				</listitem>
 			</varlistentry>
 			<varlistentry>
+				<term><option>-q</option></term>
+				<term><option>--quiet</option></term>
+				<listitem>
+					<para>Disable all logging. This is equivalent to setting
+						<option>log_type</option> to <option>none</option> in
+						the configuration file. This overrides any logging
+						options given in the configuration file and also
+						overrides <option>--verbose</option>.
+					</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>--tls-keylog</option> <replaceable>file</replaceable></term>
+				<listitem>
+					<para>
+						Log TLS connection information to <replaceable>file</replaceable>.
+						This option allows tools such as <command>tcpdump</command> and
+						<command>wireshark</command> to decrypt TLS traffic and inspect the
+						MQTT traffic. In Wireshark this can be done by setting the
+						<option>(Pre)-Master-Secret log filename</option> option for the
+						<option>Transport Layer Security</option> protocol.
+					</para>
+					<para>
+						This option should be used for debugging only, it must
+						not be used on production servers.
+					</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
 				<term><option>-v</option></term>
 				<term><option>--verbose</option></term>
 				<listitem>
 					<para>Use verbose logging. This is equivalent to setting
 						<option>log_type</option> to <option>all</option> in
-						the configuration file. This overrides and logging
+						the configuration file. This overrides any logging
 						options given in the configuration file.</para>
 				</listitem>
 			</varlistentry>
@@ -539,6 +570,28 @@
 				</listitem>
 			</varlistentry>
 			<varlistentry>
+				<term><option>$SYS/broker/packet/out/count</option></term>
+				<listitem>
+					<para>
+						The current number of packets queued for delivery across
+						all clients. A large and increasing value here may
+						indicate messages are being sent faster than the network
+						can handle.
+					</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>$SYS/broker/packet/out/bytes</option></term>
+				<listitem>
+					<para>
+						The current number of bytes in packets queued for
+						delivery across all clients. A large and increasing
+						value here may indicate messages are being sent faster
+						than the network can handle.
+					</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
 				<term><option>$SYS/broker/publish/messages/dropped</option></term>
 				<listitem>
 					<para>The total number of publish messages that have been
@@ -675,6 +728,18 @@
 					for details.</para>
 					<para>If TLS certificates are in use, then mosquitto will
 					also reload certificate on receiving a SIGHUP.</para>
+					<para>
+						The logs will also be closed and reopened.
+					</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term>SIGRTMIN</term>
+				<listitem>
+					<para>
+						Upon receiving the SIGRTMIN signal, mosquitto will
+						close and reopen the logs to support log rotation.
+					</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>

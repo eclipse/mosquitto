@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -26,6 +26,7 @@ Contributors:
 #  include "mosquitto_broker_internal.h"
 #endif
 
+#include "callbacks.h"
 #include "mosquitto.h"
 #include "logging_mosq.h"
 #include "memory_mosq.h"
@@ -77,21 +78,18 @@ int handle__pubrel(struct mosquitto *mosq)
 		if(mosq->in_packet.remaining_length > 3){
 			rc = property__read_all(CMD_PUBREL, &mosq->in_packet, &properties);
 			if(rc) return rc;
+			/* Immediately free, we don't do anything with Reason String or
+			 * User Property at the moment */
+			mosquitto_property_free_all(&properties);
 		}
 	}
 
 	if(mosq->in_packet.pos < mosq->in_packet.remaining_length){
-#ifdef WITH_BROKER
-		mosquitto_property_free_all(&properties);
-#endif
 		return MOSQ_ERR_MALFORMED_PACKET;
 	}
 
 #ifdef WITH_BROKER
 	log__printf(NULL, MOSQ_LOG_DEBUG, "Received PUBREL from %s (Mid: %d)", SAFE_PRINT(mosq->id), mid);
-
-	/* Immediately free, we don't do anything with Reason String or User Property at the moment */
-	mosquitto_property_free_all(&properties);
 
 	rc = db__message_release_incoming(mosq, mid);
 	if(rc == MOSQ_ERR_NOT_FOUND){
@@ -116,19 +114,7 @@ int handle__pubrel(struct mosquitto *mosq)
 	if(rc == MOSQ_ERR_SUCCESS){
 		/* Only pass the message on if we have removed it from the queue - this
 		 * prevents multiple callbacks for the same message. */
-		pthread_mutex_lock(&mosq->callback_mutex);
-		if(mosq->on_message){
-			mosq->in_callback = true;
-			mosq->on_message(mosq, mosq->userdata, &message->msg);
-			mosq->in_callback = false;
-		}
-		if(mosq->on_message_v5){
-			mosq->in_callback = true;
-			mosq->on_message_v5(mosq, mosq->userdata, &message->msg, message->properties);
-			mosq->in_callback = false;
-		}
-		pthread_mutex_unlock(&mosq->callback_mutex);
-		mosquitto_property_free_all(&properties);
+		callback__on_message(mosq, &message->msg, message->properties);
 		message__cleanup(&message);
 	}else if(rc == MOSQ_ERR_NOT_FOUND){
 		return MOSQ_ERR_SUCCESS;
@@ -139,4 +125,3 @@ int handle__pubrel(struct mosquitto *mosq)
 
 	return MOSQ_ERR_SUCCESS;
 }
-

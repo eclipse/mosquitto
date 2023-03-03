@@ -1,4 +1,6 @@
+#include <cassert>
 #include <mosquittopp.h>
+#include "path_helper.h"
 
 static int run = -1;
 
@@ -34,15 +36,16 @@ int main(int argc, char *argv[])
 {
 	struct mosquittopp_test *mosq;
 
+	assert(argc == 2);
 	int port = atoi(argv[1]);
 
 	mosqpp::lib_init();
 
 	mosq = new mosquittopp_test("08-ssl-connect-no-auth");
 
-	mosq->tls_opts_set(1, "tlsv1", NULL);
-	//mosq->tls_set("../ssl/test-root-ca.crt");
-	mosq->tls_set("../ssl/all-ca.crt");
+	char cafile[4096];
+	cat_sourcedir_with_relpath(cafile, "/../../ssl/all-ca.crt");
+	mosq->tls_set(cafile);
 	mosq->connect("localhost", port, 60);
 
 	while(run == -1){

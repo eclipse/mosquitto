@@ -7,7 +7,7 @@ from mosq_test_helper import *
 
 def write_config(filename, port, plugin_ver):
     with open(filename, 'w') as f:
-        f.write("port %d\n" % (port))
+        f.write("listener %d\n" % (port))
         f.write("auth_plugin c/auth_plugin_v%d.so\n" % (plugin_ver))
         f.write("allow_anonymous false\n")
 
@@ -17,11 +17,10 @@ def do_test(plugin_ver):
     write_config(conf_file, port, plugin_ver)
 
     rc = 1
-    keepalive = 10
-    connect1_packet = mosq_test.gen_connect("connect-uname-pwd-test", keepalive=keepalive, username="readwrite", clean_session=False)
+    connect1_packet = mosq_test.gen_connect("connect-uname-pwd-test", username="readwrite", clean_session=False)
     connack1_packet = mosq_test.gen_connack(rc=0)
 
-    connect2_packet = mosq_test.gen_connect("connect-uname-pwd-test", keepalive=keepalive, username="readwrite", clean_session=False)
+    connect2_packet = mosq_test.gen_connect("connect-uname-pwd-test", username="readwrite", clean_session=False)
     connack2_packet = mosq_test.gen_connack(rc=0,flags=1)
 
     mid = 1
@@ -59,11 +58,15 @@ def do_test(plugin_ver):
     finally:
         os.remove(conf_file)
         broker.terminate()
-        broker.wait()
+        if mosq_test.wait_for_subprocess(broker):
+            print("broker not terminated")
+            if rc == 0: rc=1
         (stdo, stde) = broker.communicate()
         if rc:
             print(stde.decode('utf-8'))
             exit(rc)
 
+do_test(2)
+do_test(3)
 do_test(4)
 do_test(5)

@@ -25,17 +25,17 @@ class SingleMsg(object):
         self.comment = comment
 
 class MsgSequence(object):
-    __slots__ = 'name', 'msgs', 'expect_disconnect'
+    __slots__ = 'name', 'msgs', 'msgs_all', 'expect_disconnect'
 
     def __init__(self, name, default_connect=True, proto_ver=4, expect_disconnect=True):
         self.name = name
-        self.msgs = deque()
+        self.msgs_all = deque()
         self.expect_disconnect = expect_disconnect
         if default_connect:
             self.add_default_connect(proto_ver=proto_ver)
 
     def add_default_connect(self, proto_ver):
-        self.add_send(mosq_test.gen_connect(self.name, keepalive=60, proto_ver=proto_ver))
+        self.add_send(mosq_test.gen_connect(self.name, proto_ver=proto_ver))
         self.add_recv(mosq_test.gen_connack(rc=0, proto_ver=proto_ver), "default connack")
 
     def add_send(self, message):
@@ -55,7 +55,7 @@ class MsgSequence(object):
 
     def _add(self, action, message, comment=""):
         msg = SingleMsg(action, message, comment)
-        self.msgs.append(msg)
+        self.msgs_all.append(msg)
 
     def _connected_check(self, sock):
         try:
@@ -68,7 +68,7 @@ class MsgSequence(object):
 
     def _publish_message(self, msg):
         sock = mosq_test.client_connect_only(hostname="localhost", port=1888, timeout=2)
-        sock.send(mosq_test.gen_connect("helper", keepalive=60))
+        sock.send(mosq_test.gen_connect("helper"))
         mosq_test.expect_packet(sock, "connack", mosq_test.gen_connack(rc=0))
 
         m = msg.message
@@ -118,6 +118,7 @@ class MsgSequence(object):
         self._process_message(sock, msg)
 
     def process_all(self, sock):
+        self.msgs = self.msgs_all.copy()
         while len(self.msgs):
             self.process_next(sock)
         if self.expect_disconnect:
@@ -127,20 +128,22 @@ class MsgSequence(object):
 
 
 def do_test(hostname, port):
+    data_path=Path(__file__).resolve().parent/"data"
     rc = 0
     sequences = []
-    for (_, _, filenames) in walk("data"):
+    for (_, _, filenames) in walk(data_path):
         sequences.extend(filenames)
         break
 
     total = 0
     succeeded = 0
     test = None
+    failed_tests = []
     for seq in sorted(sequences):
         if seq[-5:] != ".json":
             continue
 
-        with open("data/"+seq, "r") as f:
+        with open(data_path/seq, "r") as f:
             test_file = json.load(f)
 
         for g in test_file:
@@ -151,6 +154,18 @@ def do_test(hostname, port):
                     continue
             except KeyError:
                 pass
+            try:
+                g_proto_ver = g["ver"]
+            except KeyError:
+                g_proto_ver = 4
+            try:
+                g_connect = g["connect"]
+            except KeyError:
+                g_connect = True
+            try:
+                g_expect_disconnect = g["expect_disconnect"]
+            except KeyError:
+                g_expect_disconnect = True
             tests = g["tests"]
 
             for t in tests:
@@ -158,15 +173,15 @@ def do_test(hostname, port):
                 try:
                     proto_ver = t["ver"]
                 except KeyError:
-                    proto_ver = 4
+                    proto_ver = g_proto_ver
                 try:
                     connect = t["connect"]
                 except KeyError:
-                    connect = True
+                    connect = g_connect
                 try:
                     expect_disconnect = t["expect_disconnect"]
                 except KeyError:
-                    expect_disconnect = True
+                    expect_disconnect = g_expect_disconnect
 
                 this_test = MsgSequence(tname,
                         proto_ver=proto_ver,
@@ -187,22 +202,54 @@ def do_test(hostname, port):
 
                 total += 1
                 try:
+                    failed_tests.append(this_test)
                     sock = mosq_test.client_connect_only(hostname=hostname, port=port, timeout=2)
                     this_test.process_all(sock)
                     print("\033[32m" + tname + "\033[0m")
                     succeeded += 1
+                    sock.close()
+                    failed_tests.pop()
                 except ValueError as e:
                     print("\033[31m" + tname + " failed: " + str(e) + "\033[0m")
                     rc = 1
+                    sock.close()
                 except ConnectionResetError as e:
                     print("\033[31m" + tname + " failed: " + str(e) + "\033[0m")
                     rc = 1
+                    sock.close()
                 except socket.timeout as e:
                     print("\033[31m" + tname + " failed: " + str(e) + "\033[0m")
                     rc = 1
+                    sock.close()
                 except mosq_test.TestError as e:
                     print("\033[31m" + tname + " failed: " + str(e) + "\033[0m")
                     rc = 1
+                    sock.close()
+
+    # Option to replay failed tests to make them easier to analyse.
+    if False:
+        for t in failed_tests:
+            try:
+                sock = mosq_test.client_connect_only(hostname=hostname, port=port, timeout=2)
+                t.process_all(sock)
+                print("\033[32m" + t.name + "\033[0m")
+                sock.close()
+            except ValueError as e:
+                print("\033[31m" + t.name + " failed: " + str(e) + "\033[0m")
+                rc = 1
+                sock.close()
+            except ConnectionResetError as e:
+                print("\033[31m" + t.name + " failed: " + str(e) + "\033[0m")
+                rc = 1
+                sock.close()
+            except socket.timeout as e:
+                print("\033[31m" + t.name + " failed: " + str(e) + "\033[0m")
+                rc = 1
+                sock.close()
+            except mosq_test.TestError as e:
+                print("\033[31m" + t.name + " failed: " + str(e) + "\033[0m")
+                rc = 1
+                sock.close()
 
     print("%d tests total\n%d tests succeeded" % (total, succeeded))
     return rc
@@ -216,7 +263,9 @@ try:
     rc = do_test(hostname=hostname, port=port)
 finally:
     broker.terminate()
-    broker.wait()
+    if mosq_test.wait_for_subprocess(broker):
+        print("broker not terminated")
+        if rc == 0: rc=1
     (stdo, stde) = broker.communicate()
 if rc:
     #print(stde.decode('utf-8'))

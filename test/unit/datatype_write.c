@@ -12,23 +12,24 @@
 /* This tests writing a Byte to an incoming packet.  */
 static void TEST_byte_write(void)
 {
-	uint8_t payload[260];
-	struct mosquitto__packet packet;
+	struct mosquitto__packet *packet;
 	int i;
+	int rc;
 
-	memset(&packet, 0, sizeof(struct mosquitto__packet));
-	memset(payload, 0, sizeof(payload));
-	packet.payload = payload;
-	packet.packet_length = 256;
+	rc = packet__alloc(&packet, 0, 260);
+	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
+	if(rc != MOSQ_ERR_SUCCESS) return;
 
+	packet->pos = 0; /* We don't need the command or RL parts, so make indexing easier below */
 	for(i=0; i<256; i++){
-		packet__write_byte(&packet, (uint8_t)(255-i));
+		packet__write_byte(packet, (uint8_t)(255-i));
 	}
 
-	CU_ASSERT_EQUAL(packet.pos, 256);
+	CU_ASSERT_EQUAL(packet->pos, 256);
 	for(i=0; i<256; i++){
-		CU_ASSERT_EQUAL(payload[i], (uint8_t)(255-i));
+		CU_ASSERT_EQUAL(packet->payload[i], (uint8_t)(255-i));
 	}
+	free(packet);
 }
 
 
@@ -39,25 +40,26 @@ static void TEST_byte_write(void)
 /* This tests writing a Two Byte Integer to an incoming packet.  */
 static void TEST_uint16_write(void)
 {
-	uint8_t payload[650];
 	uint16_t *payload16;
-	struct mosquitto__packet packet;
+	struct mosquitto__packet *packet;
 	int i;
+	int rc;
 
-	memset(&packet, 0, sizeof(struct mosquitto__packet));
-	memset(payload, 0, sizeof(payload));
-	packet.payload = payload;
-	packet.packet_length = 650;
+	rc = packet__alloc(&packet, 0, 650);
+	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
+	if(rc != MOSQ_ERR_SUCCESS) return;
 
+	packet->pos = 0; /* We don't need the command or RL parts, so make indexing easier below */
 	for(i=0; i<325; i++){
-		packet__write_uint16(&packet, (uint16_t)(100*i));
+		packet__write_uint16(packet, (uint16_t)(100*i));
 	}
 
-	CU_ASSERT_EQUAL(packet.pos, 650);
-	payload16 = (uint16_t *)payload;
+	CU_ASSERT_EQUAL(packet->pos, 650);
+	payload16 = (uint16_t *)packet->payload;
 	for(i=0; i<325; i++){
 		CU_ASSERT_EQUAL(payload16[i], htons((uint16_t)(100*i)));
 	}
+	free(packet);
 }
 
 
@@ -68,30 +70,26 @@ static void TEST_uint16_write(void)
 /* This tests writing a Four Byte Integer to an incoming packet.  */
 static void TEST_uint32_write(void)
 {
-	uint8_t *payload;
 	uint32_t *payload32;
-	struct mosquitto__packet packet;
+	struct mosquitto__packet *packet;
 	int i;
 
-	payload = calloc(42000, sizeof(uint32_t));
-	if(!payload){
-		CU_FAIL_FATAL("Out of memory");
-	}
+	packet = calloc(1, sizeof(struct mosquitto__packet) + 42000);
+	CU_ASSERT_PTR_NOT_NULL(packet);
+	if(packet == NULL) return;
 
-	memset(&packet, 0, sizeof(struct mosquitto__packet));
-	packet.payload = payload;
-	packet.packet_length = 42000;
+	packet->packet_length = 42000;
 
 	for(i=0; i<10500; i++){
-		packet__write_uint32(&packet, (uint32_t)(1000*i));
+		packet__write_uint32(packet, (uint32_t)(1000*i));
 	}
 
-	CU_ASSERT_EQUAL(packet.pos, 42000);
-	payload32 = (uint32_t *)payload;
+	CU_ASSERT_EQUAL(packet->pos, 42000);
+	payload32 = (uint32_t *)packet->payload;
 	for(i=0; i<10500; i++){
 		CU_ASSERT_EQUAL(payload32[i], htonl((uint32_t)(1000*i)));
 	}
-	free(payload);
+	free(packet);
 }
 
 
@@ -102,25 +100,26 @@ static void TEST_uint32_write(void)
 /* This tests writing a UTF-8 String to an incoming packet.  */
 static void TEST_string_write(void)
 {
-	uint8_t payload[100];
-	struct mosquitto__packet packet;
+	struct mosquitto__packet *packet;
 
-	memset(&packet, 0, sizeof(struct mosquitto__packet));
-	memset(payload, 0, 100);
+	packet = calloc(1, sizeof(struct mosquitto__packet) + 100);
+	CU_ASSERT_PTR_NOT_NULL(packet);
+	if(packet == NULL) return;
 
-	packet.payload = payload;
-	packet.packet_length = 100;
+	packet->packet_length = 100;
 
-	packet__write_string(&packet, "first test", strlen("first test"));
-	packet__write_string(&packet, "second test", strlen("second test"));
+	packet__write_string(packet, "first test", strlen("first test"));
+	packet__write_string(packet, "second test", strlen("second test"));
 
-	CU_ASSERT_EQUAL(packet.pos, 2+10+2+11);
-	CU_ASSERT_EQUAL(payload[0], 0);
-	CU_ASSERT_EQUAL(payload[1], 10);
-	CU_ASSERT_NSTRING_EQUAL(payload+2, "first test", 10);
-	CU_ASSERT_EQUAL(payload[2+10+0], 0);
-	CU_ASSERT_EQUAL(payload[2+10+1], 11);
-	CU_ASSERT_NSTRING_EQUAL(payload+2+10+2, "second test", 11);
+	CU_ASSERT_EQUAL(packet->pos, 2+10+2+11);
+	CU_ASSERT_EQUAL(packet->payload[0], 0);
+	CU_ASSERT_EQUAL(packet->payload[1], 10);
+	CU_ASSERT_NSTRING_EQUAL(packet->payload+2, "first test", 10);
+	CU_ASSERT_EQUAL(packet->payload[2+10+0], 0);
+	CU_ASSERT_EQUAL(packet->payload[2+10+1], 11);
+	CU_ASSERT_NSTRING_EQUAL(packet->payload+2+10+2, "second test", 11);
+
+	free(packet);
 }
 
 

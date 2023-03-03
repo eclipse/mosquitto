@@ -16,3 +16,16 @@ import struct
 import subprocess
 import time
 import errno
+from pathlib import Path
+
+source_dir = Path(__file__).resolve().parent
+ssl_dir = source_dir.parent / "ssl"
+
+import importlib
+
+def persist_module():
+    if len(sys.argv) > 1:
+        mod = sys.argv.pop(1)
+    else:
+        raise RuntimeError("Not enough command line arguments - need persist module")
+    return importlib.import_module(mod)

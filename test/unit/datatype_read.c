@@ -9,11 +9,11 @@ static void byte_read_helper(
 		int rc_expected,
 		uint8_t value_expected)
 {
-	struct mosquitto__packet packet;
+	struct mosquitto__packet_in packet;
 	uint8_t value = 0;
 	int rc;
 
-	memset(&packet, 0, sizeof(struct mosquitto__packet));
+	memset(&packet, 0, sizeof(struct mosquitto__packet_in));
 	packet.payload = payload;
 	packet.remaining_length = remaining_length;
 	rc = packet__read_byte(&packet, &value);
@@ -28,11 +28,11 @@ static void uint16_read_helper(
 		int rc_expected,
 		uint16_t value_expected)
 {
-	struct mosquitto__packet packet;
+	struct mosquitto__packet_in packet;
 	uint16_t value = 0;
 	int rc;
 
-	memset(&packet, 0, sizeof(struct mosquitto__packet));
+	memset(&packet, 0, sizeof(struct mosquitto__packet_in));
 	packet.payload = payload;
 	packet.remaining_length = remaining_length;
 	rc = packet__read_uint16(&packet, &value);
@@ -47,11 +47,11 @@ static void uint32_read_helper(
 		int rc_expected,
 		uint32_t value_expected)
 {
-	struct mosquitto__packet packet;
+	struct mosquitto__packet_in packet;
 	uint32_t value = 0;
 	int rc;
 
-	memset(&packet, 0, sizeof(struct mosquitto__packet));
+	memset(&packet, 0, sizeof(struct mosquitto__packet_in));
 	packet.payload = payload;
 	packet.remaining_length = remaining_length;
 	rc = packet__read_uint32(&packet, &value);
@@ -67,12 +67,12 @@ static void varint_read_helper(
 		uint32_t value_expected,
 		uint8_t bytes_expected)
 {
-	struct mosquitto__packet packet;
+	struct mosquitto__packet_in packet;
 	uint32_t value = UINT32_MAX;
 	uint8_t bytes = UINT8_MAX;
 	int rc;
 
-	memset(&packet, 0, sizeof(struct mosquitto__packet));
+	memset(&packet, 0, sizeof(struct mosquitto__packet_in));
 	packet.payload = payload;
 	packet.remaining_length = remaining_length;
 	rc = packet__read_varint(&packet, &value, &bytes);
@@ -89,12 +89,12 @@ static void binary_read_helper(
 		const uint8_t *value_expected,
 		int length_expected)
 {
-	struct mosquitto__packet packet;
+	struct mosquitto__packet_in packet;
 	uint8_t *value = NULL;
 	uint16_t length = UINT16_MAX;
 	int rc;
 
-	memset(&packet, 0, sizeof(struct mosquitto__packet));
+	memset(&packet, 0, sizeof(struct mosquitto__packet_in));
 	packet.payload = payload;
 	packet.remaining_length = remaining_length;
 	rc = packet__read_binary(&packet, (uint8_t **)&value, &length);
@@ -117,12 +117,12 @@ static void string_read_helper(
 		const uint8_t *value_expected,
 		uint16_t length_expected)
 {
-	struct mosquitto__packet packet;
+	struct mosquitto__packet_in packet;
 	uint8_t *value = NULL;
 	uint16_t length = UINT16_MAX;
 	int rc;
 
-	memset(&packet, 0, sizeof(struct mosquitto__packet));
+	memset(&packet, 0, sizeof(struct mosquitto__packet_in));
 	packet.payload = payload;
 	packet.remaining_length = remaining_length;
 	rc = packet__read_string(&packet, (char **)&value, &length);
@@ -146,18 +146,18 @@ static void bytes_read_helper(
 		const uint8_t *value_expected,
 		int count)
 {
-	struct mosquitto__packet packet;
+	struct mosquitto__packet_in packet;
 	uint8_t value[count];
 	int rc;
 	int i;
 
-	memset(&packet, 0, sizeof(struct mosquitto__packet));
+	memset(&packet, 0, sizeof(struct mosquitto__packet_in));
 	packet.payload = payload;
 	packet.remaining_length = remaining_length;
 	rc = packet__read_bytes(&packet, value, (uint32_t)count);
 	CU_ASSERT_EQUAL(rc, rc_expected);
 	if(rc == MOSQ_ERR_SUCCESS){
-		CU_ASSERT_EQUAL(packet.pos, count);
+		CU_ASSERT_EQUAL(packet.pos, (uint32_t)count);
 	}
 	if(value_expected){
 		for(i=0; i<count; i++){

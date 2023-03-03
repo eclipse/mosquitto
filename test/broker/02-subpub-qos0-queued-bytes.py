@@ -13,11 +13,10 @@ def write_config(filename, port):
 
 def do_test(proto_ver):
     rc = 1
-    keepalive = 60
-    connect_packet = mosq_test.gen_connect("subpub-qos0-bytes", keepalive=keepalive, proto_ver=proto_ver)
+    connect_packet = mosq_test.gen_connect("subpub-qos0-bytes", proto_ver=proto_ver)
     connack_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
 
-    connect_packet_helper = mosq_test.gen_connect("qos0-bytes-helper", keepalive=keepalive, proto_ver=proto_ver)
+    connect_packet_helper = mosq_test.gen_connect("qos0-bytes-helper", proto_ver=proto_ver)
 
     mid = 1
     subscribe_packet = mosq_test.gen_subscribe(mid, "subpub/qos0/queued/bytes", 1, proto_ver=proto_ver)
@@ -48,7 +47,9 @@ def do_test(proto_ver):
     finally:
         os.remove(conf_file)
         broker.terminate()
-        broker.wait()
+        if mosq_test.wait_for_subprocess(broker):
+            print("broker not terminated")
+            if rc == 0: rc=1
         (stdo, stde) = broker.communicate()
         if rc:
             print(stde.decode('utf-8'))

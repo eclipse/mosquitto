@@ -14,8 +14,8 @@ Contributors:
    Roger Light - initial implementation and documentation.
 */
 
-#ifndef MOSQUITTO_PLUGIN_H
-#define MOSQUITTO_PLUGIN_H
+#ifndef MOSQUITTO_PLUGIN_V2_H
+#define MOSQUITTO_PLUGIN_V2_H
 
 #define MOSQ_AUTH_PLUGIN_VERSION 2
 

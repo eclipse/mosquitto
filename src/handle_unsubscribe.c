@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -30,7 +30,6 @@ Contributors:
 int handle__unsubscribe(struct mosquitto *context)
 {
 	uint16_t mid;
-	char *sub;
 	uint16_t slen;
 	int rc;
 	uint8_t reason = 0;
@@ -39,6 +38,7 @@ int handle__unsubscribe(struct mosquitto *context)
 	uint8_t *reason_codes = NULL, *reason_tmp;
 	mosquitto_property *properties = NULL;
 	bool allowed;
+	struct mosquitto_subscription sub;
 
 	if(!context) return MOSQ_ERR_INVAL;
 
@@ -88,9 +88,10 @@ int handle__unsubscribe(struct mosquitto *context)
 	}
 
 	while(context->in_packet.pos < context->in_packet.remaining_length){
-		sub = NULL;
-		if(packet__read_string(&context->in_packet, &sub, &slen)){
-			mosquitto__free(reason_codes);
+		memset(&sub, 0, sizeof(sub));
+		sub.properties = properties;
+		if(packet__read_string(&context->in_packet, &sub.topic_filter, &slen)){
+			mosquitto__FREE(reason_codes);
 			return MOSQ_ERR_MALFORMED_PACKET;
 		}
 
@@ -98,22 +99,22 @@ int handle__unsubscribe(struct mosquitto *context)
 			log__printf(NULL, MOSQ_LOG_INFO,
 					"Empty unsubscription string from %s, disconnecting.",
 					context->id);
-			mosquitto__free(sub);
-			mosquitto__free(reason_codes);
+			mosquitto__FREE(sub.topic_filter);
+			mosquitto__FREE(reason_codes);
 			return MOSQ_ERR_MALFORMED_PACKET;
 		}
-		if(mosquitto_sub_topic_check(sub)){
+		if(mosquitto_sub_topic_check(sub.topic_filter)){
 			log__printf(NULL, MOSQ_LOG_INFO,
 					"Invalid unsubscription string from %s, disconnecting.",
 					context->id);
-			mosquitto__free(sub);
-			mosquitto__free(reason_codes);
+			mosquitto__FREE(sub.topic_filter);
+			mosquitto__FREE(reason_codes);
 			return MOSQ_ERR_MALFORMED_PACKET;
 		}
 
 		/* ACL check */
 		allowed = true;
-		rc = mosquitto_acl_check(context, sub, 0, NULL, 0, false, MOSQ_ACL_UNSUBSCRIBE);
+		rc = mosquitto_acl_check(context, sub.topic_filter, 0, NULL, 0, false, MOSQ_ACL_UNSUBSCRIBE);
 		switch(rc){
 			case MOSQ_ERR_SUCCESS:
 				break;
@@ -122,21 +123,28 @@ int handle__unsubscribe(struct mosquitto *context)
 				reason = MQTT_RC_NOT_AUTHORIZED;
 				break;
 			default:
-				mosquitto__free(sub);
-				mosquitto__free(reason_codes);
+				mosquitto__FREE(sub.topic_filter);
+				mosquitto__FREE(reason_codes);
 				return rc;
 		}
 
-		log__printf(NULL, MOSQ_LOG_DEBUG, "\t%s", sub);
+		log__printf(NULL, MOSQ_LOG_DEBUG, "\t%s", sub.topic_filter);
 		if(allowed){
-			rc = sub__remove(context, sub, db.subs, &reason);
+			rc = plugin__handle_unsubscribe(context, &sub);
+			if(rc){
+				mosquitto__FREE(sub.topic_filter);
+				mosquitto__FREE(reason_codes);
+				return rc;
+			}
+			rc = sub__remove(context, sub.topic_filter, &reason);
+			plugin_persist__handle_subscription_delete(context, sub.topic_filter);
 		}else{
 			rc = MOSQ_ERR_SUCCESS;
 		}
-		log__printf(NULL, MOSQ_LOG_UNSUBSCRIBE, "%s %s", context->id, sub);
-		mosquitto__free(sub);
+		log__printf(NULL, MOSQ_LOG_UNSUBSCRIBE, "%s %s", context->id, sub.topic_filter);
+		mosquitto__FREE(sub.topic_filter);
 		if(rc){
-			mosquitto__free(reason_codes);
+			mosquitto__FREE(reason_codes);
 			return rc;
 		}
 
@@ -145,7 +153,7 @@ int handle__unsubscribe(struct mosquitto *context)
 		if(reason_code_count == reason_code_max){
 			reason_tmp = mosquitto__realloc(reason_codes, (size_t)(reason_code_max*2));
 			if(!reason_tmp){
-				mosquitto__free(reason_codes);
+				mosquitto__FREE(reason_codes);
 				return MOSQ_ERR_NOMEM;
 			}
 			reason_codes = reason_tmp;
@@ -160,6 +168,6 @@ int handle__unsubscribe(struct mosquitto *context)
 
 	/* We don't use Reason String or User Property yet. */
 	rc = send__unsuback(context, mid, reason_code_count, reason_codes, NULL);
-	mosquitto__free(reason_codes);
+	mosquitto__FREE(reason_codes);
 	return rc;
 }

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2010-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2010-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -62,10 +62,10 @@ int will__set(struct mosquitto *mosq, const char *topic, int payloadlen, const v
 	}
 
 	if(mosq->will){
-		mosquitto__free(mosq->will->msg.topic);
-		mosquitto__free(mosq->will->msg.payload);
+		mosquitto__FREE(mosq->will->msg.topic);
+		mosquitto__FREE(mosq->will->msg.payload);
 		mosquitto_property_free_all(&mosq->will->properties);
-		mosquitto__free(mosq->will);
+		mosquitto__FREE(mosq->will);
 	}
 
 	mosq->will = mosquitto__calloc(1, sizeof(struct mosquitto_message_all));
@@ -98,11 +98,9 @@ int will__set(struct mosquitto *mosq, const char *topic, int payloadlen, const v
 
 cleanup:
 	if(mosq->will){
-		mosquitto__free(mosq->will->msg.topic);
-		mosquitto__free(mosq->will->msg.payload);
-
-		mosquitto__free(mosq->will);
-		mosq->will = NULL;
+		mosquitto__FREE(mosq->will->msg.topic);
+		mosquitto__FREE(mosq->will->msg.payload);
+		mosquitto__FREE(mosq->will);
 	}
 
 	return rc;
@@ -112,16 +110,12 @@ int will__clear(struct mosquitto *mosq)
 {
 	if(!mosq->will) return MOSQ_ERR_SUCCESS;
 
-	mosquitto__free(mosq->will->msg.topic);
-	mosq->will->msg.topic = NULL;
-
-	mosquitto__free(mosq->will->msg.payload);
-	mosq->will->msg.payload = NULL;
+	mosquitto__FREE(mosq->will->msg.topic);
+	mosquitto__FREE(mosq->will->msg.payload);
 
 	mosquitto_property_free_all(&mosq->will->properties);
 
-	mosquitto__free(mosq->will);
-	mosq->will = NULL;
+	mosquitto__FREE(mosq->will);
 	mosq->will_delay_interval = 0;
 
 	return MOSQ_ERR_SUCCESS;

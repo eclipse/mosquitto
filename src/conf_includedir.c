@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -105,9 +105,9 @@ int config__get_dir_files(const char *include_dir, char ***files, int *file_coun
 		files_tmp = mosquitto__realloc(l_files, l_file_count*sizeof(char *));
 		if(!files_tmp){
 			for(i=0; i<l_file_count-1; i++){
-				mosquitto__free(l_files[i]);
+				mosquitto__FREE(l_files[i]);
 			}
-			mosquitto__free(l_files);
+			mosquitto__FREE(l_files);
 			FindClose(fh);
 			return MOSQ_ERR_NOMEM;
 		}
@@ -116,9 +116,9 @@ int config__get_dir_files(const char *include_dir, char ***files, int *file_coun
 		l_files[l_file_count-1] = mosquitto__malloc(len+1);
 		if(!l_files[l_file_count-1]){
 			for(i=0; i<l_file_count-1; i++){
-				mosquitto__free(l_files[i]);
+				mosquitto__FREE(l_files[i]);
 			}
-			mosquitto__free(l_files);
+			mosquitto__FREE(l_files);
 			FindClose(fh);
 			return MOSQ_ERR_NOMEM;
 		}
@@ -147,7 +147,6 @@ int config__get_dir_files(const char *include_dir, char ***files, int *file_coun
 	int l_file_count = 0;
 	char **files_tmp;
 	size_t len;
-	int i;
 
 	DIR *dh;
 	struct dirent *de;
@@ -164,25 +163,11 @@ int config__get_dir_files(const char *include_dir, char ***files, int *file_coun
 
 				l_file_count++;
 				files_tmp = mosquitto__realloc(l_files, (size_t)l_file_count*sizeof(char *));
-				if(!files_tmp){
-					for(i=0; i<l_file_count-1; i++){
-						mosquitto__free(l_files[i]);
-					}
-					mosquitto__free(l_files);
-					closedir(dh);
-					return MOSQ_ERR_NOMEM;
-				}
+				if(!files_tmp) goto error;
 				l_files = files_tmp;
 
 				l_files[l_file_count-1] = mosquitto__malloc(len+1);
-				if(!l_files[l_file_count-1]){
-					for(i=0; i<l_file_count-1; i++){
-						mosquitto__free(l_files[i]);
-					}
-					mosquitto__free(l_files);
-					closedir(dh);
-					return MOSQ_ERR_NOMEM;
-				}
+				if(!l_files[l_file_count-1]) goto error;
 				snprintf(l_files[l_file_count-1], len, "%s/%s", include_dir, de->d_name);
 				l_files[l_file_count-1][len] = '\0';
 			}
@@ -197,6 +182,13 @@ int config__get_dir_files(const char *include_dir, char ***files, int *file_coun
 	*file_count = l_file_count;
 
 	return 0;
+error:
+	for(int i=0; i<l_file_count-1; i++){
+		mosquitto__FREE(l_files[i]);
+	}
+	mosquitto__FREE(l_files);
+	closedir(dh);
+	return MOSQ_ERR_NOMEM;
 }
 #endif
 

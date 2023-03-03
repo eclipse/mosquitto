@@ -372,6 +372,12 @@
 					<para>If username is not given, then no authentication is
 						attempted. If the port is not given, then the default
 						of 1080 is used.</para>
+					<para>
+						If the host is given as an IPv6 address, it must be enclosed in
+						square brackets, e.g. <option>socks5h://[::1]:1080</option>.
+						Note that square brackets have special meaning in some shells,
+						so the proxy url may need quoting in double or single quotes.
+					</para>
 					<para>More SOCKS versions may be available in the future,
 						depending on demand, and will use different protocol
 						prefixes as described in <citerefentry>

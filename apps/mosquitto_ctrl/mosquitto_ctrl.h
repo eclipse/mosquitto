@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2020-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -64,6 +64,7 @@ struct mosq_config {
 	char *socks5_username;
 	char *socks5_password;
 #endif
+	char *data_file;
 };
 
 struct mosq_ctrl {
@@ -86,7 +87,8 @@ int client_request_response(struct mosq_ctrl *ctrl);
 int client_opts_set(struct mosquitto *mosq, struct mosq_config *cfg);
 int client_connect(struct mosquitto *mosq, struct mosq_config *cfg);
 
-cJSON *cJSON_AddIntToObject(cJSON * const object, const char * const name, int number);
+void broker__print_usage(void);
+int broker__main(int argc, char *argv[], struct mosq_ctrl *ctrl);
 
 void dynsec__print_usage(void);
 int dynsec__main(int argc, char *argv[], struct mosq_ctrl *ctrl);
@@ -95,6 +97,7 @@ int dynsec_client__add_remove_role(int argc, char *argv[], cJSON *j_command, con
 int dynsec_client__create(int argc, char *argv[], cJSON *j_command);
 int dynsec_client__delete(int argc, char *argv[], cJSON *j_command);
 int dynsec_client__enable_disable(int argc, char *argv[], cJSON *j_command, const char *command);
+int dynsec_client__file_set_password(int argc, char *argv[], const char *file);
 int dynsec_client__get(int argc, char *argv[], cJSON *j_command);
 int dynsec_client__list_all(int argc, char *argv[], cJSON *j_command);
 int dynsec_client__set_id(int argc, char *argv[], cJSON *j_command);

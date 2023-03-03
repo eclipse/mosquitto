@@ -1,11 +1,20 @@
-include ../config.mk
+R=..
+include ${R}/config.mk
+
+ifneq ($(UNAME),SunOS)
+	LOCAL_LDFLAGS:=-Wl,--version-script=linker.version -Wl,-soname,libmosquitto.so.$(SOVERSION)
+endif
 
 .PHONY : really clean install
 
 MOSQ_OBJS=mosquitto.o \
-		  actions.o \
+		  actions_publish.o \
+		  actions_subscribe.o \
+		  actions_unsubscribe.o \
+		  alias_mosq.o \
 		  callbacks.o \
 		  connect.o \
+		  base64_mosq.o \
 		  handle_auth.o \
 		  handle_connack.o \
 		  handle_disconnect.o \
@@ -17,6 +26,7 @@ MOSQ_OBJS=mosquitto.o \
 		  handle_suback.o \
 		  handle_unsuback.o \
 		  helpers.o \
+		  http_client.o \
 		  logging_mosq.o \
 		  loop.o \
 		  memory_mosq.o \
@@ -24,7 +34,9 @@ MOSQ_OBJS=mosquitto.o \
 		  misc_mosq.o \
 		  net_mosq_ocsp.o \
 		  net_mosq.o \
+		  net_ws.o \
 		  options.o \
+		  password_mosq.o \
 		  packet_datatypes.o \
 		  packet_mosq.o \
 		  property_mosq.o \
@@ -45,6 +57,10 @@ MOSQ_OBJS=mosquitto.o \
 		  util_mosq.o \
 		  util_topic.o \
 		  will_mosq.o
+
+ifeq ($(WITH_WEBSOCKETS),yes)
+	MOSQ_OBJS+=${R}/deps/picohttpparser/picohttpparser.o
+endif
 
 ALL_DEPS:=
 
@@ -71,10 +87,10 @@ ifeq ($(WITH_STATIC_LIBRARIES),yes)
 	$(INSTALL) ${STRIP_OPTS} libmosquitto.a "${DESTDIR}${libdir}/libmosquitto.a"
 endif
 	$(INSTALL) -d "${DESTDIR}${incdir}/"
-	$(INSTALL) ../include/mosquitto.h "${DESTDIR}${incdir}/mosquitto.h"
-	$(INSTALL) ../include/mqtt_protocol.h "${DESTDIR}${incdir}/mqtt_protocol.h"
+	$(INSTALL) ${R}/include/mosquitto.h "${DESTDIR}${incdir}/mosquitto.h"
+	$(INSTALL) ${R}/include/mqtt_protocol.h "${DESTDIR}${incdir}/mqtt_protocol.h"
 	$(INSTALL) -d "${DESTDIR}${libdir}/pkgconfig"
-	$(INSTALL) -m644 ../libmosquitto.pc.in "${DESTDIR}${libdir}/pkgconfig/libmosquitto.pc"
+	$(INSTALL) -m644 ${R}/libmosquitto.pc.in "${DESTDIR}${libdir}/pkgconfig/libmosquitto.pc"
 	sed ${SEDINPLACE} -e "s#@CMAKE_INSTALL_PREFIX@#${prefix}#" -e "s#@VERSION@#${VERSION}#" "${DESTDIR}${libdir}/pkgconfig/libmosquitto.pc"
 ifeq ($(WITH_SHARED_LIBRARIES),yes)
 	$(MAKE) -C cpp install
@@ -89,25 +105,37 @@ uninstall :
 reallyclean : clean
 
 clean :
-	-rm -f *.o libmosquitto.so.${SOVERSION} libmosquitto.so libmosquitto.a *.gcno *.gcda
+	-rm -f ${MOSQ_OBJS} libmosquitto.so.${SOVERSION} libmosquitto.so libmosquitto.a *.gcno *.gcda
 	$(MAKE) -C cpp clean
 
 libmosquitto.so.${SOVERSION} : ${MOSQ_OBJS}
-	${CROSS_COMPILE}$(CC) -shared $(LIB_LDFLAGS) $^ -o $@ ${LIB_LIBADD}
+	${CROSS_COMPILE}$(CC) -shared $(LIB_LDFLAGS) $(LOCAL_LDFLAGS) $^ -o $@ ${LIB_LIBADD}
 
 libmosquitto.a : ${MOSQ_OBJS}
 	${CROSS_COMPILE}$(AR) cr $@ $^
 
-mosquitto.o : mosquitto.c ../include/mosquitto.h mosquitto_internal.h
+mosquitto.o : mosquitto.c ${R}/include/mosquitto.h mosquitto_internal.h
 	${CROSS_COMPILE}$(CC) $(LIB_CPPFLAGS) $(LIB_CFLAGS) -c $< -o $@
 
-actions.o : actions.c ../include/mosquitto.h mosquitto_internal.h
+actions_publish.o : actions_publish.c ${R}/include/mosquitto.h mosquitto_internal.h
 	${CROSS_COMPILE}$(CC) $(LIB_CPPFLAGS) $(LIB_CFLAGS) -c $< -o $@
 
-callbacks.o : callbacks.c ../include/mosquitto.h mosquitto_internal.h
+actions_subscribe.o : actions_subscribe.c ${R}/include/mosquitto.h mosquitto_internal.h
 	${CROSS_COMPILE}$(CC) $(LIB_CPPFLAGS) $(LIB_CFLAGS) -c $< -o $@
 
-connect.o : connect.c ../include/mosquitto.h mosquitto_internal.h
+actions_unsubscribe.o : actions_unsubscribe.c ${R}/include/mosquitto.h mosquitto_internal.h
+	${CROSS_COMPILE}$(CC) $(LIB_CPPFLAGS) $(LIB_CFLAGS) -c $< -o $@
+
+alias_mosq.o : alias_mosq.c alias_mosq.h ${R}/include/mosquitto.h mosquitto_internal.h
+	${CROSS_COMPILE}$(CC) $(LIB_CPPFLAGS) $(LIB_CFLAGS) -c $< -o $@
+
+callbacks.o : callbacks.c ${R}/include/mosquitto.h mosquitto_internal.h
+	${CROSS_COMPILE}$(CC) $(LIB_CPPFLAGS) $(LIB_CFLAGS) -c $< -o $@
+
+base64_mosq.o : ${R}/common/base64_mosq.c ${R}/common/base64_mosq.h
+	${CROSS_COMPILE}$(CC) $(LIB_CPPFLAGS) $(LIB_CFLAGS) -c $< -o $@
+
+connect.o : connect.c ${R}/include/mosquitto.h mosquitto_internal.h
 	${CROSS_COMPILE}$(CC) $(LIB_CPPFLAGS) $(LIB_CFLAGS) -c $< -o $@
 
 handle_auth.o : handle_auth.c read_handle.h
@@ -143,10 +171,13 @@ handle_unsuback.o : handle_unsuback.c read_handle.h
 helpers.o : helpers.c
 	${CROSS_COMPILE}$(CC) $(LIB_CPPFLAGS) $(LIB_CFLAGS) -c $< -o $@
 
+http_client.o : http_client.c http_client.h mosquitto_internal.h
+	${CROSS_COMPILE}$(CC) $(LIB_CPPFLAGS) $(LIB_CFLAGS) -c $< -o $@
+
 logging_mosq.o : logging_mosq.c logging_mosq.h
 	${CROSS_COMPILE}$(CC) $(LIB_CPPFLAGS) $(LIB_CFLAGS) -c $< -o $@
 
-loop.o : loop.c ../include/mosquitto.h mosquitto_internal.h
+loop.o : loop.c ${R}/include/mosquitto.h mosquitto_internal.h
 	${CROSS_COMPILE}$(CC) $(LIB_CPPFLAGS) $(LIB_CFLAGS) -c $< -o $@
 
 messages_mosq.o : messages_mosq.c messages_mosq.h
@@ -155,7 +186,7 @@ messages_mosq.o : messages_mosq.c messages_mosq.h
 memory_mosq.o : memory_mosq.c memory_mosq.h
 	${CROSS_COMPILE}$(CC) $(LIB_CPPFLAGS) $(LIB_CFLAGS) -c $< -o $@
 
-misc_mosq.o : misc_mosq.c misc_mosq.h
+misc_mosq.o : ${R}/common/misc_mosq.c ${R}/common/misc_mosq.h
 	${CROSS_COMPILE}$(CC) $(LIB_CPPFLAGS) $(LIB_CFLAGS) -c $< -o $@
 
 net_mosq_ocsp.o : net_mosq_ocsp.c net_mosq.h
@@ -164,7 +195,16 @@ net_mosq_ocsp.o : net_mosq_ocsp.c net_mosq.h
 net_mosq.o : net_mosq.c net_mosq.h
 	${CROSS_COMPILE}$(CC) $(LIB_CPPFLAGS) $(LIB_CFLAGS) -c $< -o $@
 
-options.o : options.c ../include/mosquitto.h mosquitto_internal.h
+password_mosq.o : ${R}/common/password_mosq.c net_mosq.h
+	${CROSS_COMPILE}$(CC) $(LIB_CPPFLAGS) $(LIB_CFLAGS) -c $< -o $@
+
+${R}/deps/picohttpparser/picohttpparser.o : ${R}/deps/picohttpparser/picohttpparser.c ${R}/deps/picohttpparser/picohttpparser.h
+	${CROSS_COMPILE}${CC} $(LIB_CPPFLAGS) $(LIB_CFLAGS) -c $< -o $@
+
+net_ws.o : net_ws.c net_mosq.h
+	${CROSS_COMPILE}$(CC) $(LIB_CPPFLAGS) $(LIB_CFLAGS) -c $< -o $@
+
+options.o : options.c ${R}/include/mosquitto.h mosquitto_internal.h
 	${CROSS_COMPILE}$(CC) $(LIB_CPPFLAGS) $(LIB_CFLAGS) -c $< -o $@
 
 packet_datatypes.o : packet_datatypes.c packet_mosq.h
@@ -209,7 +249,7 @@ strings_mosq.o : strings_mosq.c
 thread_mosq.o : thread_mosq.c
 	${CROSS_COMPILE}$(CC) $(LIB_CPPFLAGS) $(LIB_CFLAGS) -c $< -o $@
 
-time_mosq.o : time_mosq.c
+time_mosq.o : ${R}/common/time_mosq.c ${R}/common/time_mosq.h
 	${CROSS_COMPILE}$(CC) $(LIB_CPPFLAGS) $(LIB_CFLAGS) -c $< -o $@
 
 tls_mosq.o : tls_mosq.c

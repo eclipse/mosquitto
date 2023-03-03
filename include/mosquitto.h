@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2010-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2010-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -64,9 +64,11 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 
+#include <mqtt_protocol.h>
+
 #define LIBMOSQUITTO_MAJOR 2
-#define LIBMOSQUITTO_MINOR 0
-#define LIBMOSQUITTO_REVISION 15
+#define LIBMOSQUITTO_MINOR 1
+#define LIBMOSQUITTO_REVISION 0
 /* LIBMOSQUITTO_VERSION_NUMBER looks like 1002001 for e.g. version 1.2.1. */
 #define LIBMOSQUITTO_VERSION_NUMBER (LIBMOSQUITTO_MAJOR*1000000+LIBMOSQUITTO_MINOR*1000+LIBMOSQUITTO_REVISION)
 
@@ -86,6 +88,8 @@ extern "C" {
 /* Enum: mosq_err_t
  * Integer values returned from many libmosquitto functions. */
 enum mosq_err_t {
+	MOSQ_ERR_QUOTA_EXCEEDED = -6,
+	MOSQ_ERR_AUTH_DELAYED = -5,
 	MOSQ_ERR_AUTH_CONTINUE = -4,
 	MOSQ_ERR_NO_SUBSCRIBERS = -3,
 	MOSQ_ERR_SUB_EXISTS = -2,
@@ -118,10 +122,26 @@ enum mosq_err_t {
 	MOSQ_ERR_OVERSIZE_PACKET = 25,
 	MOSQ_ERR_OCSP = 26,
 	MOSQ_ERR_TIMEOUT = 27,
-	MOSQ_ERR_RETAIN_NOT_SUPPORTED = 28,
-	MOSQ_ERR_TOPIC_ALIAS_INVALID = 29,
-	MOSQ_ERR_ADMINISTRATIVE_ACTION = 30,
+	/* 28, 29, 30 - was internal only, moved to MQTT v5 section. */
 	MOSQ_ERR_ALREADY_EXISTS = 31,
+	MOSQ_ERR_PLUGIN_IGNORE = 32,
+	MOSQ_ERR_HTTP_BAD_ORIGIN = 33,
+
+	/* MQTT v5 direct equivalents 128-255 */
+	MOSQ_ERR_UNSPECIFIED = 128,
+	MOSQ_ERR_IMPLEMENTATION_SPECIFIC = 131,
+	MOSQ_ERR_CLIENT_IDENTIFIER_NOT_VALID = 133,
+	MOSQ_ERR_BAD_USERNAME_OR_PASSWORD = 134,
+	MOSQ_ERR_SERVER_UNAVAILABLE = 136,
+	MOSQ_ERR_SERVER_BUSY = 137,
+	MOSQ_ERR_BANNED = 138,
+	MOSQ_ERR_BAD_AUTHENTICATION_METHOD = 140,
+	MOSQ_ERR_SESSION_TAKEN_OVER = 142,
+	MOSQ_ERR_RECEIVE_MAXIMUM_EXCEEDED = 147,
+	MOSQ_ERR_TOPIC_ALIAS_INVALID = 148,
+	MOSQ_ERR_ADMINISTRATIVE_ACTION = 152,
+	MOSQ_ERR_RETAIN_NOT_SUPPORTED = 154,
+	MOSQ_ERR_CONNECTION_RATE_EXCEEDED = 159,
 };
 
 /* Enum: mosq_opt_t
@@ -144,8 +164,16 @@ enum mosq_opt_t {
 	MOSQ_OPT_TCP_NODELAY = 11,
 	MOSQ_OPT_BIND_ADDRESS = 12,
 	MOSQ_OPT_TLS_USE_OS_CERTS = 13,
+	MOSQ_OPT_DISABLE_SOCKETPAIR = 14,
+	MOSQ_OPT_TRANSPORT = 15,
+	MOSQ_OPT_HTTP_PATH = 16,
+	MOSQ_OPT_HTTP_HEADER_SIZE = 17,
 };
 
+enum mosq_transport_t {
+	MOSQ_T_TCP = 1,
+	MOSQ_T_WEBSOCKETS = 2,
+};
 
 /* MQTT specification restricts client ids to a maximum of 23 characters */
 #define MOSQ_MQTT_ID_MAX_LENGTH 23
@@ -183,6 +211,16 @@ struct mosquitto_message{
 
 struct mosquitto;
 typedef struct mqtt5__property mosquitto_property;
+
+struct mosquitto_message_v5{
+	void *payload;
+	char *topic;
+	mosquitto_property *properties;
+	uint32_t payloadlen;
+	uint8_t qos;
+	bool retain;
+	uint8_t padding[2];
+};
 
 /*
  * Topic: Threads
@@ -947,7 +985,7 @@ libmosq_EXPORT int mosquitto_publish_v5(
  *	       the message id of this particular message. This can be then used
  *	       with the subscribe callback to determine when the message has been
  *	       sent.
- *	sub -  the subscription pattern.
+ *	sub -  the subscription pattern - must not be NULL or an empty string.
  *	qos -  the requested Quality of Service for this subscription.
  *
  * Returns:
@@ -984,7 +1022,7 @@ libmosq_EXPORT int mosquitto_subscribe(struct mosquitto *mosq, int *mid, const c
  *	       the message id of this particular message. This can be then used
  *	       with the subscribe callback to determine when the message has been
  *	       sent.
- *	sub -  the subscription pattern.
+ *	sub -  the subscription pattern - must not be NULL or an empty string.
  *	qos -  the requested Quality of Service for this subscription.
  *	options - options to apply to this subscription, OR'd together. Set to 0 to
  *	          use the default options, otherwise choose from list of <mqtt5_sub_options>
@@ -1020,6 +1058,7 @@ libmosq_EXPORT int mosquitto_subscribe_v5(struct mosquitto *mosq, int *mid, cons
  *	       pointers nor the strings that they point to are mutable. If you aren't
  *	       familiar with this, just think of it as a safer "char **",
  *	       equivalent to "const char *" for a simple string pointer.
+ *	       Each string must not be NULL or an empty string.
  *	qos -  the requested Quality of Service for each subscription.
  *	options - options to apply to this subscription, OR'd together. This
  *	          argument is not used for MQTT v3 susbcriptions. Set to 0 to use
@@ -1049,7 +1088,7 @@ libmosq_EXPORT int mosquitto_subscribe_multiple(struct mosquitto *mosq, int *mid
  *	       the message id of this particular message. This can be then used
  *	       with the unsubscribe callback to determine when the message has been
  *	       sent.
- *	sub -  the unsubscription pattern.
+ *	sub -  the unsubscription pattern - must not by NULL or an empty string.
  *
  * Returns:
  *	MOSQ_ERR_SUCCESS -        on success.
@@ -1089,7 +1128,7 @@ libmosq_EXPORT int mosquitto_unsubscribe(struct mosquitto *mosq, int *mid, const
  *	       the message id of this particular message. This can be then used
  *	       with the unsubscribe callback to determine when the message has been
  *	       sent.
- *	sub -  the unsubscription pattern.
+ *	sub -  the unsubscription pattern - must not by NULL or an empty string.
  * 	properties - a valid mosquitto_property list, or NULL. Only used with MQTT
  * 	             v5 clients.
  *
@@ -1123,6 +1162,7 @@ libmosq_EXPORT int mosquitto_unsubscribe_v5(struct mosquitto *mosq, int *mid, co
  *	       pointers nor the strings that they point to are mutable. If you aren't
  *	       familiar with this, just think of it as a safer "char **",
  *	       equivalent to "const char *" for a simple string pointer.
+ *	       Each sub must not be NULL or an empty string.
  * 	properties - a valid mosquitto_property list, or NULL. Only used with MQTT
  * 	             v5 clients.
  *
@@ -1572,6 +1612,25 @@ libmosq_EXPORT int mosquitto_opts_set(struct mosquitto *mosq, enum mosq_opt_t op
  *	MOSQ_OPT_TLS_USE_OS_CERTS - Set to 1 to instruct the client to load and
  *	          trust OS provided CA certificates for use with TLS connections.
  *	          Set to 0 (the default) to only use manually specified CA certs.
+ *
+ *	MOSQ_OPT_DISABLE_SOCKETPAIR - By default, each client connected will create
+ *            an internal pair of connected sockets to allow the network thread
+ *            to be notified and woken up if another thread calls
+ *            <mosquitto_publish> or other similar command. If you are
+ *            operating with an external loop, this is not necessary and
+ *            consumes an extra two sockets per client. Set this option to 1 to
+ *            disable the use of the socket pair.
+ *
+ *	MOSQ_OPT_TRANSPORT - Have the client connect with either MQTT over TCP as
+ *	          normal, or MQTT over WebSockets. Set the value to MOSQ_T_TCP or
+ *	          MOSQ_T_WEBSOCKETS.
+ *
+ *	MOSQ_OPT_HTTP_HEADER_SIZE - Size the size of buffer that will be allocated
+ *	          to store the incoming HTTP header when using Websocket transport.
+ *	          Defaults to 4096. Setting to below 100 will result in a return
+*	          value of MOSQ_ERR_INVAL. This should be set before starting the
+*	          connection. If you try to set this when the initial http request
+*	          is underway then it will return MOSQ_ERR_INVAL.
  */
 libmosq_EXPORT int mosquitto_int_option(struct mosquitto *mosq, enum mosq_opt_t option, int value);
 
@@ -1927,6 +1986,9 @@ libmosq_EXPORT void *mosquitto_ssl_get(struct mosquitto *mosq);
  *        the MQTT protocol version in use.
  *        For MQTT v5.0, look at section 3.2.2.2 Connect Reason code: https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html
  *        For MQTT v3.1.1, look at section 3.2.2.3 Connect Return code: http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/mqtt-v3.1.1.html
+ *
+ * See Also:
+ *  <mosquitto_pre_connect_callback_set>
  */
 libmosq_EXPORT void mosquitto_connect_callback_set(struct mosquitto *mosq, void (*on_connect)(struct mosquitto *, void *, int));
 
@@ -1949,6 +2011,9 @@ libmosq_EXPORT void mosquitto_connect_callback_set(struct mosquitto *mosq, void 
  *        For MQTT v5.0, look at section 3.2.2.2 Connect Reason code: https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html
  *        For MQTT v3.1.1, look at section 3.2.2.3 Connect Return code: http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/mqtt-v3.1.1.html
  *  flags - the connect flags.
+ *
+ * See Also:
+ *  <mosquitto_pre_connect_callback_set>
  */
 libmosq_EXPORT void mosquitto_connect_with_flags_callback_set(struct mosquitto *mosq, void (*on_connect)(struct mosquitto *, void *, int, int));
 
@@ -1977,8 +2042,29 @@ libmosq_EXPORT void mosquitto_connect_with_flags_callback_set(struct mosquitto *
  *  flags - the connect flags.
  *  props - list of MQTT 5 properties, or NULL
  *
+ * See Also:
+ *  <mosquitto_pre_connect_callback_set>
  */
 libmosq_EXPORT void mosquitto_connect_v5_callback_set(struct mosquitto *mosq, void (*on_connect)(struct mosquitto *, void *, int, int, const mosquitto_property *props));
+
+/*
+ * Function: mosquitto_pre_connect_callback_set
+ *
+ * Set the pre-connect callback. The pre-connect callback is called just before an attempt is made to connect to the broker. This may be useful if you are using <mosquitto_loop_start>, or
+ * <mosquitto_loop_forever>, because when your client disconnects the library
+ * will by default automatically reconnect. Using the pre-connect callback
+ * allows you to set usernames, passwords, and TLS related parameters.
+ *
+ * Parameters:
+ *  mosq -           a valid mosquitto instance.
+ *  on_pre_connect - a callback function in the following form:
+ *                   void callback(struct mosquitto *mosq, void *obj)
+ *
+ * Callback Parameters:
+ *  mosq - the mosquitto instance making the callback.
+ *  obj - the user data provided in <mosquitto_new>
+ */
+libmosq_EXPORT void mosquitto_pre_connect_callback_set(struct mosquitto *mosq, void (*on_pre_connect)(struct mosquitto *, void *));
 
 /*
  * Function: mosquitto_disconnect_callback_set
@@ -2215,7 +2301,7 @@ libmosq_EXPORT void mosquitto_unsubscribe_callback_set(struct mosquitto *mosq, v
  * Parameters:
  *  mosq -           a valid mosquitto instance.
  *  on_unsubscribe - a callback function in the following form:
- *                   void callback(struct mosquitto *mosq, void *obj, int mid)
+ *                   void callback(struct mosquitto *mosq, void *obj, int mid, const mosquitto_property *props)
  *
  * Callback Parameters:
  *  mosq - the mosquitto instance making the callback.
@@ -2224,6 +2310,34 @@ libmosq_EXPORT void mosquitto_unsubscribe_callback_set(struct mosquitto *mosq, v
  *  props - list of MQTT 5 properties, or NULL
  */
 libmosq_EXPORT void mosquitto_unsubscribe_v5_callback_set(struct mosquitto *mosq, void (*on_unsubscribe)(struct mosquitto *, void *, int, const mosquitto_property *props));
+
+/*
+ * Function: mosquitto_unsubscribe2_v5_callback_set
+ *
+ * Set the unsubscribe callback. This is called when the library receives a
+ * UNSUBACK message in response to an UNSUBSCRIBE.
+ *
+ * It is valid to set this callback for all MQTT protocol versions. If it is
+ * used with MQTT clients that use MQTT v3.1.1 or earlier, then the `props`
+ * argument will always be NULL.
+ *
+ * Parameters:
+ *  mosq -           a valid mosquitto instance.
+ *  on_unsubscribe - a callback function in the following form:
+ *                   void callback(struct mosquitto *mosq, void *obj, int mid,
+ *                   int reason_code_count, const int *reason_codes, const mosquitto_property *props)
+ *
+ * Callback Parameters:
+ *  mosq -              the mosquitto instance making the callback.
+ *  obj -               the user data provided in <mosquitto_new>
+ *  mid -               the message id of the unsubscribe message.
+ *  reason_code_count - the count of reason code responses
+ *  reason_codes -      an array of integers indicating the reason codes for each of
+ *                      the unsubscription requests.
+ *  mid -               the message id of the unsubscribe message.
+ *  props -             list of MQTT 5 properties, or NULL
+ */
+libmosq_EXPORT void mosquitto_unsubscribe2_v5_callback_set(struct mosquitto *mosq, void (*on_unsubscribe)(struct mosquitto *, void *, int, int, const int *, const mosquitto_property *props));
 
 /*
  * Function: mosquitto_log_callback_set
@@ -2434,35 +2548,117 @@ libmosq_EXPORT int mosquitto_sub_topic_tokens_free(char ***topics, int count);
  * Returns:
  *	MOSQ_ERR_SUCCESS - on success
  * 	MOSQ_ERR_INVAL -   if the input parameters were invalid.
- * 	MOSQ_ERR_NOMEM -   if an out of memory condition occurred.
  */
 libmosq_EXPORT int mosquitto_topic_matches_sub(const char *sub, const char *topic, bool *result);
-
 
 /*
  * Function: mosquitto_topic_matches_sub2
  *
- * Check whether a topic matches a subscription.
+ * Identical to <mosquitto_topic_matches_sub>. The sublen and topiclen
+ * parameters are *IGNORED*.
+ */
+libmosq_EXPORT int mosquitto_topic_matches_sub2(const char *sub, size_t sublen, const char *topic, size_t topiclen, bool *result);
+
+
+/*
+ * Function: mosquitto_topic_matches_sub_with_pattern
+ *
+ * Check whether a topic matches a subscription, with client id/username
+ * pattern substitution.
+ *
+ * Any instances of a subscriptions hierarchy that are exactly %c or %u will be
+ * replaced with the client id or username respectively.
  *
  * For example:
  *
- * foo/bar would match the subscription foo/# or +/bar
- * non/matching would not match the subscription non/+/+
+ * mosquitto_topic_matches_sub_with_pattern("sensors/%c/temperature", "sensors/kitchen/temperature", "kitchen", NULL, &result)
+ * -> this will match
+ *
+ * mosquitto_topic_matches_sub_with_pattern("sensors/%c/temperature", "sensors/bathroom/temperature", "kitchen", NULL, &result)
+ * -> this will not match
+ *
+ * mosquitto_topic_matches_sub_with_pattern("sensors/%count/temperature", "sensors/kitchen/temperature", "kitchen", NULL, &result)
+ * -> this will not match - the `%count` is not treated as a pattern
+ *
+ * mosquitto_topic_matches_sub_with_pattern("%c/%c/%u/%u", "kitchen/kitchen/bathroom/bathroom", "kitchen", "bathroom", &result)
+ * -> this will match
  *
  * Parameters:
  *	sub - subscription string to check topic against.
- *	sublen - length in bytes of sub string
  *	topic - topic to check.
- *	topiclen - length in bytes of topic string
+ *	clientid - client id to substitute in patterns. If NULL, then any %c patterns will not match.
+ *	username - username to substitute in patterns. If NULL, then any %u patterns will not match.
  *	result - bool pointer to hold result. Will be set to true if the topic
  *	         matches the subscription.
  *
  * Returns:
  *	MOSQ_ERR_SUCCESS - on success
  *	MOSQ_ERR_INVAL -   if the input parameters were invalid.
- *	MOSQ_ERR_NOMEM -   if an out of memory condition occurred.
  */
-libmosq_EXPORT int mosquitto_topic_matches_sub2(const char *sub, size_t sublen, const char *topic, size_t topiclen, bool *result);
+libmosq_EXPORT int mosquitto_topic_matches_sub_with_pattern(const char *sub, const char *topic, const char *clientid, const char *username, bool *result);
+
+
+/*
+ * Function: mosquitto_sub_matches_acl
+ *
+ * Check whether a subscription matches an ACL topic filter
+ *
+ * For example:
+ *
+ * The subscription $SYS/broker/# would match against the ACL $SYS/#
+ * The subscription $SYS/broker/# would not match against the ACL $SYS/broker/uptime
+ *
+ * Parameters:
+ *	acl - topic filter string to check sub against.
+ *	sub - subscription topic to check.
+ *	result - bool pointer to hold result. Will be set to true if the subscription
+ *	         matches the acl.
+ *
+ * Returns:
+ *	MOSQ_ERR_SUCCESS - on success
+ * 	MOSQ_ERR_INVAL -   if the input parameters were invalid.
+ */
+libmosq_EXPORT int mosquitto_sub_matches_acl(const char *acl, const char *sub, bool *result);
+
+
+/*
+ * Function: mosquitto_sub_matches_acl_with_pattern
+ *
+ * Check whether a subscription (a topic filter with wildcards) matches an ACL
+ * (a topic filter with wildcards) , with client id/username pattern
+ * substitution.
+ *
+ * Any instances of an ACL hierarchy that are exactly %c or %u will be
+ * replaced with the client id or username respectively.
+ *
+ * For example:
+ *
+ * mosquitto_sub_matches_acl_with_pattern("sensors/%c/+", "sensors/kitchen/temperature", "kitchen", NULL, &result)
+ * -> this will match
+ *
+ * mosquitto_sub_matches_acl_with_pattern("sensors/%c/+", "sensors/bathroom/temperature", "kitchen", NULL, &result)
+ * -> this will not match
+ *
+ * mosquitto_sub_matches_acl_with_pattern("sensors/%count/+", "sensors/kitchen/temperature", "kitchen", NULL, &result)
+ * -> this will not match - the `%count` is not treated as a pattern
+ *
+ * mosquitto_sub_matches_acl_with_pattern("%c/%c/%u/+", "kitchen/kitchen/bathroom/bathroom", "kitchen", "bathroom", &result)
+ * -> this will match
+ *
+ * Parameters:
+ *	acl - ACL topic filter string to check sub against.
+ *	sub - subscription to check.
+ *	clientid - client id to substitute in patterns. If NULL, then any %c patterns will not match.
+ *	username - username to substitute in patterns. If NULL, then any %u patterns will not match.
+ *	result - bool pointer to hold result. Will be set to true if the subscription
+ *	         matches the ACL.
+ *
+ * Returns:
+ *	MOSQ_ERR_SUCCESS - on success
+ *	MOSQ_ERR_INVAL -   if the input parameters were invalid.
+ */
+libmosq_EXPORT int mosquitto_sub_matches_acl_with_pattern(const char *acl, const char *sub, const char *clientid, const char *username, bool *result);
+
 
 /*
  * Function: mosquitto_pub_topic_check
@@ -2643,7 +2839,7 @@ struct libmosquitto_tls {
  *   qos - the qos to use for the subscription.
  *   host - the broker to connect to.
  *   port - the network port the broker is listening on.
- *   client_id - the client id to use, or NULL if a random client id should be
+ *   clientid - the client id to use, or NULL if a random client id should be
  *               generated.
  *   keepalive - the MQTT keepalive value.
  *   clean_session - the MQTT clean session flag.
@@ -2667,7 +2863,7 @@ libmosq_EXPORT int mosquitto_subscribe_simple(
 		int qos,
 		const char *host,
 		int port,
-		const char *client_id,
+		const char *clientid,
 		int keepalive,
 		bool clean_session,
 		const char *username,
@@ -2696,7 +2892,7 @@ libmosq_EXPORT int mosquitto_subscribe_simple(
  *   qos - the qos to use for the subscription.
  *   host - the broker to connect to.
  *   port - the network port the broker is listening on.
- *   client_id - the client id to use, or NULL if a random client id should be
+ *   clientid - the client id to use, or NULL if a random client id should be
  *               generated.
  *   keepalive - the MQTT keepalive value.
  *   clean_session - the MQTT clean session flag.
@@ -2719,7 +2915,7 @@ libmosq_EXPORT int mosquitto_subscribe_callback(
 		int qos,
 		const char *host,
 		int port,
-		const char *client_id,
+		const char *clientid,
 		int keepalive,
 		bool clean_session,
 		const char *username,
@@ -2910,6 +3106,23 @@ libmosq_EXPORT int mosquitto_property_add_string_pair(mosquitto_property **propl
 
 
 /*
+ * Function: mosquitto_property_remove
+ *
+ * Remove a property from a property list. The property will not be freed.
+ *
+ * Parameters:
+ *	proplist - pointer to mosquitto_property pointer, the list of properties
+ *	property - pointer to the property to remove
+ *
+ * Returns:
+ *	MOSQ_ERR_SUCCESS - on success
+ *	MOSQ_ERR_INVAL - if proplist is NULL or property is NULL
+ *	MOSQ_ERR_NOT_FOUND - if the property was not found
+ */
+libmosq_EXPORT int mosquitto_property_remove(mosquitto_property **proplist, const mosquitto_property *property);
+
+
+/*
  * Function: mosquitto_property_identifier
  *
  * Return the property identifier for a single property.
@@ -3079,6 +3292,7 @@ libmosq_EXPORT const mosquitto_property *mosquitto_property_read_varint(
  *	property - property to read
  *	identifier - property identifier (e.g. MQTT_PROP_PAYLOAD_FORMAT_INDICATOR)
  *	value - pointer to store the value, or NULL if the value is not required.
+ *	        Will be set to NULL if the value has zero length.
  *	skip_first - boolean that indicates whether the first item in the list
  *	             should be ignored or not. Should usually be set to false.
  *
@@ -3108,6 +3322,7 @@ libmosq_EXPORT const mosquitto_property *mosquitto_property_read_binary(
  *	identifier - property identifier (e.g. MQTT_PROP_PAYLOAD_FORMAT_INDICATOR)
  *	value - pointer to char*, for the property data to be stored in, or NULL if
  *	        the value is not required.
+ *	        Will be set to NULL if the value has zero length.
  *	skip_first - boolean that indicates whether the first item in the list
  *	             should be ignored or not. Should usually be set to false.
  *
@@ -3136,8 +3351,10 @@ libmosq_EXPORT const mosquitto_property *mosquitto_property_read_string(
  *	identifier - property identifier (e.g. MQTT_PROP_PAYLOAD_FORMAT_INDICATOR)
  *	name - pointer to char* for the name property data to be stored in, or NULL
  *	       if the name is not required.
+ *	       Will be set to NULL if the name has zero length.
  *	value - pointer to char*, for the property data to be stored in, or NULL if
  *	        the value is not required.
+ *	        Will be set to NULL if the value has zero length.
  *	skip_first - boolean that indicates whether the first item in the list
  *	             should be ignored or not. Should usually be set to false.
  *

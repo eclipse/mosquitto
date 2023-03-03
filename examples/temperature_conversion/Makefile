@@ -1,5 +1,6 @@
-CFLAGS=-Wall -ggdb -I../../lib -I../../lib/cpp
-LDFLAGS=-L../../lib ../../lib/cpp/libmosquittopp.so.1 ../../lib/libmosquitto.so.1
+R=../..
+CFLAGS=-Wall -ggdb -I${R}/lib -I${R}/lib/cpp
+LDFLAGS=-L${R}/lib ${R}/lib/cpp/libmosquittopp.so.1 ${R}/lib/libmosquitto.so.1
 
 .PHONY: all clean
 

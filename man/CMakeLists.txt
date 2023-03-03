@@ -14,17 +14,17 @@ if(NOT WIN32)
 			add_custom_target(${page} ALL DEPENDS ${PROJECT_SOURCE_DIR}/man/${page})
 		endfunction()
 
+		compile_manpage("libmosquitto.3")
+		compile_manpage("mosquitto-tls.7")
+		compile_manpage("mosquitto.8")
+		compile_manpage("mosquitto.conf.5")
 		compile_manpage("mosquitto_ctrl.1")
 		compile_manpage("mosquitto_ctrl_dynsec.1")
 		compile_manpage("mosquitto_passwd.1")
 		compile_manpage("mosquitto_pub.1")
-		compile_manpage("mosquitto_sub.1")
 		compile_manpage("mosquitto_rr.1")
-		compile_manpage("libmosquitto.3")
-		compile_manpage("mosquitto.conf.5")
-		compile_manpage("mosquitto-tls.7")
+		compile_manpage("mosquitto_sub.1")
 		compile_manpage("mqtt.7")
-		compile_manpage("mosquitto.8")
 	else()
 		message(FATAL_ERROR "xsltproc not found: manpages cannot be built")
 	endif()
@@ -36,12 +36,12 @@ install(FILES
 	mosquitto_ctrl_dynsec.1
 	mosquitto_passwd.1
 	mosquitto_pub.1
-	mosquitto_sub.1
 	mosquitto_rr.1
-	DESTINATION ${CMAKE_INSTALL_MANDIR}/man1
+	mosquitto_sub.1
+	DESTINATION "${CMAKE_INSTALL_MANDIR}/man1"
 	OPTIONAL)
 
-install(FILES libmosquitto.3 DESTINATION ${CMAKE_INSTALL_MANDIR}/man3 OPTIONAL)
-install(FILES mosquitto.conf.5 DESTINATION ${CMAKE_INSTALL_MANDIR}/man5 OPTIONAL)
-install(FILES mosquitto-tls.7 mqtt.7 DESTINATION ${CMAKE_INSTALL_MANDIR}/man7 OPTIONAL)
-install(FILES mosquitto.8 DESTINATION ${CMAKE_INSTALL_MANDIR}/man8 OPTIONAL)
+install(FILES libmosquitto.3 DESTINATION "${CMAKE_INSTALL_MANDIR}/man3" OPTIONAL)
+install(FILES mosquitto.conf.5 DESTINATION "${CMAKE_INSTALL_MANDIR}/man5" OPTIONAL)
+install(FILES mosquitto-tls.7 mqtt.7 DESTINATION "${CMAKE_INSTALL_MANDIR}/man7" OPTIONAL)
+install(FILES mosquitto.8 DESTINATION "${CMAKE_INSTALL_MANDIR}/man8" OPTIONAL)

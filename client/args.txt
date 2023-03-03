@@ -27,7 +27,7 @@ m - PUB,RR         (message input)
 N - RR,SUB         (no end of line)
 n - PUB,RR         (null message)
 O
-o - CTRL           (options file)
+o - CTRL,PUB,RR,SUB (options file)
 P - PUB,RR,SUB     (password)
 p - PUB,RR,SUB     (port)
 Q
@@ -43,7 +43,7 @@ u - PUB,RR,SUB     (username)
 V - PUB,RR,SUB     (version output)
 v - RR,SUB         (verbose)
 W - SUB            (timeout)
-w
+w - SUB            (watch)
 X
 x - PUB,RR,SUB     (session-expiry-interval)
 Y

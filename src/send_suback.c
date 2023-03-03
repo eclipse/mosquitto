@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -31,20 +31,16 @@ int send__suback(struct mosquitto *context, uint16_t mid, uint32_t payloadlen, c
 	struct mosquitto__packet *packet = NULL;
 	int rc;
 	mosquitto_property *properties = NULL;
+	uint32_t remaining_length;
 
 	log__printf(NULL, MOSQ_LOG_DEBUG, "Sending SUBACK to %s", context->id);
 
-	packet = mosquitto__calloc(1, sizeof(struct mosquitto__packet));
-	if(!packet) return MOSQ_ERR_NOMEM;
-
-	packet->command = CMD_SUBACK;
-	packet->remaining_length = 2+payloadlen;
+	remaining_length = 2+payloadlen;
 	if(context->protocol == mosq_p_mqtt5){
-		packet->remaining_length += property__get_remaining_length(properties);
+		remaining_length += property__get_remaining_length(properties);
 	}
-	rc = packet__alloc(packet);
+	rc = packet__alloc(&packet, CMD_SUBACK, remaining_length);
 	if(rc){
-		mosquitto__free(packet);
 		return rc;
 	}
 	packet__write_uint16(packet, mid);

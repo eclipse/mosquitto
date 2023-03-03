@@ -1,3 +1,4 @@
+import atexit
 import errno
 import os
 import socket
@@ -6,42 +7,64 @@ import struct
 import sys
 import time
 
+import traceback
+
 import mqtt5_props
 
 import __main__
 
-import atexit
+from pathlib import Path
 vg_index = 1
 vg_logfiles = []
-
 
 class TestError(Exception):
     def __init__(self, message="Mismatched packets"):
         self.message = message
 
-def start_broker(filename, cmd=None, port=0, use_conf=False, expect_fail=False, nolog=False):
+def get_build_root():
+    result = os.getenv("BUILD_ROOT")
+    if result is None:
+        result = str(Path(__file__).resolve().parents[1])
+    return result
+
+def listen_sock(port):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    sock.settimeout(10)
+    sock.bind(('', port))
+    sock.listen(5)
+    return sock
+
+def start_broker(filename, cmd=None, port=0, use_conf=False, expect_fail=False, nolog=False, checkhost="localhost", env=None, check_port=True):
     global vg_index
     global vg_logfiles
 
     delay = 0.1
 
-    if use_conf == True:
-        cmd = ['../../src/mosquitto', '-v', '-c', filename.replace('.py', '.conf')]
+    if use_conf:
+        cmd = [get_build_root() + '/src/mosquitto', '-v', '-c', filename.replace('.py', '.conf')]
 
         if port == 0:
             port = 1888
     else:
         if cmd is None and port != 0:
-            cmd = ['../../src/mosquitto', '-v', '-p', str(port)]
+            cmd = [get_build_root() + '/src/mosquitto', '-v', '-p', str(port)]
         elif cmd is None and port == 0:
             port = 1888
-            cmd = ['../../src/mosquitto', '-v', '-c', filename.replace('.py', '.conf')]
+            cmd = [get_build_root() + '/src/mosquitto', '-v', '-c', filename.replace('.py', '.conf')]
         elif cmd is not None and port == 0:
             port = 1888
 
     if os.environ.get('MOSQ_USE_VALGRIND') is not None:
         logfile = filename+'.'+str(vg_index)+'.vglog'
-        cmd = ['valgrind', '-q', '--trace-children=yes', '--leak-check=full', '--show-leak-kinds=all', '--log-file='+logfile] + cmd
+        if os.environ.get('MOSQ_USE_VALGRIND') == 'callgrind':
+            cmd = ['valgrind', '-q', '--tool=callgrind', '--log-file='+logfile] + cmd
+        elif os.environ.get('MOSQ_USE_VALGRIND') == 'massif':
+            cmd = ['valgrind', '-q', '--tool=massif', '--log-file='+logfile] + cmd
+        elif os.environ.get('MOSQ_USE_VALGRIND') == 'failgrind':
+            cmd = ['fg-helper'] + cmd
+        else:
+            cmd = ['valgrind', '-q', '--trace-children=yes', '--leak-check=full', '--show-leak-kinds=all', '--log-file='+logfile] + cmd
         vg_logfiles.append(logfile)
         vg_index += 1
         delay = 1
@@ -49,14 +72,18 @@ def start_broker(filename, cmd=None, port=0, use_conf=False, expect_fail=False, 
     #print(port)
     #print(cmd)
     if nolog == False:
-        broker = subprocess.Popen(cmd, stderr=subprocess.PIPE)
+        broker = subprocess.Popen(cmd, stderr=subprocess.PIPE, env=env)
     else:
-        broker = subprocess.Popen(cmd, stderr=subprocess.DEVNULL)
+        broker = subprocess.Popen(cmd, stderr=subprocess.DEVNULL, env=env)
+
+    if check_port == False:
+        return broker
+
     for i in range(0, 20):
         time.sleep(delay)
         c = None
         try:
-            c = socket.create_connection(("localhost", port))
+            c = socket.create_connection((checkhost, port))
         except socket.error as err:
             if err.errno != errno.ECONNREFUSED:
                 raise
@@ -72,14 +99,65 @@ def start_broker(filename, cmd=None, port=0, use_conf=False, expect_fail=False, 
     else:
         return None
 
-def start_client(filename, cmd, env, port=1888):
+def start_client(filename, cmd, env=None):
     if cmd is None:
         raise ValueError
+    if env is None:
+        env = dict(os.environ)
+        env['LD_LIBRARY_PATH'] = get_build_root() + '/lib:' + get_build_root() + '/lib/cpp'
     if os.environ.get('MOSQ_USE_VALGRIND') is not None:
         cmd = ['valgrind', '-q', '--log-file='+filename+'.vglog'] + cmd
 
-    cmd = cmd + [str(port)]
-    return subprocess.Popen(cmd, env=env)
+    return subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+def wait_for_subprocess(client,timeout=10,terminate_timeout=2):
+    rc=0
+    try:
+        client.wait(timeout)
+    except subprocess.TimeoutExpired:
+        rc=1
+        client.terminate()
+        try:
+            client.wait(terminate_timeout)
+        except subprocess.TimeoutExpired:
+            rc=2
+            client.kill()
+            try:
+                client.wait(terminate_timeout)
+            except subprocess.TimeoutExpired:
+                rc=3
+                pass
+    return rc
+
+
+def terminate_broker(broker):
+    broker.terminate()
+    (_, stde) = broker.communicate()
+    if wait_for_subprocess(broker):
+        print("broker not terminated")
+        return (1, stde)
+    else:
+        return (0, stde)
+
+
+def pub_helper(port, proto_ver=4):
+    connect_packet = gen_connect("pub-helper", proto_ver=proto_ver)
+    connack_packet = gen_connack(rc=0, proto_ver=proto_ver)
+
+    sock = do_client_connect(connect_packet, connack_packet, port=port, connack_error="pub helper connack")
+    return sock
+
+
+def sub_helper(port, topic='#', qos=0, proto_ver=4):
+    connect_packet = gen_connect("sub-helper", proto_ver=proto_ver)
+    connack_packet = gen_connack(rc=0, proto_ver=proto_ver)
+
+    mid = 1
+    subscribe_packet = gen_subscribe(mid=mid, topic=topic, qos=qos, proto_ver=proto_ver)
+    suback_packet = gen_suback(mid=mid, qos=qos, proto_ver=proto_ver)
+    sock = do_client_connect(connect_packet, connack_packet, port=port)
+    do_send_receive(sock, subscribe_packet, suback_packet, "sub helper suback")
+    return sock
 
 
 def expect_packet(sock, name, expected):
@@ -88,7 +166,16 @@ def expect_packet(sock, name, expected):
     else:
         rlen = 1
 
-    packet_recvd = sock.recv(rlen)
+    packet_recvd = b""
+    try:
+        while len(packet_recvd) < rlen:
+            data = sock.recv(rlen-len(packet_recvd))
+            if len(data) == 0:
+                raise BrokenPipeError(f"when reading {name} from {sock.getpeername()}")
+            packet_recvd += data
+    except socket.timeout:
+        pass
+
     if packet_matches(name, packet_recvd, expected):
         return True
     else:
@@ -106,6 +193,7 @@ def packet_matches(name, recvd, expected):
             print("Expected: "+to_string(expected))
         except struct.error:
             print("Expected (not decoded, len=%d): %s" % (len(expected), expected))
+        traceback.print_stack(file=sys.stdout)
 
         return False
     else:
@@ -167,8 +255,20 @@ def client_connect_only(hostname="localhost", port=1888, timeout=10):
     sock.connect((hostname, port))
     return sock
 
+def client_connect_only_unix(path, timeout=10):
+    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    sock.settimeout(timeout)
+    sock.connect(path)
+    return sock
+
 def do_client_connect(connect_packet, connack_packet, hostname="localhost", port=1888, timeout=10, connack_error="connack"):
     sock = client_connect_only(hostname, port, timeout)
+
+    return do_send_receive(sock, connect_packet, connack_packet, connack_error)
+
+
+def do_client_connect_unix(connect_packet, connack_packet, path, timeout=10, connack_error="connack"):
+    sock = client_connect_only_unix(path, timeout)
 
     return do_send_receive(sock, connect_packet, connack_packet, connack_error)
 
@@ -268,8 +368,15 @@ def to_string(packet):
         return s
     elif cmd == 0x20:
         # CONNACK
-        (cmd, rl, resv, rc) = struct.unpack('!BBBB', packet)
-        return "CONNACK, rl="+str(rl)+", res="+str(resv)+", rc="+str(rc)
+        if len(packet) == 4:
+            (cmd, rl, resv, rc) = struct.unpack('!BBBB', packet)
+            return "CONNACK, rl="+str(rl)+", res="+str(resv)+", rc="+str(rc)
+        elif len(packet) == 5:
+            (cmd, rl, flags, reason_code, proplen) = struct.unpack('!BBBBB', packet)
+            return "CONNACK, rl="+str(rl)+", flags="+str(flags)+", rc="+str(reason_code)+", proplen="+str(proplen)
+        else:
+            return "CONNACK, (not decoded)"
+
     elif cmd == 0x30:
         # PUBLISH
         dup = (packet0 & 0x08)>>3
@@ -544,7 +651,8 @@ def gen_publish(topic, qos, payload=None, retain=False, dup=False, mid=0, proto_
         pack_format = pack_format + "%ds"%(len(properties))
 
     if payload != None:
-        payload = payload.encode("utf-8")
+        if isinstance(payload, bytes) == False:
+            payload = payload.encode("utf-8")
         rl = rl + len(payload)
         pack_format = pack_format + str(len(payload))+"s"
     else:
@@ -636,10 +744,10 @@ def gen_unsubscribe(mid, topic, cmd=162, proto_ver=4, properties=b""):
         else:
             properties = mqtt5_props.prop_finalise(properties)
             packet = struct.pack("!B", cmd)
-            l = 2+2+len(topic)+1+len(properties)
+            l = 2+2+len(topic)+len(properties)
             packet += pack_remaining_length(l)
-            pack_format = "!HB"+str(len(properties))+"sH"+str(len(topic))+"s"
-            packet += struct.pack(pack_format, mid, len(properties), properties, len(topic), topic)
+            pack_format = "!H"+str(len(properties))+"sH"+str(len(topic))+"s"
+            packet += struct.pack(pack_format, mid, properties, len(topic), topic)
             return packet
     else:
         pack_format = "!BBHH"+str(len(topic))+"s"
@@ -734,15 +842,46 @@ def get_port(count=1):
             return tuple(range(1888, 1888+count))
 
 
-def get_lib_port():
-    if len(sys.argv) == 3:
-        return int(sys.argv[2])
-    else:
-        return 1888
-
-
 def do_ping(sock, error_string="pingresp"):
      do_send_receive(sock, gen_pingreq(), gen_pingresp(), error_string)
+
+def client_test(client_cmd, client_args, callback, cb_data):
+    port = get_port()
+
+    rc = 1
+
+    sock = listen_sock(port);
+
+    args = [get_build_root() + "/test/lib/" + client_cmd, str(port)]
+    if client_args is not None:
+        args = args + client_args
+
+    client = start_client(filename=client_cmd.replace('/', '-'), cmd=args)
+
+    try:
+        (conn, address) = sock.accept()
+        conn.settimeout(10)
+
+        callback(conn, cb_data)
+        rc = 0
+
+        conn.close()
+    except mosq_test.TestError:
+        pass
+    except Exception as err:
+        print(err)
+        raise
+    finally:
+        if wait_for_subprocess(client):
+            print("test client not finished")
+            rc=1
+        sock.close()
+        if rc:
+            (o, e) = client.communicate()
+            print(o)
+            print(e)
+            print(f"Fail: {client_cmd}")
+            exit(rc)
 
 
 @atexit.register

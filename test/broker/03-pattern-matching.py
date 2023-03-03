@@ -3,7 +3,7 @@
 from mosq_test_helper import *
 
 def helper(port, pub_topic):
-    connect_packet = mosq_test.gen_connect("test-helper", keepalive=60)
+    connect_packet = mosq_test.gen_connect("test-helper")
     connack_packet = mosq_test.gen_connack(rc=0)
 
     publish_packet = mosq_test.gen_publish(pub_topic, qos=0, retain=True, payload="message")
@@ -15,8 +15,7 @@ def helper(port, pub_topic):
 
 def pattern_test(sub_topic, pub_topic):
     rc = 1
-    keepalive = 60
-    connect_packet = mosq_test.gen_connect("pattern-sub-test", keepalive=keepalive)
+    connect_packet = mosq_test.gen_connect("pattern-sub-test")
     connack_packet = mosq_test.gen_connack(rc=0)
 
     publish_packet = mosq_test.gen_publish(pub_topic, qos=0, payload="message")
@@ -50,7 +49,9 @@ def pattern_test(sub_topic, pub_topic):
         pass
     finally:
         broker.terminate()
-        broker.wait()
+        if mosq_test.wait_for_subprocess(broker):
+            print("broker not terminated")
+            if rc == 0: rc=1
         (stdo, stde) = broker.communicate()
         if rc:
             print(stde.decode('utf-8'))

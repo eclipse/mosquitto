@@ -21,8 +21,7 @@ def do_test():
     try:
         for proto_ver in [4, 5]:
             rc = 1
-            keepalive = 10
-            connect_packet = mosq_test.gen_connect("connect-anon-test-%d" % (proto_ver), keepalive=keepalive, proto_ver=proto_ver)
+            connect_packet = mosq_test.gen_connect("connect-anon-test-%d" % (proto_ver), proto_ver=proto_ver)
 
             if proto_ver == 5:
                 connack_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
@@ -37,7 +36,9 @@ def do_test():
     finally:
         os.remove(conf_file)
         broker.terminate()
-        broker.wait()
+        if mosq_test.wait_for_subprocess(broker):
+            print("broker not terminated")
+            if rc == 0: rc=1
         (stdo, stde) = broker.communicate()
         if rc:
             print(stde.decode('utf-8'))

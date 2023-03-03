@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2012-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2012-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -66,6 +66,8 @@ struct mosquitto_acl_msg {
 	bool retain;
 };
 
+typedef struct mosquitto_plugin_id_t mosquitto_plugin_id_t;
+
 #ifdef WIN32
 #  define mosq_plugin_EXPORT __declspec(dllexport)
 #else
@@ -84,23 +86,6 @@ struct mosquitto_acl_msg {
  *
  * gcc -I<path to mosquitto_plugin.h> -fPIC -shared plugin.c -undefined dynamic_lookup -o plugin.so
  *
- * Authentication plugins can implement one or both of authentication and
- * access control. If your plugin does not wish to handle either of
- * authentication or access control it should return MOSQ_ERR_PLUGIN_DEFER. In
- * this case, the next plugin will handle it. If all plugins return
- * MOSQ_ERR_PLUGIN_DEFER, the request will be denied.
- *
- * For each check, the following flow happens:
- *
- * * The default password file and/or acl file checks are made. If either one
- *   of these is not defined, then they are considered to be deferred. If either
- *   one accepts the check, no further checks are made. If an error occurs, the
- *   check is denied
- * * The first plugin does the check, if it returns anything other than
- *   MOSQ_ERR_PLUGIN_DEFER, then the check returns immediately. If the plugin
- *   returns MOSQ_ERR_PLUGIN_DEFER then the next plugin runs its check.
- * * If the final plugin returns MOSQ_ERR_PLUGIN_DEFER, then access will be
- *   denied.
  */
 
 /* =========================================================================
@@ -142,8 +127,25 @@ struct mosquitto_acl_msg {
  *
  * If the broker does not support the version that you require, return -1 to
  * indicate failure.
+ *
+ * HELPER: If you only wish to declare support for a single version, you can
+ * use the helper macro:
+ *
+ * MOSQUITTO_PLUGIN_DECLARE_VERSION(5);
  */
 mosq_plugin_EXPORT int mosquitto_plugin_version(int supported_version_count, const int *supported_versions);
+
+#define MOSQUITTO_PLUGIN_DECLARE_VERSION(A) \
+	int mosquitto_plugin_version(int supported_version_count, const int *supported_versions) \
+	{ \
+		int i; \
+		for(i=0; i<supported_version_count; i++){ \
+			if(supported_versions[i] == (A)){ \
+				return (A); \
+			} \
+		} \
+		return -1; \
+	}
 
 /*
  * Function: mosquitto_plugin_init
@@ -175,6 +177,9 @@ mosq_plugin_EXPORT int mosquitto_plugin_init(mosquitto_plugin_id_t *identifier, 
  * Called when the broker is shutting down. This will only ever be called once
  * per plugin.
  *
+ * If you do not need to do any of your own cleanup, this function is not
+ * required. The broker will automatically unregister your callbacks.
+ *
  * Parameters:
  *
  *	user_data -      The pointer provided in <mosquitto_plugin_init>.
@@ -200,6 +205,23 @@ mosq_plugin_EXPORT int mosquitto_plugin_cleanup(void *userdata, struct mosquitto
  *
  * You must implement these functions in your plugin.
  *
+ * Authentication plugins can implement one or both of authentication and
+ * access control. If your plugin does not wish to handle either of
+ * authentication or access control it should return MOSQ_ERR_PLUGIN_DEFER. In
+ * this case, the next plugin will handle it. If all plugins return
+ * MOSQ_ERR_PLUGIN_DEFER, the request will be denied.
+ *
+ * For each check, the following flow happens:
+ *
+ * * The default password file and/or acl file checks are made. If either one
+ *   of these is not defined, then they are considered to be deferred. If either
+ *   one accepts the check, no further checks are made. If an error occurs, the
+ *   check is denied
+ * * The first plugin does the check, if it returns anything other than
+ *   MOSQ_ERR_PLUGIN_DEFER, then the check returns immediately. If the plugin
+ *   returns MOSQ_ERR_PLUGIN_DEFER then the next plugin runs its check.
+ * * If the final plugin returns MOSQ_ERR_PLUGIN_DEFER, then access will be
+ *   denied.
  * ========================================================================= */
 
 /*

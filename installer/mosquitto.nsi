@@ -1,4 +1,6 @@
 ; NSIS installer script for mosquitto
+Unicode True
+SetCompressor /SOLID lzma
 
 !include "MUI2.nsh"
 !include "nsDialogs.nsh"
@@ -9,10 +11,10 @@
 !define env_hklm 'HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"'
 
 Name "Eclipse Mosquitto"
-!define VERSION 2.0.15
+!define VERSION 2.1.0
 OutFile "mosquitto-${VERSION}-install-windows-x86.exe"
 
-InstallDir "$PROGRAMFILES\mosquitto"
+InstallDir "$PROGRAMFILES\Mosquitto"
 
 ;--------------------------------
 ; Installer pages
@@ -42,14 +44,15 @@ Section "Files" SecInstall
 	SectionIn RO
 	SetOutPath "$INSTDIR"
 	File "..\build\src\Release\mosquitto.exe"
-	File "..\build\apps\mosquitto_passwd\Release\mosquitto_passwd.exe"
 	File "..\build\apps\mosquitto_ctrl\Release\mosquitto_ctrl.exe"
+	File "..\build\apps\mosquitto_passwd\Release\mosquitto_passwd.exe"
 	File "..\build\client\Release\mosquitto_pub.exe"
 	File "..\build\client\Release\mosquitto_sub.exe"
 	File "..\build\client\Release\mosquitto_rr.exe"
 	File "..\build\lib\Release\mosquitto.dll"
 	File "..\build\lib\cpp\Release\mosquittopp.dll"
 	File "..\build\plugins\dynamic-security\Release\mosquitto_dynamic_security.dll"
+	File "..\build\plugins\persist-sqlite\Release\mosquitto_persist_sqlite.dll"
 	File "..\aclfile.example"
 	File "..\ChangeLog.txt"
 	File "..\mosquitto.conf"
@@ -58,7 +61,7 @@ Section "Files" SecInstall
 	File "..\README.md"
 	File "..\README-windows.txt"
 	File "..\README-letsencrypt.md"
-	;File "C:\pthreads\Pre-built.2\dll\x86\pthreadVC2.dll"
+	File "..\SECURITY.md"
 	File "C:\OpenSSL-Win32\bin\libssl-1_1.dll"
 	File "C:\OpenSSL-Win32\bin\libcrypto-1_1.dll"
 	File "..\edl-v10"
@@ -70,8 +73,8 @@ Section "Files" SecInstall
 	File "..\include\mosquitto.h"
 	File "..\include\mosquitto_broker.h"
 	File "..\include\mosquitto_plugin.h"
+	File "..\include\mosquittopp.h"
 	File "..\include\mqtt_protocol.h"
-	File "..\lib\cpp\mosquittopp.h"
 
 	WriteUninstaller "$INSTDIR\Uninstall.exe"
 	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Mosquitto" "DisplayName" "Eclipse Mosquitto MQTT broker"
@@ -85,6 +88,13 @@ Section "Files" SecInstall
 
 	WriteRegExpandStr ${env_hklm} MOSQUITTO_DIR $INSTDIR
 	SendMessage ${HWND_BROADCAST} ${WM_WININICHANGE} 0 "STR:Environment" /TIMEOUT=5000
+SectionEnd
+
+Section "Visual Studio Runtime"
+  SetOutPath "$INSTDIR"
+  File "VC_redist.x86.exe"
+  ExecWait '"$INSTDIR\VC_redist.x86.exe" /quiet /norestart'
+  Delete "$INSTDIR\VC_redist.x86.exe"
 SectionEnd
 
 Section "Service" SecService
@@ -102,14 +112,16 @@ Section "Uninstall"
 	Delete "$INSTDIR\mosquitto.dll"
 	Delete "$INSTDIR\mosquittopp.dll"
 	Delete "$INSTDIR\mosquitto_dynamic_security.dll"
+	Delete "$INSTDIR\mosquitto_persist_sqlite.dll"
 	Delete "$INSTDIR\aclfile.example"
 	Delete "$INSTDIR\ChangeLog.txt"
 	Delete "$INSTDIR\mosquitto.conf"
 	Delete "$INSTDIR\pwfile.example"
+	Delete "$INSTDIR\NOTICE.md"
 	Delete "$INSTDIR\README.md"
 	Delete "$INSTDIR\README-windows.txt"
 	Delete "$INSTDIR\README-letsencrypt.md"
-	;Delete "$INSTDIR\pthreadVC2.dll"
+	Delete "$INSTDIR\SECURITY.md"
 	Delete "$INSTDIR\libssl-1_1.dll"
 	Delete "$INSTDIR\libcrypto-1_1.dll"
 	Delete "$INSTDIR\edl-v10"
@@ -118,6 +130,7 @@ Section "Uninstall"
 	Delete "$INSTDIR\devel\mosquitto.h"
 	Delete "$INSTDIR\devel\mosquitto.lib"
 	Delete "$INSTDIR\devel\mosquitto_broker.h"
+	Delete "$INSTDIR\devel\mosquitto_plugin.h"
 	Delete "$INSTDIR\devel\mosquitto_plugin.h"
 	Delete "$INSTDIR\devel\mosquittopp.h"
 	Delete "$INSTDIR\devel\mosquittopp.lib"
@@ -139,4 +152,3 @@ LangString DESC_SecService ${LANG_ENGLISH} "Install mosquitto as a Windows servi
 	!insertmacro MUI_DESCRIPTION_TEXT ${SecInstall} $(DESC_SecInstall)
 	!insertmacro MUI_DESCRIPTION_TEXT ${SecService} $(DESC_SecService)
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
-

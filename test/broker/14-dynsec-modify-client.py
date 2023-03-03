@@ -8,7 +8,7 @@ def write_config(filename, port):
     with open(filename, 'w') as f:
         f.write("listener %d\n" % (port))
         f.write("allow_anonymous true\n")
-        f.write("plugin ../../plugins/dynamic-security/mosquitto_dynamic_security.so\n")
+        f.write(f"plugin {mosq_test.get_build_root()}/plugins/dynamic-security/mosquitto_dynamic_security.so\n")
         f.write("plugin_opt_config_file %d/dynamic-security.json\n" % (port))
 
 def command_check(sock, command_payload, expected_response, msg=""):
@@ -109,6 +109,7 @@ get_client_response1 = {'responses':[{'command': 'getClient', 'data': {'client':
     'textname': 'Name', 'textdescription': 'Description',
     'roles': [],
     'groups': [],
+    'connections': []
     }}}]}
 
 get_client_command2 = { "commands": [{
@@ -122,8 +123,9 @@ get_client_response2 = {'responses':[{'command': 'getClient', 'data': {'client':
     ],
     'groups': [
         {'groupname':'group_two', 'priority':8},
-        {'groupname':'group_one', 'priority':3}
-    ]}}}]}
+        {'groupname':'group_one', 'priority':3}],
+    'connections': []
+    }}}]}
 
 get_client_command3 = { "commands": [{
             "command": "getClient", "username": "user_one"}]}
@@ -133,23 +135,23 @@ get_client_response3 = {'responses':[{'command': 'getClient', 'data': {'client':
     'roles': [
         {'rolename':'role_three', 'priority':10},
         {'rolename':'role_one', 'priority':2},
-        {'rolename':'role_two'}
-    ]}}}]}
+        {'rolename':'role_two'}],
+     'connections': []
+    }}}]}
 
 
 
 rc = 1
-keepalive = 10
-connect_packet = mosq_test.gen_connect("ctrl-test", keepalive=keepalive, username="admin", password="admin")
+connect_packet = mosq_test.gen_connect("ctrl-test", username="admin", password="admin")
 connack_packet = mosq_test.gen_connack(rc=0)
 
 mid = 2
-subscribe_packet = mosq_test.gen_subscribe(mid, "$CONTROL/#", 1)
+subscribe_packet = mosq_test.gen_subscribe(mid, "$CONTROL/dynamic-security/#", 1)
 suback_packet = mosq_test.gen_suback(mid, 1)
 
 try:
     os.mkdir(str(port))
-    shutil.copyfile("dynamic-security-init.json", "%d/dynamic-security.json" % (port))
+    shutil.copyfile(str(Path(__file__).resolve().parent / "dynamic-security-init.json"), "%d/dynamic-security.json" % (port))
 except FileExistsError:
     pass
 
@@ -179,7 +181,10 @@ try:
 
     # Kill broker and restart, checking whether our changes were saved.
     broker.terminate()
-    broker.wait()
+    broker_terminate_rc = 0
+    if mosq_test.wait_for_subprocess(broker):
+        print("broker not terminated")
+        broker_terminate_rc = 1
     broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port)
 
     sock = mosq_test.do_client_connect(connect_packet, connack_packet, timeout=5, port=port)
@@ -194,7 +199,7 @@ try:
     # Get client
     command_check(sock, get_client_command3, get_client_response3, "get client 3")
 
-    rc = 0
+    rc = broker_terminate_rc
 
     sock.close()
 except mosq_test.TestError:
@@ -208,7 +213,9 @@ finally:
         pass
     os.rmdir(f"{port}")
     broker.terminate()
-    broker.wait()
+    if mosq_test.wait_for_subprocess(broker):
+        print("broker not terminated")
+        if rc == 0: rc=1
     (stdo, stde) = broker.communicate()
     if rc:
         print(stde.decode('utf-8'))

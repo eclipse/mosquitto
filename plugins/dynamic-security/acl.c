@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2020-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -23,7 +23,7 @@ Contributors:
 #include "mosquitto_broker.h"
 #include "mosquitto_plugin.h"
 
-typedef int (*MOSQ_FUNC_acl_check)(struct mosquitto_evt_acl_check *, struct dynsec__rolelist *);
+typedef int (*MOSQ_FUNC_acl_check)(struct dynsec__data *data, struct mosquitto_evt_acl_check *, struct dynsec__rolelist *);
 
 /* FIXME - CACHE! */
 
@@ -33,15 +33,23 @@ typedef int (*MOSQ_FUNC_acl_check)(struct mosquitto_evt_acl_check *, struct dyns
  * #
  * ################################################################ */
 
-static int acl_check_publish_c_recv(struct mosquitto_evt_acl_check *ed, struct dynsec__rolelist *base_rolelist)
+static int acl_check_publish_c_recv(struct dynsec__data *data, struct mosquitto_evt_acl_check *ed, struct dynsec__rolelist *base_rolelist)
 {
 	struct dynsec__rolelist *rolelist, *rolelist_tmp = NULL;
 	struct dynsec__acl *acl, *acl_tmp = NULL;
 	bool result;
+	const char *clientid, *username;
+
+	UNUSED(data);
+
+	clientid = mosquitto_client_id(ed->client);
+	username = mosquitto_client_username(ed->client);
 
 	HASH_ITER(hh, base_rolelist, rolelist, rolelist_tmp){
 		HASH_ITER(hh, rolelist->role->acls.publish_c_recv, acl, acl_tmp){
-			mosquitto_topic_matches_sub(acl->topic, ed->topic, &result);
+			if(mosquitto_topic_matches_sub_with_pattern(acl->topic, ed->topic, clientid, username, &result)){
+				return MOSQ_ERR_ACL_DENIED;
+			}
 			if(result){
 				if(acl->allow){
 					return MOSQ_ERR_SUCCESS;
@@ -61,15 +69,23 @@ static int acl_check_publish_c_recv(struct mosquitto_evt_acl_check *ed, struct d
  * #
  * ################################################################ */
 
-static int acl_check_publish_c_send(struct mosquitto_evt_acl_check *ed, struct dynsec__rolelist *base_rolelist)
+static int acl_check_publish_c_send(struct dynsec__data *data, struct mosquitto_evt_acl_check *ed, struct dynsec__rolelist *base_rolelist)
 {
 	struct dynsec__rolelist *rolelist, *rolelist_tmp = NULL;
 	struct dynsec__acl *acl, *acl_tmp = NULL;
 	bool result;
+	const char *clientid, *username;
+
+	UNUSED(data);
+
+	clientid = mosquitto_client_id(ed->client);
+	username = mosquitto_client_username(ed->client);
 
 	HASH_ITER(hh, base_rolelist, rolelist, rolelist_tmp){
 		HASH_ITER(hh, rolelist->role->acls.publish_c_send, acl, acl_tmp){
-			mosquitto_topic_matches_sub(acl->topic, ed->topic, &result);
+			if(mosquitto_topic_matches_sub_with_pattern(acl->topic, ed->topic, clientid, username, &result)){
+				return MOSQ_ERR_ACL_DENIED;
+			}
 			if(result){
 				if(acl->allow){
 					return MOSQ_ERR_SUCCESS;
@@ -89,15 +105,27 @@ static int acl_check_publish_c_send(struct mosquitto_evt_acl_check *ed, struct d
  * #
  * ################################################################ */
 
-static int acl_check_subscribe(struct mosquitto_evt_acl_check *ed, struct dynsec__rolelist *base_rolelist)
+static int acl_check_subscribe(struct dynsec__data *data, struct mosquitto_evt_acl_check *ed, struct dynsec__rolelist *base_rolelist)
 {
 	struct dynsec__rolelist *rolelist, *rolelist_tmp = NULL;
 	struct dynsec__acl *acl, *acl_tmp = NULL;
 	size_t len;
+	bool result;
+	const char *clientid, *username;
+	bool has_wildcard;
+
+	UNUSED(data);
 
 	len = strlen(ed->topic);
+	has_wildcard = (strpbrk(ed->topic, "+#") != NULL);
+
+	clientid = mosquitto_client_id(ed->client);
+	username = mosquitto_client_username(ed->client);
 
 	HASH_ITER(hh, base_rolelist, rolelist, rolelist_tmp){
+		if(rolelist->role->allow_wildcard_subs == false && has_wildcard == true){
+			return MOSQ_ERR_ACL_DENIED;
+		}
 		HASH_FIND(hh, rolelist->role->acls.subscribe_literal, ed->topic, len, acl);
 		if(acl){
 			if(acl->allow){
@@ -107,7 +135,11 @@ static int acl_check_subscribe(struct mosquitto_evt_acl_check *ed, struct dynsec
 			}
 		}
 		HASH_ITER(hh, rolelist->role->acls.subscribe_pattern, acl, acl_tmp){
-			if(sub_acl_check(acl->topic, ed->topic)){
+			if(mosquitto_sub_matches_acl_with_pattern(acl->topic, ed->topic, clientid, username, &result)){
+				/* Invalid input, so deny */
+				return MOSQ_ERR_ACL_DENIED;
+			}
+			if(result){
 				if(acl->allow){
 					return MOSQ_ERR_SUCCESS;
 				}else{
@@ -126,13 +158,20 @@ static int acl_check_subscribe(struct mosquitto_evt_acl_check *ed, struct dynsec
  * #
  * ################################################################ */
 
-static int acl_check_unsubscribe(struct mosquitto_evt_acl_check *ed, struct dynsec__rolelist *base_rolelist)
+static int acl_check_unsubscribe(struct dynsec__data *data, struct mosquitto_evt_acl_check *ed, struct dynsec__rolelist *base_rolelist)
 {
 	struct dynsec__rolelist *rolelist, *rolelist_tmp = NULL;
 	struct dynsec__acl *acl, *acl_tmp = NULL;
 	size_t len;
+	bool result;
+	const char *clientid, *username;
+
+	UNUSED(data);
 
 	len = strlen(ed->topic);
+
+	clientid = mosquitto_client_id(ed->client);
+	username = mosquitto_client_username(ed->client);
 
 	HASH_ITER(hh, base_rolelist, rolelist, rolelist_tmp){
 		HASH_FIND(hh, rolelist->role->acls.unsubscribe_literal, ed->topic, len, acl);
@@ -144,7 +183,11 @@ static int acl_check_unsubscribe(struct mosquitto_evt_acl_check *ed, struct dyns
 			}
 		}
 		HASH_ITER(hh, rolelist->role->acls.unsubscribe_pattern, acl, acl_tmp){
-			if(sub_acl_check(acl->topic, ed->topic)){
+			if(mosquitto_sub_matches_acl_with_pattern(acl->topic, ed->topic, clientid, username, &result)){
+				/* Invalid input, so deny */
+				return MOSQ_ERR_ACL_DENIED;
+			}
+			if(result){
 				if(acl->allow){
 					return MOSQ_ERR_SUCCESS;
 				}else{
@@ -163,7 +206,7 @@ static int acl_check_unsubscribe(struct mosquitto_evt_acl_check *ed, struct dyns
  * #
  * ################################################################ */
 
-static int acl_check(struct mosquitto_evt_acl_check *ed, MOSQ_FUNC_acl_check check, bool acl_default_access)
+static int acl_check(struct dynsec__data *data, struct mosquitto_evt_acl_check *ed, MOSQ_FUNC_acl_check check, bool acl_default_access)
 {
 	struct dynsec__client *client;
 	struct dynsec__grouplist *grouplist, *grouplist_tmp = NULL;
@@ -173,24 +216,24 @@ static int acl_check(struct mosquitto_evt_acl_check *ed, MOSQ_FUNC_acl_check che
 	username = mosquitto_client_username(ed->client);
 
 	if(username){
-		client = dynsec_clients__find(username);
+		client = dynsec_clients__find(data, username);
 		if(client == NULL) return MOSQ_ERR_PLUGIN_DEFER;
 
 		/* Client roles */
-		rc = check(ed, client->rolelist);
+		rc = check(data, ed, client->rolelist);
 		if(rc != MOSQ_ERR_NOT_FOUND){
 			return rc;
 		}
 
 		HASH_ITER(hh, client->grouplist, grouplist, grouplist_tmp){
-			rc = check(ed, grouplist->group->rolelist);
+			rc = check(data, ed, grouplist->group->rolelist);
 			if(rc != MOSQ_ERR_NOT_FOUND){
 				return rc;
 			}
 		}
-	}else if(dynsec_anonymous_group){
+	}else if(data->anonymous_group){
 		/* If we have a group for anonymous users, use that for checking. */
-		rc = check(ed, dynsec_anonymous_group->rolelist);
+		rc = check(data, ed, data->anonymous_group->rolelist);
 		if(rc != MOSQ_ERR_NOT_FOUND){
 			return rc;
 		}
@@ -219,6 +262,7 @@ static int acl_check(struct mosquitto_evt_acl_check *ed, MOSQ_FUNC_acl_check che
 int dynsec__acl_check_callback(int event, void *event_data, void *userdata)
 {
 	struct mosquitto_evt_acl_check *ed = event_data;
+	struct dynsec__data *data = userdata;
 
 	UNUSED(event);
 	UNUSED(userdata);
@@ -235,16 +279,16 @@ int dynsec__acl_check_callback(int event, void *event_data, void *userdata)
 
 	switch(ed->access){
 		case MOSQ_ACL_SUBSCRIBE:
-			return acl_check(event_data, acl_check_subscribe, default_access.subscribe);
+			return acl_check(data, event_data, acl_check_subscribe, data->default_access.subscribe);
 			break;
 		case MOSQ_ACL_UNSUBSCRIBE:
-			return acl_check(event_data, acl_check_unsubscribe, default_access.unsubscribe);
+			return acl_check(data, event_data, acl_check_unsubscribe, data->default_access.unsubscribe);
 			break;
 		case MOSQ_ACL_WRITE: /* Client to broker */
-			return acl_check(event_data, acl_check_publish_c_send, default_access.publish_c_send);
+			return acl_check(data, event_data, acl_check_publish_c_send, data->default_access.publish_c_send);
 			break;
 		case MOSQ_ACL_READ:
-			return acl_check(event_data, acl_check_publish_c_recv, default_access.publish_c_recv);
+			return acl_check(data, event_data, acl_check_publish_c_recv, data->default_access.publish_c_recv);
 			break;
 		default:
 			return MOSQ_ERR_PLUGIN_DEFER;

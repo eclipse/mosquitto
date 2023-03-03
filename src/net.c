@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -114,9 +114,6 @@ struct mosquitto *net__socket_accept(struct mosquitto__listener_sock *listensock
 	struct mosquitto *new_context;
 #ifdef WITH_TLS
 	BIO *bio;
-	int rc;
-	char ebuf[256];
-	unsigned long e;
 #endif
 #ifdef WITH_WRAP
 	struct request_info wrap_req;
@@ -172,7 +169,7 @@ struct mosquitto *net__socket_accept(struct mosquitto__listener_sock *listensock
 	}
 #endif
 
-	if(db.config->set_tcp_nodelay){
+	if(db.config->set_tcp_nodelay && listensock->listener->port){
 		int flag = 1;
 #ifdef WIN32
 			if (setsockopt(new_sock, IPPROTO_TCP, TCP_NODELAY, (char *)&flag, sizeof(int)) != 0) {
@@ -183,11 +180,17 @@ struct mosquitto *net__socket_accept(struct mosquitto__listener_sock *listensock
 		}
 	}
 
-	new_context = context__init(new_sock);
+	new_context = context__init();
 	if(!new_context){
 		COMPAT_CLOSE(new_sock);
 		return NULL;
 	}
+	if(context__init_sock(new_context, new_sock) != MOSQ_ERR_SUCCESS){
+		context__cleanup(new_context, true);
+		COMPAT_CLOSE(new_sock);
+		return NULL;
+	}
+
 	new_context->listener = listensock->listener;
 	if(!new_context->listener){
 		context__cleanup(new_context, true);
@@ -195,7 +198,26 @@ struct mosquitto *net__socket_accept(struct mosquitto__listener_sock *listensock
 	}
 	new_context->listener->client_count++;
 
-	if(new_context->listener->max_connections > 0 && new_context->listener->client_count > new_context->listener->max_connections){
+	switch(new_context->listener->protocol){
+		case mp_mqtt:
+			new_context->transport = mosq_t_tcp;
+			break;
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_BUILTIN
+		case mp_websockets:
+			if(http__context_init(new_context)){
+				context__cleanup(new_context, true);
+				return NULL;
+			}
+			break;
+#endif
+		default:
+			context__cleanup(new_context, true);
+			return NULL;
+	}
+
+	if((new_context->listener->max_connections > 0 && new_context->listener->client_count > new_context->listener->max_connections)
+			|| (db.config->global_max_connections > 0 && HASH_CNT(hh_sock, db.contexts_by_sock) > (unsigned int)db.config->global_max_connections)){
+
 		if(db.config->connection_messages == true){
 			log__printf(NULL, MOSQ_LOG_NOTICE, "Client connection from %s denied: max_connections exceeded.", new_context->address);
 		}
@@ -217,27 +239,7 @@ struct mosquitto *net__socket_accept(struct mosquitto__listener_sock *listensock
 		bio = BIO_new_socket(new_sock, BIO_NOCLOSE);
 		SSL_set_bio(new_context->ssl, bio, bio);
 		ERR_clear_error();
-		rc = SSL_accept(new_context->ssl);
-		if(rc != 1){
-			rc = SSL_get_error(new_context->ssl, rc);
-			if(rc == SSL_ERROR_WANT_READ){
-				/* We always want to read. */
-			}else if(rc == SSL_ERROR_WANT_WRITE){
-				new_context->want_write = true;
-			}else{
-				if(db.config->connection_messages == true){
-					e = ERR_get_error();
-					while(e){
-						log__printf(NULL, MOSQ_LOG_NOTICE,
-								"Client connection from %s failed: %s.",
-								new_context->address, ERR_error_string(e, ebuf));
-						e = ERR_get_error();
-					}
-				}
-				context__cleanup(new_context, true);
-				return NULL;
-			}
-		}
+		SSL_set_accept_state(new_context->ssl);
 	}
 #endif
 
@@ -246,15 +248,31 @@ struct mosquitto *net__socket_accept(struct mosquitto__listener_sock *listensock
 				new_context->address, new_context->remote_port, new_context->listener->port);
 	}
 
+	mux__new(new_context);
+	keepalive__add(new_context);
+
 	return new_context;
 }
 
 #ifdef WITH_TLS
 static int client_certificate_verify(int preverify_ok, X509_STORE_CTX *ctx)
 {
-	UNUSED(ctx);
-
 	/* Preverify should check expiry, revocation. */
+	if(preverify_ok == 0){
+		SSL *ssl;
+		ssl = X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx());
+		if(ssl){
+			struct mosquitto__listener *listener;
+			listener = SSL_get_ex_data(ssl, tls_ex_index_listener);
+
+			if(listener && listener->disable_client_cert_date_checks){
+				int err = X509_STORE_CTX_get_error(ctx);
+				if(err == X509_V_ERR_CERT_NOT_YET_VALID || err == X509_V_ERR_CERT_HAS_EXPIRED){
+					preverify_ok = 1;
+				}
+			}
+		}
+	}
 	return preverify_ok;
 }
 #endif
@@ -284,39 +302,60 @@ static unsigned int psk_server_callback(SSL *ssl, const char *identity, unsigned
 	if(!psk_key) return 0;
 
 	if(mosquitto_psk_key_get(context, psk_hint, identity, psk_key, (int)max_psk_len*2) != MOSQ_ERR_SUCCESS){
-		mosquitto__free(psk_key);
+		mosquitto__FREE(psk_key);
 		return 0;
 	}
 
 	len = mosquitto__hex2bin(psk_key, psk, (int)max_psk_len);
 	if (len < 0){
-		mosquitto__free(psk_key);
+		mosquitto__FREE(psk_key);
 		return 0;
 	}
 
 	if(listener->use_identity_as_username){
 		context->username = mosquitto__strdup(identity);
 		if(!context->username){
-			mosquitto__free(psk_key);
+			mosquitto__FREE(psk_key);
 			return 0;
 		}
 	}
 
-	mosquitto__free(psk_key);
+	mosquitto__FREE(psk_key);
 	return (unsigned int)len;
 }
 #endif
 
 #ifdef WITH_TLS
+static void tls_keylog_callback(const SSL *ssl, const char *line)
+{
+	FILE *fptr;
+
+	UNUSED(ssl);
+
+	if(db.tls_keylog){
+		fptr = fopen(db.tls_keylog, "at");
+		if(fptr){
+			fprintf(fptr, "%s\n", line);
+			fclose(fptr);
+		}
+	}
+}
+
 int net__tls_server_ctx(struct mosquitto__listener *listener)
 {
 	char buf[256];
 	int rc;
+#if OPENSSL_VERSION_NUMBER >= 0x30000000
+	BIO *bio;
+	EVP_PKEY *dhparam = NULL;
+#else
 	FILE *dhparamfile;
 	DH *dhparam = NULL;
+#endif
 
 	if(listener->ssl_ctx){
 		SSL_CTX_free(listener->ssl_ctx);
+		listener->ssl_ctx = NULL;
 	}
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
@@ -332,7 +371,7 @@ int net__tls_server_ctx(struct mosquitto__listener *listener)
 
 #ifdef SSL_OP_NO_TLSv1_3
 	if(db.config->per_listener_settings){
-		if(listener->security_options.psk_file){
+		if(listener->security_options->psk_file){
 			SSL_CTX_set_options(listener->ssl_ctx, SSL_OP_NO_TLSv1_3);
 		}
 	}else{
@@ -343,7 +382,7 @@ int net__tls_server_ctx(struct mosquitto__listener *listener)
 #endif
 
 	if(listener->tls_version == NULL){
-		SSL_CTX_set_options(listener->ssl_ctx, SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1);
+		SSL_CTX_set_options(listener->ssl_ctx, SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1);
 #ifdef SSL_OP_NO_TLSv1_3
 	}else if(!strcmp(listener->tls_version, "tlsv1.3")){
 		SSL_CTX_set_options(listener->ssl_ctx, SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1 | SSL_OP_NO_TLSv1_2);
@@ -389,6 +428,14 @@ int net__tls_server_ctx(struct mosquitto__listener *listener)
 	SSL_CTX_set_options(listener->ssl_ctx, SSL_OP_NO_RENEGOTIATION);
 #endif
 
+	if(db.tls_keylog){
+		log__printf(NULL, MOSQ_LOG_NOTICE, "TLS key logging to '%s' enabled for all listeners.",
+				db.tls_keylog);
+		log__printf(NULL, MOSQ_LOG_NOTICE, "TLS key logging is for DEBUGGING only.");
+
+		SSL_CTX_set_keylog_callback(listener->ssl_ctx, tls_keylog_callback);
+	}
+
 	snprintf(buf, 256, "mosquitto-%d", listener->port);
 	SSL_CTX_set_session_id_context(listener->ssl_ctx, (unsigned char *)buf, (unsigned int)strlen(buf));
 
@@ -416,6 +463,26 @@ int net__tls_server_ctx(struct mosquitto__listener *listener)
 #endif
 
 	if(listener->dhparamfile){
+#if OPENSSL_VERSION_NUMBER >= 0x30000000
+		bio = BIO_new_file(listener->dhparamfile, "r");
+		if(!bio){
+			log__printf(NULL, MOSQ_LOG_ERR, "Error loading dhparamfile \"%s\".", listener->dhparamfile);
+			return MOSQ_ERR_TLS;
+		}
+		dhparam = EVP_PKEY_new();
+		if(dhparam == NULL || !PEM_read_bio_Parameters(bio, &dhparam)){
+			BIO_free(bio);
+			log__printf(NULL, MOSQ_LOG_ERR, "Error loading dhparamfile \"%s\".", listener->dhparamfile);
+			net__print_ssl_error(NULL);
+			return MOSQ_ERR_TLS;
+		}
+		BIO_free(bio);
+		if(dhparam == NULL || SSL_CTX_set0_tmp_dh_pkey(listener->ssl_ctx, dhparam) != 1){
+			log__printf(NULL, MOSQ_LOG_ERR, "Error loading dhparamfile \"%s\".", listener->dhparamfile);
+			net__print_ssl_error(NULL);
+			return MOSQ_ERR_TLS;
+		}
+#else
 		dhparamfile = fopen(listener->dhparamfile, "r");
 		if(!dhparamfile){
 			log__printf(NULL, MOSQ_LOG_ERR, "Error loading dhparamfile \"%s\".", listener->dhparamfile);
@@ -429,6 +496,7 @@ int net__tls_server_ctx(struct mosquitto__listener *listener)
 			net__print_ssl_error(NULL);
 			return MOSQ_ERR_TLS;
 		}
+#endif
 	}
 	return MOSQ_ERR_SUCCESS;
 }
@@ -507,7 +575,7 @@ int net__load_certificates(struct mosquitto__listener *listener)
 }
 
 
-#if defined(WITH_TLS) && !defined(OPENSSL_NO_ENGINE)
+#if defined(WITH_TLS) && !defined(OPENSSL_NO_ENGINE) && OPENSSL_API_LEVEL < 30000
 static int net__load_engine(struct mosquitto__listener *listener)
 {
 	ENGINE *engine = NULL;
@@ -602,7 +670,7 @@ int net__tls_load_verify(struct mosquitto__listener *listener)
 	}
 #  endif
 
-#  if !defined(OPENSSL_NO_ENGINE)
+#  if !defined(OPENSSL_NO_ENGINE) && OPENSSL_API_LEVEL < 30000
 	if(net__load_engine(listener)){
 		return MOSQ_ERR_TLS;
 	}
@@ -748,7 +816,7 @@ static int net__socket_listen_tcp(struct mosquitto__listener *listener)
 
 		if(net__socket_nonblock(&sock)){
 			freeaddrinfo(ainfo);
-			mosquitto__free(listener->socks);
+			mosquitto__FREE(listener->socks);
 			return 1;
 		}
 
@@ -775,7 +843,7 @@ static int net__socket_listen_tcp(struct mosquitto__listener *listener)
 			net__print_error(MOSQ_LOG_ERR, "Error: %s");
 			COMPAT_CLOSE(sock);
 			freeaddrinfo(ainfo);
-			mosquitto__free(listener->socks);
+			mosquitto__FREE(listener->socks);
 			return 1;
 		}
 
@@ -783,7 +851,7 @@ static int net__socket_listen_tcp(struct mosquitto__listener *listener)
 			net__print_error(MOSQ_LOG_ERR, "Error: %s");
 			freeaddrinfo(ainfo);
 			COMPAT_CLOSE(sock);
-			mosquitto__free(listener->socks);
+			mosquitto__FREE(listener->socks);
 			return 1;
 		}
 	}
@@ -791,7 +859,7 @@ static int net__socket_listen_tcp(struct mosquitto__listener *listener)
 
 #ifndef WIN32
 	if(listener->bind_interface && !interface_bound){
-		mosquitto__free(listener->socks);
+		mosquitto__FREE(listener->socks);
 		return 1;
 	}
 #endif
@@ -894,13 +962,6 @@ int net__socket_listen(struct mosquitto__listener *listener)
 		}
 #  ifdef FINAL_WITH_TLS_PSK
 		if(listener->psk_hint){
-			if(tls_ex_index_context == -1){
-				tls_ex_index_context = SSL_get_ex_new_index(0, "client context", NULL, NULL, NULL);
-			}
-			if(tls_ex_index_listener == -1){
-				tls_ex_index_listener = SSL_get_ex_new_index(0, "listener", NULL, NULL, NULL);
-			}
-
 			if(listener->certfile == NULL || listener->keyfile == NULL){
 				if(net__tls_server_ctx(listener)){
 					return 1;
@@ -917,6 +978,12 @@ int net__socket_listen(struct mosquitto__listener *listener)
 			}
 		}
 #  endif /* FINAL_WITH_TLS_PSK */
+		if(tls_ex_index_context == -1){
+			tls_ex_index_context = SSL_get_ex_new_index(0, "client context", NULL, NULL, NULL);
+		}
+		if(tls_ex_index_listener == -1){
+			tls_ex_index_listener = SSL_get_ex_new_index(0, "listener", NULL, NULL, NULL);
+		}
 #endif /* WITH_TLS */
 		return 0;
 	}else{

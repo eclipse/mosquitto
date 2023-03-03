@@ -1,3 +1,4 @@
+#include <cassert>
 #include <cstring>
 
 #include <mosquittopp.h>
@@ -11,6 +12,7 @@ class mosquittopp_test : public mosqpp::mosquittopp
 		mosquittopp_test(const char *id);
 
 		void on_connect(int rc);
+		void on_disconnect(int rc);
 		void on_publish(int mid);
 };
 
@@ -36,10 +38,16 @@ void mosquittopp_test::on_publish(int mid)
 	}
 }
 
+void mosquittopp_test::on_disconnect(int rc)
+{
+	run = rc;
+}
+
 int main(int argc, char *argv[])
 {
 	struct mosquittopp_test *mosq;
 
+	assert(argc == 2);
 	int port = atoi(argv[1]);
 
 	mosqpp::lib_init();

@@ -13,7 +13,8 @@ static void byte_prop_write_helper(
 		uint8_t value_expected)
 {
 	mosquitto_property property;
-	struct mosquitto__packet packet;
+	struct mosquitto__packet *packet;
+	struct mosquitto__packet_in in_packet;
 	mosquitto_property *properties;
 	int rc;
 
@@ -22,21 +23,22 @@ static void byte_prop_write_helper(
 	property.identifier = identifier;
 	property.value.i8 = value_expected;
 
-	memset(&packet, 0, sizeof(struct mosquitto__packet));
-	packet.remaining_length = property__get_length_all(&property)+1;
-	packet.packet_length = packet.remaining_length+10;
-	packet.payload = calloc(packet.remaining_length+10, 1);
+	rc = packet__alloc(&packet, 0, property__get_length_all(&property)+11);
+	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
+	if(rc != MOSQ_ERR_SUCCESS) return;
 
-	CU_ASSERT_PTR_NOT_NULL(packet.payload);
-	if(!packet.payload) return;
+	packet->pos = 0; /* Make indexing easier */
+	property__write_all(packet, &property, true);
 
-	property__write_all(&packet, &property, true);
-	packet.pos = 0;
+	in_packet.remaining_length = packet->remaining_length;
+	in_packet.packet_length = packet->packet_length;
+	in_packet.pos = 0;
+	in_packet.payload = packet->payload;
 
-	rc = property__read_all(command, &packet, &properties);
+	rc = property__read_all(command, &in_packet, &properties);
 
 	CU_ASSERT_EQUAL(rc, rc_expected);
-	CU_ASSERT_EQUAL(packet.pos, remaining_length);
+	CU_ASSERT_EQUAL(in_packet.pos, remaining_length);
 	if(properties){
 		CU_ASSERT_EQUAL(properties->identifier, identifier);
 		CU_ASSERT_EQUAL(properties->value.i8, value_expected);
@@ -45,7 +47,7 @@ static void byte_prop_write_helper(
 		mosquitto_property_free_all(&properties);
 	}
 	CU_ASSERT_PTR_EQUAL(properties, NULL);
-	free(packet.payload);
+	free(packet);
 }
 
 
@@ -57,7 +59,8 @@ static void int32_prop_write_helper(
 		uint32_t value_expected)
 {
 	mosquitto_property property;
-	struct mosquitto__packet packet;
+	struct mosquitto__packet *packet;
+	struct mosquitto__packet_in in_packet;
 	mosquitto_property *properties;
 	int rc;
 
@@ -66,21 +69,22 @@ static void int32_prop_write_helper(
 	property.identifier = identifier;
 	property.value.i32 = value_expected;
 
-	memset(&packet, 0, sizeof(struct mosquitto__packet));
-	packet.remaining_length = property__get_length_all(&property)+1;
-	packet.packet_length = packet.remaining_length+10;
-	packet.payload = calloc(packet.remaining_length+10, 1);
+	rc = packet__alloc(&packet, 0, property__get_length_all(&property)+11);
+	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
+	if(rc != MOSQ_ERR_SUCCESS) return;
 
-	CU_ASSERT_PTR_NOT_NULL(packet.payload);
-	if(!packet.payload) return;
+	packet->pos = 0; /* Make indexing easier */
+	property__write_all(packet, &property, true);
 
-	property__write_all(&packet, &property, true);
-	packet.pos = 0;
+	in_packet.remaining_length = packet->remaining_length;
+	in_packet.packet_length = packet->packet_length;
+	in_packet.pos = 0;
+	in_packet.payload = packet->payload;
 
-	rc = property__read_all(command, &packet, &properties);
+	rc = property__read_all(command, &in_packet, &properties);
 
 	CU_ASSERT_EQUAL(rc, rc_expected);
-	CU_ASSERT_EQUAL(packet.pos, remaining_length);
+	CU_ASSERT_EQUAL(in_packet.pos, remaining_length);
 	if(properties){
 		CU_ASSERT_EQUAL(properties->identifier, identifier);
 		CU_ASSERT_EQUAL(properties->value.i32, value_expected);
@@ -89,7 +93,7 @@ static void int32_prop_write_helper(
 		mosquitto_property_free_all(&properties);
 	}
 	CU_ASSERT_PTR_EQUAL(properties, NULL);
-	free(packet.payload);
+	free(packet);
 }
 
 
@@ -101,7 +105,8 @@ static void int16_prop_write_helper(
 		uint16_t value_expected)
 {
 	mosquitto_property property;
-	struct mosquitto__packet packet;
+	struct mosquitto__packet *packet;
+	struct mosquitto__packet_in in_packet;
 	mosquitto_property *properties;
 	int rc;
 
@@ -110,21 +115,22 @@ static void int16_prop_write_helper(
 	property.identifier = identifier;
 	property.value.i16 = value_expected;
 
-	memset(&packet, 0, sizeof(struct mosquitto__packet));
-	packet.remaining_length = property__get_length_all(&property)+1;
-	packet.packet_length = packet.remaining_length+10;
-	packet.payload = calloc(packet.remaining_length+10, 1);
+	rc = packet__alloc(&packet, 0, property__get_length_all(&property)+11);
+	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
+	if(rc != MOSQ_ERR_SUCCESS) return;
 
-	CU_ASSERT_PTR_NOT_NULL(packet.payload);
-	if(!packet.payload) return;
+	packet->pos = 0; /* Make indexing easier */
+	property__write_all(packet, &property, true);
 
-	property__write_all(&packet, &property, true);
-	packet.pos = 0;
+	in_packet.remaining_length = packet->remaining_length;
+	in_packet.packet_length = packet->packet_length;
+	in_packet.pos = 0;
+	in_packet.payload = packet->payload;
 
-	rc = property__read_all(command, &packet, &properties);
+	rc = property__read_all(command, &in_packet, &properties);
 
 	CU_ASSERT_EQUAL(rc, rc_expected);
-	CU_ASSERT_EQUAL(packet.pos, remaining_length);
+	CU_ASSERT_EQUAL(in_packet.pos, remaining_length);
 	if(properties){
 		CU_ASSERT_EQUAL(properties->identifier, identifier);
 		CU_ASSERT_EQUAL(properties->value.i16, value_expected);
@@ -133,7 +139,7 @@ static void int16_prop_write_helper(
 		mosquitto_property_free_all(&properties);
 	}
 	CU_ASSERT_PTR_EQUAL(properties, NULL);
-	free(packet.payload);
+	free(packet);
 }
 
 static void string_prop_write_helper(
@@ -144,7 +150,8 @@ static void string_prop_write_helper(
 		const char *value_expected)
 {
 	mosquitto_property property;
-	struct mosquitto__packet packet;
+	struct mosquitto__packet *packet;
+	struct mosquitto__packet_in in_packet;
 	mosquitto_property *properties;
 	int rc;
 
@@ -157,21 +164,22 @@ static void string_prop_write_helper(
 
 	property.value.s.len = (uint16_t)strlen(value_expected);
 
-	memset(&packet, 0, sizeof(struct mosquitto__packet));
-	packet.remaining_length = property__get_length_all(&property)+1;
-	packet.packet_length = packet.remaining_length+10;
-	packet.payload = calloc(packet.remaining_length+10, 1);
+	rc = packet__alloc(&packet, 0, property__get_length_all(&property)+11);
+	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
+	if(rc != MOSQ_ERR_SUCCESS) return;
 
-	CU_ASSERT_PTR_NOT_NULL(packet.payload);
-	if(!packet.payload) return;
+	packet->pos = 0; /* Make indexing easier */
+	property__write_all(packet, &property, true);
 
-	property__write_all(&packet, &property, true);
-	packet.pos = 0;
+	in_packet.remaining_length = packet->remaining_length;
+	in_packet.packet_length = packet->packet_length;
+	in_packet.pos = 0;
+	in_packet.payload = packet->payload;
 
-	rc = property__read_all(command, &packet, &properties);
+	rc = property__read_all(command, &in_packet, &properties);
 
 	CU_ASSERT_EQUAL(rc, rc_expected);
-	CU_ASSERT_EQUAL(packet.pos, remaining_length);
+	CU_ASSERT_EQUAL(in_packet.pos, remaining_length);
 	if(properties){
 		CU_ASSERT_EQUAL(properties->identifier, identifier);
 		CU_ASSERT_EQUAL(properties->value.s.len, strlen(value_expected));
@@ -182,7 +190,7 @@ static void string_prop_write_helper(
 	}
 	CU_ASSERT_PTR_EQUAL(properties, NULL);
 	free(property.value.s.v);
-	free(packet.payload);
+	free(packet);
 }
 
 
@@ -195,7 +203,8 @@ static void binary_prop_write_helper(
 		uint16_t len_expected)
 {
 	mosquitto_property property;
-	struct mosquitto__packet packet;
+	struct mosquitto__packet *packet;
+	struct mosquitto__packet_in in_packet;
 	mosquitto_property *properties;
 	int rc;
 
@@ -209,21 +218,22 @@ static void binary_prop_write_helper(
 	memcpy(property.value.bin.v, value_expected, len_expected);
 	property.value.bin.len = len_expected;
 
-	memset(&packet, 0, sizeof(struct mosquitto__packet));
-	packet.remaining_length = property__get_length_all(&property)+1;
-	packet.packet_length = packet.remaining_length+10;
-	packet.payload = calloc(packet.remaining_length+10, 1);
+	rc = packet__alloc(&packet, 0, property__get_length_all(&property)+11);
+	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
+	if(rc != MOSQ_ERR_SUCCESS) return;
 
-	CU_ASSERT_PTR_NOT_NULL(packet.payload);
-	if(!packet.payload) return;
+	packet->pos = 0; /* Make indexing easier */
+	property__write_all(packet, &property, true);
 
-	property__write_all(&packet, &property, true);
-	packet.pos = 0;
+	in_packet.remaining_length = packet->remaining_length;
+	in_packet.packet_length = packet->packet_length;
+	in_packet.pos = 0;
+	in_packet.payload = packet->payload;
 
-	rc = property__read_all(command, &packet, &properties);
+	rc = property__read_all(command, &in_packet, &properties);
 
 	CU_ASSERT_EQUAL(rc, rc_expected);
-	CU_ASSERT_EQUAL(packet.pos, remaining_length);
+	CU_ASSERT_EQUAL(in_packet.pos, remaining_length);
 	if(properties){
 		CU_ASSERT_EQUAL(properties->identifier, identifier);
 		CU_ASSERT_EQUAL(properties->value.bin.len, len_expected);
@@ -234,7 +244,7 @@ static void binary_prop_write_helper(
 	}
 	CU_ASSERT_PTR_EQUAL(properties, NULL);
 	free(property.value.bin.v);
-	free(packet.payload);
+	free(packet);
 }
 
 static void string_pair_prop_write_helper(
@@ -246,7 +256,8 @@ static void string_pair_prop_write_helper(
 		bool expect_multiple)
 {
 	mosquitto_property property;
-	struct mosquitto__packet packet;
+	struct mosquitto__packet *packet;
+	struct mosquitto__packet_in in_packet;
 	mosquitto_property *properties;
 	int rc;
 
@@ -264,21 +275,22 @@ static void string_pair_prop_write_helper(
 
 	property.name.len = (uint16_t)strlen(name_expected);
 
-	memset(&packet, 0, sizeof(struct mosquitto__packet));
-	packet.remaining_length = property__get_length_all(&property)+1;
-	packet.packet_length = packet.remaining_length+10;
-	packet.payload = calloc(packet.remaining_length+10, 1);
+	rc = packet__alloc(&packet, 0, property__get_length_all(&property)+11);
+	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
+	if(rc != MOSQ_ERR_SUCCESS) return;
 
-	CU_ASSERT_PTR_NOT_NULL(packet.payload);
-	if(!packet.payload) return;
+	packet->pos = 0; /* Make indexing easier */
+	property__write_all(packet, &property, true);
 
-	property__write_all(&packet, &property, true);
-	packet.pos = 0;
+	in_packet.remaining_length = packet->remaining_length;
+	in_packet.packet_length = packet->packet_length;
+	in_packet.pos = 0;
+	in_packet.payload = packet->payload;
 
-	rc = property__read_all(CMD_CONNECT, &packet, &properties);
+	rc = property__read_all(CMD_CONNECT, &in_packet, &properties);
 
 	CU_ASSERT_EQUAL(rc, rc_expected);
-	CU_ASSERT_EQUAL(packet.pos, remaining_length);
+	CU_ASSERT_EQUAL(in_packet.pos, remaining_length);
 	if(properties){
 		CU_ASSERT_EQUAL(properties->identifier, identifier);
 		CU_ASSERT_EQUAL(properties->name.len, strlen(name_expected));
@@ -296,7 +308,7 @@ static void string_pair_prop_write_helper(
 	CU_ASSERT_PTR_NULL(properties);
 	free(property.value.s.v);
 	free(property.name.v);
-	free(packet.payload);
+	free(packet);
 }
 
 static void varint_prop_write_helper(
@@ -306,7 +318,8 @@ static void varint_prop_write_helper(
 		uint32_t value_expected)
 {
 	mosquitto_property property;
-	struct mosquitto__packet packet;
+	struct mosquitto__packet *packet;
+	struct mosquitto__packet_in in_packet;
 	mosquitto_property *properties;
 	int rc;
 
@@ -315,20 +328,21 @@ static void varint_prop_write_helper(
 	property.identifier = identifier;
 	property.value.varint = value_expected;
 
-	memset(&packet, 0, sizeof(struct mosquitto__packet));
-	packet.remaining_length = property__get_length_all(&property)+1;
-	CU_ASSERT_EQUAL(packet.remaining_length, remaining_length);
+	CU_ASSERT_EQUAL(remaining_length, property__get_length_all(&property)+1);
 
-	packet.packet_length = packet.remaining_length+10;
-	packet.payload = calloc(packet.remaining_length+10, 1);
+	rc = packet__alloc(&packet, 0, property__get_length_all(&property)+11);
+	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
+	if(rc != MOSQ_ERR_SUCCESS) return;
 
-	CU_ASSERT_PTR_NOT_NULL(packet.payload);
-	if(!packet.payload) return;
+	packet->pos = 0; /* Make indexing easier */
+	property__write_all(packet, &property, true);
 
-	property__write_all(&packet, &property, true);
-	packet.pos = 0;
+	in_packet.remaining_length = packet->remaining_length;
+	in_packet.packet_length = packet->packet_length;
+	in_packet.pos = 0;
+	in_packet.payload = packet->payload;
 
-	rc = property__read_all(CMD_PUBLISH, &packet, &properties);
+	rc = property__read_all(CMD_PUBLISH, &in_packet, &properties);
 
 	CU_ASSERT_EQUAL(rc, rc_expected);
 	if(properties){
@@ -349,7 +363,7 @@ static void varint_prop_write_helper(
 		mosquitto_property_free_all(&properties);
 	}
 	CU_ASSERT_PTR_NULL(properties);
-	free(packet.payload);
+	free(packet);
 }
 
 /* ========================================================================
@@ -359,18 +373,20 @@ static void varint_prop_write_helper(
 static void TEST_bad_identifier(void)
 {
 	mosquitto_property property;
-	struct mosquitto__packet packet;
-	uint8_t payload[10];
+	struct mosquitto__packet *packet;
 	int rc;
 
-	memset(&property, 0, sizeof(mosquitto_property));
-	memset(&packet, 0, sizeof(struct mosquitto__packet));
+	memset(&property, 0, sizeof(property));
+	packet = calloc(1, sizeof(struct mosquitto__packet) + 10);
+	CU_ASSERT_PTR_NOT_NULL(packet);
+	if(packet == NULL) return;
+
 	property.identifier = 0xFFFF;
-	packet.packet_length = 10;
-	packet.remaining_length = 8;
-	packet.payload = payload;
-	rc = property__write_all(&packet, &property, true);
+	packet->packet_length = 10;
+	packet->remaining_length = 8;
+	rc = property__write_all(packet, &property, true);
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_INVAL);
+	free(packet);
 }
 
 

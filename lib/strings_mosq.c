@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2010-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2010-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -31,62 +31,109 @@ Contributors:
 const char *mosquitto_strerror(int mosq_errno)
 {
 	switch(mosq_errno){
+		case MOSQ_ERR_QUOTA_EXCEEDED:
+			return "Quota exceeded";
+		case MOSQ_ERR_AUTH_DELAYED:
+			return "Authentication delayed";
 		case MOSQ_ERR_AUTH_CONTINUE:
-			return "Continue with authentication.";
+			return "Continue with authentication";
 		case MOSQ_ERR_NO_SUBSCRIBERS:
-			return "No subscribers.";
+			return "No subscribers";
 		case MOSQ_ERR_SUB_EXISTS:
-			return "Subscription already exists.";
+			return "Subscription already exists";
 		case MOSQ_ERR_CONN_PENDING:
-			return "Connection pending.";
+			return "Connection pending";
 		case MOSQ_ERR_SUCCESS:
-			return "No error.";
+			return "No error";
 		case MOSQ_ERR_NOMEM:
-			return "Out of memory.";
+			return "Out of memory";
 		case MOSQ_ERR_PROTOCOL:
-			return "A network protocol error occurred when communicating with the broker.";
+			return "A network protocol error occurred when communicating with the broker";
 		case MOSQ_ERR_INVAL:
-			return "Invalid arguments provided.";
+			return "Invalid input";
 		case MOSQ_ERR_NO_CONN:
-			return "The client is not currently connected.";
+			return "The client is not currently connected";
 		case MOSQ_ERR_CONN_REFUSED:
-			return "The connection was refused.";
+			return "The connection was refused";
 		case MOSQ_ERR_NOT_FOUND:
-			return "Message not found (internal error).";
+			return "Message not found (internal error)";
 		case MOSQ_ERR_CONN_LOST:
-			return "The connection was lost.";
+			return "The connection was lost";
 		case MOSQ_ERR_TLS:
-			return "A TLS error occurred.";
+			return "A TLS error occurred";
 		case MOSQ_ERR_PAYLOAD_SIZE:
-			return "Payload too large.";
+			return "Payload too large";
 		case MOSQ_ERR_NOT_SUPPORTED:
-			return "This feature is not supported.";
+			return "This feature is not supported";
 		case MOSQ_ERR_AUTH:
-			return "Authorisation failed.";
+			return "Authorisation failed";
 		case MOSQ_ERR_ACL_DENIED:
-			return "Access denied by ACL.";
+			return "Access denied by ACL";
 		case MOSQ_ERR_UNKNOWN:
-			return "Unknown error.";
+			return "Unknown error";
 		case MOSQ_ERR_ERRNO:
 			return strerror(errno);
 		case MOSQ_ERR_EAI:
-			return "Lookup error.";
+			return "Lookup error";
 		case MOSQ_ERR_PROXY:
-			return "Proxy error.";
+			return "Proxy error";
+		case MOSQ_ERR_PLUGIN_DEFER:
+			return "Plugin deferring result";
 		case MOSQ_ERR_MALFORMED_UTF8:
 			return "Malformed UTF-8";
+		case MOSQ_ERR_KEEPALIVE:
+			return "Keepalive exceeded";
+		case MOSQ_ERR_LOOKUP:
+			return "Lookup failed";
+		case MOSQ_ERR_MALFORMED_PACKET:
+			return "Malformed packet";
 		case MOSQ_ERR_DUPLICATE_PROPERTY:
 			return "Duplicate property in property list";
 		case MOSQ_ERR_TLS_HANDSHAKE:
-			return "TLS handshake failed.";
+			return "TLS handshake failed";
 		case MOSQ_ERR_QOS_NOT_SUPPORTED:
-			return "Requested QoS not supported on server.";
+			return "Requested QoS not supported on server";
 		case MOSQ_ERR_OVERSIZE_PACKET:
-			return "Packet larger than supported by the server.";
+			return "Packet larger than supported by the server";
 		case MOSQ_ERR_OCSP:
-			return "OCSP error.";
+			return "OCSP error";
+		case MOSQ_ERR_TIMEOUT:
+			return "Timeout";
+		case MOSQ_ERR_ALREADY_EXISTS:
+			return "Entry already exists";
+		case MOSQ_ERR_PLUGIN_IGNORE:
+			return "Ignore plugin";
+
+		case MOSQ_ERR_UNSPECIFIED:
+			return "Unspecified error";
+		case MOSQ_ERR_IMPLEMENTATION_SPECIFIC:
+			return "Implementaion specific error";
+		case MOSQ_ERR_CLIENT_IDENTIFIER_NOT_VALID:
+			return "Client identifier not valid";
+		case MOSQ_ERR_BAD_USERNAME_OR_PASSWORD:
+			return "Bad username or password";
+		case MOSQ_ERR_SERVER_UNAVAILABLE:
+			return "Server unavailable";
+		case MOSQ_ERR_SERVER_BUSY:
+			return "Server busy";
+		case MOSQ_ERR_BANNED:
+			return "Banned";
+		case MOSQ_ERR_BAD_AUTHENTICATION_METHOD:
+			return "Bad authentication method";
+		case MOSQ_ERR_SESSION_TAKEN_OVER:
+			return "Session taken over";
+		case MOSQ_ERR_RECEIVE_MAXIMUM_EXCEEDED:
+			return "Receive maximum exceeded";
+		case MOSQ_ERR_TOPIC_ALIAS_INVALID:
+			return "Topic alias invalid";
+		case MOSQ_ERR_ADMINISTRATIVE_ACTION:
+			return "Administrative action";
+		case MOSQ_ERR_RETAIN_NOT_SUPPORTED:
+			return "Retain not supported";
+		case MOSQ_ERR_CONNECTION_RATE_EXCEEDED:
+			return "Connection rate exceeded";
 		default:
-			return "Unknown error.";
+			return "Unknown error";
 	}
 }
 
@@ -94,19 +141,19 @@ const char *mosquitto_connack_string(int connack_code)
 {
 	switch(connack_code){
 		case 0:
-			return "Connection Accepted.";
+			return "Connection Accepted";
 		case 1:
-			return "Connection Refused: unacceptable protocol version.";
+			return "Connection Refused: unacceptable protocol version";
 		case 2:
-			return "Connection Refused: identifier rejected.";
+			return "Connection Refused: identifier rejected";
 		case 3:
-			return "Connection Refused: broker unavailable.";
+			return "Connection Refused: broker unavailable";
 		case 4:
-			return "Connection Refused: bad user name or password.";
+			return "Connection Refused: bad user name or password";
 		case 5:
-			return "Connection Refused: not authorised.";
+			return "Connection Refused: not authorised";
 		default:
-			return "Connection Refused: unknown reason.";
+			return "Connection Refused: unknown reason";
 	}
 }
 
@@ -224,8 +271,12 @@ int mosquitto_string_to_command(const char *str, int *cmd)
 		*cmd = CMD_PUBCOMP;
 	}else if(!strcasecmp(str, "subscribe")){
 		*cmd = CMD_SUBSCRIBE;
+	}else if(!strcasecmp(str, "suback")){
+		*cmd = CMD_SUBACK;
 	}else if(!strcasecmp(str, "unsubscribe")){
 		*cmd = CMD_UNSUBSCRIBE;
+	}else if(!strcasecmp(str, "unsuback")){
+		*cmd = CMD_UNSUBACK;
 	}else if(!strcasecmp(str, "disconnect")){
 		*cmd = CMD_DISCONNECT;
 	}else if(!strcasecmp(str, "auth")){
@@ -233,6 +284,7 @@ int mosquitto_string_to_command(const char *str, int *cmd)
 	}else if(!strcasecmp(str, "will")){
 		*cmd = CMD_WILL;
 	}else{
+		*cmd = 0;
 		return MOSQ_ERR_INVAL;
 	}
 	return MOSQ_ERR_SUCCESS;

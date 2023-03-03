@@ -5,9 +5,7 @@
 
 #include <CUnit/CUnit.h>
 #include <CUnit/Basic.h>
-
-#define WITH_BROKER
-#define WITH_PERSISTENCE
+#include "path_helper.h"
 
 #include "mosquitto_broker_internal.h"
 #include "persist.h"
@@ -44,7 +42,10 @@ static void TEST_empty_file(void)
 
 	config.persistence = true;
 
-	config.persistence_filepath = "files/persist_read/empty.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/empty.test-db");
+	config.persistence_filepath = persistence_filepath;
+
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
 }
@@ -61,11 +62,14 @@ static void TEST_corrupt_header(void)
 
 	config.persistence = true;
 
-	config.persistence_filepath = "files/persist_read/corrupt-header-short.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/corrupt-header-short.test-db");
+	config.persistence_filepath = persistence_filepath;
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, 1);
 
-	config.persistence_filepath = "files/persist_read/corrupt-header-long.test-db";
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/corrupt-header-long.test-db");
+	config.persistence_filepath = persistence_filepath;
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, 1);
 }
@@ -80,7 +84,9 @@ static void TEST_unsupported_version(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/unsupported-version.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/unsupported-version.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, 1);
@@ -97,7 +103,9 @@ static void TEST_v3_config_ok(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v3-cfg.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v3-cfg.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
@@ -115,7 +123,9 @@ static void TEST_v4_config_ok(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v4-cfg.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v4-cfg.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
@@ -133,7 +143,9 @@ static void TEST_v3_config_truncated(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v3-cfg-truncated.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v3-cfg-truncated.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, 1);
@@ -151,7 +163,9 @@ static void TEST_v3_config_bad_dbid(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v3-cfg-bad-dbid.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v3-cfg-bad-dbid.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, 1);
@@ -169,7 +183,9 @@ static void TEST_v3_bad_chunk(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v3-bad-chunk.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v3-bad-chunk.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
@@ -187,7 +203,9 @@ static void TEST_v3_message_store(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v3-message-store.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v3-message-store.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
@@ -195,19 +213,18 @@ static void TEST_v3_message_store(void)
 	CU_ASSERT_EQUAL(db.msg_store_bytes, 7);
 	CU_ASSERT_PTR_NOT_NULL(db.msg_store);
 	if(db.msg_store){
-		CU_ASSERT_EQUAL(db.msg_store->db_id, 1);
-		CU_ASSERT_STRING_EQUAL(db.msg_store->source_id, "source_id");
-		CU_ASSERT_EQUAL(db.msg_store->source_mid, 2);
-		CU_ASSERT_EQUAL(db.msg_store->mid, 0);
-		CU_ASSERT_EQUAL(db.msg_store->qos, 2);
-		CU_ASSERT_EQUAL(db.msg_store->retain, 1);
-		CU_ASSERT_PTR_NOT_NULL(db.msg_store->topic);
-		if(db.msg_store->topic){
-			CU_ASSERT_STRING_EQUAL(db.msg_store->topic, "topic");
+		CU_ASSERT_EQUAL(db.msg_store->data.store_id, 1);
+		CU_ASSERT_STRING_EQUAL(db.msg_store->data.source_id, "source_id");
+		CU_ASSERT_EQUAL(db.msg_store->data.source_mid, 2);
+		CU_ASSERT_EQUAL(db.msg_store->data.qos, 2);
+		CU_ASSERT_EQUAL(db.msg_store->data.retain, 1);
+		CU_ASSERT_PTR_NOT_NULL(db.msg_store->data.topic);
+		if(db.msg_store->data.topic){
+			CU_ASSERT_STRING_EQUAL(db.msg_store->data.topic, "topic");
 		}
-		CU_ASSERT_EQUAL(db.msg_store->payloadlen, 7);
-		if(db.msg_store->payloadlen == 7){
-			CU_ASSERT_NSTRING_EQUAL(db.msg_store->payload, "payload", 7);
+		CU_ASSERT_EQUAL(db.msg_store->data.payloadlen, 7);
+		if(db.msg_store->data.payloadlen == 7){
+			CU_ASSERT_NSTRING_EQUAL(db.msg_store->data.payload, "payload", 7);
 		}
 	}
 }
@@ -223,7 +240,9 @@ static void TEST_v3_client(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v3-client.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v3-client.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
@@ -249,7 +268,9 @@ static void TEST_v3_client_message(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v3-client-message.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v3-client-message.test-db");
+	config.persistence_filepath = persistence_filepath;
 	config.max_inflight_messages = 20;
 
 	rc = persist__restore();
@@ -262,30 +283,29 @@ static void TEST_v3_client_message(void)
 		CU_ASSERT_PTR_NOT_NULL(context->msgs_out.inflight);
 		if(context->msgs_out.inflight){
 			CU_ASSERT_PTR_NULL(context->msgs_out.inflight->next);
-			CU_ASSERT_PTR_NOT_NULL(context->msgs_out.inflight->store);
-			if(context->msgs_out.inflight->store){
-				CU_ASSERT_EQUAL(context->msgs_out.inflight->store->ref_count, 1);
-				CU_ASSERT_STRING_EQUAL(context->msgs_out.inflight->store->source_id, "source_id");
-				CU_ASSERT_EQUAL(context->msgs_out.inflight->store->source_mid, 2);
-				CU_ASSERT_EQUAL(context->msgs_out.inflight->store->mid, 0);
-				CU_ASSERT_EQUAL(context->msgs_out.inflight->store->qos, 2);
-				CU_ASSERT_EQUAL(context->msgs_out.inflight->store->retain, 1);
-				CU_ASSERT_PTR_NOT_NULL(context->msgs_out.inflight->store->topic);
-				if(context->msgs_out.inflight->store->topic){
-					CU_ASSERT_STRING_EQUAL(context->msgs_out.inflight->store->topic, "topic");
+			CU_ASSERT_PTR_NOT_NULL(context->msgs_out.inflight->base_msg);
+			if(context->msgs_out.inflight->base_msg){
+				CU_ASSERT_EQUAL(context->msgs_out.inflight->base_msg->ref_count, 1);
+				CU_ASSERT_STRING_EQUAL(context->msgs_out.inflight->base_msg->data.source_id, "source_id");
+				CU_ASSERT_EQUAL(context->msgs_out.inflight->base_msg->data.source_mid, 2);
+				CU_ASSERT_EQUAL(context->msgs_out.inflight->base_msg->data.qos, 2);
+				CU_ASSERT_EQUAL(context->msgs_out.inflight->base_msg->data.retain, 1);
+				CU_ASSERT_PTR_NOT_NULL(context->msgs_out.inflight->base_msg->data.topic);
+				if(context->msgs_out.inflight->base_msg->data.topic){
+					CU_ASSERT_STRING_EQUAL(context->msgs_out.inflight->base_msg->data.topic, "topic");
 				}
-				CU_ASSERT_EQUAL(context->msgs_out.inflight->store->payloadlen, 7);
-				if(context->msgs_out.inflight->store->payloadlen == 7){
-					CU_ASSERT_NSTRING_EQUAL(context->msgs_out.inflight->store->payload, "payload", 7);
+				CU_ASSERT_EQUAL(context->msgs_out.inflight->base_msg->data.payloadlen, 7);
+				if(context->msgs_out.inflight->base_msg->data.payloadlen == 7){
+					CU_ASSERT_NSTRING_EQUAL(context->msgs_out.inflight->base_msg->data.payload, "payload", 7);
 				}
 			}
-			CU_ASSERT_EQUAL(context->msgs_out.inflight->mid, 0x73);
-			CU_ASSERT_EQUAL(context->msgs_out.inflight->qos, 1);
-			CU_ASSERT_EQUAL(context->msgs_out.inflight->retain, 0);
-			CU_ASSERT_EQUAL(context->msgs_out.inflight->direction, mosq_md_out);
-			CU_ASSERT_EQUAL(context->msgs_out.inflight->state, mosq_ms_wait_for_puback);
-			CU_ASSERT_EQUAL(context->msgs_out.inflight->dup, 0);
-			CU_ASSERT_PTR_NULL(context->msgs_out.inflight->properties);
+			CU_ASSERT_EQUAL(context->msgs_out.inflight->data.mid, 0x73);
+			CU_ASSERT_EQUAL(context->msgs_out.inflight->data.qos, 1);
+			CU_ASSERT_EQUAL(context->msgs_out.inflight->data.retain, 0);
+			CU_ASSERT_EQUAL(context->msgs_out.inflight->data.direction, mosq_md_out);
+			CU_ASSERT_EQUAL(context->msgs_out.inflight->data.state, mosq_ms_wait_for_puback);
+			CU_ASSERT_EQUAL(context->msgs_out.inflight->data.dup, 0);
+			CU_ASSERT_EQUAL(context->msgs_out.inflight->data.subscription_identifier, 0);
 		}
 	}
 }
@@ -301,7 +321,9 @@ static void TEST_v3_retain(void)
 
 	retain__init();
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v3-retain.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v3-retain.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
@@ -309,19 +331,18 @@ static void TEST_v3_retain(void)
 	CU_ASSERT_EQUAL(db.msg_store_bytes, 7);
 	CU_ASSERT_PTR_NOT_NULL(db.msg_store);
 	if(db.msg_store){
-		CU_ASSERT_EQUAL(db.msg_store->db_id, 0x54);
-		CU_ASSERT_STRING_EQUAL(db.msg_store->source_id, "source_id");
-		CU_ASSERT_EQUAL(db.msg_store->source_mid, 2);
-		CU_ASSERT_EQUAL(db.msg_store->mid, 0);
-		CU_ASSERT_EQUAL(db.msg_store->qos, 2);
-		CU_ASSERT_EQUAL(db.msg_store->retain, 1);
-		CU_ASSERT_PTR_NOT_NULL(db.msg_store->topic);
-		if(db.msg_store->topic){
-			CU_ASSERT_STRING_EQUAL(db.msg_store->topic, "topic");
+		CU_ASSERT_EQUAL(db.msg_store->data.store_id, 0x54);
+		CU_ASSERT_STRING_EQUAL(db.msg_store->data.source_id, "source_id");
+		CU_ASSERT_EQUAL(db.msg_store->data.source_mid, 2);
+		CU_ASSERT_EQUAL(db.msg_store->data.qos, 2);
+		CU_ASSERT_EQUAL(db.msg_store->data.retain, 1);
+		CU_ASSERT_PTR_NOT_NULL(db.msg_store->data.topic);
+		if(db.msg_store->data.topic){
+			CU_ASSERT_STRING_EQUAL(db.msg_store->data.topic, "topic");
 		}
-		CU_ASSERT_EQUAL(db.msg_store->payloadlen, 7);
-		if(db.msg_store->payloadlen == 7){
-			CU_ASSERT_NSTRING_EQUAL(db.msg_store->payload, "payload", 7);
+		CU_ASSERT_EQUAL(db.msg_store->data.payloadlen, 7);
+		if(db.msg_store->data.payloadlen == 7){
+			CU_ASSERT_NSTRING_EQUAL(db.msg_store->data.payload, "payload", 7);
 		}
 	}
 	CU_ASSERT_PTR_NOT_NULL(db.retains);
@@ -352,7 +373,9 @@ static void TEST_v3_sub(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v3-sub.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v3-sub.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
@@ -380,7 +403,9 @@ static void TEST_v4_message_store(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v4-message-store.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v4-message-store.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
@@ -388,19 +413,18 @@ static void TEST_v4_message_store(void)
 	CU_ASSERT_EQUAL(db.msg_store_bytes, 7);
 	CU_ASSERT_PTR_NOT_NULL(db.msg_store);
 	if(db.msg_store){
-		CU_ASSERT_EQUAL(db.msg_store->db_id, 0xFEDCBA9876543210);
-		CU_ASSERT_STRING_EQUAL(db.msg_store->source_id, "source_id");
-		CU_ASSERT_EQUAL(db.msg_store->source_mid, 0x88);
-		CU_ASSERT_EQUAL(db.msg_store->mid, 0);
-		CU_ASSERT_EQUAL(db.msg_store->qos, 1);
-		CU_ASSERT_EQUAL(db.msg_store->retain, 0);
-		CU_ASSERT_PTR_NOT_NULL(db.msg_store->topic);
-		if(db.msg_store->topic){
-			CU_ASSERT_STRING_EQUAL(db.msg_store->topic, "topic");
+		CU_ASSERT_EQUAL(db.msg_store->data.store_id, 0xFEDCBA9876543210);
+		CU_ASSERT_STRING_EQUAL(db.msg_store->data.source_id, "source_id");
+		CU_ASSERT_EQUAL(db.msg_store->data.source_mid, 0x88);
+		CU_ASSERT_EQUAL(db.msg_store->data.qos, 1);
+		CU_ASSERT_EQUAL(db.msg_store->data.retain, 0);
+		CU_ASSERT_PTR_NOT_NULL(db.msg_store->data.topic);
+		if(db.msg_store->data.topic){
+			CU_ASSERT_STRING_EQUAL(db.msg_store->data.topic, "topic");
 		}
-		CU_ASSERT_EQUAL(db.msg_store->payloadlen, 7);
-		if(db.msg_store->payloadlen == 7){
-			CU_ASSERT_NSTRING_EQUAL(db.msg_store->payload, "payload", 7);
+		CU_ASSERT_EQUAL(db.msg_store->data.payloadlen, 7);
+		if(db.msg_store->data.payloadlen == 7){
+			CU_ASSERT_NSTRING_EQUAL(db.msg_store->data.payload, "payload", 7);
 		}
 	}
 }
@@ -415,7 +439,9 @@ static void TEST_v6_config_ok(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v6-cfg.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v6-cfg.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
@@ -433,7 +459,9 @@ static void TEST_v5_config_truncated(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v5-cfg-truncated.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v5-cfg-truncated.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, 1);
@@ -451,7 +479,9 @@ static void TEST_v5_bad_chunk(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v5-bad-chunk.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v5-bad-chunk.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
@@ -469,7 +499,9 @@ static void TEST_v6_message_store(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v6-message-store.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v6-message-store.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
@@ -477,18 +509,17 @@ static void TEST_v6_message_store(void)
 	CU_ASSERT_EQUAL(db.msg_store_bytes, 7);
 	CU_ASSERT_PTR_NOT_NULL(db.msg_store);
 	if(db.msg_store){
-		CU_ASSERT_EQUAL(db.msg_store->db_id, 1);
-		CU_ASSERT_STRING_EQUAL(db.msg_store->source_id, "source_id");
-		CU_ASSERT_EQUAL(db.msg_store->source_mid, 2);
-		CU_ASSERT_EQUAL(db.msg_store->mid, 0);
-		CU_ASSERT_EQUAL(db.msg_store->qos, 2);
-		CU_ASSERT_EQUAL(db.msg_store->retain, 1);
-		CU_ASSERT_STRING_EQUAL(db.msg_store->topic, "topic");
-		CU_ASSERT_EQUAL(db.msg_store->payloadlen, 7);
-		if(db.msg_store->payloadlen == 7){
-			CU_ASSERT_NSTRING_EQUAL(db.msg_store->payload, "payload", 7);
+		CU_ASSERT_EQUAL(db.msg_store->data.store_id, 1);
+		CU_ASSERT_STRING_EQUAL(db.msg_store->data.source_id, "source_id");
+		CU_ASSERT_EQUAL(db.msg_store->data.source_mid, 2);
+		CU_ASSERT_EQUAL(db.msg_store->data.qos, 2);
+		CU_ASSERT_EQUAL(db.msg_store->data.retain, 1);
+		CU_ASSERT_STRING_EQUAL(db.msg_store->data.topic, "topic");
+		CU_ASSERT_EQUAL(db.msg_store->data.payloadlen, 7);
+		if(db.msg_store->data.payloadlen == 7){
+			CU_ASSERT_NSTRING_EQUAL(db.msg_store->data.payload, "payload", 7);
 		}
-		CU_ASSERT_PTR_NULL(db.msg_store->properties);
+		CU_ASSERT_PTR_NULL(db.msg_store->data.properties);
 	}
 }
 
@@ -509,7 +540,9 @@ static void TEST_v6_message_store_props(void)
 	config.listener_count = 1;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v6-message-store-props.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v6-message-store-props.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
@@ -517,21 +550,20 @@ static void TEST_v6_message_store_props(void)
 	CU_ASSERT_EQUAL(db.msg_store_bytes, 7);
 	CU_ASSERT_PTR_NOT_NULL(db.msg_store);
 	if(db.msg_store){
-		CU_ASSERT_EQUAL(db.msg_store->db_id, 1);
-		CU_ASSERT_STRING_EQUAL(db.msg_store->source_id, "source_id");
-		CU_ASSERT_EQUAL(db.msg_store->source_mid, 2);
-		CU_ASSERT_EQUAL(db.msg_store->mid, 0);
-		CU_ASSERT_EQUAL(db.msg_store->qos, 2);
-		CU_ASSERT_EQUAL(db.msg_store->retain, 1);
-		CU_ASSERT_STRING_EQUAL(db.msg_store->topic, "topic");
-		CU_ASSERT_EQUAL(db.msg_store->payloadlen, 7);
-		if(db.msg_store->payloadlen == 7){
-			CU_ASSERT_NSTRING_EQUAL(db.msg_store->payload, "payload", 7);
+		CU_ASSERT_EQUAL(db.msg_store->data.store_id, 1);
+		CU_ASSERT_STRING_EQUAL(db.msg_store->data.source_id, "source_id");
+		CU_ASSERT_EQUAL(db.msg_store->data.source_mid, 2);
+		CU_ASSERT_EQUAL(db.msg_store->data.qos, 2);
+		CU_ASSERT_EQUAL(db.msg_store->data.retain, 1);
+		CU_ASSERT_STRING_EQUAL(db.msg_store->data.topic, "topic");
+		CU_ASSERT_EQUAL(db.msg_store->data.payloadlen, 7);
+		if(db.msg_store->data.payloadlen == 7){
+			CU_ASSERT_NSTRING_EQUAL(db.msg_store->data.payload, "payload", 7);
 		}
-		CU_ASSERT_PTR_NOT_NULL(db.msg_store->properties);
-		if(db.msg_store->properties){
-			CU_ASSERT_EQUAL(db.msg_store->properties->identifier, 1);
-			CU_ASSERT_EQUAL(db.msg_store->properties->value.i8, 1);
+		CU_ASSERT_PTR_NOT_NULL(db.msg_store->data.properties);
+		if(db.msg_store->data.properties){
+			CU_ASSERT_EQUAL(db.msg_store->data.properties->identifier, 1);
+			CU_ASSERT_EQUAL(db.msg_store->data.properties->value.i8, 1);
 		}
 		CU_ASSERT_PTR_NOT_NULL(db.msg_store->source_listener);
 	}
@@ -548,7 +580,9 @@ static void TEST_v5_client(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v5-client.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v5-client.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
@@ -580,7 +614,9 @@ static void TEST_v6_client(void)
 	config.listeners = &listener;
 	config.listener_count = 1;
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v6-client.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v6-client.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
@@ -611,7 +647,9 @@ static void TEST_v6_client_message(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v6-client-message.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v6-client-message.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
@@ -623,27 +661,26 @@ static void TEST_v6_client_message(void)
 		CU_ASSERT_PTR_NOT_NULL(context->msgs_out.inflight);
 		if(context->msgs_out.inflight){
 			CU_ASSERT_PTR_NULL(context->msgs_out.inflight->next);
-			CU_ASSERT_PTR_NOT_NULL(context->msgs_out.inflight->store);
-			if(context->msgs_out.inflight->store){
-				CU_ASSERT_EQUAL(context->msgs_out.inflight->store->ref_count, 1);
-				CU_ASSERT_STRING_EQUAL(context->msgs_out.inflight->store->source_id, "source_id");
-				CU_ASSERT_EQUAL(context->msgs_out.inflight->store->source_mid, 2);
-				CU_ASSERT_EQUAL(context->msgs_out.inflight->store->mid, 0);
-				CU_ASSERT_EQUAL(context->msgs_out.inflight->store->qos, 2);
-				CU_ASSERT_EQUAL(context->msgs_out.inflight->store->retain, 1);
-				CU_ASSERT_STRING_EQUAL(context->msgs_out.inflight->store->topic, "topic");
-				CU_ASSERT_EQUAL(context->msgs_out.inflight->store->payloadlen, 7);
-				if(context->msgs_out.inflight->store->payloadlen == 7){
-					CU_ASSERT_NSTRING_EQUAL(context->msgs_out.inflight->store->payload, "payload", 7);
+			CU_ASSERT_PTR_NOT_NULL(context->msgs_out.inflight->base_msg);
+			if(context->msgs_out.inflight->base_msg){
+				CU_ASSERT_EQUAL(context->msgs_out.inflight->base_msg->ref_count, 1);
+				CU_ASSERT_STRING_EQUAL(context->msgs_out.inflight->base_msg->data.source_id, "source_id");
+				CU_ASSERT_EQUAL(context->msgs_out.inflight->base_msg->data.source_mid, 2);
+				CU_ASSERT_EQUAL(context->msgs_out.inflight->base_msg->data.qos, 2);
+				CU_ASSERT_EQUAL(context->msgs_out.inflight->base_msg->data.retain, 1);
+				CU_ASSERT_STRING_EQUAL(context->msgs_out.inflight->base_msg->data.topic, "topic");
+				CU_ASSERT_EQUAL(context->msgs_out.inflight->base_msg->data.payloadlen, 7);
+				if(context->msgs_out.inflight->base_msg->data.payloadlen == 7){
+					CU_ASSERT_NSTRING_EQUAL(context->msgs_out.inflight->base_msg->data.payload, "payload", 7);
 				}
 			}
-			CU_ASSERT_EQUAL(context->msgs_out.inflight->mid, 0x73);
-			CU_ASSERT_EQUAL(context->msgs_out.inflight->qos, 1);
-			CU_ASSERT_EQUAL(context->msgs_out.inflight->retain, 0);
-			CU_ASSERT_EQUAL(context->msgs_out.inflight->direction, mosq_md_out);
-			CU_ASSERT_EQUAL(context->msgs_out.inflight->state, mosq_ms_wait_for_puback);
-			CU_ASSERT_EQUAL(context->msgs_out.inflight->dup, 0);
-			CU_ASSERT_PTR_NULL(context->msgs_out.inflight->properties);
+			CU_ASSERT_EQUAL(context->msgs_out.inflight->data.mid, 0x73);
+			CU_ASSERT_EQUAL(context->msgs_out.inflight->data.qos, 1);
+			CU_ASSERT_EQUAL(context->msgs_out.inflight->data.retain, 0);
+			CU_ASSERT_EQUAL(context->msgs_out.inflight->data.direction, mosq_md_out);
+			CU_ASSERT_EQUAL(context->msgs_out.inflight->data.state, mosq_ms_wait_for_puback);
+			CU_ASSERT_EQUAL(context->msgs_out.inflight->data.dup, 0);
+			CU_ASSERT_EQUAL(context->msgs_out.inflight->data.subscription_identifier, 0);
 		}
 	}
 }
@@ -659,7 +696,9 @@ static void TEST_v6_client_message_props(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v6-client-message-props.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v6-client-message-props.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
@@ -671,31 +710,26 @@ static void TEST_v6_client_message_props(void)
 		CU_ASSERT_PTR_NOT_NULL(context->msgs_out.inflight);
 		if(context->msgs_out.inflight){
 			CU_ASSERT_PTR_NULL(context->msgs_out.inflight->next);
-			CU_ASSERT_PTR_NOT_NULL(context->msgs_out.inflight->store);
-			if(context->msgs_out.inflight->store){
-				CU_ASSERT_EQUAL(context->msgs_out.inflight->store->ref_count, 1);
-				CU_ASSERT_STRING_EQUAL(context->msgs_out.inflight->store->source_id, "source_id");
-				CU_ASSERT_EQUAL(context->msgs_out.inflight->store->source_mid, 2);
-				CU_ASSERT_EQUAL(context->msgs_out.inflight->store->mid, 0);
-				CU_ASSERT_EQUAL(context->msgs_out.inflight->store->qos, 2);
-				CU_ASSERT_EQUAL(context->msgs_out.inflight->store->retain, 1);
-				CU_ASSERT_STRING_EQUAL(context->msgs_out.inflight->store->topic, "topic");
-				CU_ASSERT_EQUAL(context->msgs_out.inflight->store->payloadlen, 7);
-				if(context->msgs_out.inflight->store->payloadlen == 7){
-					CU_ASSERT_NSTRING_EQUAL(context->msgs_out.inflight->store->payload, "payload", 7);
+			CU_ASSERT_PTR_NOT_NULL(context->msgs_out.inflight->base_msg);
+			if(context->msgs_out.inflight->base_msg){
+				CU_ASSERT_EQUAL(context->msgs_out.inflight->base_msg->ref_count, 1);
+				CU_ASSERT_STRING_EQUAL(context->msgs_out.inflight->base_msg->data.source_id, "source_id");
+				CU_ASSERT_EQUAL(context->msgs_out.inflight->base_msg->data.source_mid, 2);
+				CU_ASSERT_EQUAL(context->msgs_out.inflight->base_msg->data.qos, 2);
+				CU_ASSERT_EQUAL(context->msgs_out.inflight->base_msg->data.retain, 1);
+				CU_ASSERT_STRING_EQUAL(context->msgs_out.inflight->base_msg->data.topic, "topic");
+				CU_ASSERT_EQUAL(context->msgs_out.inflight->base_msg->data.payloadlen, 7);
+				if(context->msgs_out.inflight->base_msg->data.payloadlen == 7){
+					CU_ASSERT_NSTRING_EQUAL(context->msgs_out.inflight->base_msg->data.payload, "payload", 7);
 				}
 			}
-			CU_ASSERT_EQUAL(context->msgs_out.inflight->mid, 0x73);
-			CU_ASSERT_EQUAL(context->msgs_out.inflight->qos, 1);
-			CU_ASSERT_EQUAL(context->msgs_out.inflight->retain, 0);
-			CU_ASSERT_EQUAL(context->msgs_out.inflight->direction, mosq_md_out);
-			CU_ASSERT_EQUAL(context->msgs_out.inflight->state, mosq_ms_wait_for_puback);
-			CU_ASSERT_EQUAL(context->msgs_out.inflight->dup, 0);
-			CU_ASSERT_PTR_NOT_NULL(context->msgs_out.inflight->properties);
-			if(context->msgs_out.inflight->properties){
-				CU_ASSERT_EQUAL(context->msgs_out.inflight->properties->identifier, 1);
-				CU_ASSERT_EQUAL(context->msgs_out.inflight->properties->value.i8, 1);
-			}
+			CU_ASSERT_EQUAL(context->msgs_out.inflight->data.mid, 0x73);
+			CU_ASSERT_EQUAL(context->msgs_out.inflight->data.qos, 1);
+			CU_ASSERT_EQUAL(context->msgs_out.inflight->data.retain, 0);
+			CU_ASSERT_EQUAL(context->msgs_out.inflight->data.direction, mosq_md_out);
+			CU_ASSERT_EQUAL(context->msgs_out.inflight->data.state, mosq_ms_wait_for_puback);
+			CU_ASSERT_EQUAL(context->msgs_out.inflight->data.dup, 0);
+			CU_ASSERT_EQUAL(context->msgs_out.inflight->data.subscription_identifier, 1);
 		}
 	}
 }
@@ -710,7 +744,9 @@ static void TEST_v6_retain(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v6-retain.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v6-retain.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	retain__init();
 	rc = persist__restore();
@@ -719,16 +755,15 @@ static void TEST_v6_retain(void)
 	CU_ASSERT_EQUAL(db.msg_store_bytes, 7);
 	CU_ASSERT_PTR_NOT_NULL(db.msg_store);
 	if(db.msg_store){
-		CU_ASSERT_EQUAL(db.msg_store->db_id, 0x54);
-		CU_ASSERT_STRING_EQUAL(db.msg_store->source_id, "source_id");
-		CU_ASSERT_EQUAL(db.msg_store->source_mid, 2);
-		CU_ASSERT_EQUAL(db.msg_store->mid, 0);
-		CU_ASSERT_EQUAL(db.msg_store->qos, 2);
-		CU_ASSERT_EQUAL(db.msg_store->retain, 1);
-		CU_ASSERT_STRING_EQUAL(db.msg_store->topic, "topic");
-		CU_ASSERT_EQUAL(db.msg_store->payloadlen, 7);
-		if(db.msg_store->payloadlen == 7){
-			CU_ASSERT_NSTRING_EQUAL(db.msg_store->payload, "payload", 7);
+		CU_ASSERT_EQUAL(db.msg_store->data.store_id, 0x54);
+		CU_ASSERT_STRING_EQUAL(db.msg_store->data.source_id, "source_id");
+		CU_ASSERT_EQUAL(db.msg_store->data.source_mid, 2);
+		CU_ASSERT_EQUAL(db.msg_store->data.qos, 2);
+		CU_ASSERT_EQUAL(db.msg_store->data.retain, 1);
+		CU_ASSERT_STRING_EQUAL(db.msg_store->data.topic, "topic");
+		CU_ASSERT_EQUAL(db.msg_store->data.payloadlen, 7);
+		if(db.msg_store->data.payloadlen == 7){
+			CU_ASSERT_NSTRING_EQUAL(db.msg_store->data.payload, "payload", 7);
 		}
 	}
 	CU_ASSERT_PTR_NOT_NULL(db.retains);
@@ -759,7 +794,9 @@ static void TEST_v6_sub(void)
 	db.config = &config;
 
 	config.persistence = true;
-	config.persistence_filepath = "files/persist_read/v6-sub.test-db";
+	char persistence_filepath[4096];
+	cat_sourcedir_with_relpath(persistence_filepath, "/files/persist_read/v6-sub.test-db");
+	config.persistence_filepath = persistence_filepath;
 
 	rc = persist__restore();
 	CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);

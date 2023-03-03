@@ -1,0 +1,28 @@
+[
+	{
+		"group": "v3.1.1 PINGREQ",
+		"ver":4,
+		"tests": [
+			{ "name": "C0 [MQTT-3.1.0-1]", "connack":false, "msgs": [{"type":"send", "payload":"C0 00"}]},
+			{ "name": "C0 long", "msgs": [{"type":"send", "payload":"C00100"}]},
+			{ "name": "C0 valid", "msgs": [{"type":"send", "payload":"C0 00"}]},
+			{ "name": "C1", "msgs": [{"type":"send", "payload":"C1 00"}]},
+			{ "name": "C2", "msgs": [{"type":"send", "payload":"C2 00"}]},
+			{ "name": "C4", "msgs": [{"type":"send", "payload":"C4 00"}]},
+			{ "name": "C8", "msgs": [{"type":"send", "payload":"C8 00"}]}
+		]
+	},
+	{
+		"group": "v5.0   PINGREQ",
+		"ver":5,
+		"tests": [
+			{ "name": "C0 [MQTT-3.1.0-1]", "connect":false, "msgs": [{"type":"send", "payload":"C0 00"}]},
+			{ "name": "C0 long", "msgs": [{"type":"send", "payload":"C0 01 00"}]},
+			{ "name": "C0 valid", "msgs": [{"type":"send", "payload":"C0 00"}]},
+			{ "name": "C1", "msgs": [{"type":"send", "payload":"C1 00"}]},
+			{ "name": "C2", "msgs": [{"type":"send", "payload":"C2 00"}]},
+			{ "name": "C4", "msgs": [{"type":"send", "payload":"C4 00"}]},
+			{ "name": "C8", "msgs": [{"type":"send", "payload":"C8 00"}]}
+		]
+	}
+]

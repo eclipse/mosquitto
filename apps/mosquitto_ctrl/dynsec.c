@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2020-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -28,8 +28,11 @@ Contributors:
 
 #include "mosquitto_ctrl.h"
 #include "mosquitto.h"
+#include "base64_mosq.h"
 #include "password_mosq.h"
 #include "get_password.h"
+
+#define MAX_STRING_LEN 4096
 
 void dynsec__print_usage(void)
 {
@@ -49,6 +52,8 @@ void dynsec__print_usage(void)
 	printf("Create a new client:         createClient      <username> [-c clientid] [-p password]\n");
 	printf("Delete a client:             deleteClient      <username>\n");
 	printf("Set a client password:       setClientPassword <username> [password]\n");
+	printf("Set a client password on an existing file:\n");
+	printf("    mosquitto_ctrl -f <file> dynsec setClientPassword <username> <password>\n");
 	printf("Set a client id:             setClientId       <username> [clientid]\n");
 	printf("Add a role to a client:      addClientRole     <username> <rolename> [priority]\n");
 	printf("    Higher priority (larger numerical value) roles are evaluated first.\n");
@@ -87,14 +92,6 @@ void dynsec__print_usage(void)
 	printf("    https://mosquitto.org/documentation/dynamic-security/\n\n");
 }
 
-cJSON *cJSON_AddIntToObject(cJSON * const object, const char * const name, int number)
-{
-	char buf[30];
-
-	snprintf(buf, sizeof(buf), "%d", number);
-	return cJSON_AddRawToObject(object, name, buf);
-}
-
 /* ################################################################
  * #
  * # Payload callback
@@ -129,42 +126,54 @@ static void print_list(cJSON *j_response, const char *arrayname, const char *key
 	}
 }
 
-
-static void print_roles(cJSON *j_roles, size_t slen)
+static void print_json_value(cJSON *value, const char *null_value)
 {
-	bool first;
-	cJSON *j_elem, *jtmp;
+	if(value){
+		if(cJSON_IsString(value)){
+			printf("%s", value->valuestring);
+		}else{
+			char buffer[MAX_STRING_LEN];
+			cJSON_PrintPreallocated(value, buffer, sizeof(buffer), 0);
+			printf("%s", buffer);
+		}
+	}else if(null_value){
+		printf("%s",null_value);
+	}
+}
 
-	if(j_roles && cJSON_IsArray(j_roles)){
-		first = true;
-		cJSON_ArrayForEach(j_elem, j_roles){
-			jtmp = cJSON_GetObjectItem(j_elem, "rolename");
-			if(jtmp && cJSON_IsString(jtmp)){
-				if(first){
-					first = false;
-					printf("%-*s %s", (int)slen, "Roles:", jtmp->valuestring);
-				}else{
-					printf("%-*s %s", (int)slen, "", jtmp->valuestring);
+static void print_json_array(cJSON *j_list, int slen, const char *label, const char *element_name, const char *optional_element_name, const char *optional_element_null_value)
+{
+	cJSON *j_elem;
+
+	if(j_list && cJSON_IsArray(j_list)){
+		cJSON_ArrayForEach(j_elem, j_list){
+			if(cJSON_IsObject(j_elem)){
+				cJSON *jtmp = cJSON_GetObjectItem(j_elem, element_name);
+				if(!jtmp || !cJSON_IsString(jtmp)){
+					continue;
 				}
-				jtmp = cJSON_GetObjectItem(j_elem, "priority");
-				if(jtmp && cJSON_IsNumber(jtmp)){
-					printf(" (priority: %d)", (int)jtmp->valuedouble);
-				}else{
-					printf(" (priority: -1)");
+				printf("%-*s %s", (int)slen, label, jtmp->valuestring);
+				if(optional_element_name){
+					printf(" (%s: ", optional_element_name);
+					print_json_value(cJSON_GetObjectItem(j_elem,optional_element_name),optional_element_null_value);
+					printf(")");
 				}
-				printf("\n");
+			}else if(cJSON_IsString(j_elem)){
+				printf("%-*s %s", (int)slen, label, j_elem->valuestring);
 			}
+			label = "";
+			printf("\n");
 		}
 	}else{
-		printf("Roles:\n");
+		printf("%s\n", label);
 	}
 }
 
 
 static void print_client(cJSON *j_response)
 {
-	cJSON *j_data, *j_client, *j_array, *j_elem, *jtmp;
-	bool first;
+	cJSON *j_data, *j_client, *jtmp;
+	const int label_width = strlen( "Connections:");
 
 	j_data = cJSON_GetObjectItem(j_response, "data");
 	if(j_data == NULL || !cJSON_IsObject(j_data)){
@@ -183,54 +192,30 @@ static void print_client(cJSON *j_response)
 		fprintf(stderr, "Error: Invalid response from server.\n");
 		return;
 	}
-	printf("Username: %s\n", jtmp->valuestring);
+	printf("%-*s %s\n",  label_width, "Username:", jtmp->valuestring);
 
 	jtmp = cJSON_GetObjectItem(j_client, "clientid");
 	if(jtmp && cJSON_IsString(jtmp)){
-		printf("Clientid: %s\n", jtmp->valuestring);
+		printf("%-*s %s\n",  label_width, "Clientid:", jtmp->valuestring);
 	}else{
 		printf("Clientid:\n");
 	}
 
 	jtmp = cJSON_GetObjectItem(j_client, "disabled");
 	if(jtmp && cJSON_IsBool(jtmp)){
-		printf("Disabled: %s\n", cJSON_IsTrue(jtmp)?"true":"false");
+		printf("%-*s %s\n",  label_width, "Disabled:", cJSON_IsTrue(jtmp)?"true":"false");
 	}
 
-	j_array = cJSON_GetObjectItem(j_client, "roles");
-	print_roles(j_array, strlen("Username:"));
-
-	j_array = cJSON_GetObjectItem(j_client, "groups");
-	if(j_array && cJSON_IsArray(j_array)){
-		first = true;
-		cJSON_ArrayForEach(j_elem, j_array){
-			jtmp = cJSON_GetObjectItem(j_elem, "groupname");
-			if(jtmp && cJSON_IsString(jtmp)){
-				if(first){
-					printf("Groups:   %s", jtmp->valuestring);
-					first = false;
-				}else{
-					printf("          %s", jtmp->valuestring);
-				}
-				jtmp = cJSON_GetObjectItem(j_elem, "priority");
-				if(jtmp && cJSON_IsNumber(jtmp)){
-					printf(" (priority: %d)", (int)jtmp->valuedouble);
-				}else{
-					printf(" (priority: -1)");
-				}
-				printf("\n");
-			}
-		}
-	}else{
-		printf("Groups:\n");
-	}
+	print_json_array(cJSON_GetObjectItem(j_client, "roles"), label_width, "Roles:",  "rolename", "priority", "-1");
+	print_json_array(cJSON_GetObjectItem(j_client, "groups"), label_width, "Groups:", "groupname", "priority", "-1");
+	print_json_array(cJSON_GetObjectItem(j_client, "connections"), label_width, "Connections:", "address", NULL, NULL);
 }
 
 
 static void print_group(cJSON *j_response)
 {
-	cJSON *j_data, *j_group, *j_array, *j_elem, *jtmp;
-	bool first;
+	cJSON *j_data, *j_group, *jtmp;
+	int label_width = strlen("Groupname:");
 
 	j_data = cJSON_GetObjectItem(j_response, "data");
 	if(j_data == NULL || !cJSON_IsObject(j_data)){
@@ -251,24 +236,8 @@ static void print_group(cJSON *j_response)
 	}
 	printf("Groupname: %s\n", jtmp->valuestring);
 
-	j_array = cJSON_GetObjectItem(j_group, "roles");
-	print_roles(j_array, strlen("Groupname:"));
-
-	j_array = cJSON_GetObjectItem(j_group, "clients");
-	if(j_array && cJSON_IsArray(j_array)){
-		first = true;
-		cJSON_ArrayForEach(j_elem, j_array){
-			jtmp = cJSON_GetObjectItem(j_elem, "username");
-			if(jtmp && cJSON_IsString(jtmp)){
-				if(first){
-					first = false;
-					printf("Clients:   %s\n", jtmp->valuestring);
-				}else{
-					printf("           %s\n", jtmp->valuestring);
-				}
-			}
-		}
-	}
+	print_json_array(cJSON_GetObjectItem(j_group, "roles"), label_width, "Roles:",  "rolename", "priority", "-1");
+	print_json_array(cJSON_GetObjectItem(j_group, "clients"), label_width, "Clients:",  "username", NULL, NULL);
 }
 
 
@@ -425,7 +394,7 @@ static void dynsec__payload_callback(struct mosq_ctrl *ctrl, long payloadlen, co
 
 	j_error = cJSON_GetObjectItem(j_response, "error");
 	if(j_error){
-		fprintf(stderr, "%s: Error: %s\n", j_command->valuestring, j_error->valuestring);
+		fprintf(stderr, "%s: Error: %s.\n", j_command->valuestring, j_error->valuestring);
 	}else{
 		if(!strcasecmp(j_command->valuestring, "listClients")){
 			print_list(j_response, "clients", "username");
@@ -595,7 +564,7 @@ static cJSON *init_add_client(const char *username, const char *password, const 
 	if(pw__hash(password, &pw, true, PW_DEFAULT_ITERATIONS) != 0){
 		return NULL;
 	}
-	if(base64__encode(pw.salt, sizeof(pw.salt), &salt64)
+	if(base64__encode(pw.salt, (unsigned int)pw.salt_len, &salt64)
 		|| base64__encode(pw.password_hash, sizeof(pw.password_hash), &hash64)
 		){
 
@@ -794,6 +763,8 @@ int dynsec__main(int argc, char *argv[], struct mosq_ctrl *ctrl)
 		return -1;
 	}else if(!strcasecmp(argv[0], "init")){
 		return dynsec_init(argc-1, &argv[1]);
+	}else if(ctrl->cfg.data_file && !strcasecmp(argv[0], "setClientPassword")){
+		return dynsec_client__file_set_password(argc-1, &argv[1], ctrl->cfg.data_file);
 	}
 
 	/* The remaining commands need a network connection and JSON command. */

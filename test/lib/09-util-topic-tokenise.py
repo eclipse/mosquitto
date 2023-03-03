@@ -2,17 +2,22 @@
 
 from mosq_test_helper import *
 
-rc = 1
+def do_test(client):
+    port = mosq_test.get_port()
 
-client_args = sys.argv[1:]
-env = dict(os.environ)
-env['LD_LIBRARY_PATH'] = '../../lib:../../lib/cpp'
-try:
-    pp = env['PYTHONPATH']
-except KeyError:
-    pp = ''
-env['PYTHONPATH'] = '../../lib/python:'+pp
+    rc = 1
 
-client = mosq_test.start_client(filename=sys.argv[1].replace('/', '-'), cmd=client_args, env=env)
-client.wait()
-exit(client.returncode)
+    client_args = [client, str(port)]
+    client = mosq_test.start_client(filename=client.replace('/', '-'), cmd=client_args)
+
+    if mosq_test.wait_for_subprocess(client):
+        print("test client not finished")
+        rc=1
+    else:
+        rc=client.returncode
+    if rc:
+        print(f"Fail: {client}")
+        exit(rc)
+
+do_test("c/09-util-topic-tokenise.test")
+do_test("cpp/09-util-topic-tokenise.test")

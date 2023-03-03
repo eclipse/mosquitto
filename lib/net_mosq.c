@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -63,7 +63,7 @@ Contributors:
 
 #ifdef WITH_BROKER
 #  include "mosquitto_broker_internal.h"
-#  ifdef WITH_WEBSOCKETS
+#  if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
 #    include <libwebsockets.h>
 #  endif
 #else
@@ -74,6 +74,7 @@ Contributors:
 #include "memory_mosq.h"
 #include "mqtt_protocol.h"
 #include "net_mosq.h"
+#include "packet_mosq.h"
 #include "time_mosq.h"
 #include "util_mosq.h"
 
@@ -152,14 +153,13 @@ void net__cleanup(void)
 	ERR_free_strings();
 	ERR_remove_thread_state(NULL);
 	EVP_cleanup();
-
-#    if !defined(OPENSSL_NO_ENGINE)
-	ENGINE_cleanup();
-#    endif
-	is_tls_initialized = false;
 #  endif
 
-	CONF_modules_unload(1);
+#  if !defined(OPENSSL_NO_ENGINE) && OPENSSL_API_LEVEL < 30000
+	ENGINE_cleanup();
+#  endif
+	is_tls_initialized = false;
+
 	cleanup_ui_method();
 #endif
 
@@ -181,12 +181,8 @@ void net__init_tls(void)
 	SSL_load_error_strings();
 	SSL_library_init();
 	OpenSSL_add_all_algorithms();
-#  else
-	OPENSSL_init_crypto(OPENSSL_INIT_ADD_ALL_CIPHERS \
-			| OPENSSL_INIT_ADD_ALL_DIGESTS \
-			| OPENSSL_INIT_LOAD_CONFIG, NULL);
 #  endif
-#if !defined(OPENSSL_NO_ENGINE)
+#if !defined(OPENSSL_NO_ENGINE) && OPENSSL_API_LEVEL < 30000
 	ENGINE_load_builtin_engines();
 #endif
 	setup_ui_method();
@@ -197,6 +193,16 @@ void net__init_tls(void)
 	is_tls_initialized = true;
 }
 #endif
+
+bool net__is_connected(struct mosquitto *mosq)
+{
+#if defined(WITH_BROKER) && defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
+	return mosq->sock != INVALID_SOCKET || mosq->wsi != NULL;
+#else
+	return mosq->sock != INVALID_SOCKET;
+#endif
+}
+
 
 /* Close a socket associated with a context and set it to -1.
  * Returns 1 on failure (context is NULL)
@@ -211,7 +217,7 @@ int net__socket_close(struct mosquitto *mosq)
 
 	assert(mosq);
 #ifdef WITH_TLS
-#ifdef WITH_WEBSOCKETS
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
 	if(!mosq->wsi)
 #endif
 	{
@@ -225,7 +231,7 @@ int net__socket_close(struct mosquitto *mosq)
 	}
 #endif
 
-#ifdef WITH_WEBSOCKETS
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
 	if(mosq->wsi)
 	{
 		if(mosq->state != mosq_cs_disconnecting){
@@ -235,7 +241,7 @@ int net__socket_close(struct mosquitto *mosq)
 	}else
 #endif
 	{
-		if(mosq->sock != INVALID_SOCKET){
+		if(net__is_connected(mosq)){
 #ifdef WITH_BROKER
 			HASH_FIND(hh_sock, db.contexts_by_sock, &mosq->sock, sizeof(mosq->sock), mosq_found);
 			if(mosq_found){
@@ -286,11 +292,14 @@ int net__try_connect_step1(struct mosquitto *mosq, const char *host)
 	int s;
 	void *sevp = NULL;
 	struct addrinfo *hints;
+	struct addrinfo *ar_request;
 
 	if(mosq->adns){
 		gai_cancel(mosq->adns);
-		mosquitto__free((struct addrinfo *)mosq->adns->ar_request);
-		mosquitto__free(mosq->adns);
+
+		ar_request = (struct addrinfo *)mosq->adns->ar_request;
+		mosquitto__FREE(ar_request);
+		mosquitto__FREE(mosq->adns);
 	}
 	mosq->adns = mosquitto__calloc(1, sizeof(struct gaicb));
 	if(!mosq->adns){
@@ -299,8 +308,7 @@ int net__try_connect_step1(struct mosquitto *mosq, const char *host)
 
 	hints = mosquitto__calloc(1, sizeof(struct addrinfo));
 	if(!hints){
-		mosquitto__free(mosq->adns);
-		mosq->adns = NULL;
+		mosquitto__FREE(mosq->adns);
 		return MOSQ_ERR_NOMEM;
 	}
 
@@ -314,9 +322,9 @@ int net__try_connect_step1(struct mosquitto *mosq, const char *host)
 	if(s){
 		errno = s;
 		if(mosq->adns){
-			mosquitto__free((struct addrinfo *)mosq->adns->ar_request);
-			mosquitto__free(mosq->adns);
-			mosq->adns = NULL;
+			ar_request = (struct addrinfo *)mosq->adns->ar_request;
+			mosquitto__FREE(ar_request);
+			mosquitto__FREE(mosq->adns);
 		}
 		return MOSQ_ERR_EAI;
 	}
@@ -328,6 +336,7 @@ int net__try_connect_step1(struct mosquitto *mosq, const char *host)
 int net__try_connect_step2(struct mosquitto *mosq, uint16_t port, mosq_sock_t *sock)
 {
 	struct addrinfo *ainfo, *rp;
+	struct addrinfo *ar_request;
 	int rc;
 
 	ainfo = mosq->adns->ar_result;
@@ -373,9 +382,9 @@ int net__try_connect_step2(struct mosquitto *mosq, uint16_t port, mosq_sock_t *s
 	freeaddrinfo(mosq->adns->ar_result);
 	mosq->adns->ar_result = NULL;
 
-	mosquitto__free((struct addrinfo *)mosq->adns->ar_request);
-	mosquitto__free(mosq->adns);
-	mosq->adns = NULL;
+	ar_request = (struct addrinfo *)mosq->adns->ar_request;
+	mosquitto__FREE(ar_request);
+	mosquitto__FREE(mosq->adns);
 
 	if(!rp){
 		return MOSQ_ERR_ERRNO;
@@ -550,7 +559,6 @@ void net__print_ssl_error(struct mosquitto *mosq)
 
 int net__socket_connect_tls(struct mosquitto *mosq)
 {
-	int ret, err;
 	long res;
 
 	ERR_clear_error();
@@ -638,12 +646,12 @@ static int net__tls_load_ca(struct mosquitto *mosq)
 static int net__init_ssl_ctx(struct mosquitto *mosq)
 {
 	int ret;
+#if !defined(OPENSSL_NO_ENGINE) && OPENSSL_API_LEVEL < 30000
 	ENGINE *engine = NULL;
-	uint8_t tls_alpn_wire[256];
-	uint8_t tls_alpn_len;
-#if !defined(OPENSSL_NO_ENGINE)
 	EVP_PKEY *pkey;
 #endif
+	uint8_t tls_alpn_wire[256];
+	uint8_t tls_alpn_len;
 
 #ifndef WITH_BROKER
 	if(mosq->user_ssl_ctx){
@@ -684,7 +692,7 @@ static int net__init_ssl_ctx(struct mosquitto *mosq)
 #endif
 
 		if(!mosq->tls_version){
-			SSL_CTX_set_options(mosq->ssl_ctx, SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1);
+			SSL_CTX_set_options(mosq->ssl_ctx, SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1);
 #ifdef SSL_OP_NO_TLSv1_3
 		}else if(!strcmp(mosq->tls_version, "tlsv1.3")){
 			SSL_CTX_set_options(mosq->ssl_ctx, SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1 | SSL_OP_NO_TLSv1_2);
@@ -718,7 +726,7 @@ static int net__init_ssl_ctx(struct mosquitto *mosq)
 			SSL_CTX_set_mode(mosq->ssl_ctx, SSL_MODE_RELEASE_BUFFERS);
 #endif
 
-#if !defined(OPENSSL_NO_ENGINE)
+#if !defined(OPENSSL_NO_ENGINE) && OPENSSL_API_LEVEL < 30000
 		if(mosq->tls_engine){
 			engine = ENGINE_by_id(mosq->tls_engine);
 			if(!engine){
@@ -739,17 +747,28 @@ static int net__init_ssl_ctx(struct mosquitto *mosq)
 			ret = SSL_CTX_set_cipher_list(mosq->ssl_ctx, mosq->tls_ciphers);
 			if(ret == 0){
 				log__printf(mosq, MOSQ_LOG_ERR, "Error: Unable to set TLS ciphers. Check cipher list \"%s\".", mosq->tls_ciphers);
-#if !defined(OPENSSL_NO_ENGINE)
+#if !defined(OPENSSL_NO_ENGINE) && OPENSSL_API_LEVEL < 30000
 				ENGINE_FINISH(engine);
 #endif
 				net__print_ssl_error(mosq);
 				return MOSQ_ERR_TLS;
 			}
 		}
+
+#if OPENSSL_VERSION_NUMBER >= 0x10101000 && !defined(LIBRESSL_VERSION_NUMBER)
+		if(mosq->tls_13_ciphers){
+			ret = SSL_CTX_set_ciphersuites(mosq->ssl_ctx, mosq->tls_13_ciphers);
+			if(ret == 0){
+				log__printf(mosq, MOSQ_LOG_ERR, "Error: Unable to set TLS 1.3 ciphersuites. Check cipher_tls13 list \"%s\".", mosq->tls_13_ciphers);
+				return MOSQ_ERR_TLS;
+			}
+		}
+#endif
+
 		if(mosq->tls_cafile || mosq->tls_capath || mosq->tls_use_os_certs){
 			ret = net__tls_load_ca(mosq);
 			if(ret != MOSQ_ERR_SUCCESS){
-#  if !defined(OPENSSL_NO_ENGINE)
+#  if !defined(OPENSSL_NO_ENGINE) && OPENSSL_API_LEVEL < 30000
 				ENGINE_FINISH(engine);
 #  endif
 				net__print_ssl_error(mosq);
@@ -774,7 +793,7 @@ static int net__init_ssl_ctx(struct mosquitto *mosq)
 #else
 					log__printf(mosq, MOSQ_LOG_ERR, "Error: Unable to load client certificate \"%s\".", mosq->tls_certfile);
 #endif
-#if !defined(OPENSSL_NO_ENGINE)
+#if !defined(OPENSSL_NO_ENGINE) && OPENSSL_API_LEVEL < 30000
 					ENGINE_FINISH(engine);
 #endif
 					net__print_ssl_error(mosq);
@@ -783,7 +802,7 @@ static int net__init_ssl_ctx(struct mosquitto *mosq)
 			}
 			if(mosq->tls_keyfile){
 				if(mosq->tls_keyform == mosq_k_engine){
-#if !defined(OPENSSL_NO_ENGINE)
+#if !defined(OPENSSL_NO_ENGINE) && OPENSSL_API_LEVEL < 30000
 					UI_METHOD *ui_method = net__get_ui_method();
 					if(mosq->tls_engine_kpass_sha1){
 						if(!ENGINE_ctrl_cmd(engine, ENGINE_SECRET_MODE, ENGINE_SECRET_MODE_SHA, NULL, NULL, 0)){
@@ -822,7 +841,7 @@ static int net__init_ssl_ctx(struct mosquitto *mosq)
 #else
 						log__printf(mosq, MOSQ_LOG_ERR, "Error: Unable to load client key file \"%s\".", mosq->tls_keyfile);
 #endif
-#if !defined(OPENSSL_NO_ENGINE)
+#if !defined(OPENSSL_NO_ENGINE) && OPENSSL_API_LEVEL < 30000
 						ENGINE_FINISH(engine);
 #endif
 						net__print_ssl_error(mosq);
@@ -832,7 +851,7 @@ static int net__init_ssl_ctx(struct mosquitto *mosq)
 				ret = SSL_CTX_check_private_key(mosq->ssl_ctx);
 				if(ret != 1){
 					log__printf(mosq, MOSQ_LOG_ERR, "Error: Client certificate/key are inconsistent.");
-#if !defined(OPENSSL_NO_ENGINE)
+#if !defined(OPENSSL_NO_ENGINE) && OPENSSL_API_LEVEL < 30000
 					ENGINE_FINISH(engine);
 #endif
 					net__print_ssl_error(mosq);
@@ -916,7 +935,7 @@ int net__socket_connect(struct mosquitto *mosq, const char *host, uint16_t port,
 	rc = net__try_connect(host, port, &mosq->sock, bind_address, blocking);
 	if(rc > 0) return rc;
 
-	if(mosq->tcp_nodelay){
+	if(mosq->tcp_nodelay && port){
 		int flag = 1;
 		if(setsockopt(mosq->sock, IPPROTO_TCP, TCP_NODELAY, (const void*)&flag, sizeof(int)) != 0){
 			log__printf(mosq, MOSQ_LOG_WARNING, "Warning: Unable to set TCP_NODELAY.");
@@ -996,6 +1015,7 @@ ssize_t net__read(struct mosquitto *mosq, void *buf, size_t count)
 	}
 #endif
 }
+
 
 ssize_t net__write(struct mosquitto *mosq, const void *buf, size_t count)
 {

@@ -13,14 +13,13 @@ def write_config(filename, port):
 def do_test(proto_ver, clean_session):
     rc = 1
     mid = 53
-    keepalive = 60
-    connect_packet = mosq_test.gen_connect("will-test", keepalive=keepalive, proto_ver=proto_ver)
+    connect_packet = mosq_test.gen_connect("will-test", proto_ver=proto_ver)
     connack_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
 
-    connect_packet_ok = mosq_test.gen_connect("test-helper", keepalive=keepalive, will_topic="will/qos0/test", will_payload=b"A", clean_session=clean_session, proto_ver=proto_ver, session_expiry=60)
+    connect_packet_ok = mosq_test.gen_connect("test-helper", will_topic="will/qos0/test", will_payload=b"A", clean_session=clean_session, proto_ver=proto_ver, session_expiry=60)
     connack_packet_ok = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
 
-    connect_packet_bad = mosq_test.gen_connect("test-helper", keepalive=keepalive, will_topic="will/qos0/test", will_payload=b"AB", clean_session=clean_session, proto_ver=proto_ver, session_expiry=60)
+    connect_packet_bad = mosq_test.gen_connect("test-helper", will_topic="will/qos0/test", will_payload=b"AB", clean_session=clean_session, proto_ver=proto_ver, session_expiry=60)
     if proto_ver == 5:
         connack_packet_bad = mosq_test.gen_connack(rc=mqtt5_rc.MQTT_RC_PACKET_TOO_LARGE, proto_ver=proto_ver, property_helper=False)
     else:
@@ -58,7 +57,9 @@ def do_test(proto_ver, clean_session):
     finally:
         os.remove(conf_file)
         broker.terminate()
-        broker.wait()
+        if mosq_test.wait_for_subprocess(broker):
+            print("broker not terminated")
+            if rc == 0: rc=1
         (stdo, stde) = broker.communicate()
         if rc:
             print(stde.decode('utf-8'))

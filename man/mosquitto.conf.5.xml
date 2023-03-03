@@ -37,6 +37,74 @@
 	</refsect1>
 
 	<refsect1>
+		<title>Sections</title>
+		<para>
+			The rest of this man page is divided into the following sections:
+			<variablelist>
+				<varlistentry>
+					<term><option>File Format</option> a description of the configuration
+						file syntax.</term>
+				</varlistentry>
+				<varlistentry>
+					<term><option>Authentication</option> a discussion of the authentication
+						options available.</term>
+				</varlistentry>
+				<varlistentry>
+					<term><option>General Options</option> the general options for configuring
+						Mosquitto.</term>
+				</varlistentry>
+				<varlistentry>
+					<term><option>Listeners</option> general options for configuring listeners,
+						which are the ways that MQTT clients can connect to Mosquitto,
+						as well as certificate and pre-shared-key based SSL/TLS options.</term>
+				</varlistentry>
+				<varlistentry>
+					<term><option>Configuring Bridges</option> general options for configuring bridges,
+						which are a way of connecting multiple brokers together,
+						as well as certificate and pre-shared-key based SSL/TLS options.</term>
+				</varlistentry>
+				<varlistentry>
+					<term><option>Other</option> The Files, Bugs, See Also sections.</term>
+				</varlistentry>
+			</variablelist>
+		</para>
+	</refsect1>
+
+	<refsect1>
+		<title>Sections</title>
+		<para>
+			The rest of this man page is divided into the following sections:
+			<variablelist>
+				<varlistentry>
+					<term><option>File Format</option> a description of the configuration
+						file syntax.</term>
+				</varlistentry>
+				<varlistentry>
+					<term><option>Authentication</option> a discussion of the authentication
+						options available.</term>
+				</varlistentry>
+				<varlistentry>
+					<term><option>General Options</option> the general options for configuring
+						Mosquitto.</term>
+				</varlistentry>
+				<varlistentry>
+					<term><option>Listeners</option> general options for configuring listeners,
+						which are the ways that MQTT clients can connect to Mosquitto,
+						as well as certificate and pre-shared-key based SSL/TLS options.</term>
+				</varlistentry>
+				<varlistentry>
+					<term><option>Configuring Bridges</option> general options for configuring bridges,
+						which are a way of connecting multiple brokers together,
+						as well as certificate and pre-shared-key based SSL/TLS options.</term>
+				</varlistentry>
+				<varlistentry>
+					<term><option>Other</option> The Files, Bugs, See Also sections.</term>
+				</varlistentry>
+			</variablelist>
+		</para>
+	</refsect1>
+
+	<refsect1>
 		<title>File Format</title>
 		<para>All lines with a # as the very first character are treated as a
 		comment.</para>
@@ -211,9 +279,9 @@
 			<varlistentry>
 				<term><option>allow_duplicate_messages</option> [ true | false ]</term>
 				<listitem>
-                    <para>This option is deprecated and will be removed in a
-                        future version. The behaviour will default to true.
-                    </para>
+					<para>This option is deprecated and will be removed in a
+						future version. The behaviour will default to true.
+					</para>
 					<para>If a client is subscribed to multiple subscriptions
 						that overlap, e.g. foo/# and foo/+/baz , then MQTT
 						expects that when the broker receives a message on a
@@ -359,8 +427,8 @@
 			<varlistentry>
 				<term><option>clientid_prefixes</option> <replaceable>prefix</replaceable></term>
 				<listitem>
-                    <para>This option is deprecated and will be removed in a
-                        future version.</para>
+					<para>This option is deprecated and will be removed in a
+						future version.</para>
 					<para>If defined, only clients that have a clientid with a
 						prefix that matches clientid_prefixes will be allowed
 						to connect to the broker. For example, setting
@@ -386,6 +454,89 @@
 					<para>This option applies globally.</para>
 
 					<para>Reloaded on reload signal.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>enable_control_api</option> [ true | false ]</term>
+				<listitem>
+					<para>If set to <replaceable>true</replaceable>, the
+					<option>$CONTROL/broker/v1</option> will be enabled. This currently
+					allows interrogating which plugins are enabled, but in the future
+					will allow access to configuring general broker options. If you enable
+					this you should ensure you have authentication and appropriate access
+					control configured, i.e. only allowing access to
+					<option>$CONTROL/broker/#</option> for a limited set of users.
+				</para>
+					<para>This option applies globally.</para>
+					<para>Reloaded on reload signal.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>global_max_clients</option> <replaceable>count</replaceable></term>
+				<listitem>
+					<para>
+                        The maximum number of client sessions to allow across
+						the whole broker. In this context a client session means
+						either a client currently connected via the network, or
+						a client that has clean_session = False (MQTT v3.x) and
+						is disconnected, or has disconnected and still hasn't
+						exceeded its session expiry interval (MQTT v5).
+					</para>
+
+					<para>
+						See also the <option>max_connections</option> setting, which applies to
+						listeners. If you set <option>global_max_clients</option>
+						to 1000 and <option>max_connections</option> on a
+						listener to 10, then that means only 10 simultaneous
+						connections will be allowed at once, with an overall
+						maximum of 1000 client sessions.
+					</para>
+
+					<para>This option applies globally.</para>
+					<para>Defaults to -1 (unlimited)</para>
+					<para>Reloaded on reload signal.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>global_max_connections</option> <replaceable>count</replaceable></term>
+				<listitem>
+					<para>
+						The maximum number of currently connected clients to
+						allow across the whole broker.
+					</para>
+
+					<para>
+						See also the <option>global_max_clients</option> and
+						<option>max_connections</option> settings.
+					</para>
+
+					<para>This option applies globally.</para>
+					<para>Defaults to -1 (unlimited)</para>
+					<para>Reloaded on reload signal.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>global_plugin</option> <replaceable>file path</replaceable></term>
+				<listitem>
+					<para>
+						Load an external module to extend broker features. This loads plugins
+						for use across all listeners, regardless of the value of the
+						<option>per_listener_settings</option> option. This option functions
+						the same as the <option>plugin</option> option in all other ways.
+					</para>
+
+					<para>
+						If you set <option>per_listener_settings true</option>, then define both a
+						<option>global_plugin</option> and a <option>plugin</option> (which will be
+						attached to a specific listener), then the global plugin will always be
+						processed first.
+					</para>
+
+					<para>
+						If you set <option>per_listener_settings false</option>, then
+						<option>global_plugin</option> behaves identically to
+						<option>plugin</option>.
+					</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
@@ -457,7 +608,7 @@ D.conf
 						Possible destinations are: <option>stdout</option>
 						<option>stderr</option> <option>syslog</option>
 						<option>topic</option> <option>file</option>
-						<option>dlt</option>.</para>
+						<option>dlt</option> <option>android</option>.</para>
 					<para><option>stdout</option> and
 						<option>stderr</option> log to the console on the
 						named output.</para>
@@ -483,6 +634,8 @@ D.conf
 						automotive `Diagnostic Log and Trace` tool. This
 						requires that Mosquitto has been compiled with DLT
 						support.</para>
+					<para>The <option>android</option> destination is for
+						Android only, and will output to the logd daemon.</para>
 					<para>Use "log_dest none" if you wish to disable logging.
 						Defaults to stderr. This option may be specified
 						multiple times.</para>
@@ -598,8 +751,9 @@ log_timestamp_format %Y-%m-%dT%H:%M:%S
 						less than or equal to this value, otherwise they will
 						be sent a server keepalive telling them to use
 						max_keepalive. This only applies to MQTT v5 clients.
-						The maximum value allowable, and default value, is
-						65535.</para>
+						The maximum value is 65535. Set to 0 to allow infinite
+						keepalive. Defaults to 0.
+						</para>
 
 					<para>
 						Set to 0 to allow clients to set keepalive = 0, which
@@ -897,36 +1051,42 @@ log_timestamp_format %Y-%m-%dT%H:%M:%S
 						options are available.
 					</para>
 
-					<para>Applies to the current plugin being configured.</para>
+					<para>Applies to the current plugin/global_plugin being configured.</para>
 					<para>
-                        This is also available as the <option>auth_opt_*</option>
-                        option, but this use is deprecated and will be removed
-                        in a future version.
+						This is also available as the <option>auth_opt_*</option>
+						option, but this use is deprecated and will be removed
+						in a future version.
 					</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
 				<term><option>plugin</option> <replaceable>file path</replaceable></term>
 				<listitem>
-					<para>Specify an external module to use for authentication
-						and access control. This allows custom
+					<para>Specify an external module to use for authentication,
+						access control, and other features. This allows custom
 						username/password and access control functions to be
-						created.</para>
+						created and other behaviour to be modified.</para>
 					<para>Can be specified multiple times to load multiple
 						plugins. The plugins will be processed in the order
 						that they are specified.</para>
 					<para>If <option>password_file</option>, or
 						<option>acl_file</option> are used in the config file
 						alongsize <option>plugin</option>, the plugin
-						checks will run after the built in checks.</para>
+						checks will run before the built in checks.</para>
 					<para>Not currently reloaded on reload signal.</para>
-					<para>See also
+					<para>
+						If <option>per_listener_settings</option> is set to
+						<replaceable>true</replaceable>, this plugin will be
+						loaded for the current listener only.
+					</para>
+					<para>See also 
 						<ulink url="https://mosquitto.org/documentation/dynamic-security/"/>
+						and the <option>global_plugin</option> option.
 					</para>
 					<para>
-                        This is also available as the <option>auth_plugin</option>
-                        option, but this use is deprecated and will be removed
-                        in a future version.
+						This is also available as the <option>auth_plugin</option>
+						option, but this use is deprecated and will be removed
+						in a future version.
 					</para>
 				</listitem>
 			</varlistentry>
@@ -1066,11 +1226,34 @@ log_timestamp_format %Y-%m-%dT%H:%M:%S
 			<title>General Options</title>
 			<variablelist>
 				<varlistentry>
+					<term><option>accept_protocol_versions</option> <replaceable>versions</replaceable></term>
+					<listitem>
+						<para>
+                            Accepted protocol versions. This sets what versions
+                            of the MQTT protocol will be accepted on this
+                            listener. Can be any combination of 3, 4, 5 in a
+                            comma separated list, e.g.
+						</para>
+						<programlisting>
+# Allow v5.0 only:
+listener 1883
+accept_protocol_versions 5
+
+# Allow v3.1 and v3.1.1:
+listener 1884
+accept_protocol_versions 3, 4</programlisting>
+						<para>
+							Defaults to allowing all versions.
+						</para>
+						<para>Reloaded on reload signal.</para>
+					</listitem>
+				</varlistentry>
+				<varlistentry>
 					<term><option>bind_address</option> <replaceable>address</replaceable></term>
 					<listitem>
-                    <para>This option is deprecated and will be removed in a
+						<para>This option is deprecated and will be removed in a
 						future version. Use the <option>listener</option> instead.
-                    </para>
+						</para>
 						<para>Listen for incoming network connections on the
 							specified IP address/hostname only. This is useful
 							to restrict access to certain network interfaces.
@@ -1172,12 +1355,43 @@ log_timestamp_format %Y-%m-%dT%H:%M:%S
 					</listitem>
 				</varlistentry>
 				<varlistentry>
+					<term><option>max_topic_alias_broker</option> <replaceable>number</replaceable></term>
+					<listitem>
+						<para>When publishing to MQTT v5 clients, Mosquitto can
+						create topic aliases on a first come first serve basis,
+						i.e. the topics that are published to a client first have
+						aliases created. This option controls the number of aliases
+						per client. It applies per listener.</para>
+
+						<para>Note that this behaviour is not guaranteed to remain
+						the same. It is possible that future versions introduce
+						mechanisms for controlling which topics receive aliases.
+						</para>
+
+						<para>This option sets the maximum number topic aliases
+						that Mosquitto will create for an MQTT v5 client,
+						even if the client allows more.</para>
+
+						<para>For example, if the client sets
+						topic-alias-maximum to 100 and this option is set to
+						10, the broker will create at most 10 topic aliases.
+						Likewise, if the client sets topic-alias-maximum to
+						20 and this option is set to 100, then the broker
+						will create at most 20 topic aliases.</para>
+
+						<para>Defaults to 10. Maximum of 65535. Set to 0 to
+						disable broker to client topic aliases completely.
+						</para>
+						<para>Not reloaded on reload signal.</para>
+					</listitem>
+				</varlistentry>
+				<varlistentry>
 					<term><option>max_topic_alias</option> <replaceable>number</replaceable></term>
 					<listitem>
 						<para>This option sets the maximum number topic aliases
 							that an MQTT v5 client is allowed to create. This option
 							applies per listener. Defaults to 10. Set to 0 to
-							disallow topic aliases. The maximum value possible is 65535.</para>
+							disallow topic aliases from clients. The maximum value possible is 65535.</para>
 						<para>Not reloaded on reload signal.</para>
 					</listitem>
 				</varlistentry>
@@ -1200,9 +1414,9 @@ log_timestamp_format %Y-%m-%dT%H:%M:%S
 				<varlistentry>
 					<term><option>port</option> <replaceable>port number</replaceable></term>
 					<listitem>
-                    <para>This option is deprecated and will be removed in a
+						<para>This option is deprecated and will be removed in a
 						future version. Use the <option>listener</option> instead.
-                    </para>
+						</para>
 						<para>Set the network port for the default listener to
 							listen on. Defaults to 1883.</para>
 						<para>Not reloaded on reload signal.</para>
@@ -1270,6 +1484,19 @@ log_timestamp_format %Y-%m-%dT%H:%M:%S
 					</listitem>
 				</varlistentry>
 				<varlistentry>
+					<term><option>websockets_headers_size</option> <replaceable>size</replaceable></term>
+					<listitem>
+						<para>Change the websockets headers size. This is a
+							global option, it is not possible to set per
+							listener. This option sets the size of the buffer
+							used in the libwebsockets library when reading HTTP
+							headers. If you are passing large header data such
+							as cookies then you may need to increase this
+							value. If left unset, or set to 0, then the default
+							of 1024 bytes will be used.</para>
+					</listitem>
+				</varlistentry>
+				<varlistentry>
 					<term><option>websockets_log_level</option> <replaceable>level</replaceable></term>
 					<listitem>
 						<para>Change the websockets logging level. This is a
@@ -1284,16 +1511,23 @@ log_timestamp_format %Y-%m-%dT%H:%M:%S
 					</listitem>
 				</varlistentry>
 				<varlistentry>
-					<term><option>websockets_headers_size</option> <replaceable>size</replaceable></term>
+					<term><option>websockets_origin</option> <replaceable>level</replaceable></term>
 					<listitem>
-						<para>Change the websockets headers size. This is a
-							global option, it is not possible to set per
-							listener. This option sets the size of the buffer
-							used in the libwebsockets library when reading HTTP
-							headers. If you are passing large header data such
-							as cookies then you may need to increase this
-							value. If left unset, or set to 0, then the default
-							of 1024 bytes will be used.</para>
+                        <para>
+                            If set, this will be compared to the http origin
+                            header when a connection attempts to upgrade to
+                            WebSockets. Only matching origins will be allowed.
+                            Use the exact string provided by the browser in the
+                            origin header, e.g.
+                            <replaceable>http://example.com:8080</replaceable>.
+							Can be specified multiple times per listener.
+						</para>
+						<para>
+							If not set, connections from any origin will be allowed.
+						</para>
+						<para>
+							Requires libwebsockets 3.1.0 or later.
+						</para>
 					</listitem>
 				</varlistentry>
 			</variablelist>
@@ -1347,21 +1581,21 @@ log_timestamp_format %Y-%m-%dT%H:%M:%S
 				<varlistentry>
 					<term><option>ciphers</option> <replaceable>cipher:list</replaceable></term>
 					<listitem>
-                        <para>
-                            The list of allowed ciphers for this listener, for
-                            TLS v1.2 and earlier only, each separated with
-                            a colon. Available ciphers can be obtained using
-                            the "openssl ciphers" command.
-                        </para>
+						<para>
+							The list of allowed ciphers for this listener, for
+							TLS v1.2 and earlier only, each separated with
+							a colon. Available ciphers can be obtained using
+							the "openssl ciphers" command.
+						</para>
 					</listitem>
 				</varlistentry>
 				<varlistentry>
 					<term><option>ciphers_tls1.3</option> <replaceable>cipher:list</replaceable></term>
 					<listitem>
-                        <para>
-                            The list of allowed ciphersuites for this listener,
-                            for TLS v1.3, each separated with a colon.
-                        </para>
+						<para>
+							The list of allowed ciphersuites for this listener,
+							for TLS v1.3, each separated with a colon.
+						</para>
 					</listitem>
 				</varlistentry>
 				<varlistentry>
@@ -1385,6 +1619,19 @@ log_timestamp_format %Y-%m-%dT%H:%M:%S
 							generated with the command e.g.</para>
 						<programlisting>
 openssl dhparam -out dhparam.pem 2048</programlisting>
+					</listitem>
+				</varlistentry>
+				<varlistentry>
+					<term><option>disable_client_cert_date_checks</option> [ true | false ]</term>
+					<listitem>
+						<para>
+							If set true, <option>disable_client_cert_date_checks</option> will change the certificate
+							verification behaviour to allow client certificates that are expired or are not yet
+							valid, when using <option>require_certificate true</option>.
+						</para>
+						<para>
+							Defaults to <option>false</option>
+						</para>
 					</listitem>
 				</varlistentry>
 				<varlistentry>
@@ -1458,7 +1705,7 @@ openssl dhparam -out dhparam.pem 2048</programlisting>
 							<replaceable>tlsv1.3</replaceable>,
 							<replaceable>tlsv1.2</replaceable> and
 							<replaceable>tlsv1.1</replaceable>. If left unset,
-							the default of allowing TLS v1.3 and v1.2.</para>
+							the default is to allow TLS v1.3 and v1.2.</para>
 						<para>In Mosquitto version 1.6.x and earlier, this
 							option set the only TLS protocol version that
 							was allowed, rather than the minimum.</para>
@@ -1568,7 +1815,7 @@ openssl dhparam -out dhparam.pem 2048</programlisting>
 		<title>Configuring Bridges</title>
 		<para>Multiple bridges (connections to other brokers) can be configured
 		using the following variables.</para>
-		<para>Bridges cannot currently be reloaded on reload signal.</para>
+		<para>Reloaded on reload signal.</para>
 		<variablelist>
 			<varlistentry>
 				<term><option>address</option> <replaceable>address[:port]</replaceable> <replaceable>[address[:port]]</replaceable></term>
@@ -1627,6 +1874,16 @@ openssl dhparam -out dhparam.pem 2048</programlisting>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
+				<term><option>bridge_max_topic_alias</option> <replaceable>value</replaceable></term>
+				<listitem>
+					<para>If the bridge is using MQTT v5, this option sets the
+					maximum number of topic aliases that the bridge will
+					allow the remote broker to configure. Defaults to 10,
+					maximum of 65535. Set to 0 to disable incoming topic
+					aliases completely.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
 				<term><option>bridge_outgoing_retain</option> [ true | false ]</term>
 				<listitem>
 					<para>Some MQTT brokers do not allow retained messages. MQTT v5 gives
@@ -1649,6 +1906,74 @@ openssl dhparam -out dhparam.pem 2048</programlisting>
 						<replaceable>mqttv311</replaceable> or
 						<replaceable>mqttv31</replaceable>. Defaults to
 						<replaceable>mqttv311</replaceable>.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>bridge_receive_maximum</option> <replaceable>count</replaceable></term>
+				<listitem>
+					<para>
+						If the bridge is using MQTT v5.0 then use
+						<option>bridge_receive_maximum</option>
+						to limit the number QoS 1 or 2 messages that can be
+						in-flight at once. Must be 1-65535. Defaults to
+						<option>max_inflight_messages</option>, which defaults
+						to 20.
+					</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>bridge_session_expiry_interval</option> <replaceable>interval</replaceable></term>
+				<listitem>
+					<para>
+						If the bridge is using MQTT v5.0 then use
+						<option>bridge_session_expiry_interval</option>
+						to set the session expiry interval. Set to
+						<replaceable>0</replaceable> to have the session expire
+						immediately when the connection drops. Set to
+						<replaceable>0xFFFFFFFF</replaceable> to have an infinite
+						expiry interval. Otherwise the expiry interval is set to
+						the number of seconds that you specify. Defaults to 0.
+					</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>bridge_tcp_keepalive</option> <replaceable>idle</replaceable> <replaceable>interval</replaceable> <replaceable>counter</replaceable></term>
+				<listitem>
+                    <para>
+                        Set TCP keepalive parameters for this bridge connection.
+                        Use this option to allow you to set a long MQTT
+                        keepalive value, whilst still being able to detect the
+                        connection dropping in a reasonable time.
+					</para>
+					<para>
+						This may be useful when bridging to services that bill
+						for PINGREQ messages.
+					</para>
+					<para>Disabled by default.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>bridge_tcp_user_timeout</option> <replaceable>timeout</replaceable></term>
+				<listitem>
+					<para>
+						It specifies the maximum amount of time (in milliseconds) that
+						transmitted data may remain unacknowledged at TCP level.
+						Popular Linux distributions seem to set this time to "up to 20
+						minutes with system defaults" (from Linux tcp man page).
+						The default time is related to tcp_retries2.
+						Reducing this value helps detecting dropped connections faster.
+					</para>
+					<para>
+						Be aware that when used in combination with TCP Keepalive, it might
+						change the latter's behavior.
+					</para>
+					<para>
+						You can find more details about this setting at:
+						<ulink url="https://blog.cloudflare.com/when-tcp-sockets-refuse-to-die/"/>
+					</para>
+					<para>
+						Only available on Linux.
+					</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
@@ -1813,7 +2138,7 @@ openssl dhparam -out dhparam.pem 2048</programlisting>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
-				<term><option>restart_timeout</option> <replaceable>base cap</replaceable></term>
+				<term><option>restart_timeout</option> <replaceable>base cap [stable]</replaceable></term>
 				<term><option>restart_timeout</option> <replaceable>constant</replaceable></term>
 				<listitem>
 					<para>Set the amount of time a bridge using the automatic
@@ -1822,14 +2147,22 @@ openssl dhparam -out dhparam.pem 2048</programlisting>
 						time in seconds, or to use a backoff mechanism based on
 						"Decorrelated Jitter", which adds a degree of
 						randomness to when the restart occurs, starting at the
-						base and increasing up to the cap. Set a constant
-						timeout of 20 seconds:</para>
+						base and increasing up to the cap. The backoff time will be reset to
+						<replaceable>base</replaceable> after a successful connection.
+						When <replaceable>stable</replaceable> is specified, the backoff time
+						will be reset only if the connection remains open for at least
+						<replaceable>stable</replaceable> seconds.</para>
+					<para>Set a constant timeout of 20 seconds:</para>
 						<programlisting language="config">
 restart_timeout 20</programlisting>
 					<para>Set backoff with a base (start value) of 10 seconds and a cap (upper
 						limit) of 60 seconds:</para>
 						<programlisting language="config">
-restart_timeout 10 30</programlisting>
+restart_timeout 10 60</programlisting>
+					<para>Same as previous example, but wait for the connection to be stable for
+					at least 30 seconds before resetting the backoff:</para>
+						<programlisting language="config">
+restart_timeout 10 60 30</programlisting>
 					<para>Defaults to jitter with a base of 5 seconds and cap
 						of 30 seconds.</para>
 				</listitem>
@@ -2009,6 +2342,24 @@ topic clients/total in 0 test/mosquitto/org/ $SYS/broker/
 					<para>Defaults to <replaceable>true</replaceable>.</para>
 				</listitem>
 			</varlistentry>
+			<varlistentry>
+				<term><option>bridge_reload_type</option> [ lazy | immediate ]</term>
+				<listitem>
+					<para>If you change bridge options in the configuration file,
+					those configuration changes are applied during a bridge
+					reconnection. The <option>bridge_reload_type</option> option
+					determines when that reconnection happens, and can be set to either
+					<replaceable>lazy</replaceable> or <replaceable>immediate</replaceable>.</para>
+
+					<para><replaceable>lazy</replaceable> is the default, and means
+					that any connected bridge will remain in its current state until
+					a natural reconnection happens, at which point the new configuration
+					will be used.</para>
+
+					<para><replaceable>immediate</replaceable> forces a reconnection and so
+					uses the new configuration straight away.</para>
+				</listitem>
+			</varlistentry>
 		</variablelist>
 		<refsect2>
 			<title>SSL/TLS Support</title>
@@ -2026,8 +2377,8 @@ topic clients/total in 0 test/mosquitto/org/ $SYS/broker/
 				<varlistentry>
 					<term><option>bridge_cafile</option> <replaceable>file path</replaceable></term>
 					<listitem>
-						<para>One of <option>bridge_cafile</option> or
-							<option>bridge_capath</option> must be provided to
+						<para>At least one of <option>bridge_cafile</option>, <option>bridge_capath</option>, or
+							<option>bridge_tls_use_os_certs</option> must be provided to
 							allow SSL/TLS support.</para>
 						<para>bridge_cafile is used to define the path to a file
 							containing the PEM encoded CA certificates that
@@ -2038,8 +2389,8 @@ topic clients/total in 0 test/mosquitto/org/ $SYS/broker/
 				<varlistentry>
 					<term><option>bridge_capath</option> <replaceable>file path</replaceable></term>
 					<listitem>
-						<para>One of <option>bridge_capath</option> or
-							<option>bridge_cafile</option> must be provided to
+						<para>At least one of <option>bridge_cafile</option>, <option>bridge_capath</option>, or
+							<option>bridge_tls_use_os_certs</option> must be provided to
 							allow SSL/TLS support.</para>
 						<para>bridge_capath is used to define the path to a
 							directory containing the PEM encoded CA
@@ -2118,6 +2469,19 @@ topic clients/total in 0 test/mosquitto/org/ $SYS/broker/
 					</listitem>
 				</varlistentry>
 				<varlistentry>
+					<term><option>bridge_tls_use_os_certs</option> [ true | false ]</term>
+					<listitem>
+						<para>At least one of <option>bridge_cafile</option>, <option>bridge_capath</option>, or
+							<option>bridge_tls_use_os_certs</option> must be provided to
+							allow SSL/TLS support.</para>
+						<para>Set <option>bridge_tls_use_os_certs</option>
+							to true to enable TLS for this bridge, and to
+							configure it to trust the default certificates
+							provided by openssl. This is typically a large
+							number of certificates. Defaults to false.</para>
+					</listitem>
+				</varlistentry>
+				<varlistentry>
 					<term><option>bridge_tls_version</option> <replaceable>version</replaceable></term>
 					<listitem>
 						<para>Configure the version of the TLS protocol to be
@@ -2128,6 +2492,26 @@ topic clients/total in 0 test/mosquitto/org/ $SYS/broker/
 							<replaceable>tlsv1.2</replaceable>. The remote
 							broker must support the same version of TLS for the
 							connection to succeed.</para>
+					</listitem>
+				</varlistentry>
+				<varlistentry>
+					<term><option>bridge_ciphers</option> <replaceable>cipher:list</replaceable></term>
+					<listitem>
+						<para>
+							The list of allowed ciphers for this bridge, for
+							TLS v1.2 and earlier only, each separated with
+							a colon. Available ciphers can be obtained using
+							the "openssl ciphers" command.
+						</para>
+					</listitem>
+				</varlistentry>
+				<varlistentry>
+					<term><option>bridge_ciphers_tls1.3</option> <replaceable>cipher:list</replaceable></term>
+					<listitem>
+						<para>
+							The list of allowed ciphersuites for this bridge,
+							for TLS v1.3, each separated with a colon.
+						</para>
 					</listitem>
 				</varlistentry>
 			</variablelist>

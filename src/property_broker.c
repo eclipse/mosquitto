@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2018-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2018-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -49,6 +49,12 @@ int property__process_connect(struct mosquitto *context, mosquitto_property **pr
 				return MOSQ_ERR_PROTOCOL;
 			}
 			context->maximum_packet_size = p->value.i32;
+		}else if(p->identifier == MQTT_PROP_TOPIC_ALIAS_MAXIMUM){
+			if(p->value.i16 > context->listener->max_topic_alias_broker){
+				context->alias_max_l2r = context->listener->max_topic_alias_broker;
+			}else{
+				context->alias_max_l2r = p->value.i16;
+			}
 		}
 		p = p->next;
 	}
@@ -73,6 +79,9 @@ int property__process_will(struct mosquitto *context, struct mosquitto_message_a
 			case MQTT_PROP_PAYLOAD_FORMAT_INDICATOR:
 			case MQTT_PROP_RESPONSE_TOPIC:
 			case MQTT_PROP_USER_PROPERTY:
+				/* We save these properties for transmission with the PUBLISH */
+
+				/* Add this property to the end of the list */
 				if(msg_properties){
 					msg_properties_last->next = p;
 					msg_properties_last = p;
@@ -80,6 +89,8 @@ int property__process_will(struct mosquitto *context, struct mosquitto_message_a
 					msg_properties = p;
 					msg_properties_last = p;
 				}
+
+				/* And remove it from *props */
 				if(p_prev){
 					p_prev->next = p->next;
 					p = p_prev->next;
@@ -91,12 +102,14 @@ int property__process_will(struct mosquitto *context, struct mosquitto_message_a
 				break;
 
 			case MQTT_PROP_WILL_DELAY_INTERVAL:
+				/* Leave this in *props, to be freed */
 				context->will_delay_interval = p->value.i32;
 				p_prev = p;
 				p = p->next;
 				break;
 
 			case MQTT_PROP_MESSAGE_EXPIRY_INTERVAL:
+				/* Leave this in *props, to be freed */
 				msg->expiry_interval = p->value.i32;
 				p_prev = p;
 				p = p->next;

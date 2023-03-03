@@ -4,7 +4,7 @@ from mosq_test_helper import *
 
 def write_config(filename, port):
     with open(filename, 'w') as f:
-        f.write("port %d\n" % (port))
+        f.write("listener %d\n" % (port))
         f.write("allow_anonymous true\n")
         f.write("auth_plugin c/auth_plugin_extended_multiple.so\n")
 
@@ -18,7 +18,7 @@ rc = 1
 # ==========
 props = mqtt5_props.gen_string_prop(mqtt5_props.PROP_AUTHENTICATION_METHOD, "mirror")
 props += mqtt5_props.gen_string_prop(mqtt5_props.PROP_AUTHENTICATION_DATA, "step1")
-connect1_packet = mosq_test.gen_connect("client-params-test", keepalive=42, proto_ver=5, properties=props)
+connect1_packet = mosq_test.gen_connect("client-params-test", proto_ver=5, properties=props)
 
 # Server to client
 props = mqtt5_props.gen_string_prop(mqtt5_props.PROP_AUTHENTICATION_METHOD, "mirror")
@@ -84,7 +84,9 @@ except mosq_test.TestError:
 finally:
     os.remove(conf_file)
     broker.terminate()
-    broker.wait()
+    if mosq_test.wait_for_subprocess(broker):
+        print("broker not terminated")
+        if rc == 0: rc=1
     (stdo, stde) = broker.communicate()
     if rc:
         print(stde.decode('utf-8'))

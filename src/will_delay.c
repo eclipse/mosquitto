@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019-2020 Roger Light <roger@atchoo.org>
+Copyright (c) 2019-2021 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License 2.0
@@ -53,6 +53,9 @@ int will_delay__add(struct mosquitto *context)
 
 	DL_INSERT_INORDER(delay_list, item, will_delay__cmp);
 
+	loop__update_next_event(item->context->will_delay_interval*1000);
+	plugin_persist__handle_client_update(context);
+
 	return MOSQ_ERR_SUCCESS;
 }
 
@@ -67,7 +70,7 @@ void will_delay__send_all(void)
 		item->context->will_delay_interval = 0;
 		item->context->will_delay_entry = NULL;
 		context__send_will(item->context);
-		mosquitto__free(item);
+		mosquitto__FREE(item);
 	}
 }
 
@@ -75,12 +78,17 @@ void will_delay__check(void)
 {
 	struct will_delay_list *item, *tmp;
 
-	if(db.now_real_s <= last_check) return;
+	if(db.now_real_s <= last_check){
+		if(delay_list){
+			loop__update_next_event(1000);
+		}
+		return;
+	}
 
 	last_check = db.now_real_s;
 
 	DL_FOREACH_SAFE(delay_list, item, tmp){
-		if(item->context->will_delay_time < db.now_real_s){
+		if(item->context->will_delay_time <= db.now_real_s){
 			DL_DELETE(delay_list, item);
 			item->context->will_delay_interval = 0;
 			item->context->will_delay_entry = NULL;
@@ -88,8 +96,9 @@ void will_delay__check(void)
 			if(item->context->session_expiry_interval == 0){
 				context__add_to_disused(item->context);
 			}
-			mosquitto__free(item);
+			mosquitto__FREE(item);
 		}else{
+			loop__update_next_event((item->context->will_delay_time - db.now_real_s)*1000);
 			return;
 		}
 	}
@@ -100,8 +109,7 @@ void will_delay__remove(struct mosquitto *mosq)
 {
 	if(mosq->will_delay_entry != NULL){
 		DL_DELETE(delay_list, mosq->will_delay_entry);
-		mosquitto__free(mosq->will_delay_entry);
-		mosq->will_delay_entry = NULL;
+		mosquitto__FREE(mosq->will_delay_entry);
 	}
 }
 

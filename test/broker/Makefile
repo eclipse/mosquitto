@@ -1,4 +1,5 @@
-include ../../config.mk
+R=../..
+include ${R}/config.mk
 
 .PHONY: all check clean test ptest seqtest
 .NOTPARALLEL:
@@ -17,15 +18,18 @@ test-compile :
 ptest : test-compile msg_sequence_test
 	./test.py
 
-test : test-compile msg_sequence_test 01 02 03 04 05 06 07 08 09 10 11 12 13 14
+test : test-compile msg_sequence_test 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17
 
 msg_sequence_test:
 	./msg_sequence_test.py
 
 01 :
 	./01-connect-575314.py
+	./01-connect-accept-protocol.py
 	./01-connect-allow-anonymous.py
 	./01-connect-disconnect-v5.py
+	./01-connect-global-max-clients.py
+	./01-connect-global-max-connections.py
 	./01-connect-max-connections.py
 	./01-connect-max-keepalive.py
 	./01-connect-take-over.py
@@ -33,13 +37,16 @@ msg_sequence_test:
 	./01-connect-uname-or-anon.py
 	./01-connect-uname-password-denied-no-will.py
 	./01-connect-uname-password-denied.py
+	./01-connect-unix-socket.py
 	./01-connect-windows-line-endings.py
 	./01-connect-zero-length-id.py
 
 
 02 :
+	./02-shared-nolocal.py
 	./02-shared-qos0-v5.py
 	./02-subhier-crash.py
+	./02-subpub-b2c-topic-alias.py
 	./02-subpub-qos0-long-topic.py
 	./02-subpub-qos0-oversize-payload.py
 	./02-subpub-qos0-queued-bytes.py
@@ -69,6 +76,7 @@ msg_sequence_test:
 03 :
 	#./03-publish-qos1-queued-bytes.py
 	./03-pattern-matching.py
+	./03-publish-bad-flags.py
 	./03-publish-b2c-disconnect-qos1.py
 	./03-publish-b2c-disconnect-qos2.py
 	./03-publish-b2c-qos1-len.py
@@ -83,13 +91,16 @@ msg_sequence_test:
 	./03-publish-qos1-no-subscribers-v5.py
 	./03-publish-qos1-retain-disabled.py
 	./03-publish-qos1.py
+	./03-publish-qos2-max-inflight-exceeded.py
 	./03-publish-qos2-max-inflight.py
+	./03-publish-qos2-reuse-mid.py
 	./03-publish-qos2.py
 
 04 :
 	./04-retain-check-source-persist-diff-port.py
 	./04-retain-check-source-persist.py
 	./04-retain-check-source.py
+	./04-retain-clear-multiple.py
 	./04-retain-qos0-clear.py
 	./04-retain-qos0-fresh.py
 	./04-retain-qos0-repeated.py
@@ -122,6 +133,7 @@ msg_sequence_test:
 	./06-bridge-outgoing-retain.py
 	./06-bridge-per-listener-settings.py
 	./06-bridge-reconnect-local-out.py
+	./06-bridge-config-reload.py
 
 07 :
 	./07-will-delay-invalid-573191.py
@@ -146,10 +158,12 @@ msg_sequence_test:
 ifeq ($(WITH_TLS),yes)
 	./08-ssl-bridge.py
 	./08-ssl-connect-cert-auth-crl.py
+	./08-ssl-connect-cert-auth-expired-allowed.py
 	./08-ssl-connect-cert-auth-expired.py
 	./08-ssl-connect-cert-auth-revoked.py
 	./08-ssl-connect-cert-auth-without.py
 	./08-ssl-connect-cert-auth.py
+	./08-ssl-connect-dhparam.py
 	./08-ssl-connect-identity.py
 	./08-ssl-connect-no-auth-wrong-ca.py
 	./08-ssl-connect-no-auth.py
@@ -183,8 +197,24 @@ endif
 	./09-plugin-auth-unpwd-success.py
 	./09-plugin-auth-v2-unpwd-fail.py
 	./09-plugin-auth-v2-unpwd-success.py
+	./09-plugin-auth-v3-unpwd-fail.py
+	./09-plugin-auth-v3-unpwd-success.py
+	./09-plugin-auth-v4-unpwd-fail.py
+	./09-plugin-auth-v4-unpwd-success.py
+	./09-plugin-auth-v5-unpwd-fail.py
+	./09-plugin-auth-v5-unpwd-success.py
+	./09-plugin-bad.py
+	./09-plugin-change-id.py
+	./09-plugin-delayed-auth.py
+	./09-plugin-evt-message-in.py
+	./09-plugin-evt-message-out.py
+	./09-plugin-evt-psk-key.py
+	./09-plugin-evt-subscribe.py
+	./09-plugin-evt-tick.py
+	./09-plugin-evt-unsubscribe.py
+	./09-plugin-load.py
 	./09-plugin-publish.py
-	./09-plugin-tick.py
+	./09-plugin-unsupported.py
 	./09-pwfile-parse-invalid.py
 
 10 :
@@ -192,6 +222,7 @@ endif
 
 11 :
 	./11-message-expiry.py
+	./11-persistence-autosave-changes.py
 	./11-persistent-subscription.py
 	./11-persistent-subscription-v5.py
 	./11-persistent-subscription-no-local.py
@@ -210,27 +241,65 @@ endif
 	./12-prop-subpub-payload-format.py
 
 13 :
-	./13-malformed-publish-v5.py
-	./13-malformed-subscribe-v5.py
-	./13-malformed-unsubscribe-v5.py
+	./13-websocket-bad-origin.py
 
 14 :
 ifeq ($(WITH_TLS),yes)
 ifeq ($(WITH_CJSON),yes)
 	./14-dynsec-acl.py
+	./14-dynsec-allow-wildcard.py
 	./14-dynsec-anon-group.py
 	./14-dynsec-auth.py
-	./14-dynsec-client.py
 	./14-dynsec-client-invalid.py
+	./14-dynsec-client.py
+	./14-dynsec-config-init-env.py
+	./14-dynsec-config-init-file.py
+	./14-dynsec-config-init-random.py
 	./14-dynsec-default-access.py
 	./14-dynsec-disable-client.py
-	./14-dynsec-group.py
 	./14-dynsec-group-invalid.py
+	./14-dynsec-group.py
 	./14-dynsec-modify-client.py
 	./14-dynsec-modify-group.py
 	./14-dynsec-modify-role.py
 	./14-dynsec-plugin-invalid.py
-	./14-dynsec-role.py
 	./14-dynsec-role-invalid.py
+	./14-dynsec-role.py
 endif
 endif
+
+15 :
+	./15-persist-client-msg-in-v3-1-1.py persist_sqlite
+	./15-persist-client-msg-in-v5-0.py persist_sqlite
+	./15-persist-client-msg-out-clear-v3-1-1.py persist_sqlite
+	./15-persist-client-msg-out-dup-v3-1-1.py persist_sqlite
+	./15-persist-client-msg-out-queue-v3-1-1.py persist_sqlite
+	./15-persist-client-msg-out-v3-1-1-db.py persist_sqlite
+	./15-persist-client-msg-out-v3-1-1.py persist_sqlite
+	./15-persist-client-msg-out-v5-0.py persist_sqlite
+	./15-persist-client-v3-1-1.py persist_sqlite
+	./15-persist-client-v5-0.py persist_sqlite
+	./15-persist-publish-properties-v5-0.py persist_sqlite
+	./15-persist-retain-clear.py persist_sqlite
+	./15-persist-retain-v3-1-1.py persist_sqlite
+	./15-persist-retain-v5-0.py persist_sqlite
+	./15-persist-subscription-v3-1-1.py persist_sqlite
+	./15-persist-subscription-v5-0.py persist_sqlite
+
+16 :
+	./16-cmd-args.py
+	./16-config-huge.py
+	./16-config-includedir.py
+	./16-config-missing.py
+	./16-config-parse-errors-without-tls.py
+ifeq ($(WITH_TLS),yes)
+	./16-config-parse-errors-tls.py
+ifeq ($(WITH_TLS_PSK),yes)
+	./16-config-parse-errors-tls-psk.py
+endif
+endif
+
+17 :
+	./17-control-list-listeners.py
+	./17-control-list-plugins.py
+

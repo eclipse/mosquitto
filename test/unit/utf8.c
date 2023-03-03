@@ -398,7 +398,7 @@ static void TEST_utf8_illegal_code_positions(void)
 }
 
 
-void TEST_utf8_control_characters(void)
+static void TEST_utf8_control_characters(void)
 {
 	uint8_t buf[10];
 	int i;
@@ -426,7 +426,7 @@ void TEST_utf8_control_characters(void)
 }
 
 
-void TEST_utf8_mqtt_1_5_4_2(void)
+static void TEST_utf8_mqtt_1_5_4_2(void)
 {
 	uint8_t buf[10] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', '\0'};
 
@@ -437,7 +437,7 @@ void TEST_utf8_mqtt_1_5_4_2(void)
 }
 
 
-void TEST_utf8_mqtt_1_5_4_3(void)
+static void TEST_utf8_mqtt_1_5_4_3(void)
 {
 	uint8_t buf[10] = {'a', 'b', 0xEF, 0xBB, 0xBF, 'f', 'g', 'h', 'i', '\0'};
 
