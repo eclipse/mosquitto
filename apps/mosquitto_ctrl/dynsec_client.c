@@ -57,6 +57,13 @@ int dynsec_client__create(int argc, char *argv[], cJSON *j_command)
 			password = argv[i+1];
 			i++;
 			request_password = false;
+		} else if (!strcmp(argv[i], "--no-password")) {
+			if (password != NULL) {
+				fprintf(stderr, "Error: -p and --no-password are mutually exclusive.\n");
+				return MOSQ_ERR_INVAL;
+			}
+
+			request_password = false;
 		}
 	}
 

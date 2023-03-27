@@ -342,12 +342,12 @@ int dynsec_clients__process_create(struct dynsec__data *data, struct control_cmd
 	}
 
 	if(json_get_string(cmd->j_command, "password", &password, true) != MOSQ_ERR_SUCCESS){
-		control__command_reply(cmd, "Invalid/missing password");
+		control__command_reply(cmd, "Invalid password");
 		return MOSQ_ERR_INVAL;
 	}
 
 	if(json_get_string(cmd->j_command, "clientid", &clientid, true) != MOSQ_ERR_SUCCESS){
-		control__command_reply(cmd, "Invalid/missing client id");
+		control__command_reply(cmd, "Invalid client id");
 		return MOSQ_ERR_INVAL;
 	}
 	if(clientid && mosquitto_validate_utf8(clientid, (int)strlen(clientid)) != MOSQ_ERR_SUCCESS){
@@ -357,12 +357,12 @@ int dynsec_clients__process_create(struct dynsec__data *data, struct control_cmd
 
 
 	if(json_get_string(cmd->j_command, "textname", &text_name, true) != MOSQ_ERR_SUCCESS){
-		control__command_reply(cmd, "Invalid/missing textname");
+		control__command_reply(cmd, "Invalid textname");
 		return MOSQ_ERR_INVAL;
 	}
 
 	if(json_get_string(cmd->j_command, "textdescription", &text_description, true) != MOSQ_ERR_SUCCESS){
-		control__command_reply(cmd, "Invalid/missing textdescription");
+		control__command_reply(cmd, "Invalid textdescription");
 		return MOSQ_ERR_INVAL;
 	}
 
