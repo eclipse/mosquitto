@@ -141,7 +141,7 @@ listener 1883
 allow_anonymous true
 ```
 
-It is valid to allow anonmous and authenticated access on the same broker. In
+It is valid to allow anonymous and authenticated access on the same broker. In
 particular the dynamic security plugin allows you to assign different rights to
 anonymous users than to authenticated users, which may be useful for read-only
 access to data for example.
