@@ -211,27 +211,52 @@ static void config__init_reload(struct mosquitto__config *config)
 
 static void config__cleanup_plugins(struct mosquitto__config *config)
 {
-	int i, j;
+	int i, j, l;
 	struct mosquitto__auth_plugin_config *plug;
+	if(config->per_listener_settings) {
+		for(l=0; l<config->listener_count; l++){
+			struct mosquitto__auth_plugin_config *plug;
+			if(config->listeners[i].security_options.auth_plugin_configs){
+				for(i=0; i<config->listeners[l].security_options.auth_plugin_config_count; i++){
+					plug = &config->listeners[l].security_options.auth_plugin_configs[i];
+					mosquitto__free(plug->path);
+					plug->path = NULL;
 
-	if(config->security_options.auth_plugin_configs){
-		for(i=0; i<config->security_options.auth_plugin_config_count; i++){
-			plug = &config->security_options.auth_plugin_configs[i];
-			mosquitto__free(plug->path);
-			plug->path = NULL;
-
-			if(plug->options){
-				for(j=0; j<plug->option_count; j++){
-					mosquitto__free(plug->options[j].key);
-					mosquitto__free(plug->options[j].value);
+					if(plug->options){
+						for(j=0; j<plug->option_count; j++){
+							mosquitto__free(plug->options[j].key);
+							mosquitto__free(plug->options[j].value);
+						}
+						mosquitto__free(plug->options);
+						plug->options = NULL;
+						plug->option_count = 0;
+					}
 				}
-				mosquitto__free(plug->options);
-				plug->options = NULL;
-				plug->option_count = 0;
+				mosquitto__free(config->listeners[l].security_options.auth_plugin_configs);
+				config->listeners[l].security_options.auth_plugin_configs = NULL;
 			}
 		}
-		mosquitto__free(config->security_options.auth_plugin_configs);
-		config->security_options.auth_plugin_configs = NULL;
+	}
+	else {
+		if(config->security_options.auth_plugin_configs){
+			for(i=0; i<config->security_options.auth_plugin_config_count; i++){
+				plug = &config->security_options.auth_plugin_configs[i];
+				mosquitto__free(plug->path);
+				plug->path = NULL;
+
+				if(plug->options){
+					for(j=0; j<plug->option_count; j++){
+						mosquitto__free(plug->options[j].key);
+						mosquitto__free(plug->options[j].value);
+					}
+					mosquitto__free(plug->options);
+					plug->options = NULL;
+					plug->option_count = 0;
+				}
+			}
+			mosquitto__free(config->security_options.auth_plugin_configs);
+			config->security_options.auth_plugin_configs = NULL;
+		}
 	}
 }
 
@@ -264,6 +289,7 @@ void config__cleanup(struct mosquitto__config *config)
 	mosquitto__free(config->pid_file);
 	mosquitto__free(config->user);
 	mosquitto__free(config->log_timestamp_format);
+	config__cleanup_plugins(config);
 	if(config->listeners){
 		for(i=0; i<config->listener_count; i++){
 			mosquitto__free(config->listeners[i].host);
@@ -343,7 +369,6 @@ void config__cleanup(struct mosquitto__config *config)
 		mosquitto__free(config->bridges);
 	}
 #endif
-	config__cleanup_plugins(config);
 
 	if(config->log_fptr){
 		fclose(config->log_fptr);
