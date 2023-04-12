@@ -213,10 +213,10 @@ static void config__cleanup_plugins(struct mosquitto__config *config)
 {
 	int i, j, l;
 	struct mosquitto__auth_plugin_config *plug;
-	if(config->per_listener_settings) {
+	if(config->per_listener_settings && config->listeners) {
 		for(l=0; l<config->listener_count; l++){
 			struct mosquitto__auth_plugin_config *plug;
-			if(config->listeners[i].security_options.auth_plugin_configs){
+			if(config->listeners[l].security_options.auth_plugin_configs){
 				for(i=0; i<config->listeners[l].security_options.auth_plugin_config_count; i++){
 					plug = &config->listeners[l].security_options.auth_plugin_configs[i];
 					mosquitto__free(plug->path);
@@ -328,6 +328,7 @@ void config__cleanup(struct mosquitto__config *config)
 #endif
 		}
 		mosquitto__free(config->listeners);
+		config->listeners = NULL;
 	}
 #ifdef WITH_BRIDGE
 	if(config->bridges){
