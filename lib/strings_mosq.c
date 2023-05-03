@@ -75,6 +75,10 @@ const char *mosquitto_strerror(int mosq_errno)
 			return "Proxy error.";
 		case MOSQ_ERR_MALFORMED_UTF8:
 			return "Malformed UTF-8";
+		case MOSQ_ERR_KEEPALIVE:
+			return "Keepalive ping timeout.";
+		case MOSQ_ERR_LOOKUP:
+			return "DNS lookup error.";
 		case MOSQ_ERR_DUPLICATE_PROPERTY:
 			return "Duplicate property in property list";
 		case MOSQ_ERR_TLS_HANDSHAKE:
