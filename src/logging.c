@@ -130,9 +130,11 @@ int log__init(struct mosquitto__config *config)
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to open log file %s for writing.", config->log_file);
 		}
 	}
+#ifndef WIN32
 	if(log_destinations & MQTT3_LOG_STDOUT){
 		setlinebuf(stdout);
 	}
+#endif
 #ifdef WITH_DLT
 	dlt_fifo_check();
 	if(dlt_allowed){
