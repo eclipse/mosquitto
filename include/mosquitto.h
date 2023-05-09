@@ -187,7 +187,7 @@ typedef struct mqtt5__property mosquitto_property;
 /*
  * Topic: Threads
  *	libmosquitto provides thread safe operation, with the exception of
- *	<mosquitto_lib_init> which is not thread safe.
+ *	<mosquitto_lib_init> and <mosquitto_lib_cleanup> which are not thread safe.
  *
  *	If the library has been compiled without thread support it is *not*
  *	guaranteed to be thread safe.
@@ -253,6 +253,10 @@ libmosq_EXPORT int mosquitto_lib_version(int *major, int *minor, int *revision);
  * Must be called before any other mosquitto functions.
  *
  * This function is *not* thread safe.
+ *
+ * <mosquitto_lib_cleanup> must be called for every successful call of this function. If
+ * <mosquitto_lib_init> is called while the library is already initialized, it will succeed
+ * and actual cleanup will be delayed to the last expected call of <mosquitto_lib_cleanup>.
  *
  * Returns:
  * 	MOSQ_ERR_SUCCESS - on success.
