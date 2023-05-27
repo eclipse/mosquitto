@@ -224,20 +224,56 @@ int packet__check_oversize(struct mosquitto *mosq, uint32_t remaining_length)
 
 struct mosquitto__packet *packet__get_next_out(struct mosquitto *mosq)
 {
+	struct mosquitto__packet *prev = NULL;
+	struct mosquitto__packet *temp = NULL;
 	struct mosquitto__packet *packet = NULL;
+
+	if (mosquitto__get_state(mosq) == mosq_cs_connect_pending) return NULL;
 
 	pthread_mutex_lock(&mosq->out_packet_mutex);
 	if(mosq->out_packet){
-		mosq->out_packet_count--;
-		mosq->out_packet_bytes -= mosq->out_packet->packet_length;
-		metrics__int_dec(mosq_gauge_out_packets, 1);
-		metrics__int_dec(mosq_gauge_out_packet_bytes, mosq->out_packet->packet_length);
-
-		mosq->out_packet = mosq->out_packet->next;
-		if(!mosq->out_packet){
-			mosq->out_packet_last = NULL;
+		/* if authenticating should skip packet except auth and connect */
+		if (mosquitto__get_state(mosq) == mosq_cs_authenticating){
+			prev = mosq->out_packet;
+			temp = prev->next;
+			if ((prev->command&0xF0) == CMD_CONNECT 
+				|| (prev->command&0xF0) == CMD_AUTH 
+				|| (prev->command&0xF0) == CMD_DISCONNECT
+				|| (prev->command&0xF0) == CMD_CONNACK){
+				packet = prev;
+				mosq->out_packet = mosq->out_packet->next;
+				if (!mosq->out_packet){
+					mosq->out_packet_last = NULL;
+				}
+			}else{
+				while (temp != NULL){
+					if ((temp->command&0xF0) == CMD_CONNECT 
+						|| (temp->command&0xF0) == CMD_AUTH
+						|| (temp->command&0xF0) == CMD_DISCONNECT
+						|| (temp->command&0xF0) == CMD_CONNACK){
+						prev->next = temp->next;
+						if (prev->next == NULL){
+							packet = temp;
+							mosq->out_packet_last = prev;
+						}
+					}
+					prev = temp;
+					temp = temp->next;
+				}
+			}
+		}else{
+			packet = mosq->out_packet;
+			mosq->out_packet = mosq->out_packet->next;
+			if(!mosq->out_packet){
+				mosq->out_packet_last = NULL;
+			}
 		}
-		packet = mosq->out_packet;
+		if (packet != NULL){
+			mosq->out_packet_count--;
+			mosq->out_packet_bytes -= packet->packet_length;
+			metrics__int_dec(mosq_gauge_out_packets, 1);
+			metrics__int_dec(mosq_gauge_out_packet_bytes, packet->packet_length);
+		}
 	}
 	pthread_mutex_unlock(&mosq->out_packet_mutex);
 
@@ -245,20 +281,34 @@ struct mosquitto__packet *packet__get_next_out(struct mosquitto *mosq)
 }
 
 
+void packet__put(struct mosquitto *mosq, struct mosquitto__packet *packet)
+{
+	if (!mosq || !packet) return;
+	
+	pthread_mutex_lock(&mosq->out_packet_mutex);
+	packet->next = mosq->out_packet;
+	mosq->out_packet = packet;
+	if (mosq->out_packet_last == NULL)
+	{
+		mosq->out_packet_last = mosq->out_packet;
+	}
+	pthread_mutex_unlock(&mosq->out_packet_mutex);
+}
+
+
+
 int packet__write(struct mosquitto *mosq)
 {
 	ssize_t write_length;
 	struct mosquitto__packet *packet, *next_packet;
-	enum mosquitto_client_state state;
 
 	if(!mosq) return MOSQ_ERR_INVAL;
+	if (mosquitto__get_state(mosq) == mosq_cs_connect_pending) return MOSQ_ERR_SUCCESS;
 	if(!net__is_connected(mosq)){
 		return MOSQ_ERR_NO_CONN;
 	}
 
-	pthread_mutex_lock(&mosq->out_packet_mutex);
-	packet = mosq->out_packet;
-	pthread_mutex_unlock(&mosq->out_packet_mutex);
+	packet = packet__get_next_out(mosq);
 
 	if(packet == NULL){
 		return MOSQ_ERR_SUCCESS;
@@ -268,11 +318,6 @@ int packet__write(struct mosquitto *mosq)
 	mux__add_out(mosq);
 #endif
 
-	state = mosquitto__get_state(mosq);
-	if(state == mosq_cs_connect_pending){
-		return MOSQ_ERR_SUCCESS;
-	}
-
 	while(packet){
 		while(packet->to_process > 0){
 			write_length = net__write(mosq, &(packet->payload[packet->pos]), packet->to_process);
@@ -281,6 +326,8 @@ int packet__write(struct mosquitto *mosq)
 				packet->to_process -= (uint32_t)write_length;
 				packet->pos += (uint32_t)write_length;
 			}else{
+				/* put packet back to process it later */
+				packet__put(mosq, packet);
 #ifdef WIN32
 				errno = WSAGetLastError();
 #endif

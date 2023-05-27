@@ -2362,6 +2362,28 @@ libmosq_EXPORT void mosquitto_unsubscribe2_v5_callback_set(struct mosquitto *mos
  */
 libmosq_EXPORT void mosquitto_log_callback_set(struct mosquitto *mosq, void (*on_log)(struct mosquitto *, void *, int, const char *));
 
+/*
+ * Function: mosquitto_extended_auth_v5_callback_set
+ *
+ * Set extended auth callback, this should be used if you want to implement 
+ * MQTT5 extended authentication in client library, 
+ * dont forget to set MQTT_PROP_AUTHENTICATION_DATA and MQTT_PROP_AUTHENTICATION_DATA,
+ * and when server send AUTH packet it will be transmitted to your callback
+ * 
+ * mosq - a valid mosquitto instance
+ * on_extended_auth - a callback function in the following form:
+ * 					int (*on_extended_auth)(struct mosquitto *mosq, void *obj, void **out_data, int *out_data_len, const mosquitto_property *props)  
+ * 
+ * Callback Parameters:
+ *  mosq -  the mosquitto instance making the callback.
+ *  obj -   the user data provided in <mosquitto_new>
+ *  out_data - double pointer where you should put malloced data for server response,
+ * 				library will free it by itself(do something like this *out_data = malloc(data_len))
+ *  out_data_len - pointer where you put length of your malloced message
+ *  props - list of MQTT 5 properties, here also will be placed MQTT_PROP_AUTHENTICATION_DATA,
+ *  		with server AUTH data
+ */
+libmosq_EXPORT void mosquitto_extended_auth_v5_callback_set(struct mosquitto *mosq, int (*on_extended_auth)(struct mosquitto *, void *, void **, int *, const mosquitto_property *props));
 
 /* =============================================================================
  *

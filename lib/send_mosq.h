@@ -37,4 +37,9 @@ int send__pubrel(struct mosquitto *mosq, uint16_t mid, const mosquitto_property 
 int send__subscribe(struct mosquitto *mosq, int *mid, int topic_count, char *const *const topic, int topic_qos, const mosquitto_property *properties);
 int send__unsubscribe(struct mosquitto *mosq, int *mid, int topic_count, char *const *const topic, const mosquitto_property *properties);
 
+#ifndef WITH_BROKER
+ int send__auth(struct mosquitto *context, uint8_t reason_code, uint8_t *authdata, uint16_t authlen);
+#endif
+
+
 #endif

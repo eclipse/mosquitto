@@ -162,6 +162,7 @@ static int mosquitto__reconnect(struct mosquitto *mosq, bool blocking)
 	const mosquitto_property *outgoing_properties = NULL;
 	mosquitto_property local_property;
 	int rc;
+	char *authmethod;
 
 	if(!mosq) return MOSQ_ERR_INVAL;
 	if(!mosq->host) return MOSQ_ERR_INVAL;
@@ -179,6 +180,10 @@ static int mosquitto__reconnect(struct mosquitto *mosq, bool blocking)
 		}
 		rc = mosquitto_property_check_all(CMD_CONNECT, outgoing_properties);
 		if(rc) return rc;
+	}
+
+	if (mosquitto_property_read_string(mosq->connect_properties, MQTT_PROP_AUTHENTICATION_METHOD, &authmethod, false) != NULL) {
+		mosquitto_property_read_string(mosq->connect_properties, MQTT_PROP_AUTHENTICATION_METHOD, &mosq->auth_method, false);
 	}
 
 	pthread_mutex_lock(&mosq->msgtime_mutex);
@@ -220,7 +225,11 @@ static int mosquitto__reconnect(struct mosquitto *mosq, bool blocking)
 	}else
 #endif
 	{
-		mosquitto__set_state(mosq, mosq_cs_connected);
+		if (mosq->auth_method){
+			mosquitto__set_state(mosq, mosq_cs_authenticating);
+		}else{
+			mosquitto__set_state(mosq, mosq_cs_connected);
+		}
 #if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_BUILTIN
 		if(mosq->transport == mosq_t_ws){
 			http_c__context_init(mosq);
