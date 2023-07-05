@@ -128,9 +128,6 @@ static struct mosquitto *bridge__new(struct mosquitto__bridge *bridge)
 	}
 	new_context->retain_available = bridge->outgoing_retain;
 	new_context->protocol = bridge->protocol_version;
-	if(!bridge->clean_start_local){
-		new_context->session_expiry_interval = UINT32_MAX;
-	}
 
 	bridges = mosquitto__realloc(db.bridges, (size_t)(db.bridge_count+1)*sizeof(struct mosquitto *));
 	if(bridges){
