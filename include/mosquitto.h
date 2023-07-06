@@ -84,6 +84,9 @@ extern "C" {
 #define MOSQ_LOG_WEBSOCKETS		(1<<7)
 #define MOSQ_LOG_INTERNAL		0x80000000U
 #define MOSQ_LOG_ALL			0xFFFFFFFFU
+#define MOSQ_LOG_WARNING_AND_ABOVE	(MOSQ_LOG_WARNING | MOSQ_LOG_ERR)
+#define MOSQ_LOG_NOTICE_AND_ABOVE	(MOSQ_LOG_WARNING_AND_ABOVE | MOSQ_LOG_NOTICE)
+
 
 /* Enum: mosq_err_t
  * Integer values returned from many libmosquitto functions. */
@@ -2361,6 +2364,31 @@ libmosq_EXPORT void mosquitto_unsubscribe2_v5_callback_set(struct mosquitto *mos
  *	str -   the message string.
  */
 libmosq_EXPORT void mosquitto_log_callback_set(struct mosquitto *mosq, void (*on_log)(struct mosquitto *, void *, int, const char *));
+
+/*
+ * Function: mosquitto_log_levels_set
+ *
+ * Set the logging level. This should be used to configure filtering for
+ * event logging information from the client library. If this function
+ * is not called, all logs are passed to the log callback by default
+ * (provided that the callback has been set).
+ *
+ *  mosq -       a valid mosquitto instance.
+ *  log_types -  a mask of the levels of logs for which the log callback is
+ * 	             to be called. Any combination of log types is valid, for example:
+ *	             MOSQ_LOG_NONE
+ *	             MOSQ_LOG_NOTICE_AND_ABOVE
+ *	             MOSQ_LOG_WARNING_AND_ABOVE
+ *	             MOSQ_LOG_ERR
+ *	             MOSQ_LOG_DEBUG
+ *	             MOSQ_LOG_SUBSCRIBE
+ *	             MOSQ_LOG_UNSUBSCRIBE
+ *	             MOSQ_LOG_WEBSOCKETS
+ *	             MOSQ_LOG_INTERNAL
+ *	             MOSQ_LOG_ALL
+ */
+libmosq_EXPORT void mosquitto_log_levels_set(struct mosquitto *mosq, unsigned int log_levels);
+
 
 
 /* =============================================================================

@@ -38,6 +38,16 @@ LIB_OBJS = \
 	${R}/lib/util_topic.o \
 	${R}/lib/utf8_mosq.o
 
+LOGS_TEST_OBJS = \
+				logs_test.o \
+				logs_stubs.o
+
+LOGS_LIB_OBJS = \
+				${R}/lib/callbacks.o \
+				${R}/lib/logging_mosq.o \
+				${R}/lib/memory_mosq.o \
+				${R}/lib/mosquitto.o \
+				${R}/lib/utf8_mosq.o
 
 all : test-compile
 
@@ -46,14 +56,26 @@ check : test
 lib_test : ${TEST_OBJS} ${LIB_OBJS}
 	$(CROSS_COMPILE)$(CC) $(LDFLAGS) -o $@ $^ $(LDADD)
 
+logs_test : ${LOGS_TEST_OBJS} ${LOGS_LIB_OBJS}
+	$(CROSS_COMPILE)$(CC) $(LDFLAGS) -o $@ $^ $(LDADD)
+
 ${TEST_OBJS} : %.o: %.c
 	${CROSS_COMPILE}${CC} $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 lib_stubs.o : stubs.c
 	${CROSS_COMPILE}$(CC) $(LIB_CPPFLAGS) $(LIB_CFLAGS) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
+${R}/lib/callbacks.o : ${R}/lib/callbacks.c
+	$(MAKE) -C ${R}/lib/ callbacks.o
+
+${R}/lib/logging_mosq.o : ${R}/lib/logging_mosq.c
+	$(MAKE) -C ${R}/lib/ logging_mosq.o
+
 ${R}/lib/misc_mosq.o : ${R}/common/misc_mosq.c
 	$(MAKE) -C ${R}/lib/ misc_mosq.o
+
+${R}/lib/mosquitto.o : ${R}/lib/mosquitto.c
+	$(MAKE) -C ${R}/lib/ mosquitto.o
 
 ${R}/lib/packet_datatypes.o : ${R}/lib/packet_datatypes.c
 	$(MAKE) -C ${R}/lib/ packet_datatypes.o
@@ -73,10 +95,11 @@ ${R}/lib/util_topic.o : ${R}/lib/util_topic.c
 ${R}/lib/utf8_mosq.o : ${R}/lib/utf8_mosq.c
 	$(MAKE) -C ${R}/lib/ utf8_mosq.o
 
-build : lib_test
+build : lib_test logs_test
 
 test : build
 	./lib_test
+	./logs_test
 
 test-compile: build
 
