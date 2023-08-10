@@ -102,4 +102,3 @@ COPY docker-entrypoint.sh mosquitto-no-auth.conf /
 EXPOSE 1883
 ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["/usr/sbin/mosquitto", "-c", "/mosquitto/config/mosquitto.conf"]
-HEALTHCHECK --interval=1m --timeout=10s CMD curl -f mqtt://localhost/ || exit 1
