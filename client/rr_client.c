@@ -84,6 +84,19 @@ static void my_message_callback(struct mosquitto *mosq, void *obj, const struct 
 	UNUSED(obj);
 	UNUSED(properties);
 
+	if (cfg.correlation_data) {
+		void *value;
+		uint16_t len;
+		if (!mosquitto_property_read_binary(properties, MQTT_PROP_CORRELATION_DATA, &value, &len, false)) {
+			printf("skipped message with empty correlation data\n");
+			return;
+		}
+		if (len != cfg.correlation_datalen || memcmp(value, cfg.correlation_data, len)) {
+			printf("skipped message with invalid correlation data\n");
+			return;
+		}
+	}
+
 	print_message(&cfg, message, properties);
 	switch(cfg.pub_mode){
 		case MSGMODE_CMD:
@@ -195,7 +208,7 @@ static void print_usage(void)
 	printf("             with v3.1.1 brokers.\n");
 	printf("mosquitto_rr version %s running on libmosquitto %d.%d.%d.\n\n", VERSION, major, minor, revision);
 	printf("Usage: mosquitto_rr {[-h host] [--unix path] [-p port] [-u username] [-P password] -t topic | -L URL} -e response-topic\n");
-	printf("                    [-c] [-k keepalive] [-q qos] [-R] [-x session-expiry-interval\n");
+	printf("                    [-c] [-k keepalive] [-q qos] [-R] [-x session-expiry-interval] [-C]\n");
 	printf("                    [-F format]\n");
 #ifndef WIN32
 	printf("                    [-W timeout_secs]\n");
@@ -230,6 +243,7 @@ static void print_usage(void)
 	printf("      for the same client id when the client connects, and sessions will never expire when the\n");
 	printf("      client disconnects. MQTT v5 clients can change their session expiry interval with the -x\n");
 	printf("      argument.\n");
+	printf(" -C : Generates random correlation data and match response.\n");
 	printf(" -d : enable debug messages.\n");
 	printf(" -D : Define MQTT v5 properties. See the documentation for more details.\n");
 	printf(" -e : Response topic. The client will subscribe to this topic to wait for a response.\n");

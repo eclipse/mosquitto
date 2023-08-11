@@ -129,6 +129,8 @@ struct mosq_config {
 	mosquitto_property *will_props;
 	bool have_topic_alias; /* pub */
 	char *response_topic; /* rr */
+	void *correlation_data; /* rr */
+	int correlation_datalen; /* rr */
 	bool tcp_nodelay;
 };
 

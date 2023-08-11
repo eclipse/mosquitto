@@ -258,6 +258,7 @@ void client_config_cleanup(struct mosq_config *cfg)
 	free(cfg->socks5_host);
 	free(cfg->socks5_username);
 	free(cfg->socks5_password);
+	free(cfg->correlation_data);
 #endif
 	mosquitto_property_free_all(&cfg->connect_props);
 	mosquitto_property_free_all(&cfg->publish_props);
@@ -519,6 +520,24 @@ static int cfg_add_topic(struct mosq_config *cfg, int type, char *topic, const c
 	return 0;
 }
 
+static int cfg_add_correlation_data(struct mosq_config *cfg, int size) {
+	free(cfg->correlation_data);
+	char* cd = malloc(size);
+	cfg->correlation_data = cd;
+	cfg->correlation_datalen = size;
+	for (int i = 0; i < size; i++) {
+		cd[i] = rand() % 256;
+	}
+
+	mosquitto_property** proplist = &cfg->publish_props;
+	int rc = mosquitto_property_add_binary(proplist, MQTT_PROP_CORRELATION_DATA, cd, size);
+	if(rc){
+		fprintf(stderr, "Error adding correlation-data property\n");
+		return rc;
+	}
+	return 0;
+}
+
 /* Process a tokenised single line from a file or set of real argc/argv */
 int client_config_line_proc(struct mosq_config *cfg, int pub_or_sub, int argc, char *argv[])
 {
@@ -571,7 +590,11 @@ int client_config_line_proc(struct mosq_config *cfg, int pub_or_sub, int argc, c
 			i++;
 #endif
 		}else if(!strcmp(argv[i], "-C")){
-			if(pub_or_sub != CLIENT_SUB){
+			if(pub_or_sub == CLIENT_RR){
+				if (cfg_add_correlation_data(cfg, 16)) {
+					return 1;
+				}
+			} else if(pub_or_sub != CLIENT_SUB){
 				goto unknown_option;
 			}else{
 				if(i==argc-1){
