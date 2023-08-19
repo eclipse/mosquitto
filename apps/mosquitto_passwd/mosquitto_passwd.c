@@ -629,13 +629,13 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 
-		backup_file = malloc((size_t)strlen(password_file)+strlen(".backup.XXXXXX"));
+		backup_file = malloc((size_t)strlen(password_file)+strlen(".backup.XXXXXX")+1);
 		if(!backup_file){
 			fprintf(stderr, "Error: Out of memory.\n");
 			free(password_file);
 			return 1;
 		}
-		snprintf(backup_file, strlen(password_file)+5, "%s.backup.XXXXXX", password_file);
+		snprintf(backup_file, strlen(password_file)+strlen(".backup.XXXXXX")+1, "%s.backup.XXXXXX", password_file);
 		free(password_file);
 		password_file = NULL;
 
