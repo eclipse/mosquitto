@@ -1,8 +1,8 @@
 [Unit]
 Description=Mosquitto MQTT Broker
 Documentation=man:mosquitto.conf(5) man:mosquitto(8)
-After=network.target
-Wants=network.target
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=notify
