@@ -200,7 +200,7 @@ if (WITH_WEBSOCKETS)
 			link_directories(${mosquitto_SOURCE_DIR})
 		endif (WIN32)
 	else (STATIC_WEBSOCKETS)
-		set (MOSQ_LIBS ${MOSQ_LIBS} websockets)
+		set (MOSQ_LIBS ${MOSQ_LIBS} websockets_shared)
 	endif (STATIC_WEBSOCKETS)
 endif (WITH_WEBSOCKETS)
 
