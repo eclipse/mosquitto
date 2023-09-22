@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
 	struct mosquitto *mosq;
 	int port;
 
-	if(argc < 2){
+	if(argc < 3){
 		return 1;
 	}
 	port = atoi(argv[1]);
