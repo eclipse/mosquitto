@@ -21,9 +21,9 @@ def do_test(conn, data):
     disconnect_packet = mosq_test.gen_disconnect(proto_ver=5)
 
     mosq_test.do_receive_send(conn, connect_packet, connack_packet, "connect")
-    mosq_test.do_send_receive(conn, publish_packet, pubrec_packet, "pubrec")
-    mosq_test.do_send_receive(conn, pubrel_packet, pubcomp_packet, "pubcomp")
-    mosq_test.expect_packet(conn, "ok", ok_packet)
+    mosq_test.do_send_receive(conn, publish_packet, ok_packet, "ok")
+    mosq_test.do_receive_send(conn, pubrec_packet, pubrel_packet, "pubrel")
+    mosq_test.expect_packet(conn, "pubcomp", pubcomp_packet)
 
     conn.close()
 
