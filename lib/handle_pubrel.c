@@ -112,7 +112,7 @@ int handle__pubrel(struct mosquitto *mosq)
 
 	rc = message__remove(mosq, mid, mosq_md_in, &message, 2);
 	if(rc == MOSQ_ERR_SUCCESS){
-		// Message was already passed to the application prior to PUBREC.
+		/* Message was already passed to the application prior to PUBREC. */
 		message__cleanup(&message);
 	}else if(rc == MOSQ_ERR_NOT_FOUND){
 		return MOSQ_ERR_SUCCESS;

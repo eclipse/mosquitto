@@ -81,14 +81,14 @@ int main(int argc, char *argv[])
 		mosq->loop(100, 1);
 	}
 
-	// Drain the PUBREL and PUBCOMP messages.
+	/* Drain the PUBREL and PUBCOMP messages. */
 	for(int i = 0; i < 2; i++){
 		mosq->loop();
 	}
 
 	run = -1;
 	mosq->disconnect();
-	// Wait for disconnect to complete.
+	/* Wait for disconnect to complete. */
 	while(run == -1){
 		mosq->loop(100, 1);
 	}

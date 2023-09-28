@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
 		mosquitto_loop(mosq, 300, 1);
 	}
 
-	// Drain the PUBREL and PUBCOMP messages.
+	/* Drain the PUBREL and PUBCOMP messages. */
 	for(int i = 0; i < 2; i++){
 		mosquitto_loop(mosq, 300, 1);
 	}
