@@ -19,7 +19,13 @@ follow the steps on [Eclipse Security] page to report it.
 Listed with most recent first. Further information on security related issues
 can be found in the [security category].
 
-* June 2023: [CVE-2023-28366]: Clients sending unacknowledged QoS 2 messages
+* August 2023: [CVE-2023-0809]: Fix excessive memory being allocated based on
+  malicious initial packets that are not CONNECT packets. Affecting versions
+  **1.5.0** to **2.0.15**. Fixed in **2.0.16**.
+* August 2023: [CVE-2023-3592]: Fix memory leak when clients send v5 CONNECT
+  packets with a will message that contains invalid property types. Affecting
+  version **1.6.0** to **2.0.15** Fixed in **2.0.16**.
+* August 2023: [CVE-2023-28366]: Clients sending unacknowledged QoS 2 messages
   with duplicate message ids cause a memory leak. Affecting versions **1.3.2**
   to **2.0.15** inclusive, fixed in **2.0.16**.
 * August 2022: Deleting the anonymous group in the dynamic security plugin
