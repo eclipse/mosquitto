@@ -277,6 +277,7 @@ int mosquitto_main_loop(struct mosquitto__listener_sock *listensock, int listens
 void do_disconnect(struct mosquitto *context, int reason)
 {
 	const char *id;
+    const char *address;
 #ifdef WITH_WEBSOCKETS
 	bool is_duplicate = false;
 #endif
@@ -319,52 +320,57 @@ void do_disconnect(struct mosquitto *context, int reason)
 			}else{
 				id = "<unknown>";
 			}
+            if(context->address){
+                address= context->address;
+            }else{
+                address = "<unknown>";
+            }
 			if(context->state != mosq_cs_disconnecting && context->state != mosq_cs_disconnect_with_will){
 				switch(reason){
 					case MOSQ_ERR_SUCCESS:
 						break;
 					case MOSQ_ERR_MALFORMED_PACKET:
-						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s disconnected due to malformed packet.", id);
+						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s (%s) disconnected due to malformed packet.", id, address);
 						break;
 					case MOSQ_ERR_PROTOCOL:
-						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s disconnected due to protocol error.", id);
+						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s (%s) disconnected due to protocol error.", id, address);
 						break;
 					case MOSQ_ERR_CONN_LOST:
-						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s closed its connection.", id);
+						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s (%s) closed its connection.", id, address);
 						break;
 					case MOSQ_ERR_AUTH:
-						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s disconnected, not authorised.", id);
+						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s (%s) disconnected, not authorised.", id, address);
 						break;
 					case MOSQ_ERR_KEEPALIVE:
-						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s has exceeded timeout, disconnecting.", id);
+						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s (%s) has exceeded timeout, disconnecting.", id, address);
 						break;
 					case MOSQ_ERR_OVERSIZE_PACKET:
-						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s disconnected due to oversize packet.", id);
+						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s (%s) disconnected due to oversize packet.", id, address);
 						break;
 					case MOSQ_ERR_PAYLOAD_SIZE:
-						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s disconnected due to oversize payload.", id);
+						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s (%s) disconnected due to oversize payload.", id, address);
 						break;
 					case MOSQ_ERR_NOMEM:
-						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s disconnected due to out of memory.", id);
+						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s (%s) disconnected due to out of memory.", id, address);
 						break;
 					case MOSQ_ERR_NOT_SUPPORTED:
-						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s disconnected due to using not allowed feature (QoS too high, retain not supported, or bad AUTH method).", id);
+						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s (%s) disconnected due to using not allowed feature (QoS too high, retain not supported, or bad AUTH method).", id, address);
 						break;
 					case MOSQ_ERR_ADMINISTRATIVE_ACTION:
-						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s been disconnected by administrative action.", id);
+						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s (%s) been disconnected by administrative action.", id, address);
 						break;
 					case MOSQ_ERR_ERRNO:
-						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s disconnected: %s.", id, strerror(errno));
+						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s (%s) disconnected: %s.", id, address, strerror(errno));
 						break;
 					default:
-						log__printf(NULL, MOSQ_LOG_NOTICE, "Bad socket read/write on client %s: %s", id, mosquitto_strerror(reason));
+						log__printf(NULL, MOSQ_LOG_NOTICE, "Bad socket read/write on client %s (%s): %s", id, address, mosquitto_strerror(reason));
 						break;
 				}
 			}else{
 				if(reason == MOSQ_ERR_ADMINISTRATIVE_ACTION){
-					log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s been disconnected by administrative action.", id);
+					log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s (%s) been disconnected by administrative action.", id, address);
 				}else{
-					log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s disconnected.", id);
+					log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s (%s) disconnected.", id, address);
 				}
 			}
 		}
