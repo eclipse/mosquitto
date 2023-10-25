@@ -596,6 +596,7 @@ struct mosquitto__bridge{
 	bool attempt_unsubscribe;
 	bool initial_notification_done;
 	bool outgoing_retain;
+	bool fatal_sub_errors;
 	enum mosquitto_bridge_reload_type reload_type;
 	uint16_t max_topic_alias;
 #ifdef WITH_TLS

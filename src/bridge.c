@@ -714,9 +714,11 @@ int bridge__on_connect(struct mosquitto *context)
 }
 
 int bridge__on_suback(struct mosquitto *context, int qos) {
-	if (qos > 2) {
+	if(qos>2){
 		log__printf(NULL, MOSQ_LOG_ERR, "Error on bridge subscription: %s", mosquitto_reason_string(qos));
-		do_disconnect(context, MOSQ_ERR_CONN_LOST);
+		if(context->bridge->fatal_sub_errors){
+			do_disconnect(context, MOSQ_ERR_CONN_LOST);
+		}
 	}
 
 	return MOSQ_ERR_SUCCESS;

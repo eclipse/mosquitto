@@ -34,6 +34,7 @@
 "bridge_max_packet_size"
 "bridge_max_topic_alias"
 "bridge_outgoing_retain"
+"bridge_fatal_sub_errors"
 "bridge_protocol_version"
 "bridge_psk"
 "bridge_receive_maximum"
