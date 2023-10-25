@@ -85,6 +85,14 @@ int handle__suback(struct mosquitto *mosq)
 			mosquitto_property_free_all(&properties);
 			return rc;
 		}
+
+#ifdef WITH_BRIDGE
+		if(mosq->bridge){
+			rc = bridge__on_suback(mosq, qos);
+			if(rc) return rc;
+		}
+#endif
+
 		granted_qos[i] = (int)qos;
 		i++;
 	}

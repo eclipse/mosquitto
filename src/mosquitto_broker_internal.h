@@ -801,6 +801,7 @@ int bridge__connect(struct mosquitto *context);
 int bridge__connect_step3(struct mosquitto *context);
 #endif
 int bridge__on_connect(struct mosquitto *context);
+int bridge__on_suback(struct mosquitto *context, int qos);
 void bridge_check(void);
 int bridge__register_local_connections(void);
 int bridge__add_topic(struct mosquitto__bridge *bridge, const char *topic, enum mosquitto__bridge_direction direction, uint8_t qos, const char *local_prefix, const char *remote_prefix);
