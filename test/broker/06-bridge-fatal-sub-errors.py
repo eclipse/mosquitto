@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
-# Does a bridge disconnect on subscription errors?
+# Does a bridge with bridge_fatal_sub_errors enabled
+# disconnect on subscription errors? Does it remain connected otherwise?
 
 from mosq_test_helper import *
 
-def write_config(filename, port1, port2):
+def write_config(filename, port1, port2, fatal_sub_errors):
     with open(filename, 'w') as f:
         f.write("listener %d\n" % (port2))
         f.write("allow_anonymous true\n")
@@ -15,6 +16,7 @@ def write_config(filename, port1, port2):
         f.write("notifications false\n")
         f.write("restart_timeout 5\n")
         f.write("cleansession true\n")
+        f.write("bridge_fatal_sub_errors %s\n" % str(fatal_sub_errors).lower())
 
 def is_connected(sock):
     try:
@@ -23,10 +25,10 @@ def is_connected(sock):
     except TimeoutError as e:
         return True
 
-def do_test():
+def do_test(fatal_sub_errors):
     (port1, port2) = mosq_test.get_port(2)
     conf_file = os.path.basename(__file__).replace('.py', '.conf')
-    write_config(conf_file, port1, port2)
+    write_config(conf_file, port1, port2, fatal_sub_errors)
 
     rc = 1
     client_id = socket.gethostname()+".bridge_sample"
@@ -59,8 +61,8 @@ def do_test():
 
         time.sleep(0.25) # give the broker some time to react
 
-        # should be disconnected by now
-        rc = bool(is_connected(bridge))
+        # if (connected and not fatal) or (disconnected and fatal): success, else: failure
+        rc = 0 if is_connected(bridge) != fatal_sub_errors else 1
     except mosq_test.TestError:
         pass
     finally:
@@ -80,6 +82,7 @@ def do_test():
             print(stde.decode('utf-8'))
             exit(rc)
 
-do_test()
+do_test(True)
+do_test(False)
 
 exit(0)

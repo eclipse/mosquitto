@@ -113,6 +113,7 @@ tests = [
     (2, './06-bridge-reconnect-local-out.py'),
     (2, './06-bridge-remote-shutdown.py'),
     (2, './06-bridge-config-reload.py'),
+    (2, './06-bridge-fatal-sub-errors.py'),
 
     (1, './07-will-control.py'),
     (1, './07-will-delay-invalid-573191.py'),

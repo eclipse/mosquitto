@@ -75,6 +75,7 @@ def write_config(filename, ports, per_listener_settings, plugver, acl_file):
         f.write("bridge_max_packet_size 10000\n")
         f.write("bridge_max_topic_alias 1000\n")
         f.write("bridge_outgoing_retain false\n")
+        f.write("bridge_fatal_sub_errors false\n")
         f.write("bridge_protocol_version mqttv50\n")
         #f.write("bridge_psk\n")
         f.write("bridge_receive_maximum 100\n")
