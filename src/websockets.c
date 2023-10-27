@@ -687,7 +687,12 @@ void mosq_websockets_init(struct mosquitto__listener *listener, const struct mos
 	}
 
 	memset(&info, 0, sizeof(info));
-	info.iface = listener->host;
+	if(listener->port == 0){
+		info.iface = listener->unix_socket_path;
+		info.options |= LWS_SERVER_OPTION_UNIX_SOCK;
+	}else{
+		info.iface = listener->host;
+	}
 	info.port = listener->port;
 	info.protocols = p;
 	info.gid = -1;
