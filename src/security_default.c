@@ -1041,7 +1041,7 @@ static int mosquitto_unpwd_check_default(int event, void *event_data, void *user
 		}
 	}
 
-	return MOSQ_ERR_AUTH;
+	return MOSQ_ERR_PLUGIN_DEFER;
 }
 
 static int unpwd__cleanup(struct mosquitto__unpwd **root, bool reload)
