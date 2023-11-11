@@ -17,7 +17,7 @@ jobs:
   cjson:
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           repository: DaveGamble/cJSON
           ref: v1.7.15
@@ -45,7 +45,7 @@ jobs:
       CJSON_DIR: C:\Program Files\cJSON
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: install openssl
         run: choco install openssl
@@ -62,7 +62,7 @@ jobs:
       - name: Build
         run: cmake --build ${{github.workspace}}/build64 --config ${{env.BUILD_TYPE}}
 
-      - uses: suisei-cn/actions-download-file@v1.0.1
+      - uses: suisei-cn/actions-download-file@v1.4.0
         id: vcredist
         name: Download VC redistributable
         with:
@@ -70,7 +70,7 @@ jobs:
           target: ${{github.workspace}}/installer/
 
       - name: Installer
-        uses: joncloud/makensis-action@v3.7
+        uses: joncloud/makensis-action@v4
         with:
           script-file: ${{github.workspace}}/installer/mosquitto.nsi
 
