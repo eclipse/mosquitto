@@ -727,7 +727,7 @@ static int pwfile__parse(const char *file, struct mosquitto__unpwd **root)
 	FILE *pwfile;
 	struct mosquitto__unpwd *unpwd;
 	char *username, *password;
-	char *saveptr = NULL;
+	char *colon;
 	char *buf;
 	int buflen = 256;
 
@@ -747,57 +747,51 @@ static int pwfile__parse(const char *file, struct mosquitto__unpwd **root)
 	while(!feof(pwfile)){
 		if(fgets_extending(&buf, &buflen, pwfile)){
 			if(buf[0] == '#') continue;
-			if(!strchr(buf, ':')) continue;
+			colon = strrchr(buf, ':');
+			if(!colon) continue;
+			*colon = 0;
 
-			username = strtok_r(buf, ":", &saveptr);
-			if(username){
-				unpwd = mosquitto__calloc(1, sizeof(struct mosquitto__unpwd));
-				if(!unpwd){
-					fclose(pwfile);
-					mosquitto__FREE(buf);
-					return MOSQ_ERR_NOMEM;
-				}
-				username = misc__trimblanks(username);
-				if(strlen(username) > 65535){
-					log__printf(NULL, MOSQ_LOG_NOTICE, "Warning: Invalid line in password file '%s', username too long.", file);
-					mosquitto__FREE(unpwd);
-					continue;
-				}
-
-				unpwd->username = mosquitto__strdup(username);
-				if(!unpwd->username){
-					mosquitto__FREE(unpwd);
-					mosquitto__FREE(buf);
-					fclose(pwfile);
-					return MOSQ_ERR_NOMEM;
-				}
-				password = strtok_r(NULL, ":", &saveptr);
-				if(password){
-					password = misc__trimblanks(password);
-
-					if(strlen(password) > 65535){
-						log__printf(NULL, MOSQ_LOG_NOTICE, "Warning: Invalid line in password file '%s', password too long.", file);
-						mosquitto__FREE(unpwd->username);
-						mosquitto__FREE(unpwd);
-						continue;
-					}
-
-					unpwd->password = mosquitto__strdup(password);
-					if(!unpwd->password){
-						fclose(pwfile);
-						mosquitto__FREE(unpwd->username);
-						mosquitto__FREE(unpwd);
-						mosquitto__FREE(buf);
-						return MOSQ_ERR_NOMEM;
-					}
-
-					HASH_ADD_KEYPTR(hh, *root, unpwd->username, strlen(unpwd->username), unpwd);
-				}else{
-					log__printf(NULL, MOSQ_LOG_NOTICE, "Warning: Invalid line in password file '%s': %s", file, buf);
-					mosquitto__FREE(unpwd->username);
-					mosquitto__FREE(unpwd);
-				}
+			username = buf;
+			unpwd = mosquitto__calloc(1, sizeof(struct mosquitto__unpwd));
+			if(!unpwd){
+				fclose(pwfile);
+				mosquitto__FREE(buf);
+				return MOSQ_ERR_NOMEM;
 			}
+			username = misc__trimblanks(username);
+			if(strlen(username) > 65535){
+				log__printf(NULL, MOSQ_LOG_NOTICE, "Warning: Invalid line in password file '%s', username too long.", file);
+				mosquitto__FREE(unpwd);
+				continue;
+			}
+
+			unpwd->username = mosquitto__strdup(username);
+			if(!unpwd->username){
+				mosquitto__FREE(unpwd);
+				mosquitto__FREE(buf);
+				fclose(pwfile);
+				return MOSQ_ERR_NOMEM;
+			}
+
+			password = colon + 1;
+			password = misc__trimblanks(password);
+			if(strlen(password) > 65535){
+				log__printf(NULL, MOSQ_LOG_NOTICE, "Warning: Invalid line in password file '%s', password too long.", file);
+				mosquitto__FREE(unpwd->username);
+				mosquitto__FREE(unpwd);
+				continue;
+			}
+
+			unpwd->password = mosquitto__strdup(password);
+			if(!unpwd->password){
+				fclose(pwfile);
+				mosquitto__FREE(unpwd->username);
+				mosquitto__FREE(unpwd);
+				mosquitto__FREE(buf);
+				return MOSQ_ERR_NOMEM;
+			}
+
+			HASH_ADD_KEYPTR(hh, *root, unpwd->username, strlen(unpwd->username), unpwd);
 		}
 	}
 	fclose(pwfile);

@@ -179,7 +179,7 @@ static int pwfile_iterate(FILE *fptr, FILE *ftmp,
 	int lbuflen;
 	int rc = 1;
 	int line = 0;
-	char *username, *password;
+	char *colon, *username, *password;
 
 	buf = malloc((size_t)buflen);
 	if(buf == NULL){
@@ -207,14 +207,16 @@ static int pwfile_iterate(FILE *fptr, FILE *ftmp,
 		}
 		memcpy(lbuf, buf, (size_t)buflen);
 		line++;
-		username = strtok(buf, ":");
-		password = strtok(NULL, ":");
-		if(username == NULL || password == NULL){
+		colon = strrchr(buf, ':');
+		*colon = 0;
+		if(colon == NULL){
 			fprintf(stderr, "Error: Corrupt password file at line %d.\n", line);
 			free(lbuf);
 			free(buf);
 			return 1;
 		}
+		username = buf;
+		password = colon + 1;
 		username = misc__trimblanks(username);
 		password = misc__trimblanks(password);
 
@@ -421,10 +423,6 @@ static bool is_username_valid(const char *username)
 				fprintf(stderr, "Error: Username must not contain control characters.\n");
 				return false;
 			}
-		}
-		if(strchr(username, ':')){
-			fprintf(stderr, "Error: Username must not contain the ':' character.\n");
-			return false;
 		}
 	}
 	return true;
