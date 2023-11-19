@@ -5,7 +5,6 @@ if(WITH_TLS AND CJSON_FOUND)
 		broker.c
 		client.c
 		dynsec.c
-		../../plugins/dynamic-security/hash.c
 		dynsec_client.c
 		dynsec_group.c
 		dynsec_role.c

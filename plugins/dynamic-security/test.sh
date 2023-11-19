@@ -1,3 +1,4 @@
 rm test.json
 export MOSQUITTO_DYNSEC_PASSWORD=passwordpass
-../../src/mosquitto -c test.conf
+export VG="valgrind --log-file=vglog"
+${VG} ../../src/mosquitto -c test.conf

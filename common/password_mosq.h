@@ -31,20 +31,39 @@ Contributors:
 enum mosquitto_pwhash_type{
 	pw_sha512 = 6,
 	pw_sha512_pbkdf2 = 7,
+	pw_argon2id = 8,
 };
 
 #define PW_DEFAULT_ITERATIONS 101
 
 struct mosquitto_pw{
-	unsigned char password_hash[HASH_LEN]; /* For SHA512 */
-	unsigned char salt[HASH_LEN];
-	size_t salt_len;
-	int iterations;
+	union {
+		struct {
+			unsigned char password_hash[HASH_LEN]; /* For SHA512 */
+			unsigned char salt[HASH_LEN];
+			size_t salt_len;
+		} sha512;
+		struct {
+			unsigned char password_hash[HASH_LEN]; /* For SHA512 */
+			unsigned char salt[HASH_LEN];
+			size_t salt_len;
+			int iterations;
+		} sha512_pbkdf2;
+		struct {
+			unsigned char password_hash[HASH_LEN];
+			unsigned char salt[HASH_LEN];
+			size_t salt_len;
+			int iterations;
+		} argon2id;
+	} params;
+	char *encoded_password;
 	enum mosquitto_pwhash_type hashtype;
 	bool valid;
 };
 
-int pw__hash(const char *password, struct mosquitto_pw *pw, bool new_password, int new_iterations);
-int pw__memcmp_const(const void *ptr1, const void *b, size_t len);
+int pw__create(struct mosquitto_pw *pw, const char *password);
+int pw__encode(struct mosquitto_pw *pw);
+int pw__decode(struct mosquitto_pw *pw, const char *password);
+int pw__verify(struct mosquitto_pw *pw, const char *password);
 
 #endif

@@ -25,7 +25,6 @@ OBJS= \
 
 OBJS_EXTERNAL= \
 	base64_mosq.o \
-	dynsec_hash.o \
 	get_password.o \
 	json_help.o \
 	memory_mosq.o \
@@ -52,9 +51,6 @@ ${OBJS} : %.o: %.c mosquitto_ctrl.h
 	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(LOCAL_CFLAGS) -c $< -o $@
 
 base64_mosq.o : ${R}/common/base64_mosq.c ${R}/common/base64_mosq.h
-	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(LOCAL_CFLAGS) -c $< -o $@
-
-dynsec_hash.o : ${R}/plugins/dynamic-security/hash.c ${R}/plugins/dynamic-security/dynamic_security.h
 	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(LOCAL_CFLAGS) -c $< -o $@
 
 example.o : example.c mosquitto_ctrl.h

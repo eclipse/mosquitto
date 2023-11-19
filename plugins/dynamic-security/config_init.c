@@ -113,7 +113,7 @@ static int get_password_from_init_file(struct dynsec__data *data, char **pw)
  * * The contents of the MOSQUITTO_DYNSEC_PASSWORD environment variable
  * * Randomly generated passwords for "admin", "user", stored in plain text at '<plugin_opt_config_file>.pw'
  */
-static int generate_password(struct dynsec__data *data, int iterations, char **password, char **password_hash, char **salt)
+static int generate_password(struct dynsec__data *data, cJSON *j_client, char **password)
 {
 	struct mosquitto_pw pw;
 	int i;
@@ -158,21 +158,48 @@ static int generate_password(struct dynsec__data *data, int iterations, char **p
 		(*password)[20] = '\0';
 	}
 
-	if(pw__hash(*password, &pw, true, iterations) != MOSQ_ERR_SUCCESS){
+	pw.hashtype = pw_sha512_pbkdf2;
+	pw.params.sha512_pbkdf2.iterations = PW_DEFAULT_ITERATIONS + 1;
+
+	if(pw__create(&pw, *password) != MOSQ_ERR_SUCCESS){
 		free(*password);
 		*password = NULL;
 		return MOSQ_ERR_UNKNOWN;
 	}
 
-	if(base64__encode(pw.salt, (unsigned int)pw.salt_len, salt)
-			|| base64__encode(pw.password_hash, sizeof(pw.password_hash), password_hash)
-			){
+	if(pw.hashtype == pw_sha512_pbkdf2){
+		char *salt_b64 = NULL, *password_b64 = NULL;
 
-		free(*password);
-		free(*password_hash);
-		free(*salt);
-		return MOSQ_ERR_NOMEM;
+		if(base64__encode(pw.params.sha512_pbkdf2.salt, pw.params.sha512_pbkdf2.salt_len, &salt_b64)
+				|| base64__encode(pw.params.sha512_pbkdf2.password_hash, sizeof(pw.params.sha512_pbkdf2.password_hash), &password_b64)
+				|| cJSON_AddStringToObject(j_client, "salt", salt_b64) == NULL
+				|| cJSON_AddStringToObject(j_client, "password", password_b64) == NULL
+				|| cJSON_AddNumberToObject(j_client, "iterations", pw.params.sha512_pbkdf2.iterations) == NULL){
+
+			free(password_b64);
+			free(salt_b64);
+			free(*password);
+			*password = NULL;
+			return MOSQ_ERR_UNKNOWN;
+		}
+		free(password_b64);
+		free(salt_b64);
+	}else{
+		if(pw__encode(&pw) != MOSQ_ERR_SUCCESS){
+			free(*password);
+			*password = NULL;
+			return MOSQ_ERR_UNKNOWN;
+		}
+
+		if(cJSON_AddStringToObject(j_client, "encoded_password", pw.encoded_password)){
+			free(pw.encoded_password);
+			free(*password);
+			*password = NULL;
+			return MOSQ_ERR_UNKNOWN;
+		}
+		free(pw.encoded_password);
 	}
+
 	return MOSQ_ERR_SUCCESS;
 }
 
@@ -198,34 +225,26 @@ static int client_add_admin(struct dynsec__data *data, FILE *pwfile, cJSON *j_cl
 {
 	cJSON *j_client, *j_roles;
 	char *password = NULL;
-	char *password_hash = NULL;
-	char *salt = NULL;
-
-	if(generate_password(data, 10000, &password, &password_hash, &salt)){
-		return MOSQ_ERR_UNKNOWN;
-	}
 
 	j_client = cJSON_CreateObject();
 	if(j_client == NULL){
 		return MOSQ_ERR_NOMEM;
 	}
+	if(generate_password(data, j_client, &password)){
+		cJSON_Delete(j_client);
+		return MOSQ_ERR_UNKNOWN;
+	}
 
 	cJSON_AddItemToArray(j_clients, j_client);
 	if(cJSON_AddStringToObject(j_client, "username", "admin") == NULL
 			|| cJSON_AddStringToObject(j_client, "textname", "Admin user") == NULL
-			|| cJSON_AddStringToObject(j_client, "password", password_hash) == NULL
-			|| cJSON_AddStringToObject(j_client, "salt", salt) == NULL
-			|| cJSON_AddNumberToObject(j_client, "iterations", 10000) == NULL
 			|| (j_roles = cJSON_AddArrayToObject(j_client, "roles")) == NULL
 			){
 
+		cJSON_Delete(j_client);
 		free(password);
-		free(password_hash);
-		free(salt);
 		return MOSQ_ERR_NOMEM;
 	}
-	free(password_hash);
-	free(salt);
 
 	if(client_role_add(j_roles, "super-admin")
 	        || client_role_add(j_roles, "sys-observe")
@@ -247,37 +266,30 @@ static int client_add_user(struct dynsec__data *data, FILE *pwfile, cJSON *j_cli
 {
 	cJSON *j_client, *j_roles;
 	char *password = NULL;
-	char *password_hash = NULL;
-	char *salt = NULL;
 
 	if(data->init_mode != dpwim_random){
 		return MOSQ_ERR_SUCCESS;
 	}
-	if(generate_password(data, 10000, &password, &password_hash, &salt)){
-		return MOSQ_ERR_UNKNOWN;
-	}
-
 	j_client = cJSON_CreateObject();
 	if(j_client == NULL){
 		return MOSQ_ERR_NOMEM;
 	}
 
-	cJSON_AddItemToArray(j_clients, j_client);
+	if(generate_password(data, j_client, &password)){
+		cJSON_Delete(j_client);
+		return MOSQ_ERR_UNKNOWN;
+	}
+
 	if(cJSON_AddStringToObject(j_client, "username", "democlient") == NULL
 			|| cJSON_AddStringToObject(j_client, "textname", "Demonstration client with full read/write access to the '#' topic hierarchy.") == NULL
-			|| cJSON_AddStringToObject(j_client, "password", password_hash) == NULL
-			|| cJSON_AddStringToObject(j_client, "salt", salt) == NULL
-			|| cJSON_AddNumberToObject(j_client, "iterations", 10000) == NULL
 			|| (j_roles = cJSON_AddArrayToObject(j_client, "roles")) == NULL
 			){
 
 		free(password);
-		free(password_hash);
-		free(salt);
+		cJSON_Delete(j_client);
 		return MOSQ_ERR_NOMEM;
 	}
-	free(password_hash);
-	free(salt);
+	cJSON_AddItemToArray(j_clients, j_client);
 
 	if(client_role_add(j_roles, "client")){
 		free(password);

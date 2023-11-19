@@ -564,47 +564,58 @@ static cJSON *init_add_client(const char *username, const char *password, const 
 {
 	cJSON *j_client, *j_roles, *j_role;
 	struct mosquitto_pw pw;
-	char *salt64 = NULL, *hash64 = NULL;
 	char buf[10];
 
 	memset(&pw, 0, sizeof(pw));
 	pw.hashtype = pw_sha512_pbkdf2;
 
-	if(pw__hash(password, &pw, true, PW_DEFAULT_ITERATIONS) != 0){
-		return NULL;
-	}
-	if(base64__encode(pw.salt, (unsigned int)pw.salt_len, &salt64)
-		|| base64__encode(pw.password_hash, sizeof(pw.password_hash), &hash64)
-		){
-
-		fprintf(stderr, "dynsec init: Internal error while encoding password.\n");
-		free(salt64);
-		free(hash64);
+	if(pw__create(&pw, password) != MOSQ_ERR_SUCCESS){
 		return NULL;
 	}
 
 	j_client = cJSON_CreateObject();
 	if(j_client == NULL){
-		free(salt64);
-		free(hash64);
 		return NULL;
 	}
 
 	snprintf(buf, sizeof(buf), "%d", PW_DEFAULT_ITERATIONS);
 	if(cJSON_AddStringToObject(j_client, "username", username) == NULL
 			|| cJSON_AddStringToObject(j_client, "textName", "Dynsec admin user") == NULL
-			|| cJSON_AddStringToObject(j_client, "password", hash64) == NULL
-			|| cJSON_AddStringToObject(j_client, "salt", salt64) == NULL
-			|| cJSON_AddRawToObject(j_client, "iterations", buf) == NULL
 			){
 
-		free(salt64);
-		free(hash64);
 		cJSON_Delete(j_client);
 		return NULL;
 	}
-	free(salt64);
-	free(hash64);
+
+	if(pw.hashtype == pw_sha512_pbkdf2){
+		char *salt_b64 = NULL, *password_b64 = NULL;
+
+		if(base64__encode(pw.params.sha512_pbkdf2.salt, pw.params.sha512_pbkdf2.salt_len, &salt_b64)
+				|| base64__encode(pw.params.sha512_pbkdf2.password_hash, sizeof(pw.params.sha512_pbkdf2.password_hash), &password_b64)
+				|| cJSON_AddStringToObject(j_client, "salt", salt_b64) == NULL
+				|| cJSON_AddStringToObject(j_client, "password", password_b64) == NULL
+				|| cJSON_AddNumberToObject(j_client, "iterations", pw.params.sha512_pbkdf2.iterations) == NULL){
+
+			cJSON_Delete(j_client);
+			free(password_b64);
+			free(salt_b64);
+			return NULL;
+		}
+		free(password_b64);
+		free(salt_b64);
+	}else{
+		if(pw__encode(&pw) != MOSQ_ERR_SUCCESS){
+			cJSON_Delete(j_client);
+			return NULL;
+		}
+
+		if(cJSON_AddStringToObject(j_client, "encoded_password", pw.encoded_password)){
+			free(pw.encoded_password);
+			cJSON_Delete(j_client);
+			return NULL;
+		}
+		free(pw.encoded_password);
+	}
 
 	j_roles = cJSON_CreateArray();
 	if(j_roles == NULL){

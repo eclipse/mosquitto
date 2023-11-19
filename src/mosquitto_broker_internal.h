@@ -428,15 +428,8 @@ struct mosquitto__client_msg{
 struct mosquitto__unpwd{
 	UT_hash_handle hh;
 	char *username;
-	char *password;
 	char *clientid;
-#ifdef WITH_TLS
-	unsigned char *salt;
-	unsigned int password_len;
-	unsigned int salt_len;
-	int iterations;
-#endif
-	enum mosquitto_pwhash_type hashtype;
+	struct mosquitto_pw pw;
 };
 
 struct mosquitto__acl{

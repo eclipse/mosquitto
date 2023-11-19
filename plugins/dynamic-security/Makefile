@@ -26,7 +26,6 @@ OBJS = \
 	default_acl.o \
 	groups.o \
 	grouplist.o \
-	hash.o \
 	kicklist.o \
 	plugin.o \
 	roles.o \

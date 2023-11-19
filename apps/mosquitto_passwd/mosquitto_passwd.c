@@ -29,6 +29,7 @@ Contributors:
 
 #include "get_password.h"
 #include "base64_mosq.h"
+#include "memory_mosq.h"
 #include "password_mosq.h"
 
 #ifdef WIN32
@@ -131,7 +132,6 @@ static void print_usage(void)
 static int output_new_password(FILE *fptr, const char *username, const char *password, int iterations)
 {
 	int rc;
-	char *salt64 = NULL, *hash64 = NULL;
 	struct mosquitto_pw pw;
 
 	if(password == NULL){
@@ -141,29 +141,24 @@ static int output_new_password(FILE *fptr, const char *username, const char *pas
 	memset(&pw, 0, sizeof(pw));
 
 	pw.hashtype = hashtype;
+	if(hashtype == pw_sha512_pbkdf2){
+		pw.params.sha512_pbkdf2.iterations = iterations;
+	}
 
-	rc = pw__hash(password, &pw, true, iterations);
+	rc = pw__create(&pw, password);
 	if(rc){
 		fprintf(stderr, "Error: Unable to hash password.\n");
-	}else{
-		rc = base64__encode(pw.salt, pw.salt_len, &salt64);
-		if(rc){
-			fprintf(stderr, "Error: Unable to encode salt.\n");
-		}else{
-			rc = base64__encode(pw.password_hash, sizeof(pw.password_hash), &hash64);
-			if(rc){
-				fprintf(stderr, "Error: Unable to encode hash.\n");
-			}else{
-				if(pw.hashtype == pw_sha512_pbkdf2){
-					fprintf(fptr, "%s:$%d$%d$%s$%s\n", username, hashtype, iterations, salt64, hash64);
-				}else{
-					fprintf(fptr, "%s:$%d$%s$%s\n", username, hashtype, salt64, hash64);
-				}
-			}
-		}
+		return rc;
 	}
-	free(salt64);
-	free(hash64);
+
+	rc = pw__encode(&pw);
+	if(rc){
+		fprintf(stderr, "Error: Unable to encode password.\n");
+		return rc;
+	}
+
+	fprintf(fptr, "%s:%s\n", username, pw.encoded_password);
+	mosquitto__free(pw.encoded_password);
 
 	return rc;
 }

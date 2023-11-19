@@ -34,26 +34,11 @@ Contributors:
  * #
  * ################################################################ */
 
-static int memcmp_const(const void *a, const void *b, size_t len)
-{
-	size_t i;
-	int rc = 0;
-
-	if(!a || !b) return 1;
-
-	for(i=0; i<len; i++){
-		rc |= ((char *)a)[i] ^ ((char *)b)[i];
-	}
-	return rc;
-}
-
-
 int dynsec_auth__basic_auth_callback(int event, void *event_data, void *userdata)
 {
 	struct mosquitto_evt_basic_auth *ed = event_data;
 	struct dynsec__data *data = userdata;
 	struct dynsec__client *client;
-	unsigned char password_hash[64]; /* For SHA512 */
 	const char *clientid;
 
 	UNUSED(event);
@@ -72,14 +57,10 @@ int dynsec_auth__basic_auth_callback(int event, void *event_data, void *userdata
 				return MOSQ_ERR_AUTH;
 			}
 		}
-		if(client->pw.valid && dynsec_auth__pw_hash(client, ed->password, password_hash, sizeof(password_hash), false) == MOSQ_ERR_SUCCESS){
-			if(memcmp_const(client->pw.password_hash, password_hash, sizeof(password_hash)) == 0){
-				return MOSQ_ERR_SUCCESS;
-			}else{
-				return MOSQ_ERR_AUTH;
-			}
+		if(client->pw.valid && pw__verify(&client->pw, ed->password) == MOSQ_ERR_SUCCESS){
+			return MOSQ_ERR_SUCCESS;
 		}else{
-			return MOSQ_ERR_PLUGIN_DEFER;
+			return MOSQ_ERR_AUTH;
 		}
 	}else{
 		return MOSQ_ERR_PLUGIN_DEFER;

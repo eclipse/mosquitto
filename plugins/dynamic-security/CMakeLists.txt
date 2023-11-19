@@ -25,7 +25,6 @@ if(CJSON_FOUND AND WITH_TLS)
 		dynamic_security.h
 		groups.c
 		grouplist.c
-		hash.c
 		../../common/json_help.c ../../common/json_help.h
 		kicklist.c
 		../../common/misc_mosq.c ../../common/misc_mosq.h
