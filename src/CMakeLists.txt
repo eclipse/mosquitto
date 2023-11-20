@@ -143,6 +143,9 @@ if(WITH_CONTROL)
 	add_definitions("-DWITH_CONTROL")
 endif()
 
+if(ARGON2_FOUND)
+	set (MOSQ_LIBS ${MOSQ_LIBS} argon2)
+endif()
 
 if(WIN32 OR CYGWIN)
 	set (MOSQ_SRCS ${MOSQ_SRCS} service.c)

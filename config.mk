@@ -135,6 +135,9 @@ WITH_SQLITE=yes
 # currently only suitable for use with oss-fuzz.
 WITH_FUZZING=no
 
+# Build with argon2id support for password hashing.
+WITH_ARGON2=yes
+
 # =============================================================================
 # End of user configuration
 # =============================================================================
@@ -267,4 +270,9 @@ ifeq ($(WITH_FUZZING),yes)
 	LOCAL_CPPFLAGS+=-DWITH_FUZZING
 	LOCAL_CFLAGS+=-fPIC
 	LOCAL_LDFLAGS+=-shared $(LOCAL_CFLAGS)
+endif
+
+ifeq ($(WITH_ARGON2),yes)
+	LOCAL_CPPFLAGS+=-DWITH_ARGON2
+	LIB_ARGON2=-largon2
 endif

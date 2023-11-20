@@ -6,7 +6,7 @@ include ${R}/config.mk
 LOCAL_CFLAGS+=
 LOCAL_CPPFLAGS+=-DWITH_BROKER -I${R}/lib
 LOCAL_LDFLAGS+=
-LOCAL_LDADD+=-lcjson -lm
+LOCAL_LDADD+=-lcjson -lm ${LIB_ARGON2}
 
 # ------------------------------------------
 #  Platform specific

@@ -93,6 +93,10 @@ if(WITH_DLT)
 endif()
 
 find_package(cJSON REQUIRED)
+find_package(argon2)
+if(ARGON2_FOUND)
+	add_definitions("-DWITH_ARGON2")
+endif()
 
 option(WITH_LTO "Build with link time optimizations (IPO) / interprocedural optimization (IPO) enabled." ON)
 if(WITH_LTO)

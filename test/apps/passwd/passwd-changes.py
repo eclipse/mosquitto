@@ -41,6 +41,7 @@ write_config(conf_file, pw_file, port)
 # Generate initial password file
 passwd_cmd(["-H", "sha512", "-c", "-b", pw_file, "user1", "pass1"], port)
 passwd_cmd(["-H", "sha512-pbkdf2", pw_file, "user2"], port, input="cmd\ncmd\n")
+passwd_cmd(["-H", "argon2id", pw_file, "user3"], port, input="pass3\npass3\n")
 try:
     # If we're root, set file ownership to "nobody", because that is the user
     # the broker will change to.
@@ -58,7 +59,9 @@ try:
     client_check(port, "user2", "badpass", 5)
     client_check(port, "user2", "cmd", 0)
     client_check(port, "user3", "badpass", 5)
-    client_check(port, "user3", "goodpass", 5)
+    client_check(port, "user3", "pass3", 0)
+    client_check(port, "baduser", "badpass", 5)
+    client_check(port, "baduser", "goodpass", 5)
 
     # Update password
     passwd_cmd(["-H", "sha512-pbkdf2", "-b", pw_file, "user1", "newpass"], port)
@@ -69,10 +72,12 @@ try:
     client_check(port, "user2", "badpass", 5)
     client_check(port, "user2", "cmd", 0)
     client_check(port, "user3", "badpass", 5)
-    client_check(port, "user3", "goodpass", 5)
+    client_check(port, "user3", "pass3", 0)
+    client_check(port, "baduser", "badpass", 5)
+    client_check(port, "baduser", "goodpass", 5)
 
     # New user
-    passwd_cmd(["-b", pw_file, "user3", "goodpass"], port)
+    passwd_cmd(["-b", pw_file, "newuser", "goodpass"], port)
     broker.send_signal(signal.SIGHUP)
 
     client_check(port, "user1", "badpass", 5)
@@ -80,7 +85,9 @@ try:
     client_check(port, "user2", "badpass", 5)
     client_check(port, "user2", "cmd", 0)
     client_check(port, "user3", "badpass", 5)
-    client_check(port, "user3", "goodpass", 0)
+    client_check(port, "user3", "pass3", 0)
+    client_check(port, "newuser", "badpass", 5)
+    client_check(port, "newuser", "goodpass", 0)
 
     # Delete user
     passwd_cmd(["-D", pw_file, "user2"], port)
@@ -91,7 +98,9 @@ try:
     client_check(port, "user2", "badpass", 5)
     client_check(port, "user2", "cmd", 5)
     client_check(port, "user3", "badpass", 5)
-    client_check(port, "user3", "goodpass", 0)
+    client_check(port, "user3", "pass3", 0)
+    client_check(port, "newuser", "badpass", 5)
+    client_check(port, "newuser", "goodpass", 0)
 
     rc = 0
 except mosq_test.TestError:

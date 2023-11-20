@@ -150,7 +150,6 @@ int dynsec_clients__config_load(struct dynsec__data *data, cJSON *tree)
 
 			const char *password;
 			if(json_get_string(j_client, "encoded_password", &password, false) == MOSQ_ERR_SUCCESS){
-				/* FIXME */
 				if(pw__decode(&client->pw, password) == MOSQ_ERR_SUCCESS){
 					client->pw.valid = true;
 				}else{

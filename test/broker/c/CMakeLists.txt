@@ -17,7 +17,6 @@ set(PLUGINS
     auth_plugin_v4
     auth_plugin_v5
     auth_plugin_v5_control
-	bad_vnone_1
     bad_v1
     bad_v2_1
     bad_v2_2
@@ -39,12 +38,14 @@ set(PLUGINS
     bad_v4_4
     bad_v5_1
     bad_v6
+    bad_vnone_1
     plugin_control
-	plugin_evt_client_offline
-	plugin_evt_message_in
-	plugin_evt_message_out
-    plugin_evt_subscribe
+    plugin_evt_client_offline
+    plugin_evt_message_in
+    plugin_evt_message_out
+    plugin_evt_persist_client_update
     plugin_evt_psk_key
+    plugin_evt_subscribe
     plugin_evt_tick
     plugin_evt_unsubscribe
 )

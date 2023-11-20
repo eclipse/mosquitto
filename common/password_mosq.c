@@ -51,24 +51,9 @@ Contributors:
 
 #ifdef WITH_ARGON2
 #  include <argon2.h>
-#endif
-
-#ifdef WITH_ARGON2
-static int pw__hash_argon2id(const char *password, struct mosquitto_pw *pw)
-{
-
-ARGON2_PUBLIC size_t argon2_encodedlen(uint32_t t_cost, uint32_t m_cost,
-                                       uint32_t parallelism, uint32_t saltlen,
-                                       uint32_t hashlen, argon2_type type);
-	char encoded[1024];
-	int rc = argon2id_hash_encoded(1, 47104, 1,
-			password, strlen(password),
-			pw->params.argon2id.salt, pw->params.argon2id.salt_len,
-			HASH_LEN,
-			encoded, sizeof(encoded));
-
-	return MOSQ_ERR_SUCCESS;
-}
+#  define MOSQ_ARGON2_T 1
+#  define MOSQ_ARGON2_M 47104
+#  define MOSQ_ARGON2_P 1
 #endif
 
 int pw__memcmp_const(const void *a, const void *b, size_t len)
@@ -88,6 +73,76 @@ int pw__memcmp_const(const void *a, const void *b, size_t len)
 	return rc;
 #endif
 }
+
+/* ==================================================
+ * ARGON2
+ * ================================================== */
+
+static int pw__create_argon2id(struct mosquitto_pw *pw, const char *password)
+{
+#ifdef WITH_ARGON2
+	pw->hashtype = pw_argon2id;
+	pw->params.argon2id.salt_len = HASH_LEN;
+	int rc = RAND_bytes(pw->params.argon2id.salt, (int)pw->params.argon2id.salt_len);
+	if(!rc){
+		return MOSQ_ERR_UNKNOWN;
+	}
+
+	size_t encoded_len = argon2_encodedlen(MOSQ_ARGON2_T, MOSQ_ARGON2_M, MOSQ_ARGON2_P,
+			(uint32_t)pw->params.argon2id.salt_len, sizeof(pw->params.argon2id.password_hash), Argon2_id);
+
+	free(pw->encoded_password);
+	pw->encoded_password = calloc(1, encoded_len+1);
+
+	rc = argon2id_hash_encoded(MOSQ_ARGON2_T, MOSQ_ARGON2_M, MOSQ_ARGON2_P,
+			password, strlen(password),
+			pw->params.argon2id.salt, pw->params.argon2id.salt_len,
+			HASH_LEN,
+			pw->encoded_password, encoded_len+1);
+
+	if(rc == ARGON2_OK){
+		return MOSQ_ERR_SUCCESS;
+	}else{
+		return MOSQ_ERR_UNKNOWN;
+	}
+#else
+	return MOSQ_ERR_NOT_SUPPORTED;
+#endif
+}
+
+static int pw__verify_argon2id(struct mosquitto_pw *pw, const char *password)
+{
+#ifdef WITH_ARGON2
+	int rc = argon2id_verify(pw->encoded_password,
+			password, strlen(password));
+
+	if(rc == ARGON2_OK){
+		return MOSQ_ERR_SUCCESS;
+	}else{
+		return MOSQ_ERR_AUTH;
+	}
+#else
+	return MOSQ_ERR_NOT_SUPPORTED;
+#endif
+}
+
+static int pw__decode_argon2id(struct mosquitto_pw *pw, const char *password)
+{
+#ifdef WITH_ARGON2
+	char *new_password = strdup(password);
+
+	if(new_password){
+		free(pw->encoded_password);
+		pw->encoded_password = new_password;
+		return MOSQ_ERR_SUCCESS;
+	}else{
+		return MOSQ_ERR_NOMEM;
+	}
+#else
+	return MOSQ_ERR_NOT_SUPPORTED;
+#endif
+}
+
 
 /* ==================================================
  * SHA512 PBKDF2
@@ -128,7 +183,7 @@ static int pw__create_sha512_pbkdf2(struct mosquitto_pw *pw, const char *passwor
 			sizeof(pw->params.sha512_pbkdf2.password_hash),
 			pw->params.sha512_pbkdf2.iterations);
 #else
-	return MOSQ_ERR_NOT_SUPPORTED
+	return MOSQ_ERR_NOT_SUPPORTED;
 #endif
 }
 
@@ -151,7 +206,7 @@ static int pw__verify_sha512_pbkdf2(struct mosquitto_pw *pw, const char *passwor
 		return MOSQ_ERR_AUTH;
 	}
 #else
-	return MOSQ_ERR_NOT_SUPPORTED
+	return MOSQ_ERR_NOT_SUPPORTED;
 #endif
 }
 
@@ -184,7 +239,7 @@ static int pw__encode_sha512_pbkdf2(struct mosquitto_pw *pw)
 
 	return MOSQ_ERR_SUCCESS;
 #else
-	return MOSQ_ERR_NOT_SUPPORTED
+	return MOSQ_ERR_NOT_SUPPORTED;
 #endif
 }
 
@@ -298,7 +353,7 @@ static int pw__create_sha512(struct mosquitto_pw *pw, const char *password)
 
 	return pw__hash_sha512(password, pw, pw->params.sha512.password_hash, sizeof(pw->params.sha512.password_hash));
 #else
-	return MOSQ_ERR_NOT_SUPPORTED
+	return MOSQ_ERR_NOT_SUPPORTED;
 #endif
 }
 
@@ -318,7 +373,7 @@ static int pw__verify_sha512(struct mosquitto_pw *pw, const char *password)
 		return MOSQ_ERR_AUTH;
 	}
 #else
-	return MOSQ_ERR_NOT_SUPPORTED
+	return MOSQ_ERR_NOT_SUPPORTED;
 #endif
 }
 
@@ -350,7 +405,7 @@ static int pw__encode_sha512(struct mosquitto_pw *pw)
 
 	return MOSQ_ERR_SUCCESS;
 #else
-	return MOSQ_ERR_NOT_SUPPORTED
+	return MOSQ_ERR_NOT_SUPPORTED;
 #endif
 }
 
@@ -409,14 +464,14 @@ static int pw__decode_sha512(struct mosquitto_pw *pw, const char *salt_password)
 int pw__create(struct mosquitto_pw *pw, const char *password)
 {
 	switch(pw->hashtype){
-		case pw_sha512:
-			return pw__create_sha512(pw, password);
+		case pw_argon2id:
+			return pw__create_argon2id(pw, password);
 		case pw_sha512_pbkdf2:
 			return pw__create_sha512_pbkdf2(pw, password);
-		case pw_argon2id:
-			return MOSQ_ERR_AUTH;
+		case pw_sha512:
+			return pw__create_sha512(pw, password);
 		default:
-			return pw__create_sha512_pbkdf2(pw, password);
+			return pw__create_argon2id(pw, password);
 	}
 
 	return MOSQ_ERR_INVAL;
@@ -425,12 +480,12 @@ int pw__create(struct mosquitto_pw *pw, const char *password)
 int pw__verify(struct mosquitto_pw *pw, const char *password)
 {
 	switch(pw->hashtype){
-		case pw_sha512:
-			return pw__verify_sha512(pw, password);
+		case pw_argon2id:
+			return pw__verify_argon2id(pw, password);
 		case pw_sha512_pbkdf2:
 			return pw__verify_sha512_pbkdf2(pw, password);
-		case pw_argon2id:
-			return MOSQ_ERR_AUTH;
+		case pw_sha512:
+			return pw__verify_sha512(pw, password);
 	}
 
 	return MOSQ_ERR_AUTH;
@@ -439,12 +494,12 @@ int pw__verify(struct mosquitto_pw *pw, const char *password)
 int pw__encode(struct mosquitto_pw *pw)
 {
 	switch(pw->hashtype){
-		case pw_sha512:
-			return pw__encode_sha512(pw);
+		case pw_argon2id:
+			return MOSQ_ERR_SUCCESS;
 		case pw_sha512_pbkdf2:
 			return pw__encode_sha512_pbkdf2(pw);
-		case pw_argon2id:
-			return MOSQ_ERR_AUTH;
+		case pw_sha512:
+			return pw__encode_sha512(pw);
 	}
 
 	return MOSQ_ERR_AUTH;
@@ -462,6 +517,9 @@ int pw__decode(struct mosquitto_pw *pw, const char *password)
 	}else if(password[1] == '7' && password[2] == '$'){
 		pw->hashtype = pw_sha512_pbkdf2;
 		return pw__decode_sha512_pbkdf2(pw, &password[3]);
+	}else if(!strncmp(password, "$argon2id$", strlen("$argon2id$"))){
+		pw->hashtype = pw_argon2id;
+		return pw__decode_argon2id(pw, password);
 	}else{
 		return MOSQ_ERR_INVAL;
 	}

@@ -6,7 +6,7 @@ include ${R}/config.mk
 LOCAL_CFLAGS+=
 LOCAL_CPPFLAGS+=-I${R}/lib -I${R}/apps/mosquitto_passwd -I${R}/plugins/dynamic-security -I${R}/common
 LOCAL_LDFLAGS+=
-LOCAL_LDADD+=-lcjson -ldl ${LIBMOSQ}
+LOCAL_LDADD+=-lcjson -ldl ${LIBMOSQ} ${LIB_ARGON2}
 
 ifeq ($(WITH_THREADING),yes)
 LOCAL_LDFLAGS+=-pthread

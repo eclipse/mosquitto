@@ -50,6 +50,13 @@ if(WITH_TLS AND CJSON_FOUND)
 		endif()
 	endif()
 
+	if(ARGON2_FOUND)
+		target_link_libraries(mosquitto_ctrl
+			PRIVATE
+				argon2
+		)
+	endif()
+
 	target_link_libraries(mosquitto_ctrl
 	  PRIVATE
 	  	common-options

@@ -84,9 +84,10 @@
 				<term><option>-H</option></term>
 				<listitem>
 					<para>Choose the hash to use. Can be one of
-						<replaceable>sha512-pbkdf2</replaceable> or
+						<replaceable>argon2id</replaceable>,
+						<replaceable>sha512-pbkdf2</replaceable>, or
 						<replaceable>sha512</replaceable>. Defaults to
-						<replaceable>sha512-pbkdf2</replaceable>. The
+						<replaceable>argon2id</replaceable>. The
 						<replaceable>sha512</replaceable> option is provided for
 						creating password files for use with Mosquitto 1.6
 						and earlier.</para>

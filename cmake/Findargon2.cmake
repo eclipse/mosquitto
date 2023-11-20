@@ -1,0 +1,50 @@
+INCLUDE( FindPackageHandleStandardArgs )
+
+# Checks an environment variable; note that the first check
+# does not require the usual CMake $-sign.
+IF( DEFINED ENV{ARGON2_DIR} )
+	SET( ARGON2_DIR "$ENV{ARGON2_DIR}" )
+ENDIF()
+
+FIND_PATH(
+		ARGON2_INCLUDE_DIR
+		argon2.h
+	HINTS
+		ARGON2_DIR
+)
+
+FIND_LIBRARY( ARGON2_LIBRARY
+	NAMES argon2
+	HINTS ${ARGON2_DIR}
+)
+
+FIND_PACKAGE_HANDLE_STANDARD_ARGS( argon2 DEFAULT_MSG
+	ARGON2_INCLUDE_DIR ARGON2_LIBRARY
+)
+
+IF( ARGON2_FOUND )
+	SET( ARGON2_INCLUDE_DIRS ${ARGON2_INCLUDE_DIR} )
+	SET( ARGON2_LIBRARIES ${ARGON2_LIBRARY} )
+
+	MARK_AS_ADVANCED(
+		ARGON2_LIBRARY
+		ARGON2_INCLUDE_DIR
+		ARGON2_DIR
+	)
+
+	add_library(argon2 SHARED IMPORTED)
+	set_target_properties(argon2
+		PROPERTIES
+			INTERFACE_INCLUDE_DIRECTORIES "${ARGON2_INCLUDE_DIRS}"
+	)
+
+	set_target_properties(argon2
+		PROPERTIES
+			IMPORTED_LOCATION "${ARGON2_LIBRARY}"
+			IMPORTED_IMPLIB "${ARGON2_LIBRARY}"
+	)
+ELSE()
+	SET( ARGON2_DIR "" CACHE STRING
+		"An optional hint to a directory for finding `argon2`"
+	)
+ENDIF()

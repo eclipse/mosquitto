@@ -2,6 +2,7 @@
 
 build_variants = [
     'WITH_ADNS',
+    'WITH_ARGON2',
     'WITH_BRIDGE',
     'WITH_DOCS',
     'WITH_EC',

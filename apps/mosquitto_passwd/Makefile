@@ -4,7 +4,7 @@ include ${R}/config.mk
 LOCAL_CFLAGS+=
 LOCAL_CPPFLAGS+=-I${R}/lib
 LOCAL_LDFLAGS+=
-LOCAL_LDADD+=-lcrypto
+LOCAL_LDADD+=-lcrypto ${LIB_ARGON2}
 
 .PHONY: all install uninstall clean reallyclean
 

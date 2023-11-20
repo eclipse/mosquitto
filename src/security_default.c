@@ -39,7 +39,6 @@ static int mosquitto_basic_auth_default(int event, void *event_data, void *userd
 static int mosquitto_acl_check_default(int event, void *event_data, void *userdata);
 
 
-
 int mosquitto_security_init_default(bool reload)
 {
 	int rc;
@@ -848,7 +847,7 @@ static int unpwd__file_parse(struct mosquitto__unpwd **unpwd, const char *passwo
 
 	rc = pwfile__parse(password_file, unpwd);
 
-#ifdef WITH_TLS
+#if defined(WITH_TLS) || defined(WITH_ARGON2)
 	if(rc) return rc;
 	rc = unpwd__decode_passwords(unpwd);
 #endif

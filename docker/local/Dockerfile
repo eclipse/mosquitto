@@ -7,13 +7,14 @@ COPY mosq.tar.gz /tmp
 
 RUN set -x && \
     apk --no-cache add --virtual build-deps \
+        argon2-dev \
         build-base \
         cjson-dev \
         cmake \
         gnupg \
         linux-headers \
         openssl-dev \
-		sqlite-dev \
+        sqlite-dev \
         util-linux-dev && \
     mkdir -p /build/mosq && \
     tar --strip=1 -xf /tmp/mosq.tar.gz -C /build/mosq && \
@@ -46,9 +47,10 @@ RUN set -x && \
     install -Dm644 /build/mosq/edl-v10 /usr/share/licenses/mosquitto/edl-v10 && \
     chown -R mosquitto:mosquitto /mosquitto && \
     apk --no-cache add \
+        argon2-libs \
         ca-certificates \
-		cjson \
-		sqlite-libs && \
+        cjson \
+        sqlite-libs && \
     apk del build-deps && \
     rm -rf /build
 

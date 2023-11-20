@@ -17,6 +17,13 @@ if(WITH_TLS)
 		"${mosquitto_SOURCE_DIR}/src"
 	)
 
+	if(ARGON2_FOUND)
+		target_link_libraries(mosquitto_passwd
+			PRIVATE
+				argon2
+		)
+	endif()
+
     target_link_libraries(mosquitto_passwd
 	  PRIVATE
 	  	common-options

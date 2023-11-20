@@ -19,20 +19,21 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y \
-            docbook-xsl \
-            lcov \
-            libc-ares-dev \
-            libcjson-dev \
-            libcjson1 \
-            libcunit1-dev \
-            libssl-dev \
-            libwrap0-dev \
-            microsocks \
-            python3-all \
-            python3-paho-mqtt \
-            python3-psutil \
-            uthash-dev \
-            xsltproc
+          docbook-xsl \
+          lcov \
+          libargon2-dev \
+          libc-ares-dev \
+          libcjson-dev \
+          libcjson1 \
+          libcunit1-dev \
+          libssl-dev \
+          libwrap0-dev \
+          microsocks \
+          python3-all \
+          python3-paho-mqtt \
+          python3-psutil \
+          uthash-dev \
+          xsltproc
     -
       uses: actions/checkout@v4
       with:

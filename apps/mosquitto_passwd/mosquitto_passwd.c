@@ -66,7 +66,7 @@ struct cb_helper {
 	bool found;
 };
 
-static enum mosquitto_pwhash_type hashtype = pw_sha512_pbkdf2;
+static enum mosquitto_pwhash_type hashtype = pw_argon2id;
 
 #ifdef WIN32
 static FILE *mpw_tmpfile(void)
@@ -117,13 +117,14 @@ int log__printf(void *mosq, unsigned int level, const char *fmt, ...)
 static void print_usage(void)
 {
 	printf("mosquitto_passwd is a tool for managing password files for mosquitto.\n\n");
-	printf("Usage: mosquitto_passwd [-H sha512 | -H sha512-pbkdf2] [-c | -D] passwordfile username\n");
-	printf("       mosquitto_passwd [-H sha512 | -H sha512-pbkdf2] [-c] -b passwordfile username password\n");
+	printf("Usage: mosquitto_passwd [-H argon2 | -H sha512-pbkdf2] [-c | -D] passwordfile username\n");
+	printf("       mosquitto_passwd [-H argon2 | -H sha512-pbkdf2] [-c] -b passwordfile username password\n");
 	printf("       mosquitto_passwd -U passwordfile\n");
 	printf(" -b : run in batch mode to allow passing passwords on the command line.\n");
 	printf(" -c : create a new password file. This will overwrite existing files.\n");
 	printf(" -D : delete the username rather than adding/updating its password.\n");
-	printf(" -H : specify the hashing algorithm. Defaults to sha512-pbkdf2, which is recommended.\n");
+	printf(" -H : specify the hashing algorithm. Defaults to argon2, which is recommended.\n");
+	printf("      Mosquitto 2.0 and earlier defaulted to sha512-pbkdf2.\n");
 	printf("      Mosquitto 1.6 and earlier defaulted to sha512.\n");
 	printf(" -U : update a plain text password file to use hashed passwords.\n");
 	printf("\nSee https://mosquitto.org/ for more information.\n\n");
@@ -469,10 +470,12 @@ int main(int argc, char *argv[])
 				fprintf(stderr, "Error: -H argument given but not enough other arguments.\n");
 				return 1;
 			}
-			if(!strcmp(argv[idx+1], "sha512")){
-				hashtype = pw_sha512;
+			if(!strcmp(argv[idx+1], "argon2id")){
+				hashtype = pw_argon2id;
 			}else if(!strcmp(argv[idx+1], "sha512-pbkdf2")){
 				hashtype = pw_sha512_pbkdf2;
+			}else if(!strcmp(argv[idx+1], "sha512")){
+				hashtype = pw_sha512;
 			}else{
 				fprintf(stderr, "Error: Unknown hash type '%s'\n", argv[idx+1]);
 				return 1;

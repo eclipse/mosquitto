@@ -262,9 +262,14 @@ int dynsec_client__file_set_password(int argc, char *argv[], const char *file)
 						free(password_b64);
 						free(salt_b64);
 
-						cJSON_ReplaceItemInObject(j_client, "password", j_password);
-						cJSON_ReplaceItemInObject(j_client, "salt", j_salt);
-						cJSON_ReplaceItemInObject(j_client, "iterations", j_iterations);
+						cJSON_DeleteItemFromObject(j_client, "password");
+						cJSON_DeleteItemFromObject(j_client, "salt");
+						cJSON_DeleteItemFromObject(j_client, "iterations");
+						cJSON_DeleteItemFromObject(j_client, "encoded_password");
+
+						cJSON_AddItemToObject(j_client, "password", j_password);
+						cJSON_AddItemToObject(j_client, "salt", j_salt);
+						cJSON_AddItemToObject(j_client, "iterations", j_iterations);
 						j_password = NULL;
 						j_salt = NULL;
 						j_iterations = NULL;
@@ -274,7 +279,16 @@ int dynsec_client__file_set_password(int argc, char *argv[], const char *file)
 							return MOSQ_ERR_NOMEM;
 						}
 						cJSON *j_encoded_password = cJSON_CreateString(client.pw.encoded_password);
-						cJSON_ReplaceItemInObject(j_client, "encoded_password", j_encoded_password);
+						if(!j_encoded_password){
+							fprintf(stderr, "Error: Out of memory.\n");
+							return MOSQ_ERR_NOMEM;
+						}
+
+						cJSON_DeleteItemFromObject(j_client, "password");
+						cJSON_DeleteItemFromObject(j_client, "salt");
+						cJSON_DeleteItemFromObject(j_client, "iterations");
+						cJSON_DeleteItemFromObject(j_client, "encoded_password");
+						cJSON_AddItemToObject(j_client, "encoded_password", j_encoded_password);
 					}
 
 					json_str = cJSON_Print(j_tree);

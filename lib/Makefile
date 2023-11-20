@@ -4,7 +4,7 @@ include ${R}/config.mk
 LOCAL_CFLAGS+=-fPIC
 LOCAL_CPPFLAGS+=
 LOCAL_LDFLAGS+=-Wl,--version-script=linker.version -Wl,-soname,libmosquitto.so.$(SOVERSION) -fPIC -shared
-LOCAL_LIBADD+=-lcjson -lc
+LOCAL_LIBADD+=-lcjson -lc ${LIB_ARGON2}
 STATIC_LIB_DEPS:=
 
 # ------------------------------------------
