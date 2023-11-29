@@ -76,6 +76,7 @@ OBJS= \
 	send_publish.o \
 	send_subscribe.o \
 	send_unsubscribe.o \
+	send_auth.o \
 	socks_mosq.o \
 	srv_mosq.o \
 	strings_mosq.o \

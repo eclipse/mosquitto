@@ -348,6 +348,7 @@ struct mosquitto {
 	bool clean_start;
 	time_t session_expiry_time;
 	uint32_t session_expiry_interval;
+	char *auth_method;
 #ifdef WITH_BROKER
 	bool in_by_id;
 	bool is_dropping;
@@ -360,7 +361,6 @@ struct mosquitto {
 	struct mosquitto__listener *listener;
 	struct mosquitto__packet *out_packet_last;
 	struct mosquitto__subleaf **subs;
-	char *auth_method;
 	int subs_capacity; /* allocated size of the subs instance */
 	int subs_count; /* number of currently active subscriptions */
 #  ifndef WITH_EPOLL
@@ -398,6 +398,8 @@ struct mosquitto {
 	void (*on_unsubscribe_v5)(struct mosquitto *, void *userdata, int mid, const mosquitto_property *props);
 	void (*on_unsubscribe2_v5)(struct mosquitto *, void *userdata, int mid, int reason_code_count, const int *reason_codes, const mosquitto_property *props);
 	void (*on_log)(struct mosquitto *, void *userdata, int level, const char *str);
+	int  (*on_extended_auth_v5)(struct mosquitto *, void *userdata, void **out_auth_data, int *out_auth_data_len, const mosquitto_property *props);
+
 	/*void (*on_error)();*/
 	char *host;
 	char *bind_address;

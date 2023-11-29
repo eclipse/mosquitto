@@ -43,7 +43,7 @@ int handle__connack(struct mosquitto *mosq)
 
 	assert(mosq);
 	state = mosquitto__get_state(mosq);
-	if(state != mosq_cs_new && state != mosq_cs_connected){
+	if(state != mosq_cs_new && state != mosq_cs_connected && state != mosq_cs_authenticating){
 		log__printf(mosq, MOSQ_LOG_DEBUG, "Client %s received duplicate CONNACK", mosq->id);
 		return MOSQ_ERR_PROTOCOL;
 	}
@@ -115,7 +115,7 @@ int handle__connack(struct mosquitto *mosq)
 	mosquitto_property_free_all(&properties);
 
 	switch(reason_code){
-		case 0:
+		case MQTT_RC_SUCCESS:
 			pthread_mutex_lock(&mosq->state_mutex);
 			if(mosq->state != mosq_cs_disconnecting){
 				mosq->state = mosq_cs_active;
@@ -129,6 +129,10 @@ int handle__connack(struct mosquitto *mosq)
 		case 4:
 		case 5:
 			return MOSQ_ERR_CONN_REFUSED;
+		case MQTT_RC_NOT_AUTHORIZED:
+			return MOSQ_ERR_AUTH;
+		case MQTT_RC_PROTOCOL_ERROR:
+			return MOSQ_ERR_PROTOCOL;
 		default:
 			return MOSQ_ERR_PROTOCOL;
 	}

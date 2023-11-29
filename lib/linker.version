@@ -36,6 +36,7 @@ MOSQ_1.0 {
 		mosquitto_subscribe_callback_set;
 		mosquitto_unsubscribe_callback_set;
 		mosquitto_log_callback_set;
+		mosquitto_extended_auth_v5_callback_set;
 		mosquitto_message_retry_set;
 		mosquitto_want_write;
 		mosquitto_user_data_set;

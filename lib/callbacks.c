@@ -286,3 +286,10 @@ void callback__on_disconnect(struct mosquitto *mosq, int rc, const mosquitto_pro
 	}
 	mosq->callback_depth--;
 }
+
+void mosquitto_extended_auth_v5_callback_set(struct mosquitto *mosq, int (*on_extended_auth)(struct mosquitto *, void *, void **, int *, const mosquitto_property *props))
+{	
+	pthread_mutex_lock(&mosq->callback_mutex);
+	mosq->on_extended_auth_v5 = on_extended_auth;
+	pthread_mutex_unlock(&mosq->callback_mutex);
+}

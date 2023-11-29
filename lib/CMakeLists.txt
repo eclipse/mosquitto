@@ -43,6 +43,7 @@ set(C_SRC
 	send_publish.c
 	send_subscribe.c
 	send_unsubscribe.c
+	send_auth.c
 	send_mosq.c send_mosq.h
 	socks_mosq.c
 	srv_mosq.c
