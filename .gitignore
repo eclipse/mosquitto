@@ -110,6 +110,7 @@ test/unit/broker/bridge_topic_test
 test/unit/coverage.info
 test/unit/broker/keepalive_test
 test/unit/lib/lib_test
+test/unit/lib/logs_test
 test/unit/broker/persist_read_test
 test/unit/broker/persist_write_test
 test/unit/broker/subs_test

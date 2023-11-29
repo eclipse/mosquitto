@@ -38,7 +38,7 @@ int log__printf(struct mosquitto *mosq, unsigned int priority, const char *fmt, 
 	assert(fmt);
 
 	pthread_mutex_lock(&mosq->log_callback_mutex);
-	if(mosq->on_log){
+	if(mosq->on_log && (mosq->log_levels & priority)){
 		len = strlen(fmt) + 500;
 		s = mosquitto__malloc(len*sizeof(char));
 		if(!s){

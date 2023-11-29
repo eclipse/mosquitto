@@ -202,6 +202,8 @@ int mosquitto_reinitialise(struct mosquitto *mosq, const char *id, bool clean_st
 	mosq->on_message = NULL;
 	mosq->on_subscribe = NULL;
 	mosq->on_unsubscribe = NULL;
+	mosq->on_log = NULL;
+	mosq->log_levels = MOSQ_LOG_ALL;
 	mosq->host = NULL;
 	mosq->port = 1883;
 	mosq->reconnect_delay = 1;

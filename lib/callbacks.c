@@ -135,6 +135,12 @@ void mosquitto_log_callback_set(struct mosquitto *mosq, void (*on_log)(struct mo
 	pthread_mutex_unlock(&mosq->log_callback_mutex);
 }
 
+void mosquitto_log_levels_set(struct mosquitto *mosq, unsigned int log_levels)
+{
+	pthread_mutex_lock(&mosq->log_callback_mutex);
+	mosq->log_levels = log_levels;
+	pthread_mutex_unlock(&mosq->log_callback_mutex);
+}
 
 void callback__on_pre_connect(struct mosquitto *mosq)
 {
