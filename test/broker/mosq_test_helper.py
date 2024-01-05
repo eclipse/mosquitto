@@ -30,27 +30,33 @@ def persist_module():
         raise RuntimeError("Not enough command line arguments - need persist module")
     return importlib.import_module(mod)
 
-def do_test_broker_failure(conf_file : str, config : list, rc_expected : int, error_log_entry : str = None, cmd_args : list = None):
+def do_test_broker_failure(conf_file : str, config : list, port : int, rc_expected : int, error_log_entry : str = None, stdout_entry : str =None, cmd_args : list = None):
     rc = 1
 
-    if len(conf_file) and len(config):
+    use_conf = len(conf_file) and len(config)
+    if use_conf:
         with open(conf_file, 'w') as f:
             f.write("\n".join(config))
             f.write("\n")
     try:
-        broker = mosq_test.start_broker(conf_file, use_conf=True, expect_fail=True, cmd_args=cmd_args)
-        broker.wait(2)
+        broker = mosq_test.start_broker(conf_file, port=port, use_conf=use_conf, expect_fail=True, cmd_args=cmd_args)
+        (stdo, stde) = broker.communicate()
         if broker.returncode != rc_expected:
-            (stdo, stde) = broker.communicate()
             print(stde.decode('utf-8'))
             return rc
 
         if error_log_entry is not None:
-            (_, stde) = broker.communicate()
             error_log = stde.decode('utf-8')
             if error_log_entry not in error_log:
                 print(f"Error log entry: '{error_log_entry}' not found in '{error_log}'")
                 return rc
+
+        if stdout_entry is not None:
+            stdout_log = stdo.decode('utf-8')
+            if stdout_entry not in stdout_log:
+                print(f"Error stdout entry: '{stdout_entry}' not found in '{stdout_log}'")
+                return rc
+
         rc = 0
     except subprocess.TimeoutExpired:
         broker.terminate()
@@ -60,7 +66,7 @@ def do_test_broker_failure(conf_file : str, config : list, rc_expected : int, er
         print(e)
         return rc
     finally:
-        if len(conf_file) and len(config):
+        if use_conf:
             try:
                 os.remove(conf_file)
             except FileNotFoundError:

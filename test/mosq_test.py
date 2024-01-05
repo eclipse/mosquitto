@@ -68,17 +68,11 @@ def start_broker(filename, cmd=None, port=0, use_conf=False, expect_fail=False, 
 
     if use_conf:
         cmd = [get_build_root() + '/src/mosquitto', '-v', '-c', filename.replace('.py', '.conf')]
-
-        if port == 0:
-            port = 1888
     else:
         if cmd is None and port != 0:
             cmd = [get_build_root() + '/src/mosquitto', '-v', '-p', str(port)]
         elif cmd is None and port == 0:
-            port = 1888
             cmd = [get_build_root() + '/src/mosquitto', '-v', '-c', filename.replace('.py', '.conf')]
-        elif cmd is not None and port == 0:
-            port = 1888
 
     if os.environ.get('MOSQ_USE_VALGRIND') is not None:
         logfile = filename+'.'+str(vg_index)+'.vglog'
@@ -99,14 +93,27 @@ def start_broker(filename, cmd=None, port=0, use_conf=False, expect_fail=False, 
 
     #print(port)
     #print(cmd)
-    if nolog == False:
-        broker = subprocess.Popen(cmd, stderr=subprocess.PIPE, env=env)
+    if nolog:
+        stderr = subprocess.DEVNULL
     else:
-        broker = subprocess.Popen(cmd, stderr=subprocess.DEVNULL, env=env)
+        stderr = subprocess.PIPE
+
+    broker = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=stderr, env=env)
+
+    if expect_fail:
+        try:
+            broker.wait(delay)
+        except subprocess.TimeoutExpired:
+            _, errs = terminate_broker(broker)
+            print(f"Broker did not fail to start:\n{errs.decode('utf-8')}")
+            raise
+        return broker
 
     if check_port == False:
         return broker
 
+    assert port != 0
+    
     for i in range(0, 20):
         time.sleep(delay)
         c = None
