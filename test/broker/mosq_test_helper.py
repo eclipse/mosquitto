@@ -33,15 +33,19 @@ def persist_module():
 def do_test_broker_failure(conf_file : str, config : list, port : int, rc_expected : int, error_log_entry : str = None, stdout_entry : str =None, cmd_args : list = None):
     rc = 1
 
-    use_conf = len(conf_file) and len(config)
-    if use_conf:
+    use_conf_file = len(conf_file)
+    create_conf_file = use_conf_file and len(config)
+    if create_conf_file:
         with open(conf_file, 'w') as f:
             f.write("\n".join(config))
             f.write("\n")
     try:
-        broker = mosq_test.start_broker(conf_file, port=port, use_conf=use_conf, expect_fail=True, cmd_args=cmd_args)
+        broker = None
+        broker = mosq_test.start_broker(conf_file, port=port, use_conf=use_conf_file, expect_fail=True, cmd_args=cmd_args)
         (stdo, stde) = broker.communicate()
         if broker.returncode != rc_expected:
+            print(f"Expected broker return code {rc_expected}, got {broker.returncode}")
+            (stdo, stde) = broker.communicate()
             print(stde.decode('utf-8'))
             return rc
 
@@ -59,14 +63,14 @@ def do_test_broker_failure(conf_file : str, config : list, port : int, rc_expect
 
         rc = 0
     except subprocess.TimeoutExpired:
-        broker.terminate()
-        mosq_test.wait_for_subprocess(broker)
+        if broker is not None:
+            mosq_test.wait_for_subprocess(broker,timeout=1)
         return rc
     except Exception as e:
         print(e)
         return rc
     finally:
-        if use_conf:
+        if create_conf_file:
             try:
                 os.remove(conf_file)
             except FileNotFoundError:

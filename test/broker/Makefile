@@ -289,6 +289,8 @@ endif
 	./15-persist-subscription-v3-1-1.py persist_sqlite
 	./15-persist-subscription-v5-0.py persist_sqlite
 
+	./15-persist-migrate-db.py persist_sqlite
+
 16 :
 	./16-cmd-args.py
 	./16-config-huge.py
