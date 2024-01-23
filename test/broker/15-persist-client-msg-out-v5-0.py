@@ -84,6 +84,8 @@ try:
     mosq_test.do_receive_send(sock, publish_packet1, puback_packet, "publish 1")
     mosq_test.do_receive_send(sock, publish_packet2, pubrec_packet, "publish 2")
     mosq_test.do_receive_send(sock, pubrel_packet, pubcomp_packet, "pubrel 2")
+    # Send ping and wait for the PINGRESP to make sure the broker has processed all sent pubcomp
+    mosq_test.do_ping(sock)
     sock.close()
 
     # Connect client again, it should have a session

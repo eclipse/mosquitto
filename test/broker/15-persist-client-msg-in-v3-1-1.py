@@ -78,6 +78,9 @@ try:
     helper.send(pubrec2_packet)
     mosq_test.do_receive_send(helper, pubrel2_packet, pubcomp2_packet, "pubcomp2 receive")
 
+    # Send ping and wait for the PINGRESP to make sure the broker has processed all sent puback
+    mosq_test.do_ping(helper)
+
     # Kill broker
     (broker_terminate_rc, stde) = mosq_test.terminate_broker(broker)
     broker = None

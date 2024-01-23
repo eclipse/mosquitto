@@ -153,6 +153,7 @@ int connect__on_authorised(struct mosquitto *context, void *auth_data_out, uint1
 
 				memcpy(&context->msgs_in, &found_context->msgs_in, sizeof(struct mosquitto_msg_data));
 				memcpy(&context->msgs_out, &found_context->msgs_out, sizeof(struct mosquitto_msg_data));
+				context->last_cmsg_id = found_context->last_cmsg_id;
 
 				memset(&found_context->msgs_in, 0, sizeof(struct mosquitto_msg_data));
 				memset(&found_context->msgs_out, 0, sizeof(struct mosquitto_msg_data));
