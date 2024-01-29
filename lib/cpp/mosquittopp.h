@@ -168,6 +168,8 @@ class mosqpp_EXPORT mosquittopp_v5 : public mosquittopp_base {
 								 mosquitto_property* properties=nullptr);
 		int connect(const char* host, int port=1883, int keepalive=60, const char* bind_address=nullptr,
 								const mosquitto_property* properties=nullptr);
+        int connect_async(const char* host, int port, int keepalive=60, const mosquitto_property* properties=nullptr);
+        int connect_async(const char *host, int port, int keepalive, const char *bind_address=nullptr, const mosquitto_property* properties=nullptr);
 		int disconnect(int reason_code=0, const mosquitto_property* properties=nullptr);
 		int publish(int* mid, const char* topic, int payloadlen=0, const void* payload=nullptr, int qos=0, bool retain=false,
 								const mosquitto_property* properties=nullptr);

@@ -631,6 +631,8 @@ libmosq_EXPORT int mosquitto_connect_bind_v5(struct mosquitto *mosq, const char 
  */
 libmosq_EXPORT int mosquitto_connect_async(struct mosquitto *mosq, const char *host, int port, int keepalive);
 
+libmosq_EXPORT int mosquitto_connect_async_v5(struct mosquitto *mosq, const char *host, int port, int keepalive, const mosquitto_property *properties);
+
 /*
  * Function: mosquitto_connect_bind_async
  *
@@ -672,6 +674,8 @@ libmosq_EXPORT int mosquitto_connect_async(struct mosquitto *mosq, const char *h
  * 	<mosquitto_connect_async>, <mosquitto_connect>, <mosquitto_connect_bind>
  */
 libmosq_EXPORT int mosquitto_connect_bind_async(struct mosquitto *mosq, const char *host, int port, int keepalive, const char *bind_address);
+
+libmosq_EXPORT int mosquitto_connect_bind_async_v5(struct mosquitto *mosq, const char *host, int port, int keepalive, const char *bind_address, const mosquitto_property *properties);
 
 /*
  * Function: mosquitto_connect_srv

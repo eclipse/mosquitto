@@ -300,9 +300,19 @@ int mosquittopp::connect_async(const char *host, int port, int keepalive)
 	return mosquitto_connect_async(m_mosq, host, port, keepalive);
 }
 
+int mosquittopp_v5::connect_async(const char *host, int port, int keepalive, const mosquitto_property* properties)
+{
+    return mosquitto_connect_async_v5(m_mosq, host, port, keepalive, properties);
+}
+
 int mosquittopp::connect_async(const char *host, int port, int keepalive, const char *bind_address)
 {
 	return mosquitto_connect_bind_async(m_mosq, host, port, keepalive, bind_address);
+}
+
+int mosquittopp_v5::connect_async(const char *host, int port, int keepalive, const char *bind_address, const mosquitto_property* properties)
+{
+    return mosquitto_connect_bind_async_v5(m_mosq, host, port, keepalive, bind_address, properties);
 }
 
 int mosquittopp_base::reconnect()
