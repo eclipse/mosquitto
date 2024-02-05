@@ -5,6 +5,7 @@ if(SQLITE3_FOUND)
 		base_msgs.c
 		clients.c
 		client_msgs.c
+		common.c
 		init.c
 		../../common/json_help.c ../../common/json_help.h
 		plugin.c

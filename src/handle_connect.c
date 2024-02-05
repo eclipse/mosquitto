@@ -81,32 +81,6 @@ static char *clientid_gen(uint16_t *idlen, const char *auto_id_prefix, uint16_t 
 	return clientid;
 }
 
-/* Remove any queued messages that are no longer allowed through ACL,
- * assuming a possible change of username. */
-static void connection_check_acl(struct mosquitto *context, struct mosquitto__client_msg **head)
-{
-	struct mosquitto__client_msg *client_msg, *tmp;
-	struct mosquitto__base_msg *base_msg;
-	int access;
-
-	DL_FOREACH_SAFE((*head), client_msg, tmp){
-		base_msg = client_msg->base_msg;
-		if(client_msg->data.direction == mosq_md_out){
-			access = MOSQ_ACL_READ;
-		}else{
-			access = MOSQ_ACL_WRITE;
-		}
-		if(mosquitto_acl_check(context, base_msg->data.topic,
-							   base_msg->data.payloadlen, base_msg->data.payload,
-							   base_msg->data.qos, base_msg->data.retain, access) != MOSQ_ERR_SUCCESS){
-
-			DL_DELETE((*head), client_msg);
-			db__msg_store_ref_dec(&client_msg->base_msg);
-			mosquitto__FREE(client_msg);
-		}
-	}
-}
-
 int connect__on_authorised(struct mosquitto *context, void *auth_data_out, uint16_t auth_data_out_len)
 {
 	struct mosquitto *found_context;
@@ -273,11 +247,9 @@ int connect__on_authorised(struct mosquitto *context, void *auth_data_out, uint1
 	context->ping_t = 0;
 	context->is_dropping = false;
 
-	connection_check_acl(context, &context->msgs_in.inflight);
-	connection_check_acl(context, &context->msgs_in.queued);
-	connection_check_acl(context, &context->msgs_out.inflight);
-	connection_check_acl(context, &context->msgs_out.queued);
-
+	/* Remove any queued messages that are no longer allowed through ACL,
+	 * assuming a possible change of username. */
+	db__check_acl_of_all_messages(context);
 	context__add_to_by_id(context);
 
 #ifdef WITH_PERSISTENCE

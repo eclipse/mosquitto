@@ -12,6 +12,7 @@ OBJS = \
 	base_msgs.o \
 	clients.o \
 	client_msgs.o \
+	common.o \
 	init.o \
 	plugin.o \
 	restore.o \
