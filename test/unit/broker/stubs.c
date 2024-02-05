@@ -31,6 +31,19 @@ time_t mosquitto_time(void)
 	return 123;
 }
 
+int mosquitto_acl_check(struct mosquitto *context, const char *topic, uint32_t payloadlen, void* payload, uint8_t qos, bool retain, int access)
+{
+	UNUSED(context);
+	UNUSED(topic);
+	UNUSED(payloadlen);
+	UNUSED(payload);
+	UNUSED(qos);
+	UNUSED(retain);
+	UNUSED(access);
+
+	return MOSQ_ERR_SUCCESS;
+}
+
 bool net__is_connected(struct mosquitto *mosq)
 {
 	UNUSED(mosq);

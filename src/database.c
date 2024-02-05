@@ -1230,6 +1230,41 @@ void db__expire_all_messages(struct mosquitto *context)
 	}
 }
 
+static void db__client_messages_check_acl(struct mosquitto *context, struct mosquitto__client_msg **head)
+{
+	struct mosquitto__client_msg *client_msg, *tmp;
+	struct mosquitto__base_msg *base_msg;
+	int access;
+
+	DL_FOREACH_SAFE((*head), client_msg, tmp){
+		base_msg = client_msg->base_msg;
+		if(client_msg->data.direction == mosq_md_out){
+			access = MOSQ_ACL_READ;
+		}else{
+			access = MOSQ_ACL_WRITE;
+		}
+		if(mosquitto_acl_check(context, base_msg->data.topic,
+							   base_msg->data.payloadlen, base_msg->data.payload,
+							   base_msg->data.qos, base_msg->data.retain, access) != MOSQ_ERR_SUCCESS){
+
+			DL_DELETE((*head), client_msg);
+			db__msg_store_ref_dec(&client_msg->base_msg);
+			mosquitto__FREE(client_msg);
+		}
+	}
+}
+
+
+
+void db__check_acl_of_all_messages(struct mosquitto *context)
+{
+	struct mosquitto__client_msg *client_msg, *tmp;
+
+	db__client_messages_check_acl(context, &context->msgs_in.inflight);
+	db__client_messages_check_acl(context, &context->msgs_in.queued);
+	db__client_messages_check_acl(context, &context->msgs_out.inflight);
+	db__client_messages_check_acl(context, &context->msgs_out.queued);
+}
 
 static int db__message_write_inflight_out_single(struct mosquitto *context, struct mosquitto__client_msg *client_msg)
 {
