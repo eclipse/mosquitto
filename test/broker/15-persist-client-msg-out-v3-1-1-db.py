@@ -63,7 +63,7 @@ try:
     store_id = persist_help.check_base_msg(port, 0, topic, payload_b, source_id, None, len(payload_b), mid, port, qos, 0)
 
     # Check client msg
-    persist_help.check_client_msg(port, client_id, store_id, 0, persist_help.dir_out, 1, qos, 0, persist_help.ms_queued)
+    persist_help.check_client_msg(port, client_id, 1, store_id, 0, persist_help.dir_out, 1, qos, 0, persist_help.ms_queued)
 
     rc = broker_terminate_rc
 finally:

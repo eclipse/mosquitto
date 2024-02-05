@@ -266,40 +266,49 @@ def check_subscription(
 
 
 def check_client_msg(
-    port, client_id, store_id, dup, direction, mid, qos, retain, state
+        port, client_id, cmsg_id, store_id, dup, direction, mid, qos, retain, state, idx=0
 ):
     con = sqlite3.connect(f"{port}/mosquitto.sqlite3")
-    cur = con.cursor()
-    cur.execute(
-        "SELECT client_id,store_id,dup,direction,mid,qos,retain,state "
-        + "FROM client_msgs"
-    )
-    row = cur.fetchone()
+    try:
+        cur = con.cursor()
+        cur.execute(
+            "SELECT client_id,cmsg_id,store_id,dup,direction,mid,qos,retain,state "
+            + "FROM client_msgs "
+            + "ORDER BY cmsg_id"
+        )
+        for i in range(0, idx + 1):
+            row = cur.fetchone()
 
-    if row[0] != client_id:
-        raise ValueError("Invalid client_id %s / %s" % (row[0], client_id))
+        if row[0] != client_id:
+            raise ValueError("Invalid client_id %s / %s" % (row[0], client_id))
 
-    if row[1] != store_id:
-        raise ValueError("Invalid store_id %d / %d" % (row[1], store_id))
+        if row[1] != cmsg_id:
+            raise ValueError("Invalid cmsg_id %s / %s" % (row[1], cmsg_id))
 
-    if row[2] != dup:
-        raise ValueError("Invalid dup %d / %d" % (row[2], dup))
+        if row[2] != store_id:
+            raise ValueError("Invalid store_id %d / %d" % (row[2], store_id))
 
-    if row[3] != direction:
-        raise ValueError("Invalid direction %d / %d" % (row[3], direction))
+        if row[3] != dup:
+            raise ValueError("Invalid dup %d / %d" % (row[3], dup))
 
-    if row[4] != mid:
-        raise ValueError("Invalid mid %d / %d" % (row[4], mid))
+        if row[4] != direction:
+            raise ValueError("Invalid direction %d / %d" % (row[4], direction))
 
-    if row[5] != qos:
-        raise ValueError("Invalid qos %d / %d" % (row[5], qos))
+        if row[5] != mid:
+            raise ValueError("Invalid mid %d / %d" % (row[5], mid))
 
-    if row[6] != retain:
-        raise ValueError("Invalid retain %d / %d" % (row[6], retain))
+        if row[6] != qos:
+            raise ValueError("Invalid qos %d / %d" % (row[6], qos))
 
-    if row[7] != state:
-        raise ValueError("Invalid state %d / %d" % (row[7], state))
-    con.close()
+        if row[7] != retain:
+            raise ValueError("Invalid retain %d / %d" % (row[7], retain))
+
+        if row[8] != state:
+            raise ValueError("Invalid state %d / %d" % (row[8], state))
+    except ValueError as err:
+        raise ValueError(str(err)+ f" at index {idx}") from err
+    finally:
+        con.close()
 
 
 def check_base_msg(
@@ -317,50 +326,53 @@ def check_base_msg(
     idx=0,
 ):
     con = sqlite3.connect(f"{port}/mosquitto.sqlite3")
-    cur = con.cursor()
-    cur.execute(
-        "SELECT store_id,expiry_time,topic,payload,source_id,source_username, "
-        + "payloadlen, source_mid, source_port, qos, retain "
-        + "FROM base_msgs"
-    )
+    try:
+        cur = con.cursor()
+        cur.execute(
+            "SELECT store_id,expiry_time,topic,payload,source_id,source_username, "
+            + "payloadlen, source_mid, source_port, qos, retain "
+            + "FROM base_msgs "
+        )
+        for i in range(0, idx + 1):
+            row = cur.fetchone()
+        
+        if row[0] == 0:
+            raise ValueError("Invalid store_id %d / %d" % (row[0], store_id))
 
-    for i in range(0, idx + 1):
-        row = cur.fetchone()
+        if (expiry_time == 0 and row[1] != 0) or (expiry_time != 0 and row[1] == 0):
+            raise ValueError("Invalid expiry_time %d / %d" % (row[1], expiry_time))
 
-    if row[0] == 0:
-        raise ValueError("Invalid store_id %d / %d" % (row[0], store_id))
+        if row[2] != topic:
+            raise ValueError("Invalid topic %s / %s" % (row[2], topic))
 
-    if (expiry_time == 0 and row[1] != 0) or (expiry_time != 0 and row[1] == 0):
-        raise ValueError("Invalid expiry_time %d / %d" % (row[1], expiry_time))
+        if row[3] != payload:
+            raise ValueError("Invalid payload %s / %s" % (row[3], payload))
 
-    if row[2] != topic:
-        raise ValueError("Invalid topic %s / %s" % (row[2], topic))
+        if row[4] != source_id:
+            raise ValueError("Invalid source_id %s / %s" % (row[4], source_id))
 
-    if row[3] != payload:
-        raise ValueError("Invalid payload %s / %s" % (row[3], payload))
+        if row[5] != source_username:
+            raise ValueError("Invalid source_username %s / %s" % (row[5], source_username))
 
-    if row[4] != source_id:
-        raise ValueError("Invalid source_id %s / %s" % (row[4], source_id))
+        if row[6] != payloadlen or (payloadlen != 0 and row[6] != len(row[3])):
+            raise ValueError("Invalid payloadlen %d / %d" % (row[6], payloadlen))
 
-    if row[5] != source_username:
-        raise ValueError("Invalid source_username %s / %s" % (row[5], source_username))
+        if row[7] != source_mid:
+            raise ValueError("Invalid source_mid %d / %d" % (row[7], source_mid))
 
-    if row[6] != payloadlen or (payloadlen != 0 and row[6] != len(row[3])):
-        raise ValueError("Invalid payloadlen %d / %d" % (row[6], payloadlen))
+        if row[8] != source_port:
+            raise ValueError("Invalid source_port %d / %d" % (row[8], source_port))
 
-    if row[7] != source_mid:
-        raise ValueError("Invalid source_mid %d / %d" % (row[7], source_mid))
+        if row[9] != qos:
+            raise ValueError("Invalid qos %d / %d" % (row[9], qos))
 
-    if row[8] != source_port:
-        raise ValueError("Invalid source_port %d / %d" % (row[8], source_port))
+        if row[10] != retain:
+            raise ValueError("Invalid retain %d / %d" % (row[10], retain))
+    except ValueError as err:
+        raise ValueError(str(err)+ f" at index {idx}") from err
+    finally:
+        con.close()
 
-    if row[9] != qos:
-        raise ValueError("Invalid qos %d / %d" % (row[9], qos))
-
-    if row[10] != retain:
-        raise ValueError("Invalid retain %d / %d" % (row[10], retain))
-
-    con.close()
     return row[0]
 
 
