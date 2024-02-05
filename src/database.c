@@ -1230,7 +1230,8 @@ void db__expire_all_messages(struct mosquitto *context)
 	}
 }
 
-static void db__client_messages_check_acl(struct mosquitto *context, struct mosquitto__client_msg **head)
+static void db__client_messages_check_acl(struct mosquitto *context, struct mosquitto_msg_data *msg_data, struct mosquitto__client_msg **head,
+	void (*decrement_stats_fn)(struct mosquitto_msg_data *msg_data, struct mosquitto__client_msg *client_msg))
 {
 	struct mosquitto__client_msg *client_msg, *tmp;
 	struct mosquitto__base_msg *base_msg;
@@ -1248,6 +1249,8 @@ static void db__client_messages_check_acl(struct mosquitto *context, struct mosq
 							   base_msg->data.qos, base_msg->data.retain, access) != MOSQ_ERR_SUCCESS){
 
 			DL_DELETE((*head), client_msg);
+			decrement_stats_fn(msg_data, client_msg);
+			plugin_persist__handle_client_msg_delete(context, client_msg);
 			db__msg_store_ref_dec(&client_msg->base_msg);
 			mosquitto__FREE(client_msg);
 		}
@@ -1258,12 +1261,10 @@ static void db__client_messages_check_acl(struct mosquitto *context, struct mosq
 
 void db__check_acl_of_all_messages(struct mosquitto *context)
 {
-	struct mosquitto__client_msg *client_msg, *tmp;
-
-	db__client_messages_check_acl(context, &context->msgs_in.inflight);
-	db__client_messages_check_acl(context, &context->msgs_in.queued);
-	db__client_messages_check_acl(context, &context->msgs_out.inflight);
-	db__client_messages_check_acl(context, &context->msgs_out.queued);
+	db__client_messages_check_acl(context, &context->msgs_in, &context->msgs_in.inflight, &db__msg_remove_from_inflight_stats);
+	db__client_messages_check_acl(context, &context->msgs_in, &context->msgs_in.queued, &db__msg_remove_from_queued_stats);
+	db__client_messages_check_acl(context, &context->msgs_out, &context->msgs_out.inflight, &db__msg_remove_from_inflight_stats);
+	db__client_messages_check_acl(context, &context->msgs_out, &context->msgs_out.queued, &db__msg_remove_from_queued_stats);
 }
 
 static int db__message_write_inflight_out_single(struct mosquitto *context, struct mosquitto__client_msg *client_msg)
