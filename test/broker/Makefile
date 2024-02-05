@@ -275,6 +275,7 @@ PERSIST_TESTS = \
 	./15-persist-bridge-queue.py \
 	./15-persist-client-msg-in-v3-1-1.py \
 	./15-persist-client-msg-in-v5-0.py \
+	./15-persist-client-msg-modify-acl.py \
 	./15-persist-client-msg-out-clear-v3-1-1.py \
 	./15-persist-client-msg-out-dup-v3-1-1.py \
 	./15-persist-client-msg-out-queue-v3-1-1.py \
