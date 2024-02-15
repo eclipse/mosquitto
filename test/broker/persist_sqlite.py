@@ -20,7 +20,7 @@ ms_send_pubrec = 10
 ms_queued = 11
 
 
-def write_config(filename, port):
+def write_config(filename, port, additional_config_entries : dict = {}):
     with open(filename, "w") as f:
         f.write("listener %d\n" % (port))
         f.write("allow_anonymous true\n")
@@ -28,6 +28,8 @@ def write_config(filename, port):
             f"plugin {mosq_test.get_build_root()}/plugins/persist-sqlite/mosquitto_persist_sqlite.so\n"
         )
         f.write("plugin_opt_db_file %d/mosquitto.sqlite3\n" % (port))
+        for entry, value in additional_config_entries.items():            
+            f.write(f"{entry} {value}\n")
 
 
 # The create_db_of_version contains the database schema version introduced with Pro Mosquitto 2.8.
