@@ -23,7 +23,6 @@ Contributors:
 #ifndef WIN32
 #include <arpa/inet.h>
 #endif
-#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>

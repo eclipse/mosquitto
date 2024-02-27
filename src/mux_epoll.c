@@ -25,7 +25,6 @@ Contributors:
 #  define _GNU_SOURCE
 #endif
 
-#include <assert.h>
 #ifndef WIN32
 #ifdef WITH_EPOLL
 #include <sys/epoll.h>

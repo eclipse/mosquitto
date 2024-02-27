@@ -22,7 +22,6 @@ Contributors:
 /* For initgroups() */
 #  include <unistd.h>
 #  include <grp.h>
-#  include <assert.h>
 #endif
 
 #ifndef WIN32

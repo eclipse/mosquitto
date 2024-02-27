@@ -18,7 +18,6 @@ Contributors:
 
 #include "config.h"
 
-#include <assert.h>
 #include <string.h>
 
 #ifdef WIN32

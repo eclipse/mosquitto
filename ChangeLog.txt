@@ -1,3 +1,11 @@
+2.0.19 - 2023-11-xx
+===================
+
+Broker:
+- Fix assert failure when loading a persistence file that contains
+  subscriptions with no client id.
+
+
 2.0.18 - 2023-09-18
 ===================
 

@@ -23,7 +23,6 @@ Contributors:
 #  define _GNU_SOURCE
 #endif
 
-#include <assert.h>
 #ifndef WIN32
 #include <unistd.h>
 #else
