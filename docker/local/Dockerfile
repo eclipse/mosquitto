@@ -15,7 +15,8 @@ RUN set -x && \
         linux-headers \
         openssl-dev \
         sqlite-dev \
-        util-linux-dev && \
+        util-linux-dev \
+        tzdata && \
     mkdir -p /build/mosq && \
     tar --strip=1 -xf /tmp/mosq.tar.gz -C /build/mosq && \
     rm /tmp/mosq.tar.gz && \
