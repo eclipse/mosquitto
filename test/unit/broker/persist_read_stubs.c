@@ -46,51 +46,54 @@ void db__msg_store_free(struct mosquitto__base_msg *store)
 
 int db__message_store(const struct mosquitto *source, struct mosquitto__base_msg *stored, uint32_t *message_expiry_interval, enum mosquitto_msg_origin origin)
 {
-    int rc = MOSQ_ERR_SUCCESS;
-
+	int rc = MOSQ_ERR_SUCCESS;
+	
 	UNUSED(origin);
-
-    if(source && source->id){
-        stored->data.source_id = mosquitto__strdup(source->id);
-    }else{
-        stored->data.source_id = mosquitto__strdup("");
-    }
-    if(!stored->data.source_id){
-        rc = MOSQ_ERR_NOMEM;
-        goto error;
-    }
-
-    if(source && source->username){
-        stored->data.source_username = mosquitto__strdup(source->username);
-        if(!stored->data.source_username){
-            rc = MOSQ_ERR_NOMEM;
-            goto error;
-        }
-    }
-    if(source){
+	
+	if(source && source->id){
+		stored->data.source_id = mosquitto__strdup(source->id);
+	}else{
+		stored->data.source_id = mosquitto__strdup("");
+	}
+	if(!stored->data.source_id){
+		rc = MOSQ_ERR_NOMEM;
+		goto error;
+	}
+	
+	if(source && source->username){
+		stored->data.source_username = mosquitto__strdup(source->username);
+		if(!stored->data.source_username){
+			rc = MOSQ_ERR_NOMEM;
+			goto error;
+		}
+	}
+	if(source){
         stored->source_listener = source->listener;
-    }
-    if(message_expiry_interval){
-        stored->data.expiry_time = time(NULL) + (*message_expiry_interval);
-    }else{
-        stored->data.expiry_time = 0;
-    }
-
-    stored->dest_ids = NULL;
-    stored->dest_id_count = 0;
-    db.msg_store_count++;
-    db.msg_store_bytes += stored->data.payloadlen;
-
-    if(!stored->data.store_id){
-        stored->data.store_id = ++db.last_db_id;
-    }
-
+	}
+	
+	if (message_expiry_interval){
+		if(*message_expiry_interval > 0){
+			stored->data.expiry_time = time(NULL) + *message_expiry_interval;
+		}else{
+			stored->data.expiry_time = 0;
+		}
+	}
+	
+	stored->dest_ids = NULL;
+	stored->dest_id_count = 0;
+	db.msg_store_count++;
+	db.msg_store_bytes += stored->data.payloadlen;
+	
+	if(!stored->data.store_id){
+		stored->data.store_id = ++db.last_db_id;
+	}
+	
 	HASH_ADD(hh, db.msg_store, data.store_id, sizeof(stored->data.store_id), stored);
-
-    return MOSQ_ERR_SUCCESS;
+	
+	return MOSQ_ERR_SUCCESS;
 error:
 	db__msg_store_free(stored);
-    return rc;
+	return rc;
 }
 
 int log__printf(struct mosquitto *mosq, unsigned int priority, const char *fmt, ...)

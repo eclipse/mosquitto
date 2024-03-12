@@ -517,6 +517,7 @@ BROKER_EXPORT int mosquitto_persist_client_add(struct mosquitto_client *client)
 	}
 
 	context__add_to_by_id(context);
+	session_expiry__add_from_persistence(context,context->session_expiry_time);
 
 	return MOSQ_ERR_SUCCESS;
 error:
@@ -750,9 +751,6 @@ BROKER_EXPORT int mosquitto_persist_base_msg_add(struct mosquitto_base_msg *msg_
 {
 	struct mosquitto context;
 	struct mosquitto__base_msg *base_msg;
-	uint32_t message_expiry_interval;
-	uint32_t *p_message_expiry_interval;
-	time_t message_expiry_interval_tt;
 	int rc;
 
 	memset(&context, 0, sizeof(context));
@@ -766,25 +764,12 @@ BROKER_EXPORT int mosquitto_persist_base_msg_add(struct mosquitto_base_msg *msg_
 	context.id = (char *)msg_add->source_id;
 	context.username = (char *)msg_add->source_username;
 
-	p_message_expiry_interval = &message_expiry_interval;
-	if(msg_add->expiry_time == 0){
-		p_message_expiry_interval = NULL;
-	}else if(msg_add->expiry_time <= db.now_real_s){
-		message_expiry_interval = 0;
-	}else{
-		message_expiry_interval_tt = msg_add->expiry_time - db.now_real_s;
-		if(message_expiry_interval_tt > UINT32_MAX){
-			message_expiry_interval = UINT32_MAX;
-		}else{
-			message_expiry_interval = (uint32_t)message_expiry_interval_tt;
-		}
-	}
-
 	base_msg = mosquitto_calloc(1, sizeof(struct mosquitto__base_msg));
 	if(base_msg == NULL){
 		goto error;
 	}
 	base_msg->data.store_id = msg_add->store_id;
+	base_msg->data.expiry_time = msg_add->expiry_time;
 	base_msg->data.payloadlen = msg_add->payloadlen;
 	base_msg->data.source_mid = msg_add->source_mid;
 	base_msg->data.qos = msg_add->qos;
@@ -807,7 +792,7 @@ BROKER_EXPORT int mosquitto_persist_base_msg_add(struct mosquitto_base_msg *msg_
 	}
 
 	base_msg->stored = true;
-	rc = db__message_store(&context, base_msg, p_message_expiry_interval, mosq_mo_broker);
+	rc = db__message_store(&context, base_msg, NULL, mosq_mo_broker);
 	return rc;
 
 error:

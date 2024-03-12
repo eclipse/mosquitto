@@ -273,6 +273,8 @@ endif
 
 PERSIST_TESTS = \
 	./15-persist-bridge-queue.py \
+	./15-persist-client-drop-expired-messages.py \
+	./15-persist-client-expired-session.py \
 	./15-persist-client-msg-in-v3-1-1.py \
 	./15-persist-client-msg-in-v5-0.py \
 	./15-persist-client-msg-modify-acl.py \

@@ -408,12 +408,12 @@ def to_string(packet):
         return s
     elif cmd == 0x20:
         # CONNACK
-        if len(packet) == 4:
-            (cmd, rl, resv, rc) = struct.unpack('!BBBB', packet)
-            return "CONNACK, rl="+str(rl)+", res="+str(resv)+", rc="+str(rc)
-        elif len(packet) == 5:
-            (cmd, rl, flags, reason_code, proplen) = struct.unpack('!BBBBB', packet)
-            return "CONNACK, rl="+str(rl)+", flags="+str(flags)+", rc="+str(reason_code)+", proplen="+str(proplen)
+        if len(packet) >= 4:
+            (cmd, rl, flags, reason_code) = struct.unpack('!BBBB', packet[0:4])
+            s=f"CONNACK, rl={rl}, res/flags={flags}, rc={reason_code}"
+            if len(packet) > 4:
+                s = s+ f", properties={mqtt5_props.print_properties(packet[4:])}"
+            return s
         else:
             return "CONNACK, (not decoded)"
 

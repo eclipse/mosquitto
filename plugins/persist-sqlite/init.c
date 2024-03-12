@@ -141,8 +141,19 @@ static int create_tables(struct mosquitto_sqlite *ms)
 			"CREATE INDEX IF NOT EXISTS client_msgs_client_id ON client_msgs(client_id);",
 			NULL, NULL, NULL);
 	if(rc) goto fail;
+
 	rc = sqlite3_exec(ms->db,
-			"CREATE INDEX IF NOT EXISTS client_msgs_store_id ON client_msgs(store_id);",
+			"DROP INDEX IF EXISTS client_msgs_store_id;",
+			NULL, NULL, NULL);
+	if(rc) goto fail;
+
+	rc = sqlite3_exec(ms->db,
+			"CREATE INDEX IF NOT EXISTS client_msgs_store_id ON client_msgs(store_id,client_id);",
+			NULL, NULL, NULL);
+	if(rc) goto fail;
+
+	rc = sqlite3_exec(ms->db,
+			"CREATE INDEX IF NOT EXISTS retains_storeid ON retains(store_id);",
 			NULL, NULL, NULL);
 	if(rc) goto fail;
 
@@ -292,6 +303,17 @@ static int prepare_statements(struct mosquitto_sqlite *ms)
 			"DELETE FROM base_msgs WHERE store_id=?",
 			-1, SQLITE_PREPARE_PERSISTENT,
 			&ms->base_msg_remove_stmt, NULL);
+	if(rc) goto fail;
+
+	rc = sqlite3_prepare_v3(ms->db,
+			 "DELETE FROM base_msgs AS bm "
+			 "WHERE bm.store_id IN "
+			 "( SELECT cm.store_id FROM client_msgs AS cm"
+			 "  LEFT OUTER JOIN client_msgs AS oc ON oc.store_id = cm.store_id AND oc.client_id != cm.client_id"
+			 "  LEFT OUTER JOIN retains AS rm ON rm.store_id = cm.store_id"
+			 "  WHERE cm.client_id = ? AND oc.store_id IS NULL AND rm.store_id IS NULL)",
+			-1, SQLITE_PREPARE_PERSISTENT,
+			&ms->base_msg_remove_for_clientid_stmt, NULL);
 	if(rc) goto fail;
 
 	rc = sqlite3_prepare_v3(ms->db,

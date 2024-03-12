@@ -89,6 +89,11 @@ int persist_sqlite__client_remove_cb(int event, void *event_data, void *userdata
 			rc = MOSQ_ERR_UNKNOWN;
 		}
 	}
+
+	/* Delete base msgs before deletion of client_msgs as the query will iterate over the client_msgs table */
+	persist_sqlite__base_msg_clear(ms, ed->data.clientid);
+	persist_sqlite__client_msg_clear(ms, ed->data.clientid);
+
 	if(sqlite3_bind_text(ms->client_remove_stmt, 1,
 				ed->data.clientid, (int)strlen(ed->data.clientid), SQLITE_STATIC) == SQLITE_OK){
 
@@ -101,7 +106,6 @@ int persist_sqlite__client_remove_cb(int event, void *event_data, void *userdata
 			rc = MOSQ_ERR_UNKNOWN;
 		}
 	}
-	persist_sqlite__client_msg_clear(ms, ed->data.clientid);
 
 	return rc;
 }
@@ -133,3 +137,4 @@ int persist_sqlite__client_update_cb(int event, void *event_data, void *userdata
 
 	return rc;
 }
+

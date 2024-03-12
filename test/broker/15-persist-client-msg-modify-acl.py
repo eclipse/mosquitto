@@ -53,9 +53,7 @@ def do_test(test_case_name: str, additional_config_entries: dict):
 
     rc = 1
 
-    broker = mosq_test.start_broker(
-        filename=os.path.basename(__file__), use_conf=True, port=port
-    )
+    broker = mosq_test.start_broker(filename=conf_file, use_conf=True, port=port)
 
     con = None
     try:
@@ -146,7 +144,6 @@ def do_test(test_case_name: str, additional_config_entries: dict):
                 qos,
                 0,
                 persist_help.ms_queued,
-                idx=i,
             )
 
         # Remove any permission for the test topic and the test user
@@ -156,9 +153,7 @@ def do_test(test_case_name: str, additional_config_entries: dict):
         os.chmod(f"{acl_file}", 0o644)
 
         # Restart broker
-        broker = mosq_test.start_broker(
-            filename=os.path.basename(__file__), use_conf=True, port=port
-        )
+        broker = mosq_test.start_broker(filename=conf_file, use_conf=True, port=port)
 
         # Connect client again, it should have a session, but all queued messages should be dropped
         sock = mosq_test.do_client_connect(

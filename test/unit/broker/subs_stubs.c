@@ -115,6 +115,11 @@ int retain__init(void)
 	return MOSQ_ERR_SUCCESS;
 }
 
+void retain__expiry_check(struct mosquitto__retainhier **retainhier)
+{
+	UNUSED(retainhier);
+}
+
 void retain__clean(struct mosquitto__retainhier **retainhier)
 {
 	UNUSED(retainhier);

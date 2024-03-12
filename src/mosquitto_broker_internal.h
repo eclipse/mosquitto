@@ -732,6 +732,7 @@ int db__message_write_queued_in(struct mosquitto *context);
 void db__msg_add_to_inflight_stats(struct mosquitto_msg_data *msg_data, struct mosquitto__client_msg *msg);
 void db__msg_add_to_queued_stats(struct mosquitto_msg_data *msg_data, struct mosquitto__client_msg *msg);
 uint64_t db__new_msg_id(void);
+void db__retain_expiry_check(void);
 void db__expire_all_messages(struct mosquitto *context);
 void db__check_acl_of_all_messages(struct mosquitto *context);
 
@@ -889,7 +890,7 @@ int retain__init(void);
 void retain__clean(struct mosquitto__retainhier **retainhier);
 int retain__queue(struct mosquitto *context, const struct mosquitto_subscription *sub);
 int retain__store(const char *topic, struct mosquitto__base_msg *base_msg, char **split_topics, bool persist);
-
+void retain__expiry_check(struct mosquitto__retainhier **retainhier);
 /* ============================================================
  * Security related functions
  * ============================================================ */

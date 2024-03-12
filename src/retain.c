@@ -192,6 +192,19 @@ int retain__store(const char *topic, struct mosquitto__base_msg *base_msg, char 
 	return MOSQ_ERR_SUCCESS;
 }
 
+static bool retain__delete_expired_msg(struct mosquitto__retainhier *branch)
+{
+	if(branch->retained && branch->retained->data.expiry_time > 0 && db.now_real_s >= branch->retained->data.expiry_time){
+		plugin_persist__handle_retain_msg_delete(branch->retained);
+		db__msg_store_ref_dec(&branch->retained);
+		branch->retained = NULL;
+#ifdef WITH_SYS_TREE
+		db.retained_count--;
+#endif
+		return true;
+	}
+	return false;
+}
 
 static int retain__process(struct mosquitto__retainhier *branch, struct mosquitto *context, const struct mosquitto_subscription *sub)
 {
@@ -200,13 +213,7 @@ static int retain__process(struct mosquitto__retainhier *branch, struct mosquitt
 	uint16_t mid;
 	struct mosquitto__base_msg *retained;
 
-	if(branch->retained->data.expiry_time > 0 && db.now_real_s >= branch->retained->data.expiry_time){
-		plugin_persist__handle_retain_msg_delete(branch->retained);
-		db__msg_store_ref_dec(&branch->retained);
-		branch->retained = NULL;
-#ifdef WITH_SYS_TREE
-		db.retained_count--;
-#endif
+	if(retain__delete_expired_msg(branch)){
 		return MOSQ_ERR_SUCCESS;
 	}
 
@@ -344,6 +351,17 @@ int retain__queue(struct mosquitto *context, const struct mosquitto_subscription
 	return MOSQ_ERR_SUCCESS;
 }
 
+void retain__expiry_check(struct mosquitto__retainhier **retainhier)
+{
+	struct mosquitto__retainhier *peer, *retainhier_tmp;
+
+	HASH_ITER(hh, *retainhier, peer, retainhier_tmp){
+		retain__expiry_check(&peer->children);
+		if (retain__delete_expired_msg(peer)){
+			retain__clean_empty_hierarchy(peer);
+		}
+	}
+}
 
 void retain__clean(struct mosquitto__retainhier **retainhier)
 {
@@ -359,4 +377,5 @@ void retain__clean(struct mosquitto__retainhier **retainhier)
 		mosquitto__FREE(peer);
 	}
 }
+
 

@@ -426,6 +426,8 @@ int main(int argc, char *argv[])
 	if(rc) return rc;
 
 	plugin_persist__handle_restore();
+	session_expiry__check();
+	db__retain_expiry_check();
 	db__msg_store_compact();
 
 	/* After loading persisted clients and ACLs, try to associate them,

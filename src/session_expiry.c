@@ -151,9 +151,9 @@ void session_expiry__check(void)
 	struct mosquitto *context;
 	time_t timeout;
 
-	if(db.now_real_s <= last_check){
+	if(last_check != 0 && db.now_real_s <= last_check){
 		if(expiry_list){
-			/* Next event is the first item of the list, we must set the timeout even if we aren't 
+			/* Next event is the first item of the list, we must set the timeout even if we aren't
 			 * checking the full list */
 			timeout = (expiry_list->context->session_expiry_time - db.now_real_s) * 1000;
 			if(timeout <= 0){

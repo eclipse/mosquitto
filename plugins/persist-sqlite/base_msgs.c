@@ -215,3 +215,21 @@ int persist_sqlite__base_msg_remove_cb(int event, void *event_data, void *userda
 
 	return rc;
 }
+
+int persist_sqlite__base_msg_clear(struct mosquitto_sqlite *ms, const char *clientid)
+{
+	int rc = MOSQ_ERR_UNKNOWN;
+
+	if(sqlite3_bind_text(ms->base_msg_remove_for_clientid_stmt, 1, clientid, (int)strlen(clientid), SQLITE_STATIC) == SQLITE_OK){
+		ms->event_count++;
+		rc = sqlite3_step(ms->base_msg_remove_for_clientid_stmt);
+		if(rc == SQLITE_DONE){
+			rc = MOSQ_ERR_SUCCESS;
+		}else{
+			rc = MOSQ_ERR_UNKNOWN;
+		}
+	}
+	sqlite3_reset(ms->base_msg_remove_for_clientid_stmt);
+
+	return rc;
+}
