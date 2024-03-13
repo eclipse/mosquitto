@@ -126,6 +126,10 @@ int mosquitto_connect_async(struct mosquitto *mosq, const char *host, int port, 
 	return mosquitto_connect_bind_async(mosq, host, port, keepalive, NULL);
 }
 
+int mosquitto_connect_async_v5(struct mosquitto *mosq, const char *host, int port, int keepalive, const mosquitto_property *properties)
+{
+    return mosquitto_connect_bind_async_v5(mosq, host, port, keepalive, NULL, properties);
+}
 
 int mosquitto_connect_bind_async(struct mosquitto *mosq, const char *host, int port, int keepalive, const char *bind_address)
 {
@@ -142,6 +146,32 @@ int mosquitto_connect_bind_async(struct mosquitto *mosq, const char *host, int p
 	return mosquitto__reconnect(mosq, false);
 }
 
+int mosquitto_connect_bind_async_v5(struct mosquitto *mosq, const char *host, int port, int keepalive, const char *bind_address, const mosquitto_property *properties)
+{
+    int rc;
+
+    if(bind_address){
+        rc = mosquitto_string_option(mosq, MOSQ_OPT_BIND_ADDRESS, bind_address);
+        if(rc) return rc;
+    }
+
+    mosquitto_property_free_all(&mosq->connect_properties);
+    if(properties){
+        rc = mosquitto_property_check_all(CMD_CONNECT, properties);
+        if(rc) return rc;
+
+        rc = mosquitto_property_copy_all(&mosq->connect_properties, properties);
+        if(rc) return rc;
+        mosq->connect_properties->client_generated = true;
+    }
+
+    rc = mosquitto__connect_init(mosq, host, port, keepalive);
+    if(rc) return rc;
+
+    mosquitto__set_state(mosq, mosq_cs_new);
+
+    return mosquitto__reconnect(mosq, false);
+}
 
 int mosquitto_reconnect_async(struct mosquitto *mosq)
 {
