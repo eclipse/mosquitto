@@ -21,6 +21,19 @@ target_include_directories(libmosquitto_common
 		"${mosquitto_SOURCE_DIR}/include"
 )
 
+target_link_libraries(libmosquitto_common
+	PUBLIC
+		config-header
+)
+
+if (WITH_TLS)
+	target_link_libraries(libmosquitto_common
+		PUBLIC
+			OpenSSL::SSL
+	)
+endif()
+
+
 set_target_properties(libmosquitto_common PROPERTIES
 	OUTPUT_NAME mosquitto_common
 	VERSION ${VERSION}

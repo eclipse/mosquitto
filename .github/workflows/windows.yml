@@ -13,96 +13,24 @@ env:
   BUILD_TYPE: Release
 
 jobs:
-
-  cjson:
-    runs-on: windows-2022
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          repository: DaveGamble/cJSON
-          ref: v1.7.17
-
-      - name: Configure CMake cJSON
-        run: cmake -B ${{github.workspace}}/build64 -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DENABLE_CJSON_TEST=OFF -DBUILD_SHARED_LIBS=OFF -DBUILD_SHARED_AND_STATIC_LIBS=OFF -DCJSON_BUILD_SHARED_LIBS=OFF -DCJSON_OVERRIDE_BUILD_SHARED_LIBS=OFF -DCMAKE_GENERATOR_PLATFORM=x64
-
-      - name: Build cJSON
-        run: cmake --build ${{github.workspace}}/build64 --config ${{env.BUILD_TYPE}}
-
-      - name: Install cJSON
-        run: cmake --install ${{github.workspace}}/build64 --config ${{env.BUILD_TYPE}}
-
-      - name: Upload cJSON
-        uses: actions/upload-artifact@v4
-        with:
-          name: cjson-bin
-          path: C:\Program Files\cJSON
-
-  sqlite3:
-    runs-on: windows-2022
-    steps:
-      - uses: suisei-cn/actions-download-file@v1.6.0
-        id: sqlitesrc
-        name: Download sqlite source
-        with:
-          url: https://sqlite.org/2024/sqlite-amalgamation-3450100.zip
-          target: download/
-
-      - uses: suisei-cn/actions-download-file@v1.6.0
-        id: sqlitebin
-        name: Download sqlite dll
-        with:
-          url: https://www.sqlite.org/2024/sqlite-dll-win-x64-3450100.zip
-          target: download/
-
-      - name: extract src
-        run: 7z e -o"C:\Program Files\sqlite" download\sqlite-amalgamation-3450100.zip
-
-      - name: extract binary
-        run: 7z e -o"C:\Program Files\sqlite" download\sqlite-dll-win-x64-3450100.zip
-
-      - name: Set up Visual Studio shell
-        uses: egor-tensin/vs-shell@v2
-        with:
-          arch: x64
-
-      - name: create .lib
-        run: lib.exe /def:"C:\Program Files\sqlite\sqlite3.def" /machine:x64 /out:"C:\Program Files\sqlite\sqlite3.lib"
-
-      - name: Upload sqlite
-        uses: actions/upload-artifact@v4
-        with:
-          name: sqlite-bin
-          path: C:\Program Files\sqlite
-
   mosquitto:
     runs-on: windows-2022
-    needs:
-      - cjson
-      - sqlite3
-    env:
-      CJSON_DIR: C:\Program Files\cJSON
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: install openssl
-        run: choco install openssl
 
-      - name: Download cJSON
-        uses: actions/download-artifact@v4
+      - name: vcpkg build
+        uses: johnwason/vcpkg-action@v6
+        id: vcpkg
         with:
-          name: cjson-bin
-          path: C:\Program Files\cJSON
-
-      - name: Download sqlite
-        uses: actions/download-artifact@v4
-        with:
-          name: sqlite-bin
-          path: C:\Program Files\sqlite
+          manifest-dir: ${{ github.workspace }}
+          triplet: x64-windows-release
+          token: ${{ github.token }}
+          github-binarycache: true
 
       - name: Configure CMake
-        run: cmake -B ${{github.workspace}}/build64 -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DWITH_TESTS=OFF -DCMAKE_GENERATOR_PLATFORM=x64 -DCJSON_INCLUDE_DIR="C:/Program Files/cJSON/include" -DCJSON_LIBRARY="C:/Program Files/cJSON/lib/cjson.lib" -DSQLite3_INCLUDE_DIR="C:/Program Files/sqlite" -DSQLite3_LIBRARY="C:/Program Files/sqlite/sqlite3.lib"
-
+        run: cmake -B ${{github.workspace}}/build64 -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DWITH_TESTS=OFF -DCMAKE_GENERATOR_PLATFORM=x64 -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-release -DVCPKG_MANIFEST_MODE=ON
       - name: Build
         run: cmake --build ${{github.workspace}}/build64 --config ${{env.BUILD_TYPE}}
 

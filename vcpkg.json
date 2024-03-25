@@ -1,0 +1,11 @@
+{
+  "name": "mosquitto",
+  "version-string": "2.1.0",
+  "dependencies": [
+	"argon2",
+    "cjson",
+	"openssl",
+	"pthreads",
+    "sqlite3"
+  ]
+}
