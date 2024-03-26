@@ -34,25 +34,25 @@ extern "C" {
 /*
  * Function: mosquitto_fopen
  */
-FILE *mosquitto_fopen(const char *path, const char *mode, bool restrict_read);
+libmosqcommon_EXPORT FILE *mosquitto_fopen(const char *path, const char *mode, bool restrict_read);
 
 
 /*
  * Function: mosquitto_fgets
  */
-char *mosquitto_fgets(char **buf, int *buflen, FILE *stream);
+libmosqcommon_EXPORT char *mosquitto_fgets(char **buf, int *buflen, FILE *stream);
 
 /*
  * Function: mosquitto_write_file
  */
-int mosquitto_write_file(const char* target_path, bool restrict_read, int (*write_fn)(FILE* fptr, void* user_data), void* user_data, void (*log_fn)(const char* msg));
+libmosqcommon_EXPORT int mosquitto_write_file(const char* target_path, bool restrict_read, int (*write_fn)(FILE* fptr, void* user_data), void* user_data, void (*log_fn)(const char* msg));
 
 /*
  * Function: mosquitto_trimblanks
  *
  * Removes blanks from the end of a string.
  */
-char *mosquitto_trimblanks(char *str);
+libmosqcommon_EXPORT char *mosquitto_trimblanks(char *str);
 
 #ifdef __cplusplus
 }

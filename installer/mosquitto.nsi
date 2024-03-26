@@ -49,6 +49,7 @@ Section "Files" SecInstall
 	File "..\build\client\Release\mosquitto_pub.exe"
 	File "..\build\client\Release\mosquitto_sub.exe"
 	File "..\build\client\Release\mosquitto_rr.exe"
+	File "..\build\libcommon\Release\mosquitto_common.dll"
 	File "..\build\lib\Release\mosquitto.dll"
 	File "..\build\lib\cpp\Release\mosquittopp.dll"
 	File "..\build\plugins\dynamic-security\Release\mosquitto_dynamic_security.dll"
@@ -132,6 +133,7 @@ SectionEnd
 Section "Uninstall"
 	ExecWait '"$INSTDIR\mosquitto.exe" uninstall'
 	Delete "$INSTDIR\mosquitto.exe"
+	Delete "$INSTDIR\mosquitto_common.dll"
 	Delete "$INSTDIR\mosquitto_ctrl.exe"
 	Delete "$INSTDIR\mosquitto_passwd.exe"
 	Delete "$INSTDIR\mosquitto_pub.exe"

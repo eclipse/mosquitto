@@ -5,24 +5,6 @@
 extern "C" {
 #endif
 
-#ifdef WIN32
-#  ifdef libmosquitto_common_EXPORTS
-#    define libmosqcommon_EXPORT __declspec(dllexport)
-#  else
-#    ifndef LIBMOSQUITTO_STATIC
-#      ifdef libmosquittocommon_EXPORTS
-#        define libmosqcommon_EXPORT  __declspec(dllexport)
-#      else
-#        define libmosqcommon_EXPORT  __declspec(dllimport)
-#      endif
-#    else
-#      define libmosqcommon_EXPORT
-#    endif
-#  endif
-#else
-#  define libmosqcommon_EXPORT
-#endif
-
 #include <time.h>
 
 /* Function: mosquitto_time

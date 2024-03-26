@@ -53,7 +53,7 @@ extern "C" {
  * > mosquitto_property *proplist = NULL;
  * > mosquitto_property_add_byte(&proplist, MQTT_PROP_PAYLOAD_FORMAT_IDENTIFIER, 1);
  */
-libmosq_EXPORT int mosquitto_property_add_byte(mosquitto_property **proplist, int identifier, uint8_t value);
+libmosqcommon_EXPORT int mosquitto_property_add_byte(mosquitto_property **proplist, int identifier, uint8_t value);
 
 /*
  * Function: mosquitto_property_add_int16
@@ -77,7 +77,7 @@ libmosq_EXPORT int mosquitto_property_add_byte(mosquitto_property **proplist, in
  * > mosquitto_property *proplist = NULL;
  * > mosquitto_property_add_int16(&proplist, MQTT_PROP_RECEIVE_MAXIMUM, 1000);
  */
-libmosq_EXPORT int mosquitto_property_add_int16(mosquitto_property **proplist, int identifier, uint16_t value);
+libmosqcommon_EXPORT int mosquitto_property_add_int16(mosquitto_property **proplist, int identifier, uint16_t value);
 
 /*
  * Function: mosquitto_property_add_int32
@@ -101,7 +101,7 @@ libmosq_EXPORT int mosquitto_property_add_int16(mosquitto_property **proplist, i
  * > mosquitto_property *proplist = NULL;
  * > mosquitto_property_add_int32(&proplist, MQTT_PROP_MESSAGE_EXPIRY_INTERVAL, 86400);
  */
-libmosq_EXPORT int mosquitto_property_add_int32(mosquitto_property **proplist, int identifier, uint32_t value);
+libmosqcommon_EXPORT int mosquitto_property_add_int32(mosquitto_property **proplist, int identifier, uint32_t value);
 
 /*
  * Function: mosquitto_property_add_varint
@@ -125,7 +125,7 @@ libmosq_EXPORT int mosquitto_property_add_int32(mosquitto_property **proplist, i
  * > mosquitto_property *proplist = NULL;
  * > mosquitto_property_add_varint(&proplist, MQTT_PROP_SUBSCRIPTION_IDENTIFIER, 1);
  */
-libmosq_EXPORT int mosquitto_property_add_varint(mosquitto_property **proplist, int identifier, uint32_t value);
+libmosqcommon_EXPORT int mosquitto_property_add_varint(mosquitto_property **proplist, int identifier, uint32_t value);
 
 /*
  * Function: mosquitto_property_add_binary
@@ -150,7 +150,7 @@ libmosq_EXPORT int mosquitto_property_add_varint(mosquitto_property **proplist, 
  * > mosquitto_property *proplist = NULL;
  * > mosquitto_property_add_binary(&proplist, MQTT_PROP_AUTHENTICATION_DATA, auth_data, auth_data_len);
  */
-libmosq_EXPORT int mosquitto_property_add_binary(mosquitto_property **proplist, int identifier, const void *value, uint16_t len);
+libmosqcommon_EXPORT int mosquitto_property_add_binary(mosquitto_property **proplist, int identifier, const void *value, uint16_t len);
 
 /*
  * Function: mosquitto_property_add_string
@@ -175,7 +175,7 @@ libmosq_EXPORT int mosquitto_property_add_binary(mosquitto_property **proplist, 
  * > mosquitto_property *proplist = NULL;
  * > mosquitto_property_add_string(&proplist, MQTT_PROP_CONTENT_TYPE, "application/json");
  */
-libmosq_EXPORT int mosquitto_property_add_string(mosquitto_property **proplist, int identifier, const char *value);
+libmosqcommon_EXPORT int mosquitto_property_add_string(mosquitto_property **proplist, int identifier, const char *value);
 
 /*
  * Function: mosquitto_property_add_string_pair
@@ -201,7 +201,7 @@ libmosq_EXPORT int mosquitto_property_add_string(mosquitto_property **proplist, 
  * > mosquitto_property *proplist = NULL;
  * > mosquitto_property_add_string_pair(&proplist, MQTT_PROP_USER_PROPERTY, "client", "mosquitto_pub");
  */
-libmosq_EXPORT int mosquitto_property_add_string_pair(mosquitto_property **proplist, int identifier, const char *name, const char *value);
+libmosqcommon_EXPORT int mosquitto_property_add_string_pair(mosquitto_property **proplist, int identifier, const char *name, const char *value);
 
 
 /*
@@ -218,7 +218,7 @@ libmosq_EXPORT int mosquitto_property_add_string_pair(mosquitto_property **propl
  *	MOSQ_ERR_INVAL - if proplist is NULL or property is NULL
  *	MOSQ_ERR_NOT_FOUND - if the property was not found
  */
-libmosq_EXPORT int mosquitto_property_remove(mosquitto_property **proplist, const mosquitto_property *property);
+libmosqcommon_EXPORT int mosquitto_property_remove(mosquitto_property **proplist, const mosquitto_property *property);
 
 
 /*
@@ -233,7 +233,7 @@ libmosq_EXPORT int mosquitto_property_remove(mosquitto_property **proplist, cons
  *  A valid property identifier on success
  *  0 - on error
  */
-libmosq_EXPORT int mosquitto_property_identifier(const mosquitto_property *property);
+libmosqcommon_EXPORT int mosquitto_property_identifier(const mosquitto_property *property);
 
 
 /*
@@ -257,7 +257,7 @@ libmosq_EXPORT int mosquitto_property_identifier(const mosquitto_property *prope
  *	Pointer to the next item in the list
  *	NULL, if proplist is NULL, or if there are no more items in the list.
  */
-libmosq_EXPORT mosquitto_property *mosquitto_property_next(const mosquitto_property *proplist);
+libmosqcommon_EXPORT mosquitto_property *mosquitto_property_next(const mosquitto_property *proplist);
 
 
 /*
@@ -299,7 +299,7 @@ libmosq_EXPORT mosquitto_property *mosquitto_property_next(const mosquitto_prope
  *	}
  * (end)
  */
-libmosq_EXPORT const mosquitto_property *mosquitto_property_read_byte(
+libmosqcommon_EXPORT const mosquitto_property *mosquitto_property_read_byte(
 		const mosquitto_property *proplist,
 		int identifier,
 		uint8_t *value,
@@ -324,7 +324,7 @@ libmosq_EXPORT const mosquitto_property *mosquitto_property_read_byte(
  * Example:
  *	See <mosquitto_property_read_byte>
  */
-libmosq_EXPORT const mosquitto_property *mosquitto_property_read_int16(
+libmosqcommon_EXPORT const mosquitto_property *mosquitto_property_read_int16(
 		const mosquitto_property *proplist,
 		int identifier,
 		uint16_t *value,
@@ -349,7 +349,7 @@ libmosq_EXPORT const mosquitto_property *mosquitto_property_read_int16(
  * Example:
  *	See <mosquitto_property_read_byte>
  */
-libmosq_EXPORT const mosquitto_property *mosquitto_property_read_int32(
+libmosqcommon_EXPORT const mosquitto_property *mosquitto_property_read_int32(
 		const mosquitto_property *proplist,
 		int identifier,
 		uint32_t *value,
@@ -374,7 +374,7 @@ libmosq_EXPORT const mosquitto_property *mosquitto_property_read_int32(
  * Example:
  *	See <mosquitto_property_read_byte>
  */
-libmosq_EXPORT const mosquitto_property *mosquitto_property_read_varint(
+libmosqcommon_EXPORT const mosquitto_property *mosquitto_property_read_varint(
 		const mosquitto_property *proplist,
 		int identifier,
 		uint32_t *value,
@@ -402,7 +402,7 @@ libmosq_EXPORT const mosquitto_property *mosquitto_property_read_varint(
  * Example:
  *	See <mosquitto_property_read_byte>
  */
-libmosq_EXPORT const mosquitto_property *mosquitto_property_read_binary(
+libmosqcommon_EXPORT const mosquitto_property *mosquitto_property_read_binary(
 		const mosquitto_property *proplist,
 		int identifier,
 		void **value,
@@ -432,7 +432,7 @@ libmosq_EXPORT const mosquitto_property *mosquitto_property_read_binary(
  * Example:
  *	See <mosquitto_property_read_byte>
  */
-libmosq_EXPORT const mosquitto_property *mosquitto_property_read_string(
+libmosqcommon_EXPORT const mosquitto_property *mosquitto_property_read_string(
 		const mosquitto_property *proplist,
 		int identifier,
 		char **value,
@@ -464,7 +464,7 @@ libmosq_EXPORT const mosquitto_property *mosquitto_property_read_string(
  * Example:
  *	See <mosquitto_property_read_byte>
  */
-libmosq_EXPORT const mosquitto_property *mosquitto_property_read_string_pair(
+libmosqcommon_EXPORT const mosquitto_property *mosquitto_property_read_string_pair(
 		const mosquitto_property *proplist,
 		int identifier,
 		char **name,
@@ -483,7 +483,7 @@ libmosq_EXPORT const mosquitto_property *mosquitto_property_read_string_pair(
  *  A valid property type on success
  *  0 - on error
  */
-libmosq_EXPORT int mosquitto_property_type(const mosquitto_property *property);
+libmosqcommon_EXPORT int mosquitto_property_type(const mosquitto_property *property);
 
 
 /*
@@ -498,7 +498,7 @@ libmosq_EXPORT int mosquitto_property_type(const mosquitto_property *property);
  *  Byte value on success
  *  0 - on error (property is NULL, or not a byte)
  */
-libmosq_EXPORT uint8_t mosquitto_property_byte_value(const mosquitto_property *property);
+libmosqcommon_EXPORT uint8_t mosquitto_property_byte_value(const mosquitto_property *property);
 
 
 /*
@@ -513,7 +513,7 @@ libmosq_EXPORT uint8_t mosquitto_property_byte_value(const mosquitto_property *p
  *  Int16 value on success
  *  0 - on error (property is NULL, or not a int16)
  */
-libmosq_EXPORT uint16_t mosquitto_property_int16_value(const mosquitto_property *property);
+libmosqcommon_EXPORT uint16_t mosquitto_property_int16_value(const mosquitto_property *property);
 
 
 /*
@@ -528,7 +528,7 @@ libmosq_EXPORT uint16_t mosquitto_property_int16_value(const mosquitto_property 
  *  Int32 value on success
  *  0 - on error (property is NULL, or not a int32)
  */
-libmosq_EXPORT uint32_t mosquitto_property_int32_value(const mosquitto_property *property);
+libmosqcommon_EXPORT uint32_t mosquitto_property_int32_value(const mosquitto_property *property);
 
 
 /*
@@ -543,7 +543,7 @@ libmosq_EXPORT uint32_t mosquitto_property_int32_value(const mosquitto_property 
  *  Varint value on success
  *  0 - on error (property is NULL, or not a varint)
  */
-libmosq_EXPORT uint32_t mosquitto_property_varint_value(const mosquitto_property *property);
+libmosqcommon_EXPORT uint32_t mosquitto_property_varint_value(const mosquitto_property *property);
 
 
 /*
@@ -558,7 +558,7 @@ libmosq_EXPORT uint32_t mosquitto_property_varint_value(const mosquitto_property
  *  Binary value on success
  *  NULL - on error (property is NULL, or not a binary)
  */
-libmosq_EXPORT const void *mosquitto_property_binary_value(const mosquitto_property *property);
+libmosqcommon_EXPORT const void *mosquitto_property_binary_value(const mosquitto_property *property);
 
 
 /*
@@ -573,7 +573,7 @@ libmosq_EXPORT const void *mosquitto_property_binary_value(const mosquitto_prope
  *  Binary value length on success
  *  0 - on error (property is NULL, or not a binary)
  */
-libmosq_EXPORT uint16_t mosquitto_property_binary_value_length(const mosquitto_property *property);
+libmosqcommon_EXPORT uint16_t mosquitto_property_binary_value_length(const mosquitto_property *property);
 
 
 /*
@@ -588,7 +588,7 @@ libmosq_EXPORT uint16_t mosquitto_property_binary_value_length(const mosquitto_p
  *  String value on success
  *  NULL - on error (property is NULL, or not a string or string pair)
  */
-libmosq_EXPORT const char *mosquitto_property_string_value(const mosquitto_property *property);
+libmosqcommon_EXPORT const char *mosquitto_property_string_value(const mosquitto_property *property);
 
 
 /*
@@ -603,7 +603,7 @@ libmosq_EXPORT const char *mosquitto_property_string_value(const mosquitto_prope
  *  Value length on success
  *  0 - on error (property is NULL, or not a string or string pair)
  */
-libmosq_EXPORT uint16_t mosquitto_property_string_value_length(const mosquitto_property *property);
+libmosqcommon_EXPORT uint16_t mosquitto_property_string_value_length(const mosquitto_property *property);
 
 
 /*
@@ -618,7 +618,7 @@ libmosq_EXPORT uint16_t mosquitto_property_string_value_length(const mosquitto_p
  *  String name on success
  *  NULL - on error (property is NULL, or not a string pair)
  */
-libmosq_EXPORT const char *mosquitto_property_string_name(const mosquitto_property *property);
+libmosqcommon_EXPORT const char *mosquitto_property_string_name(const mosquitto_property *property);
 
 
 /*
@@ -633,7 +633,7 @@ libmosq_EXPORT const char *mosquitto_property_string_name(const mosquitto_proper
  *  Name length on success
  *  0 - on error (property is NULL, or not a string pair)
  */
-libmosq_EXPORT uint16_t mosquitto_property_string_name_length(const mosquitto_property *property);
+libmosqcommon_EXPORT uint16_t mosquitto_property_string_name_length(const mosquitto_property *property);
 
 
 /*
@@ -649,7 +649,7 @@ libmosq_EXPORT uint16_t mosquitto_property_string_name_length(const mosquitto_pr
  * > // Add properties
  * > mosquitto_property_free_all(&properties);
  */
-libmosq_EXPORT void mosquitto_property_free_all(mosquitto_property **properties);
+libmosqcommon_EXPORT void mosquitto_property_free_all(mosquitto_property **properties);
 
 /*
  * Function: mosquitto_property_copy_all
@@ -663,7 +663,7 @@ libmosq_EXPORT void mosquitto_property_free_all(mosquitto_property **properties)
  *    MOSQ_ERR_INVAL - if dest is NULL
  *    MOSQ_ERR_NOMEM - on out of memory (dest will be set to NULL)
  */
-libmosq_EXPORT int mosquitto_property_copy_all(mosquitto_property **dest, const mosquitto_property *src);
+libmosqcommon_EXPORT int mosquitto_property_copy_all(mosquitto_property **dest, const mosquitto_property *src);
 
 /*
  * Function: mosquitto_property_check_command
@@ -678,7 +678,7 @@ libmosq_EXPORT int mosquitto_property_copy_all(mosquitto_property **dest, const 
  *   MOSQ_ERR_SUCCESS - if the identifier is valid for command
  *   MOSQ_ERR_PROTOCOL - if the identifier is not valid for use with command.
  */
-libmosq_EXPORT int mosquitto_property_check_command(int command, int identifier);
+libmosqcommon_EXPORT int mosquitto_property_check_command(int command, int identifier);
 
 
 /*
@@ -701,7 +701,7 @@ libmosq_EXPORT int mosquitto_property_check_command(int command, int identifier)
  *	MOSQ_ERR_DUPLICATE_PROPERTY - if a property is duplicated where it is forbidden.
  *	MOSQ_ERR_PROTOCOL - if any property is invalid
  */
-libmosq_EXPORT int mosquitto_property_check_all(int command, const mosquitto_property *properties);
+libmosqcommon_EXPORT int mosquitto_property_check_all(int command, const mosquitto_property *properties);
 
 /*
  * Function: mosquitto_property_identifier_to_string
@@ -717,7 +717,7 @@ libmosq_EXPORT int mosquitto_property_check_all(int command, const mosquitto_pro
  *  A const string to the property name on success
  *  NULL on failure
  */
-libmosq_EXPORT const char *mosquitto_property_identifier_to_string(int identifier);
+libmosqcommon_EXPORT const char *mosquitto_property_identifier_to_string(int identifier);
 
 
 /* Function: mosquitto_string_to_property_info
@@ -742,13 +742,13 @@ libmosq_EXPORT const char *mosquitto_property_identifier_to_string(int identifie
  *	// type == MQTT_PROP_TYPE_STRING
  * (end)
  */
-libmosq_EXPORT int mosquitto_string_to_property_info(const char *propname, int *identifier, int *type);
+libmosqcommon_EXPORT int mosquitto_string_to_property_info(const char *propname, int *identifier, int *type);
 
 
-void mosquitto_property_free(mosquitto_property **property);
-unsigned int mosquitto_property_get_length(const mosquitto_property *property);
-unsigned int mosquitto_property_get_length_all(const mosquitto_property *property);
-unsigned int mosquitto_property_get_remaining_length(const mosquitto_property *props);
+libmosqcommon_EXPORT void mosquitto_property_free(mosquitto_property **property);
+libmosqcommon_EXPORT unsigned int mosquitto_property_get_length(const mosquitto_property *property);
+libmosqcommon_EXPORT unsigned int mosquitto_property_get_length_all(const mosquitto_property *property);
+libmosqcommon_EXPORT unsigned int mosquitto_property_get_remaining_length(const mosquitto_property *props);
 
 #ifdef __cplusplus
 }

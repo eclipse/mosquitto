@@ -41,7 +41,7 @@ extern "C" {
  *	MOSQ_ERR_SUCCESS -        on success
  * 	MOSQ_ERR_UNKNOWN -        if an error occurred
  */
-int mosquitto_getrandom(void *bytes, int count);
+libmosqcommon_EXPORT int mosquitto_getrandom(void *bytes, int count);
 
 #ifdef __cplusplus
 }

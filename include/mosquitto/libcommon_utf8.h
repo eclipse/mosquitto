@@ -41,7 +41,7 @@ extern "C" {
  *   MOSQ_ERR_INVAL -          if str is NULL or len<0 or len>65536
  *   MOSQ_ERR_MALFORMED_UTF8 - if str is not valid UTF-8
  */
-libmosq_EXPORT int mosquitto_validate_utf8(const char *str, int len);
+libmosqcommon_EXPORT int mosquitto_validate_utf8(const char *str, int len);
 
 #ifdef __cplusplus
 }

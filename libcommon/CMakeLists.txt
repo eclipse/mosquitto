@@ -11,9 +11,15 @@ set(C_SRC
 	utf8_common.c
 )
 
-add_library(libmosquitto_common OBJECT
-	${C_SRC}
-)
+if(WIN32)
+	add_library(libmosquitto_common SHARED
+		${C_SRC}
+	)
+else()
+	add_library(libmosquitto_common OBJECT
+		${C_SRC}
+	)
+endif()
 
 target_include_directories(libmosquitto_common
 	PUBLIC

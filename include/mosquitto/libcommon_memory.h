@@ -29,12 +29,6 @@ Contributors:
 extern "C" {
 #endif
 
-#if defined(WIN32) && defined(mosquitto_EXPORTS)
-#	define mosq_EXPORT  __declspec(dllexport)
-#else
-#	define mosq_EXPORT
-#endif
-
 /* =========================================================================
  *
  * Section: Memory allocation.
@@ -47,34 +41,34 @@ extern "C" {
 /*
  * Function: mosquitto_calloc
  */
-mosq_EXPORT void *mosquitto_calloc(size_t nmemb, size_t size);
+libmosqcommon_EXPORT void *mosquitto_calloc(size_t nmemb, size_t size);
 
 /*
  * Function: mosquitto_free
  */
-mosq_EXPORT void mosquitto_free(void *mem);
+libmosqcommon_EXPORT void mosquitto_free(void *mem);
 
 /*
  * Function: mosquitto_malloc
  */
-mosq_EXPORT void *mosquitto_malloc(size_t size);
+libmosqcommon_EXPORT void *mosquitto_malloc(size_t size);
 
 /*
  * Function: mosquitto_realloc
  */
-mosq_EXPORT void *mosquitto_realloc(void *ptr, size_t size);
+libmosqcommon_EXPORT void *mosquitto_realloc(void *ptr, size_t size);
 
 /*
  * Function: mosquitto_strdup
  */
-mosq_EXPORT char *mosquitto_strdup(const char *s);
+libmosqcommon_EXPORT char *mosquitto_strdup(const char *s);
 
 /*
  * Function: mosquitto_strndup
  */
-mosq_EXPORT char *mosquitto_strndup(const char *s, size_t n);
+libmosqcommon_EXPORT char *mosquitto_strndup(const char *s, size_t n);
 
-void mosquitto_memory_set_limit(size_t lim);
+libmosqcommon_EXPORT void mosquitto_memory_set_limit(size_t lim);
 
 #define mosquitto_FREE(A) do { mosquitto_free(A); (A) = NULL;} while(0)
 

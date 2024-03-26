@@ -28,8 +28,8 @@ Contributors:
 extern "C" {
 #endif
 
-int mosquitto_base64_encode(const unsigned char *in, size_t in_len, char **encoded);
-int mosquitto_base64_decode(const char *in, unsigned char **decoded, unsigned int *decoded_len);
+libmosqcommon_EXPORT int mosquitto_base64_encode(const unsigned char *in, size_t in_len, char **encoded);
+libmosqcommon_EXPORT int mosquitto_base64_decode(const char *in, unsigned char **decoded, unsigned int *decoded_len);
 
 #ifdef __cplusplus
 }

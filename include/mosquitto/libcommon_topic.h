@@ -82,7 +82,7 @@ extern "C" {
  * See Also:
  *	<mosquitto_sub_topic_tokens_free>
  */
-libmosq_EXPORT int mosquitto_sub_topic_tokenise(const char *subtopic, char ***topics, int *count);
+libmosqcommon_EXPORT int mosquitto_sub_topic_tokenise(const char *subtopic, char ***topics, int *count);
 
 /*
  * Function: mosquitto_sub_topic_tokens_free
@@ -100,7 +100,7 @@ libmosq_EXPORT int mosquitto_sub_topic_tokenise(const char *subtopic, char ***to
  * See Also:
  *	<mosquitto_sub_topic_tokenise>
  */
-libmosq_EXPORT int mosquitto_sub_topic_tokens_free(char ***topics, int count);
+libmosqcommon_EXPORT int mosquitto_sub_topic_tokens_free(char ***topics, int count);
 
 /*
  * Function: mosquitto_topic_matches_sub
@@ -122,7 +122,7 @@ libmosq_EXPORT int mosquitto_sub_topic_tokens_free(char ***topics, int count);
  *	MOSQ_ERR_SUCCESS - on success
  * 	MOSQ_ERR_INVAL -   if the input parameters were invalid.
  */
-libmosq_EXPORT int mosquitto_topic_matches_sub(const char *sub, const char *topic, bool *result);
+libmosqcommon_EXPORT int mosquitto_topic_matches_sub(const char *sub, const char *topic, bool *result);
 
 /*
  * Function: mosquitto_topic_matches_sub2
@@ -130,7 +130,7 @@ libmosq_EXPORT int mosquitto_topic_matches_sub(const char *sub, const char *topi
  * Identical to <mosquitto_topic_matches_sub>. The sublen and topiclen
  * parameters are *IGNORED*.
  */
-libmosq_EXPORT int mosquitto_topic_matches_sub2(const char *sub, size_t sublen, const char *topic, size_t topiclen, bool *result);
+libmosqcommon_EXPORT int mosquitto_topic_matches_sub2(const char *sub, size_t sublen, const char *topic, size_t topiclen, bool *result);
 
 
 /*
@@ -168,7 +168,7 @@ libmosq_EXPORT int mosquitto_topic_matches_sub2(const char *sub, size_t sublen, 
  *	MOSQ_ERR_SUCCESS - on success
  *	MOSQ_ERR_INVAL -   if the input parameters were invalid.
  */
-libmosq_EXPORT int mosquitto_topic_matches_sub_with_pattern(const char *sub, const char *topic, const char *clientid, const char *username, bool *result);
+libmosqcommon_EXPORT int mosquitto_topic_matches_sub_with_pattern(const char *sub, const char *topic, const char *clientid, const char *username, bool *result);
 
 
 /*
@@ -191,7 +191,7 @@ libmosq_EXPORT int mosquitto_topic_matches_sub_with_pattern(const char *sub, con
  *	MOSQ_ERR_SUCCESS - on success
  * 	MOSQ_ERR_INVAL -   if the input parameters were invalid.
  */
-libmosq_EXPORT int mosquitto_sub_matches_acl(const char *acl, const char *sub, bool *result);
+libmosqcommon_EXPORT int mosquitto_sub_matches_acl(const char *acl, const char *sub, bool *result);
 
 
 /*
@@ -230,7 +230,7 @@ libmosq_EXPORT int mosquitto_sub_matches_acl(const char *acl, const char *sub, b
  *	MOSQ_ERR_SUCCESS - on success
  *	MOSQ_ERR_INVAL -   if the input parameters were invalid.
  */
-libmosq_EXPORT int mosquitto_sub_matches_acl_with_pattern(const char *acl, const char *sub, const char *clientid, const char *username, bool *result);
+libmosqcommon_EXPORT int mosquitto_sub_matches_acl_with_pattern(const char *acl, const char *sub, const char *clientid, const char *username, bool *result);
 
 
 /*
@@ -256,7 +256,7 @@ libmosq_EXPORT int mosquitto_sub_matches_acl_with_pattern(const char *acl, const
  * See Also:
  *   <mosquitto_sub_topic_check>
  */
-libmosq_EXPORT int mosquitto_pub_topic_check(const char *topic);
+libmosqcommon_EXPORT int mosquitto_pub_topic_check(const char *topic);
 
 /*
  * Function: mosquitto_pub_topic_check2
@@ -282,7 +282,7 @@ libmosq_EXPORT int mosquitto_pub_topic_check(const char *topic);
  * See Also:
  *   <mosquitto_sub_topic_check>
  */
-libmosq_EXPORT int mosquitto_pub_topic_check2(const char *topic, size_t topiclen);
+libmosqcommon_EXPORT int mosquitto_pub_topic_check2(const char *topic, size_t topiclen);
 
 /*
  * Function: mosquitto_sub_topic_check
@@ -310,7 +310,7 @@ libmosq_EXPORT int mosquitto_pub_topic_check2(const char *topic, size_t topiclen
  * See Also:
  *   <mosquitto_sub_topic_check>
  */
-libmosq_EXPORT int mosquitto_sub_topic_check(const char *topic);
+libmosqcommon_EXPORT int mosquitto_sub_topic_check(const char *topic);
 
 /*
  * Function: mosquitto_sub_topic_check2
@@ -339,7 +339,7 @@ libmosq_EXPORT int mosquitto_sub_topic_check(const char *topic);
  * See Also:
  *   <mosquitto_sub_topic_check>
  */
-libmosq_EXPORT int mosquitto_sub_topic_check2(const char *topic, size_t topiclen);
+libmosqcommon_EXPORT int mosquitto_sub_topic_check2(const char *topic, size_t topiclen);
 
 #ifdef __cplusplus
 }

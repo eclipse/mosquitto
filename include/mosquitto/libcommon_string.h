@@ -41,7 +41,7 @@ extern "C" {
  * Returns:
  *	A constant string describing the error.
  */
-libmosq_EXPORT const char *mosquitto_strerror(int mosq_errno);
+libmosqcommon_EXPORT const char *mosquitto_strerror(int mosq_errno);
 
 /*
  * Function: mosquitto_connack_string
@@ -54,7 +54,7 @@ libmosq_EXPORT const char *mosquitto_strerror(int mosq_errno);
  * Returns:
  *	A constant string describing the result.
  */
-libmosq_EXPORT const char *mosquitto_connack_string(int connack_code);
+libmosqcommon_EXPORT const char *mosquitto_connack_string(int connack_code);
 
 /*
  * Function: mosquitto_reason_string
@@ -67,7 +67,7 @@ libmosq_EXPORT const char *mosquitto_connack_string(int connack_code);
  * Returns:
  *	A constant string describing the reason.
  */
-libmosq_EXPORT const char *mosquitto_reason_string(int reason_code);
+libmosqcommon_EXPORT const char *mosquitto_reason_string(int reason_code);
 
 /* Function: mosquitto_string_to_command
  *
@@ -88,7 +88,7 @@ libmosq_EXPORT const char *mosquitto_reason_string(int reason_code);
  *  // cmd == CMD_CONNECT
  * (end)
  */
-libmosq_EXPORT int mosquitto_string_to_command(const char *str, int *cmd);
+libmosqcommon_EXPORT int mosquitto_string_to_command(const char *str, int *cmd);
 
 #ifdef __cplusplus
 }
