@@ -9,6 +9,17 @@ set(C_SRC
 	time_common.c
 	topic_common.c
 	utf8_common.c
+
+	"${mosquitto_SOURCE_DIR}/include/mosquitto/libcommon.h"
+	"${mosquitto_SOURCE_DIR}/include/mosquitto/libcommon_base64.h"
+	"${mosquitto_SOURCE_DIR}/include/mosquitto/libcommon_file.h"
+	"${mosquitto_SOURCE_DIR}/include/mosquitto/libcommon_memory.h"
+	"${mosquitto_SOURCE_DIR}/include/mosquitto/libcommon_properties.h"
+	"${mosquitto_SOURCE_DIR}/include/mosquitto/libcommon_random.h"
+	"${mosquitto_SOURCE_DIR}/include/mosquitto/libcommon_string.h"
+	"${mosquitto_SOURCE_DIR}/include/mosquitto/libcommon_time.h"
+	"${mosquitto_SOURCE_DIR}/include/mosquitto/libcommon_topic.h"
+	"${mosquitto_SOURCE_DIR}/include/mosquitto/libcommon_utf8.h"
 )
 
 if(WIN32)

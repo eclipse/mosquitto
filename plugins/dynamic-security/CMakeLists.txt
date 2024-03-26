@@ -34,5 +34,11 @@ if(WITH_TLS)
 		OpenSSL::SSL
 	)
 
+	if(ARGON2_FOUND)
+		set(LINKLIST
+			"${LINKLIST}"
+			argon2
+		)
+	endif()
 	add_mosquitto_plugin("${PLUGIN_NAME}" "${SRCLIST}" "${INCLIST}" "${LINKLIST}")
 endif()

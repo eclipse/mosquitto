@@ -21,7 +21,13 @@ Contributors:
 #include <stdlib.h>
 #include <string.h>
 
-#include "memory_common.h"
+#include "mosquitto.h"
+
+#if defined(WITH_MEMORY_TRACKING) && defined(WITH_BROKER)
+#  if defined(__APPLE__) || defined(__FreeBSD__) || defined(__GLIBC__)
+#    define REAL_WITH_MEMORY_TRACKING
+#  endif
+#endif
 
 #ifdef REAL_WITH_MEMORY_TRACKING
 #  if defined(__APPLE__)

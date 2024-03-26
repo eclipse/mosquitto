@@ -26,7 +26,7 @@ Contributors:
 #  include <strings.h>
 #endif
 
-#include "mosquitto/mqtt_protocol.h"
+#include "mosquitto.h"
 #include "property_common.h"
 
 

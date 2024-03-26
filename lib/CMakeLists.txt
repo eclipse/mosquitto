@@ -53,7 +53,7 @@ if (WITH_THREADING AND WIN32)
 	list(APPEND C_SRC "../common/winthread_mosq.c" "../common/winthread_mosq.h")
 endif()
 
-set(LIBRARIES common-options libmosquitto_common)
+set(LIBRARIES common-options)
 
 if(WITH_TLS)
 	set (LIBRARIES ${LIBRARIES} OpenSSL::SSL)
@@ -122,6 +122,10 @@ if (WITH_THREADING AND NOT WIN32)
 	target_link_libraries(libmosquitto PRIVATE Threads::Threads)
 endif()
 
+target_link_libraries(libmosquitto
+	PUBLIC
+		libmosquitto_common
+)
 target_link_libraries(libmosquitto PRIVATE ${LIBRARIES})
 
 set_target_properties(libmosquitto PROPERTIES

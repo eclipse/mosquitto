@@ -37,6 +37,10 @@ if(WITH_TLS)
 	target_link_libraries(mosquitto_db_dump PRIVATE config-header OpenSSL::SSL)
 endif()
 
+if(WIN32)
+	target_link_libraries(mosquitto_db_dump PRIVATE ws2_32)
+endif()
+
 target_link_libraries(mosquitto_db_dump PRIVATE libmosquitto_common)
 
 install(TARGETS mosquitto_db_dump

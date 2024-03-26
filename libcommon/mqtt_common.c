@@ -20,7 +20,7 @@ Contributors:
 
 #include <stdint.h>
 
-#include "mosquitto/mqtt_protocol.h"
+#include "mosquitto.h"
 
 
 unsigned int mosquitto_varint_bytes(uint32_t word)

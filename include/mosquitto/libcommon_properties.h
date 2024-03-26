@@ -748,7 +748,8 @@ libmosqcommon_EXPORT int mosquitto_string_to_property_info(const char *propname,
 libmosqcommon_EXPORT void mosquitto_property_free(mosquitto_property **property);
 libmosqcommon_EXPORT unsigned int mosquitto_property_get_length(const mosquitto_property *property);
 libmosqcommon_EXPORT unsigned int mosquitto_property_get_length_all(const mosquitto_property *property);
-libmosqcommon_EXPORT unsigned int mosquitto_property_get_remaining_length(const mosquitto_property *props);
+libmosqcommon_EXPORT unsigned int mosquitto_property_get_remaining_length(const mosquitto_property* props);
+libmosqcommon_EXPORT unsigned int mosquitto_varint_bytes(uint32_t word);
 
 #ifdef __cplusplus
 }
