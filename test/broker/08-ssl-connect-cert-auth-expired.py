@@ -40,9 +40,12 @@ try:
     except ssl.SSLError as err:
         if err.errno == 1:
             rc = 0
+        elif err.errno == 8 and "EOF occurred" in err.strerror:
+            rc = 0
         else:
             broker.terminate()
             raise ValueError(err.errno)
+
 except mosq_test.TestError:
     pass
 finally:

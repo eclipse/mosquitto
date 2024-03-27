@@ -39,6 +39,8 @@ try:
     except ssl.SSLError as err:
         if err.errno == 1 and "certificate revoked" in err.strerror:
             rc = 0
+        elif err.errno == 8 and "EOF occurred" in err.strerror:
+            rc = 0
         else:
             broker.terminate()
             print(err.strerror)
