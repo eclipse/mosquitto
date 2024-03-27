@@ -5,6 +5,79 @@
 
 #include "mosquitto.h"
 
+struct prop_id{
+	const char *name;
+	int proptype;
+};
+
+static void TEST_string_to_property_info(void)
+{
+	const struct prop_id checks[50] = {
+		{ NULL, 0 },
+		{ "payload-format-indicator", MQTT_PROP_TYPE_BYTE },
+		{ "message-expiry-interval", MQTT_PROP_TYPE_INT32 },
+		{ "content-type", MQTT_PROP_TYPE_STRING },
+		{ NULL, 0 },
+		{ NULL, 0 },
+		{ NULL, 0 },
+		{ NULL, 0 },
+		{ "response-topic", MQTT_PROP_TYPE_STRING },
+		{ "correlation-data", MQTT_PROP_TYPE_BINARY },
+		{ NULL, 0 },
+		{ "subscription-identifier", MQTT_PROP_TYPE_VARINT },
+		{ NULL, 0 },
+		{ NULL, 0 },
+		{ NULL, 0 },
+		{ NULL, 0 },
+		{ NULL, 0 },
+		{ "session-expiry-interval", MQTT_PROP_TYPE_INT32 },
+		{ "assigned-client-identifier", MQTT_PROP_TYPE_STRING },
+		{ "server-keep-alive", MQTT_PROP_TYPE_INT16 },
+		{ NULL, 0 },
+		{ "authentication-method", MQTT_PROP_TYPE_STRING },
+		{ "authentication-data", MQTT_PROP_TYPE_BINARY },
+		{ "request-problem-information", MQTT_PROP_TYPE_BYTE },
+		{ "will-delay-interval", MQTT_PROP_TYPE_INT32 },
+		{ "request-response-information", MQTT_PROP_TYPE_BYTE },
+		{ "response-information", MQTT_PROP_TYPE_STRING },
+		{ NULL, 0 },
+		{ "server-reference", MQTT_PROP_TYPE_STRING },
+		{ NULL, 0 },
+		{ NULL, 0 },
+		{ "reason-string", MQTT_PROP_TYPE_STRING },
+		{ NULL, 0 },
+		{ "receive-maximum", MQTT_PROP_TYPE_INT16 },
+		{ "topic-alias-maximum", MQTT_PROP_TYPE_INT16 },
+		{ "topic-alias", MQTT_PROP_TYPE_INT16 },
+		{ "maximum-qos", MQTT_PROP_TYPE_BYTE },
+		{ "retain-available", MQTT_PROP_TYPE_BYTE },
+		{ "user-property", MQTT_PROP_TYPE_STRING_PAIR },
+		{ "maximum-packet-size", MQTT_PROP_TYPE_INT32 },
+		{ "wildcard-subscription-available", MQTT_PROP_TYPE_BYTE },
+		{ "subscription-identifier-available", MQTT_PROP_TYPE_BYTE },
+		{ "shared-subscription-available", MQTT_PROP_TYPE_BYTE },
+		{ NULL, 0 },
+		{ NULL, 0 },
+		{ NULL, 0 },
+		{ NULL, 0 },
+		{ NULL, 0 },
+		{ NULL, 0 },
+		{ NULL, 0 },
+	};
+
+	for(int i=0; i<50; i++){
+		int rc, identifier, proptype;
+		rc = mosquitto_string_to_property_info(checks[i].name, &identifier, &proptype);
+		if(checks[i].name == NULL){
+			CU_ASSERT_EQUAL(rc, MOSQ_ERR_INVAL);
+		}else{
+			CU_ASSERT_EQUAL(rc, MOSQ_ERR_SUCCESS);
+			CU_ASSERT_EQUAL(identifier, i);
+			CU_ASSERT_EQUAL(proptype, checks[i].proptype);
+		}
+	}
+}
+
 static void TEST_mosquitto_strerror(void)
 {
 	const char *str;
@@ -193,6 +266,7 @@ int init_strings_tests(void)
 			|| !CU_add_test(test_suite, "mosquitto_connack_string", TEST_mosquitto_connack_string)
 			|| !CU_add_test(test_suite, "mosquitto_reason_string", TEST_mosquitto_reason_string)
 			|| !CU_add_test(test_suite, "mosquitto_string_to_command", TEST_mosquitto_string_to_command)
+			|| !CU_add_test(test_suite, "mosquitto_string_to_property_info", TEST_string_to_property_info)
 			){
 
 		printf("Error adding Strings CUnit tests.\n");
