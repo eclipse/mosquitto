@@ -17,7 +17,8 @@ RUN set -x && \
         gnupg \
         linux-headers \
         openssl-dev \
-        util-linux-dev && \
+        util-linux-dev \
+        tzdata && \
     wget https://github.com/warmcat/libwebsockets/archive/v${LWS_VERSION}.tar.gz -O /tmp/lws.tar.gz && \
     echo "$LWS_SHA256  /tmp/lws.tar.gz" | sha256sum -c - && \
     mkdir -p /build/lws && \
