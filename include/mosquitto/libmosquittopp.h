@@ -44,6 +44,8 @@ mosqpp_EXPORT int lib_init();
 mosqpp_EXPORT int lib_cleanup();
 mosqpp_EXPORT int topic_matches_sub(const char *sub, const char *topic, bool *result);
 mosqpp_EXPORT int topic_matches_sub_with_pattern(const char *sub, const char *topic, const char *clientid, const char *username, bool *result);
+mosqpp_EXPORT int pub_topic_check(const char *topic);
+mosqpp_EXPORT int sub_topic_check(const char *topic);
 mosqpp_EXPORT int sub_matches_acl(const char *acl, const char *sub, bool *result);
 mosqpp_EXPORT int sub_matches_acl_with_pattern(const char *acl, const char *sub, const char *clientid, const char *username, bool *result);
 mosqpp_EXPORT int validate_utf8(const char *str, int len);
@@ -123,6 +125,7 @@ class mosqpp_EXPORT mosquittopp {
 		int tls_opts_set(int cert_reqs, const char *tls_version=NULL, const char *ciphers=NULL);
 		int tls_insecure_set(bool value);
 		int tls_psk_set(const char *psk, const char *identity, const char *ciphers=NULL);
+		void *ssl_get();
 		int opts_set(enum mosq_opt_t option, void *value);
 		int int_option(enum mosq_opt_t option, int value);
 		int string_option(enum mosq_opt_t option, const char *value);
