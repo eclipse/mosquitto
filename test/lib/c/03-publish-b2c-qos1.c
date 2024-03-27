@@ -4,6 +4,8 @@
 #include <string.h>
 #include <mosquitto.h>
 
+volatile bool done = false;
+
 static void on_connect(struct mosquitto *mosq, void *obj, int rc)
 {
 	(void)mosq;
@@ -44,7 +46,7 @@ static void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto
 		exit(1);
 	}
 
-	exit(0);
+	done = true;
 }
 
 int main(int argc, char *argv[])
@@ -70,11 +72,12 @@ int main(int argc, char *argv[])
 	rc = mosquitto_connect(mosq, "localhost", port, 60);
 	if(rc != MOSQ_ERR_SUCCESS) return rc;
 
-	while(1){
+	while(!done){
 		mosquitto_loop(mosq, 300, 1);
 	}
 	mosquitto_destroy(mosq);
 
 	mosquitto_lib_cleanup();
-	return 1;
+
+	return 0;
 }

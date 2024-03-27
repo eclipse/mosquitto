@@ -75,6 +75,11 @@ int main(int argc, char *argv[])
 		mosq->loop();
 	}
 
+	/* Drain the PUBREL and PUBCOMP messages. */
+	for(int i = 0; i < 2; i++){
+		mosq->loop();
+	}
+
 	delete mosq;
 	mosqpp::lib_cleanup();
 

@@ -21,8 +21,10 @@ def do_test(conn, data):
     mosq_test.do_receive_send(conn, connect_packet, connack_packet, "connect")
 
     conn.send(publish_packet)
-    mosq_test.expect_packet(conn, "puback", puback_packet)
+    # Application sends the "ok" publish within the callback.
     mosq_test.expect_packet(conn, "ok", ok_packet)
+    # After the callback exits, the puback is sent.
+    mosq_test.expect_packet(conn, "puback", puback_packet)
 
     conn.close()
 
