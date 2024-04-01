@@ -26,7 +26,7 @@ endif
 	$(INSTALL) mosquittopp.h "${DESTDIR}${incdir}/mosquittopp.h"
 	$(INSTALL) -d "${DESTDIR}${libdir}/pkgconfig/"
 	$(INSTALL) -m644 ../../libmosquittopp.pc.in "${DESTDIR}${libdir}/pkgconfig/libmosquittopp.pc"
-	sed ${SEDINPLACE} -e "s#@CMAKE_INSTALL_PREFIX@#${prefix}#" -e "s#@VERSION@#${VERSION}#" "${DESTDIR}${libdir}/pkgconfig/libmosquittopp.pc"
+	sed ${SEDINPLACE} -e "s#@CMAKE_INSTALL_PREFIX@#${prefix}#" -e "s#@CMAKE_INSTALL_LIBDIR@#lib${LIB_SUFFIX}#" -e "s#@VERSION@#${VERSION}#" "${DESTDIR}${libdir}/pkgconfig/libmosquittopp.pc"
 
 uninstall :
 	-rm -f "${DESTDIR}${libdir}/libmosquittopp.so.${SOVERSION}"
