@@ -13,6 +13,7 @@ DISTFILES= \
 	include/ \
 	installer/ \
 	lib/ \
+	libcommon/ \
 	logo/ \
 	make/ \
 	man/ \
