@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "mosquitto.fullname" . }}
+  labels: {{- include "mosquitto.labels.standard" . | nindent 4 }}
+    {{- with .Values.mosquitto.common.labels }}
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
+    {{- with .Values.mosquitto.configMap.labels }}
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
+  {{- if or .Values.mosquitto.common.annotations .Values.mosquitto.configMap.annotations }}
+  annotations:
+    {{- with .Values.mosquitto.common.annotations }}
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
+    {{- with .Values.mosquitto.configMap.annotations }}
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
+  {{- end }}
+data:
+  mosquitto.conf: |
+    log_dest stdout
+    {{ .Values.mosquitto.configFile }}
+    {{- if .Values.mosquitto.authentication.passwordFile }}
+    password_file {{ required ".Values.mosquitto.authentication.passwordFilePath is required!" .Values.mosquitto.authentication.passwordFilePath | quote }}
+    {{- end }}
+    {{- if .Values.mosquitto.authorization.aclFile }}
+    acl_file {{ required ".Values.mosquitto.authorization.aclFilePath is required!" .Values.mosquitto.authorization.aclFilePath | quote }}
+    {{- end }}
+    {{- if .Values.mosquitto.persistence.enabled }}
+    persistence true
+    persistence_location {{ required ".Values.mosquitto.persistence.location is required!" .Values.mosquitto.persistence.location }}
+    {{- end }}
+    listener {{ required ".Values.mosquitto.ports.mqtt is required!" .Values.mosquitto.ports.mqtt.containerPort }}
+    {{- if .Values.mosquitto.ports.websocket.enabled }}
+    listener {{ required ".Values.mosquitto.ports.websocket.containerPort is required!" .Values.mosquitto.ports.websocket.containerPort }}
+    protocol websockets
+    {{- end }}
+    {{- if .Values.mosquitto.ports.mqtts.enabled }}
+    listener {{ required ".Values.mosquitto.ports.mqtts.containerPort is required!" .Values.mosquitto.ports.mqtts.containerPort }}
+    cafile /etc/ssl/certs/ca-certificates.crt
+    keyfile {{ required ".Values.mosquitto.certificateLocation is required!" .Values.mosquitto.certificateLocation }}/tls.key
+    certfile {{ required ".Values.mosquitto.certificateLocation is required!" .Values.mosquitto.certificateLocation }}/tls.crt
+    {{- end }}
