@@ -34,11 +34,7 @@ Contributors:
 #include <stdlib.h>
 
 #if defined(WITH_THREADING) && !defined(WITH_BROKER)
-#  ifdef WIN32
-#    include "winthread_mosq.h"
-#  else
-#    include <pthread.h>
-#  endif
+#  include <pthread.h>
 #else
 #  include <dummypthread.h>
 #endif

@@ -49,10 +49,6 @@ set(C_SRC
 	util_mosq.c util_mosq.h
 	will_mosq.c will_mosq.h)
 
-if (WITH_THREADING AND WIN32)
-	list(APPEND C_SRC "../common/winthread_mosq.c" "../common/winthread_mosq.h")
-endif()
-
 set(LIBRARIES common-options)
 
 if(WITH_TLS)
@@ -115,11 +111,15 @@ if(WITH_BUNDLED_DEPS)
 	)
 endif()
 
-if (WITH_THREADING AND NOT WIN32)
-	set(THREADS_PREFER_PTHREAD_FLAG ON)
-	find_package(Threads REQUIRED)
+if(WITH_THREADING)
+	if(WIN32)
+		 target_link_libraries(libmosquitto PRIVATE PThreads4W::PThreads4W)
+	else()
+		set(THREADS_PREFER_PTHREAD_FLAG ON)
+		find_package(Threads REQUIRED)
 
-	target_link_libraries(libmosquitto PRIVATE Threads::Threads)
+		target_link_libraries(libmosquitto PRIVATE Threads::Threads)
+	endif()
 endif()
 
 target_link_libraries(libmosquitto

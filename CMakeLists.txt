@@ -77,6 +77,9 @@ option(WITH_PIC "Build the static library with PIC (Position Independent Code) e
 option(WITH_THREADING "Include threading support?" ON)
 if(WITH_THREADING)
 	add_definitions("-DWITH_THREADING")
+	if(WIN32)
+		find_package(Pthreads4W REQUIRED)
+	endif()
 endif()
 
 option(WITH_DLT "Include DLT support?" OFF)
