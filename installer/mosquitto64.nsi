@@ -59,11 +59,14 @@ Section "Files" SecInstall
 	File "..\README.md"
 	File "..\README-windows.txt"
 	File "..\README-letsencrypt.md"
-	;File "C:\pthreads\Pre-built.2\dll\x64\pthreadVC2.dll"
-	File "C:\OpenSSL-Win64\bin\libssl-1_1-x64.dll"
-	File "C:\OpenSSL-Win64\bin\libcrypto-1_1-x64.dll"
+	File "..\SECURITY.md"
 	File "..\edl-v10"
 	File "..\epl-v20"
+
+	File "..\build64\vcpkg_installed\x64-windows-release\bin\cjson.dll"
+	File "..\build64\vcpkg_installed\x64-windows-release\bin\libcrypto-3-x64.dll"
+	File "..\build64\vcpkg_installed\x64-windows-release\bin\libssl-3-x64.dll"
+	File "..\build64\vcpkg_installed\x64-windows-release\bin\pthreadVC3.dll"
 
 	SetOutPath "$INSTDIR\devel"
 	File "..\build64\lib\Release\mosquitto.lib"
@@ -88,42 +91,51 @@ Section "Files" SecInstall
 	SendMessage ${HWND_BROADCAST} ${WM_WININICHANGE} 0 "STR:Environment" /TIMEOUT=5000
 SectionEnd
 
+Section "Visual Studio Runtime"
+  SetOutPath "$INSTDIR"
+  File "VC_redist.x64.exe"
+  ExecWait '"$INSTDIR\VC_redist.x64.exe" /quiet /norestart'
+  Delete "$INSTDIR\VC_redist.x64.exe"
+SectionEnd
+
 Section "Service" SecService
 	ExecWait '"$INSTDIR\mosquitto.exe" install'
 SectionEnd
 
 Section "Uninstall"
 	ExecWait '"$INSTDIR\mosquitto.exe" uninstall'
+	Delete "$INSTDIR\mosquitto.dll"
 	Delete "$INSTDIR\mosquitto.exe"
 	Delete "$INSTDIR\mosquitto_ctrl.exe"
 	Delete "$INSTDIR\mosquitto_passwd.exe"
 	Delete "$INSTDIR\mosquitto_pub.exe"
-	Delete "$INSTDIR\mosquitto_sub.exe"
 	Delete "$INSTDIR\mosquitto_rr.exe"
-	Delete "$INSTDIR\mosquitto.dll"
+	Delete "$INSTDIR\mosquitto_sub.exe"
 	Delete "$INSTDIR\mosquittopp.dll"
 	Delete "$INSTDIR\mosquitto_dynamic_security.dll"
 	Delete "$INSTDIR\aclfile.example"
 	Delete "$INSTDIR\ChangeLog.txt"
 	Delete "$INSTDIR\mosquitto.conf"
 	Delete "$INSTDIR\pwfile.example"
+	Delete "$INSTDIR\NOTICE.md"
 	Delete "$INSTDIR\README.md"
 	Delete "$INSTDIR\README-windows.txt"
 	Delete "$INSTDIR\README-letsencrypt.md"
-	;Delete "$INSTDIR\pthreadVC2.dll"
-	Delete "$INSTDIR\libssl-1_1-x64.dll"
-	Delete "$INSTDIR\libcrypto-1_1-x64.dll"
+	Delete "$INSTDIR\SECURITY.md"
 	Delete "$INSTDIR\edl-v10"
 	Delete "$INSTDIR\epl-v20"
 
+	Delete "$INSTDIR\cjson.dll"
+	Delete "$INSTDIR\libcrypto-3-x64.dll"
+	Delete "$INSTDIR\libssl-3-x64.dll"
+	Delete "$INSTDIR\pthreadVC3.dll"
+
 	Delete "$INSTDIR\devel\mosquitto.h"
-	Delete "$INSTDIR\devel\mosquitto.lib"
 	Delete "$INSTDIR\devel\mosquitto_broker.h"
 	Delete "$INSTDIR\devel\mosquitto_plugin.h"
-	Delete "$INSTDIR\devel\mosquitto_plugin.h"
 	Delete "$INSTDIR\devel\mosquittopp.h"
-	Delete "$INSTDIR\devel\mosquittopp.lib"
 	Delete "$INSTDIR\devel\mqtt_protocol.h"
+	RMDir "$INSTDIR\devel\mosquitto"
 	RMDir "$INSTDIR\devel"
 
 	Delete "$INSTDIR\Uninstall.exe"
@@ -141,4 +153,3 @@ LangString DESC_SecService ${LANG_ENGLISH} "Install mosquitto as a Windows servi
 	!insertmacro MUI_DESCRIPTION_TEXT ${SecInstall} $(DESC_SecInstall)
 	!insertmacro MUI_DESCRIPTION_TEXT ${SecService} $(DESC_SecService)
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
-

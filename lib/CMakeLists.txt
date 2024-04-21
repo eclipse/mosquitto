@@ -5,8 +5,8 @@ endif (WITH_LIB_CPP)
 
 include_directories(${mosquitto_SOURCE_DIR} ${mosquitto_SOURCE_DIR}/lib
 			${mosquitto_SOURCE_DIR}/include
-			${STDBOOL_H_PATH} ${STDINT_H_PATH}
-			${OPENSSL_INCLUDE_DIR} ${PTHREAD_INCLUDE_DIR})
+			${STDBOOL_H_PATH} ${STDINT_H_PATH})
+
 link_directories(${mosquitto_SOURCE_DIR}/lib)
 
 if (WITH_BUNDLED_DEPS)
@@ -59,7 +59,7 @@ set(C_SRC
 	util_mosq.c util_topic.c util_mosq.h
 	will_mosq.c will_mosq.h)
 
-set (LIBRARIES ${OPENSSL_LIBRARIES} ${PTHREAD_LIBRARIES})
+set (LIBRARIES ${OPENSSL_LIBRARIES})
 
 if (UNIX AND NOT APPLE AND NOT ANDROID)
 	find_library(LIBRT rt)
@@ -88,7 +88,18 @@ set_target_properties(libmosquitto PROPERTIES
 	POSITION_INDEPENDENT_CODE 1
 )
 
-target_link_libraries(libmosquitto ${LIBRARIES})
+target_link_libraries(libmosquitto PRIVATE ${LIBRARIES})
+
+if (WITH_THREADING)
+	if(WIN32)
+		 target_link_libraries(libmosquitto PRIVATE PThreads4W::PThreads4W)
+	else()
+		set(THREADS_PREFER_PTHREAD_FLAG ON)
+		find_package(Threads REQUIRED)
+
+		target_link_libraries(libmosquitto PRIVATE Threads::Threads)
+	endif()
+endif()
 
 set_target_properties(libmosquitto PROPERTIES
 	OUTPUT_NAME mosquitto

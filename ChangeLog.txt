@@ -5,6 +5,9 @@ Broker:
 - Fix assert failure when loading a persistence file that contains
   subscriptions with no client id.
 
+Build:
+- Thread support is re-enabled on Windows.
+
 
 2.0.18 - 2023-09-18
 ===================

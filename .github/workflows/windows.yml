@@ -3,66 +3,38 @@ name: Windows build
 on:
   workflow_dispatch:
   push:
-    branches: [ "master", "fixes" ]
+    branches: [ "master", "fixes", "develop" ]
     tags: [ "v[0-9]+.*" ]
   pull_request:
-    branches: [ "master", "fixes" ]
+    branches: [ "master", "fixes", "develop" ]
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
 
 jobs:
-
-  cjson:
-    runs-on: windows-2022
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          repository: DaveGamble/cJSON
-          ref: v1.7.15
-
-      - name: Configure CMake cJSON
-        run: cmake -B ${{github.workspace}}/build64 -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DENABLE_CJSON_TEST=OFF -DBUILD_SHARED_LIBS=OFF -DBUILD_SHARED_AND_STATIC_LIBS=OFF -DCJSON_BUILD_SHARED_LIBS=OFF -DCJSON_OVERRIDE_BUILD_SHARED_LIBS=OFF -DCMAKE_GENERATOR_PLATFORM=x64
-
-      - name: Build cJSON
-        run: cmake --build ${{github.workspace}}/build64 --config ${{env.BUILD_TYPE}}
-
-      - name: Install cJSON
-        run: cmake --install ${{github.workspace}}/build64 --config ${{env.BUILD_TYPE}}
-
-      - name: Upload cJSON
-        uses: actions/upload-artifact@v3
-        with:
-          name: cjson-bin
-          path: C:\Program Files\cJSON
-
   mosquitto:
     runs-on: windows-2022
-    needs:
-      - cjson
-    env:
-      CJSON_DIR: C:\Program Files\cJSON
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: install openssl
-        run: choco install openssl
 
-      - name: Download cJSON
-        uses: actions/download-artifact@v3
+      - name: vcpkg build
+        uses: johnwason/vcpkg-action@v6
+        id: vcpkg
         with:
-          name: cjson-bin
-          path: C:\Program Files\cJSON
+          manifest-dir: ${{ github.workspace }}
+          triplet: x64-windows-release
+          token: ${{ github.token }}
+          github-binarycache: true
 
       - name: Configure CMake
-        run: cmake -B ${{github.workspace}}/build64 -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DWITH_TESTS=OFF -DCMAKE_GENERATOR_PLATFORM=x64 -DCJSON_INCLUDE_DIR="C:/Program Files/cJSON/include" -DCJSON_LIBRARY="C:/Program Files/cJSON/lib/cjson.lib"
-
+        run: cmake -B ${{github.workspace}}/build64 -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DWITH_TESTS=OFF -DCMAKE_GENERATOR_PLATFORM=x64 -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-release -DVCPKG_MANIFEST_MODE=ON
       - name: Build
         run: cmake --build ${{github.workspace}}/build64 --config ${{env.BUILD_TYPE}}
 
-      - uses: suisei-cn/actions-download-file@v1.0.1
+      - uses: suisei-cn/actions-download-file@v1.6.0
         id: vcredist
         name: Download VC redistributable
         with:
@@ -70,12 +42,12 @@ jobs:
           target: ${{github.workspace}}/installer/
 
       - name: Installer
-        uses: joncloud/makensis-action@v3.7
+        uses: joncloud/makensis-action@v4
         with:
-          script-file: ${{github.workspace}}/installer/mosquitto.nsi
+          script-file: ${{github.workspace}}/installer/mosquitto64.nsi
 
       - name: Upload installer to artifacts
-        uses: actions/upload-artifact/@v2
+        uses: actions/upload-artifact@v4
         with:
           name: installer
           path: ${{ github.workspace }}/installer/mosquitto*.exe
