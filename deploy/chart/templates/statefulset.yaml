@@ -126,13 +126,6 @@ spec:
           secret:
             secretName: {{ printf "%s-certs" (include "mosquitto.fullname" .) }}
         {{- end }}
-        - name: data
-          {{- if .Values.mosquitto.persistence.enabled }}
-          persistentVolumeClaim:
-            claimName: {{ include "mosquitto.fullname" . }}
-          {{- else }}
-          emptyDir: {}
-          {{- end }}
         {{- if and .Values.mosquitto.authentication.passwordFile }}
         - name: passwordFile
           secret:
@@ -145,4 +138,40 @@ spec:
         {{- end }}
         {{- with .Values.mosquitto.pod.volumes }}
         {{- toYaml . | trim | nindent 8 }}
+        {{- end }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels: {{- include "mosquitto.labels.standard" . | nindent 10 }}
+          {{- with .Values.mosquitto.common.labels }}
+          {{- toYaml . | trim | nindent 10 }}
+          {{- end }}
+          {{- with .Values.mosquitto.persistentVolumeClaim.labels }}
+          {{- toYaml . | trim | nindent 10 }}
+          {{- end }}
+        {{- if or .Values.mosquitto.common.annotations .Values.mosquitto.persistentVolumeClaim.annotations }}
+        annotations:
+          {{- with .Values.mosquitto.common.annotations }}
+          {{- toYaml . | trim | nindent 10 }}
+          {{- end }}
+          {{- with .Values.mosquitto.persistentVolumeClaim.annotations }}
+          {{- toYaml . | trim | nindent 10 }}
+          {{- end }}
+        {{- end }}
+      spec:
+        {{- with .Values.mosquitto.persistentVolumeClaim.accessModes }}
+        accessModes:
+          {{- range . }}
+          - {{ . }}
+          {{- end }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ required ".Values.mosquitto.persistence.size is required!" .Values.mosquitto.persistence.size }}
+        {{- with .Values.mosquitto.persistentVolumeClaim.storageClassName }}
+        {{- if eq "-" . }}
+        storageClassName: ""
+        {{- else }}
+        storageClassName: {{ . }}
+        {{- end }}
         {{- end }}
