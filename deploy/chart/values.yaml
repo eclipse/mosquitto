@@ -232,6 +232,18 @@ mosquitto:
     accessModes:
       - ReadWriteOnce
 
+    ## Existing PVC volume name
+    ##
+    existingVolume:
+
+    ## PVC match labels
+    ##
+    matchLabels: {}
+
+    ## PVC match expressions
+    ##
+    matchExpressions: {}
+
     ## Persistent Volume storage class.
     ## If set to "-", the storageClassName will be set to "", which disables dynamic provisioning
     ## If storage class is not set, no storageClassName spec is set, choosing the default provisioner.
