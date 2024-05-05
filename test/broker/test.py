@@ -264,6 +264,23 @@ tests = [
 
     (1, './20-sparkplug-compliance.py'),
     (1, './20-sparkplug-aware.py'),
+
+    (1, './21-proxy-v2-bad-config.py'),
+    (1, './21-proxy-v2-bad-header.py'),
+    (1, './21-proxy-v2-local.py'),
+    (1, './21-proxy-v2-ipv4.py'),
+    (1, './21-proxy-v2-ipv6.py'),
+    (1, './21-proxy-v2-unix.py'),
+    (1, './21-proxy-v2-websockets.py'),
+    (1, './21-proxy-v2-long-tlv.py'),
+    (1, './21-proxy-v2-ssl-require-cert-failure.py'),
+    (1, './21-proxy-v2-ssl-require-cert-success.py'),
+    (1, './21-proxy-v2-ssl-common-name-failure.py'),
+    (1, './21-proxy-v2-ssl-common-name-success.py'),
+    (1, './21-proxy-v2-lost-connection.py'),
+    (1, './21-proxy-v2-ssl-cipher.py'),
+    (1, './21-proxy-v2-ssl-require-tls-failure.py'),
+    (1, './21-proxy-v2-ssl-require-tls-success.py'),
 ]
 
 ptest.run_tests(tests)

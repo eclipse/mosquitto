@@ -56,7 +56,7 @@ void mosquitto_property_free(mosquitto_property **property)
 			break;
 	}
 
-	free(*property);
+	mosquitto_free(*property);
 	*property = NULL;
 }
 
@@ -819,7 +819,7 @@ BROKER_EXPORT const mosquitto_property *mosquitto_property_read_binary(const mos
 	if(value){
 		*len = p->value.bin.len;
 		if(p->value.bin.len){
-			*value = calloc(1, *len + 1U);
+			*value = mosquitto_calloc(1, *len + 1U);
 			if(!(*value)) return NULL;
 
 			memcpy(*value, p->value.bin.v, *len);
@@ -852,7 +852,7 @@ BROKER_EXPORT const mosquitto_property *mosquitto_property_read_string(const mos
 
 	if(value){
 		if(p->value.s.len){
-			*value = calloc(1, (size_t)p->value.s.len+1);
+			*value = mosquitto_calloc(1, (size_t)p->value.s.len+1);
 			if(!(*value)) return NULL;
 
 			memcpy(*value, p->value.s.v, p->value.s.len);
@@ -879,7 +879,7 @@ BROKER_EXPORT const mosquitto_property *mosquitto_property_read_string_pair(cons
 
 	if(name){
 		if(p->name.len){
-			*name = calloc(1, (size_t)p->name.len+1);
+			*name = mosquitto_calloc(1, (size_t)p->name.len+1);
 			if(!(*name)) return NULL;
 			memcpy(*name, p->name.v, p->name.len);
 		}else{
@@ -889,10 +889,10 @@ BROKER_EXPORT const mosquitto_property *mosquitto_property_read_string_pair(cons
 
 	if(value){
 		if(p->value.s.len){
-			*value = calloc(1, (size_t)p->value.s.len+1);
+			*value = mosquitto_calloc(1, (size_t)p->value.s.len+1);
 			if(!(*value)){
 				if(name){
-					free(*name);
+					mosquitto_free(*name);
 					*name = NULL;
 				}
 				return NULL;
@@ -944,7 +944,7 @@ BROKER_EXPORT int mosquitto_property_copy_all(mosquitto_property **dest, const m
 	*dest = NULL;
 
 	while(src){
-		pnew = calloc(1, sizeof(mosquitto_property));
+		pnew = mosquitto_calloc(1, sizeof(mosquitto_property));
 		if(!pnew){
 			mosquitto_property_free_all(dest);
 			return MOSQ_ERR_NOMEM;
@@ -978,7 +978,7 @@ BROKER_EXPORT int mosquitto_property_copy_all(mosquitto_property **dest, const m
 
 			case MQTT_PROP_TYPE_STRING:
 				pnew->value.s.len = src->value.s.len;
-				pnew->value.s.v = src->value.s.v ? strdup(src->value.s.v) : (char*)calloc(1,1);
+				pnew->value.s.v = src->value.s.v ? mosquitto_strdup(src->value.s.v) : (char*)mosquitto_calloc(1,1);
 				if(!pnew->value.s.v){
 					mosquitto_property_free_all(dest);
 					return MOSQ_ERR_NOMEM;
@@ -988,7 +988,7 @@ BROKER_EXPORT int mosquitto_property_copy_all(mosquitto_property **dest, const m
 			case MQTT_PROP_TYPE_BINARY:
 				pnew->value.bin.len = src->value.bin.len;
 				if(src->value.bin.len){
-					pnew->value.bin.v = malloc(pnew->value.bin.len);
+					pnew->value.bin.v = mosquitto_malloc(pnew->value.bin.len);
 					if(!pnew->value.bin.v){
 						mosquitto_property_free_all(dest);
 						return MOSQ_ERR_NOMEM;
@@ -999,14 +999,14 @@ BROKER_EXPORT int mosquitto_property_copy_all(mosquitto_property **dest, const m
 
 			case MQTT_PROP_TYPE_STRING_PAIR:
 				pnew->value.s.len = src->value.s.len;
-				pnew->value.s.v = src->value.s.v ? strdup(src->value.s.v) : (char*)calloc(1,1);
+				pnew->value.s.v = src->value.s.v ? mosquitto_strdup(src->value.s.v) : (char*)mosquitto_calloc(1,1);
 				if(!pnew->value.s.v){
 					mosquitto_property_free_all(dest);
 					return MOSQ_ERR_NOMEM;
 				}
 
 				pnew->name.len = src->name.len;
-				pnew->name.v = src->name.v ? strdup(src->name.v) : (char*)calloc(1,1);
+				pnew->name.v = src->name.v ? mosquitto_strdup(src->name.v) : (char*)mosquitto_calloc(1,1);
 				if(!pnew->name.v){
 					mosquitto_property_free_all(dest);
 					return MOSQ_ERR_NOMEM;

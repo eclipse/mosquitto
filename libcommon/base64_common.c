@@ -46,7 +46,7 @@ int mosquitto_base64_encode(const unsigned char *in, size_t in_len, char **encod
 
 		if(BIO_flush(b64) == 1){
 			BIO_get_mem_ptr(b64, &bptr);
-			*encoded = malloc(bptr->length+1);
+			*encoded = mosquitto_malloc(bptr->length+1);
 			if(*encoded){
 				memcpy(*encoded, bptr->data, bptr->length);
 				(*encoded)[bptr->length] = '\0';
@@ -79,7 +79,7 @@ int mosquitto_base64_decode(const char *in, unsigned char **decoded, unsigned in
 		BIO_write(bmem, in, (int)slen);
 
 		if(BIO_flush(bmem) == 1){
-			*decoded = calloc(slen, 1);
+			*decoded = mosquitto_calloc(slen, 1);
 
 			if(*decoded){
 				len = BIO_read(b64, *decoded, (int)slen);
@@ -87,7 +87,7 @@ int mosquitto_base64_decode(const char *in, unsigned char **decoded, unsigned in
 					*decoded_len = (unsigned int)len;
 					rc = 0;
 				}else{
-					free(*decoded);
+					mosquitto_free(*decoded);
 					*decoded = NULL;
 				}
 			}

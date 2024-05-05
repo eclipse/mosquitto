@@ -1,0 +1,62 @@
+#!/usr/bin/env python3
+
+from mosq_test_helper import *
+from proxy_v2_helper import *
+import json
+import shutil
+import socket
+
+def write_config(filename, port):
+    with open(filename, 'w') as f:
+        f.write("log_type all\n")
+        f.write("listener %d\n" % (port))
+        f.write("allow_anonymous true\n")
+        f.write("enable_proxy_protocol_v2 true\n")
+        f.write("require_certificate true\n")
+        f.write("use_identity_as_username true\n")
+
+def do_test(data):
+    expect_log = "New client connected from 192.0.2.5:6275 as proxy-test (p5, c0, k42, u'ppppppp')."
+    port = mosq_test.get_port()
+    conf_file = os.path.basename(__file__).replace('.py', '.conf')
+    write_config(conf_file, port)
+
+    broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port)
+
+    connect_packet = mosq_test.gen_connect("proxy-test", keepalive=42, clean_session=False, proto_ver=5, username="none", password="pw")
+    connack_packet = mosq_test.gen_connack(rc=0, proto_ver=5)
+
+    rc = 1
+
+    try:
+        sock = do_proxy_connect(port, PROXY_VER, PROXY_CMD_PROXY, PROXY_FAM_IPV4 | PROXY_PROTO_TCP, data)
+        mosq_test.do_send_receive(sock, connect_packet, connack_packet, "connack")
+        mosq_test.do_ping(sock)
+        sock.close()
+        rc = 0
+    except mosq_test.TestError:
+        pass
+    finally:
+        os.remove(conf_file)
+        broker.terminate()
+        if mosq_test.wait_for_subprocess(broker):
+            print("broker not terminated")
+            if rc == 0: rc=1
+        (stdo, stde) = broker.communicate()
+        if rc != 0 or expect_log not in stde.decode('utf-8'):
+            print(stde.decode('utf-8'))
+            rc = 1
+            raise ValueError(rc)
+
+data = b"\xC0\x00\x02\x05" + b"\x00\x00\x00\x00" + b"\x18\x83" + b"\x00\x00" \
+    + b"\x20" \
+    + b"\x00\x19" \
+    + b"\x05" \
+    + b"\x00\x00\x00\x00" \
+    + b"\x21" \
+    + b"\x00\x07" \
+    + b"\x54\x4C\x53\x76\x31\x2E\x33" \
+    + b"\x22" \
+    + b"\x00\x07" \
+    + b"\x70\x70\x70\x70\x70\x70\x70"
+do_test(data)

@@ -364,6 +364,12 @@ static void post_shutdown_cleanup(void)
 	net__broker_cleanup();
 }
 
+static void cjson_init(void)
+{
+	cJSON_Hooks hooks = {mosquitto_malloc, mosquitto_free};
+	cJSON_InitHooks(&hooks);
+}
+
 #ifdef WITH_FUZZING
 int mosquitto_fuzz_main(int argc, char *argv[])
 #else
@@ -378,6 +384,8 @@ int main(int argc, char *argv[])
 	struct timeval tv;
 #endif
 	struct mosquitto *ctxt, *ctxt_tmp;
+
+	cjson_init();
 
 #if defined(WIN32) || defined(__CYGWIN__)
 	if(argc == 2){

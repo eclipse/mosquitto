@@ -939,7 +939,20 @@ int handle__connect(struct mosquitto *context)
 #endif /* FINAL_WITH_TLS_PSK */
 	}else
 #endif /* WITH_TLS */
-	{
+	if(context->listener->use_identity_as_username && context->listener->require_certificate){
+		mosquitto_FREE(username);
+		mosquitto_FREE(password);
+
+		if(!context->username){
+			if(context->protocol == mosq_p_mqtt5){
+				send__connack(context, 0, MQTT_RC_BAD_USERNAME_OR_PASSWORD, NULL);
+			}else{
+				send__connack(context, 0, CONNACK_REFUSED_BAD_USERNAME_PASSWORD, NULL);
+			}
+			rc = MOSQ_ERR_AUTH;
+			goto handle_connect_error;
+		}
+	}else{
 		/* FIXME - these ensure the mosquitto_clientid() and
 		 * mosquitto_client_username() functions work, but is hacky */
 		context->username = username;

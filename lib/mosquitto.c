@@ -225,11 +225,7 @@ int mosquitto_reinitialise(struct mosquitto *mosq, const char *id, bool clean_st
 	pthread_mutex_init(&mosq->msgs_in.mutex, NULL);
 	pthread_mutex_init(&mosq->msgs_out.mutex, NULL);
 	pthread_mutex_init(&mosq->mid_mutex, NULL);
-#ifdef WIN32
-	mosq->thread_id = NULL;
-#else
 	mosq->thread_id = pthread_self();
-#endif
 #endif
 	if(mosq->disable_socketpair == false){
 		/* This must be after pthread_mutex_init(), otherwise the log mutex may be

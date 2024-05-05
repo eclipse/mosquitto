@@ -62,7 +62,7 @@ struct metric metrics[mosq_metric_max] = {
 	{ 1, 0, "$SYS/broker/subscriptions/count", NULL, false }, /* mosq_gauge_subscription_count */
 	{ 1, 0, "$SYS/broker/shared_subscriptions/count", NULL, false }, /* mosq_gauge_shared_subscription_count */
 	{ 1, 0, "$SYS/broker/retained messages/count", NULL, false }, /* mosq_gauge_retained_message_count */
-#ifdef REAL_WITH_MEMORY_TRACKING
+#ifdef WITH_MEMORY_TRACKING
 	{ 1, 0, "$SYS/broker/heap/current", NULL, false }, /* mosq_gauge_heap_current */
 	{ 1, 0, "$SYS/broker/heap/maximum", NULL, true }, /* mosq_gauge_heap_maximum */
 #else
@@ -228,9 +228,9 @@ void sys_tree__update(bool force)
 		metrics[mosq_gauge_subscriptions].next = db.subscription_count;
 		metrics[mosq_gauge_shared_subscriptions].next = db.shared_subscription_count;
 		metrics[mosq_gauge_retained_messages].next = db.retained_count;
-#ifdef REAL_WITH_MEMORY_TRACKING
-		metrics[mosq_gauge_heap_current].next = (int64_t)mosquitto__memory_used();
-		metrics[mosq_counter_heap_maximum].next = (int64_t)mosquitto__max_memory_used();
+#ifdef WITH_MEMORY_TRACKING
+		metrics[mosq_gauge_heap_current].next = (int64_t)mosquitto_memory_used();
+		metrics[mosq_counter_heap_maximum].next = (int64_t)mosquitto_max_memory_used();
 #endif
 		metrics[mosq_gauge_clients_total].next = HASH_CNT(hh_id, db.contexts_by_id);
 		metrics[mosq_counter_clients_maximum].next = HASH_CNT(hh_id, db.contexts_by_id);

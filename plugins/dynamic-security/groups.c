@@ -230,7 +230,7 @@ int dynsec_groups__config_load(struct dynsec__data *data, cJSON *tree)
 			const char *textname;
 			if(json_get_string(j_group, "textname", &textname, false) == MOSQ_ERR_SUCCESS){
 				if(textname){
-					group->text_name = strdup(textname);
+					group->text_name = mosquitto_strdup(textname);
 					if(group->text_name == NULL){
 						mosquitto_free(group);
 						continue;
@@ -242,7 +242,7 @@ int dynsec_groups__config_load(struct dynsec__data *data, cJSON *tree)
 			const char *textdescription;
 			if(json_get_string(j_group, "textdescription", &textdescription, false) == MOSQ_ERR_SUCCESS){
 				if(textdescription){
-					group->text_description = strdup(textdescription);
+					group->text_description = mosquitto_strdup(textdescription);
 					if(group->text_description == NULL){
 						mosquitto_free(group->text_name);
 						mosquitto_free(group);
@@ -411,7 +411,7 @@ int dynsec_groups__process_create(struct dynsec__data *data, struct mosquitto_co
 	}
 	strncpy(group->groupname, groupname, groupname_len+1);
 	if(text_name){
-		group->text_name = strdup(text_name);
+		group->text_name = mosquitto_strdup(text_name);
 		if(group->text_name == NULL){
 			mosquitto_control_command_reply(cmd, "Internal error");
 			group__free_item(data, group);
@@ -419,7 +419,7 @@ int dynsec_groups__process_create(struct dynsec__data *data, struct mosquitto_co
 		}
 	}
 	if(text_description){
-		group->text_description = strdup(text_description);
+		group->text_description = mosquitto_strdup(text_description);
 		if(group->text_description == NULL){
 			mosquitto_control_command_reply(cmd, "Internal error");
 			group__free_item(data, group);

@@ -48,6 +48,17 @@ WITH_PERSISTENCE:=yes
 # size', but will use slightly less memory and CPU time.
 WITH_MEMORY_TRACKING:=yes
 
+# Uncomment to activate a consistency check on the usage of the memory tracking
+# alloc/free function use. Any memory allocated without a tracking function,
+# but freed with the tracking function will trigger an invalid memory read in
+# memory trackers like valgrind memcheck or ASAN.
+#ALLOC_MISMATCH_INVALID_READ:=yes
+
+# Uncomment to activate consistency check on the usage of the memory tracking
+# alloc/free function use. Any memory allocated without a tracking function,
+# but freed with the tracking function will trigger an abort.
+#ALLOC_MISMATCH_ABORT:=yes
+
 # Compile with database upgrading support? If disabled, mosquitto won't
 # automatically upgrade old database versions.
 # Not currently supported.

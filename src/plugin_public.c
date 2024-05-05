@@ -267,7 +267,7 @@ BROKER_EXPORT int mosquitto_broker_publish_copy(
 		return MOSQ_ERR_INVAL;
 	}
 
-	payload_out = calloc(1, (size_t)(payloadlen+1));
+	payload_out = mosquitto_calloc(1, (size_t)(payloadlen+1));
 	if(payload_out == NULL){
 		return MOSQ_ERR_NOMEM;
 	}
@@ -283,7 +283,7 @@ BROKER_EXPORT int mosquitto_broker_publish_copy(
 			properties);
 
 	if(rc){
-		SAFE_FREE(payload_out);
+		mosquitto_FREE(payload_out);
 	}
 	return rc;
 }

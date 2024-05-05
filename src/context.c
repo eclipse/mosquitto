@@ -33,22 +33,24 @@ Contributors:
 
 #include "uthash.h"
 
-int context__init_sock(struct mosquitto *context, mosq_sock_t sock)
+int context__init_sock(struct mosquitto *context, mosq_sock_t sock, bool get_address)
 {
 	context->sock = sock;
 
 	if((int)context->sock >= 0){
-		char address[1024];
+		if(get_address){
+			char address[1024];
 
-		if(!net__socket_get_address(context->sock,
-					address, sizeof(address),
-					&context->remote_port)){
+			if(!net__socket_get_address(context->sock,
+						address, sizeof(address),
+						&context->remote_port)){
 
-			context->address = mosquitto_strdup(address);
-		}
-		if(!context->address){
-			/* getpeername and inet_ntop failed and not a bridge */
-			return MOSQ_ERR_NOMEM;
+				context->address = mosquitto_strdup(address);
+			}
+			if(!context->address){
+				/* getpeername and inet_ntop failed and not a bridge */
+				return MOSQ_ERR_NOMEM;
+			}
 		}
 		HASH_ADD(hh_sock, db.contexts_by_sock, sock, sizeof(context->sock), context);
 	}
@@ -187,6 +189,7 @@ void context__cleanup(struct mosquitto *context, bool force_free)
 #if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_BUILTIN
 	mosquitto_FREE(context->http_request);
 #endif
+	mosquitto_FREE(context->proxy.buf);
 	if(force_free){
 		mosquitto_FREE(context);
 	}

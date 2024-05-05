@@ -265,6 +265,9 @@ static void loop_handle_reads_writes(struct mosquitto *context, short event)
 				rc = http__write(context);
 				break;
 #endif
+			case mosq_t_proxy_v2:
+				rc = packet__write(context);
+				break;
 			default:
 				rc = MOSQ_ERR_INVAL;
 				break;
@@ -292,6 +295,9 @@ static void loop_handle_reads_writes(struct mosquitto *context, short event)
 					rc = http__read(context);
 					break;
 #endif
+				case mosq_t_proxy_v2:
+					rc = proxy_v2__read(context);
+					break;
 				default:
 					rc = MOSQ_ERR_INVAL;
 					break;

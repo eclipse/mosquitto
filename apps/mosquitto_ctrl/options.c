@@ -282,12 +282,13 @@ static int client_config_line_proc(struct mosq_config *cfg, int *argc, char **ar
 					cfg->username = strdup(url);
 					url = tmp;
 				}
-				cfg->host = strdup(url);
+				cfg->host = url;
 
 				tmp = strchr(url, ':');
 				if(tmp) {
 					*tmp++ = 0;
 					if(strlen(tmp) == 0){
+						cfg->host = NULL; /* Prevent free of non-heap memory later */
 						fprintf(stderr, "Error: Empty port in URL.\n");
 						return 1;
 					}

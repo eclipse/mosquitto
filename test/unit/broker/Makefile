@@ -1,6 +1,7 @@
 R=../../..
 include ${R}/config.mk
 include ${R}/make/broker.mk
+include ${R}/make/unit-test.mk
 
 .PHONY: all check test test-compile clean coverage
 
@@ -151,20 +152,18 @@ ${R}/src/topic_tok.o : ${R}/src/topic_tok.c
 ${R}/src/util_mosq.o : ${R}/lib/util_mosq.c
 	$(MAKE) -C ${R}/src/ util_mosq.o
 
-build : bridge_topic_test keepalive_test persist_read_test persist_write_test subs_test
+ALL_TESTS:=bridge_topic_test keepalive_test persist_read_test persist_write_test subs_test
+
+build : ${ALL_TESTS}
 
 test : build
-	./bridge_topic_test
-	./keepalive_test
-	./persist_read_test
-	./persist_write_test
-	./subs_test
+	set -e; for t in ${ALL_TESTS}; do ${SANITIZER_COMMAND} ./$${t}; done
 
 test-compile: build
 
 clean :
 	-rm -rf mosq_test bridge_topic_test keepalive_test persist_read_test persist_write_test subs_test
-	-rm -rf *.o *.gcda *.gcno coverage.info out/
+	-rm -rf *.o *.gcda *.gcno coverage.info *.vglog out/
 
 coverage :
 	lcov --capture --directory . --output-file coverage.info

@@ -60,7 +60,7 @@ def listen_sock(port):
     sock.listen(5)
     return sock
 
-def start_broker(filename, cmd=None, port=0, use_conf=False, expect_fail=False, nolog=False, checkhost="localhost", env=None, check_port=True, cmd_args=None):
+def start_broker(filename, cmd=None, port=0, use_conf=False, expect_fail=False, expect_fail_log=None, nolog=False, checkhost="localhost", env=None, check_port=True, cmd_args=None):
     global vg_index
     global vg_logfiles
 
@@ -103,6 +103,12 @@ def start_broker(filename, cmd=None, port=0, use_conf=False, expect_fail=False, 
     if expect_fail:
         try:
             broker.wait(delay*10)
+            if expect_fail_log is not None:
+                (_, stde) = broker.communicate()
+                if expect_fail_log not in stde.decode('utf-8'):
+                    print(f"{expect_fail_log} not found in log.")
+                    print(stde.decode('utf-8'))
+                    raise ValueError()
         except subprocess.TimeoutExpired:
             _, errs = terminate_broker(broker)
             print(f"Broker did not fail to start:\n{errs.decode('utf-8')}")

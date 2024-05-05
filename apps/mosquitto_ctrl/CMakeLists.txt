@@ -1,4 +1,4 @@
-if(WITH_TLS AND CJSON_FOUND)
+if(WITH_TLS)
 	add_executable(mosquitto_ctrl
 		mosquitto_ctrl.c mosquitto_ctrl.h
 		broker.c
@@ -61,11 +61,14 @@ if(WITH_TLS AND CJSON_FOUND)
 		cJSON
 	)
 
-	if (WITH_THREADING AND NOT WIN32)
-		set(THREADS_PREFER_PTHREAD_FLAG ON)
-		find_package(Threads REQUIRED)
-
-		target_link_libraries(mosquitto_ctrl PRIVATE Threads::Threads)
+	if(WITH_THREADING)
+		if(WIN32)
+			target_link_libraries(mosquitto_ctrl PRIVATE PThreads4W::PThreads4W)
+		else()
+			set(THREADS_PREFER_PTHREAD_FLAG ON)
+			find_package(Threads REQUIRED)
+			target_link_libraries(mosquitto_ctrl PRIVATE Threads::Threads)
+		endif()
 	endif()
 
 

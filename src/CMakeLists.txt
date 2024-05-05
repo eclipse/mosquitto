@@ -1,4 +1,4 @@
-set (MOSQ_SRCS
+add_executable(mosquitto
 	../lib/alias_mosq.c ../lib/alias_mosq.h
 	bridge.c bridge_topic.c
 	broker_control.c
@@ -49,6 +49,7 @@ set (MOSQ_SRCS
 	plugin_tick.c
 	plugin_unsubscribe.c
 	property_broker.c
+	proxy_v2.c
 	../lib/property_mosq.c ../lib/property_mosq.h
 	read_handle.c
 	../lib/read_handle.h
@@ -78,44 +79,43 @@ set (MOSQ_SRCS
 
 CHECK_INCLUDE_FILES(sys/event.h HAVE_SYS_EVENT_H)
 if(HAVE_SYS_EVENT_H)
-	add_definitions("-DWITH_KQUEUE")
+	target_compile_definitions(mosquitto PRIVATE "WITH_KQUEUE")
 endif()
 
 find_path(HAVE_SYS_EPOLL_H sys/epoll.h)
 if(HAVE_SYS_EPOLL_H)
-	add_definitions("-DWITH_EPOLL")
+	target_compile_definitions(mosquitto PRIVATE "WITH_EPOLL")
 endif()
 
 option(INC_BRIDGE_SUPPORT
 	"Include bridge support for connecting to other brokers?" ON)
 if(INC_BRIDGE_SUPPORT)
-	set (MOSQ_SRCS ${MOSQ_SRCS} bridge.c)
-	add_definitions("-DWITH_BRIDGE")
+	target_sources(mosquitto PRIVATE bridge.c)
+	target_compile_definitions(mosquitto PRIVATE "WITH_BRIDGE")
 endif()
 
 
 option(USE_LIBWRAP "Include tcp-wrappers support?" OFF)
 
 if(USE_LIBWRAP)
-	set (MOSQ_LIBS ${MOSQ_LIBS} wrap)
-	add_definitions("-DWITH_WRAP")
+	target_sources(mosquitto wrap)
+	target_compile_definitions(mosquitto PRIVATE "WITH_WRAP")
 endif()
 
 option(INC_DB_UPGRADE "Include database upgrade support? (recommended)" ON)
 
-option(INC_MEMTRACK "Include memory tracking support?" ON)
 if(INC_MEMTRACK)
-	add_definitions("-DWITH_MEMORY_TRACKING")
+	target_compile_definitions(mosquitto PUBLIC "WITH_MEMORY_TRACKING")
 endif()
 
 option(WITH_PERSISTENCE "Include persistence support?" ON)
 if(WITH_PERSISTENCE)
-	add_definitions("-DWITH_PERSISTENCE")
+	target_compile_definitions(mosquitto PRIVATE "WITH_PERSISTENCE")
 endif()
 
 option(WITH_SYS_TREE "Include $SYS tree support?" ON)
 if(WITH_SYS_TREE)
-	add_definitions("-DWITH_SYS_TREE")
+	target_compile_definitions(mosquitto PRIVATE "WITH_SYS_TREE")
 endif()
 
 option(WITH_ADNS "Include ADNS support?" OFF)
@@ -123,9 +123,9 @@ option(WITH_ADNS "Include ADNS support?" OFF)
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
 	option(WITH_SYSTEMD "Include systemd support?" OFF)
 	if(WITH_SYSTEMD)
-		add_definitions("-DWITH_SYSTEMD")
+		target_compile_definitions(mosquitto PRIVATE "WITH_SYSTEMD")
 		find_library(SYSTEMD_LIBRARY systemd)
-		set (MOSQ_LIBS ${MOSQ_LIBS} ${SYSTEMD_LIBRARY})
+		target_link_libraries(mosquitto PRIVATE ${SYSTEMD_LIBRARY})
 	endif()
 endif()
 
@@ -133,71 +133,69 @@ option(STATIC_WEBSOCKETS "Use the static libwebsockets library?" OFF)
 
 option(WITH_CONTROL "Include $CONTROL topic support?" ON)
 if(WITH_CONTROL)
-	add_definitions("-DWITH_CONTROL")
+	target_compile_definitions(mosquitto PRIVATE "WITH_CONTROL")
 endif()
 
 if(ARGON2_FOUND)
-	set (MOSQ_LIBS ${MOSQ_LIBS} argon2)
+	target_link_libraries(mosquitto PRIVATE argon2)
 endif()
 
 if(WIN32 OR CYGWIN)
-	set (MOSQ_SRCS ${MOSQ_SRCS} service.c)
+	target_sources(mosquitto PRIVATE service.c)
 endif()
 
-add_definitions (-DWITH_BROKER)
+target_compile_definitions(mosquitto PRIVATE "WITH_BROKER")
 
 if(WITH_TLS)
-	set (MOSQ_LIBS ${MOSQ_LIBS} OpenSSL::SSL)
+	target_link_libraries(mosquitto PRIVATE OpenSSL::SSL)
 endif()
 # Check for getaddrinfo_a
 include(CheckLibraryExists)
 check_library_exists(anl getaddrinfo_a  "" HAVE_GETADDRINFO_A)
 if(HAVE_GETADDRINFO_A AND WITH_ADNS)
-	add_definitions("-DWITH_ADNS")
-	add_definitions(-DHAVE_GETADDRINFO_A)
-	set (MOSQ_LIBS ${MOSQ_LIBS} anl)
+	target_compile_definitions(mosquitto PRIVATE "WITH_ADNS")
+	target_compile_definitions(mosquitto PRIVATE "HAVE_GETADDRINFO_A")
+	target_link_libraries(mosquitto PRIVATE anl)
 endif()
 
 
 if(UNIX)
 	if(APPLE)
-		set (MOSQ_LIBS ${MOSQ_LIBS} dl m)
-    elseif (${CMAKE_SYSTEM_NAME} MATCHES "OpenBSD")
-	    set (MOSQ_LIBS ${MOSQ_LIBS} m)
+		target_link_libraries(mosquitto PRIVATE dl m)
+	elseif (${CMAKE_SYSTEM_NAME} MATCHES "OpenBSD")
+		target_link_libraries(mosquitto PRIVATE m)
 	elseif (${CMAKE_SYSTEM_NAME} MATCHES "NetBSD")
-		set (MOSQ_LIBS ${MOSQ_LIBS} m)
+		target_link_libraries(mosquitto PRIVATE m)
 	elseif (${CMAKE_SYSTEM_NAME} MATCHES "Haiku")
-	    set (MOSQ_LIBS ${MOSQ_LIBS} m network)
-    elseif(QNX)
-        set(MOSQ_LIBS ${MOSQ_LIBS} m socket)
-    else()
-        set (MOSQ_LIBS ${MOSQ_LIBS} dl m)
-        find_library(LIBRT rt)
-        if(LIBRT)
-            set (MOSQ_LIBS ${MOSQ_LIBS} rt)
-        endif()
-    endif()
+		target_link_libraries(mosquitto PRIVATE m network)
+	elseif(QNX)
+		target_link_libraries(mosquitto PRIVATE m socket)
+	else()
+		target_link_libraries(mosquitto PRIVATE dl m)
+		find_library(LIBRT rt)
+		if(LIBRT)
+			target_link_libraries(mosquitto PRIVATE rt)
+		endif()
+	endif()
 endif()
 
 if(WIN32)
-	set (MOSQ_LIBS ${MOSQ_LIBS} ws2_32)
+	target_link_libraries(mosquitto PRIVATE ws2_32)
 endif()
 
 if(WITH_WEBSOCKETS)
 	if(WITH_WEBSOCKETS_BUILTIN)
-		add_definitions("-DWITH_WEBSOCKETS=WS_IS_BUILTIN")
-		set(MOSQ_SRCS ${MOSQ_SRCS} ${mosquitto_SOURCE_DIR}/deps/picohttpparser/picohttpparser.c)
+		target_compile_definitions(mosquitto PRIVATE "WITH_WEBSOCKETS=WS_IS_BUILTIN")
+		target_sources(mosquitto PRIVATE ${mosquitto_SOURCE_DIR}/deps/picohttpparser/picohttpparser.c)
 	else()
 		find_package(libwebsockets)
-		add_definitions("-DWITH_WEBSOCKETS=WS_IS_LWS")
+		target_compile_definitions(mosquitto PRIVATE "WITH_WEBSOCKETS=WS_IS_LWS")
 	endif()
 endif()
 
 if (ANDROID)
-	set (MOSQ_LIBS ${MOSQ_LIBS} log)
+	target_link_libraries(mosquitto PRIVATE log)
 endif (ANDROID)
-
-add_executable(mosquitto ${MOSQ_SRCS})
 
 if(WITH_WEBSOCKETS)
 	if(WITH_WEBSOCKETS_BUILTIN)
@@ -205,20 +203,20 @@ if(WITH_WEBSOCKETS)
 			"${mosquitto_SOURCE_DIR}/deps/picohttpparser")
 	else()
 		if(STATIC_WEBSOCKETS)
-			set (MOSQ_LIBS ${MOSQ_LIBS} websockets_static)
+			target_link_libraries(mosquitto PRIVATE websockets_static)
 			if(WIN32)
-				set (MOSQ_LIBS ${MOSQ_LIBS} iphlpapi)
+				target_link_libraries(mosquitto PRIVATE iphlpapi)
 			endif()
 		else(STATIC_WEBSOCKETS)
-			set (MOSQ_LIBS ${MOSQ_LIBS} websockets)
+			target_link_libraries(mosquitto PRIVATE websockets)
 		endif()
 	endif()
 endif()
 
 if(WITH_DLT)
-    message(STATUS "DLT_LIBDIR = ${DLT_LIBDIR}")
-    target_link_directories(mosquitto PRIVATE ${DLT_LIBDIR})
-    set (MOSQ_LIBS ${MOSQ_LIBS} ${DLT_LIBRARIES})
+	message(STATUS "DLT_LIBDIR = ${DLT_LIBDIR}")
+	target_link_directories(mosquitto PRIVATE ${DLT_LIBDIR})
+	target_link_libraries(mosquitto PRIVATE ${DLT_LIBRARIES})
 	target_compile_definitions(mosquitto PRIVATE "WITH_DLT")
 endif()
 

@@ -6,6 +6,18 @@ LOCAL_CPPFLAGS+=
 LOCAL_LDFLAGS+=-fPIC
 LOCAL_LIBADD+=
 
+ifeq ($(WITH_MEMORY_TRACKING),yes)
+	LOCAL_CPPFLAGS+=-DWITH_MEMORY_TRACKING
+endif
+
+ifeq ($(ALLOC_MISMATCH_INVALID_READ),yes)
+	LOCAL_CPPFLAGS+=-DALLOC_MISMATCH_INVALID_READ
+endif
+
+ifeq ($(ALLOC_MISMATCH_ABORT),yes)
+	LOCAL_CPPFLAGS+=-DALLOC_MISMATCH_ABORT
+endif
+
 # ------------------------------------------
 #  Targets
 # ------------------------------------------

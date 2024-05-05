@@ -87,7 +87,7 @@ int handle__connack(struct mosquitto *mosq)
 		if(mosq->id){
 			/* We've been sent a client identifier but already have one. This
 			 * shouldn't happen. */
-			SAFE_FREE(clientid);
+			mosquitto_FREE(clientid);
 			mosquitto_property_free_all(&properties);
 			return MOSQ_ERR_PROTOCOL;
 		}else{

@@ -28,6 +28,7 @@
 
 * [Authentication methods] - details on the different authentication options available.
 * [Dynamic Security plugin] - details of using the Dynamic Security authentication and access control plugin.
+* [Using Mosquitto with HAProxy] - using Mosquitto with HAProxy with or without TLS termination.
 * [Using the snap package] - specific instructions on installing and configuring the Mosquitto snap package.
 * [Migrating from 1.x to 2.0] - details of changes needed to migrate to version 2.0.
 
@@ -54,6 +55,7 @@ These are some Mosquitto documentation hosted by third parties.
 [Authentication methods]:/documentation/authentication-methods/
 [Using the snap package]:/documentation/using-the-snap/
 [Dynamic Security plugin]:/documentation/dynamic-security/
+[Using Mosquitto with HAProxy]:/documentation/haproxy/
 [Migrating from 1.x to 2.0]:/documentation/migrating-to-2-0/
 
 [Steve's internet guide]: http://www.steves-internet-guide.com/

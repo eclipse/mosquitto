@@ -78,6 +78,7 @@ if __name__ == '__main__':
     do_test(['-F', '\\Z'], "Error: Invalid escape specifier 'Z'.\n" + helps, 1)
 
     # Invalid values
+    do_test(['-e', 'topic/+'], "Error: Invalid response topic 'topic/+', does it contain '+' or '#'?\n" + helps, 1)
     do_test(['-k', '-1'], "Error: Invalid keepalive given, it must be between 5 and 65535 inclusive.\n\n" + helps, 1)
     do_test(['-k', '65536'], "Error: Invalid keepalive given, it must be between 5 and 65535 inclusive.\n\n" + helps, 1)
     do_test(['-M', '0'], "Error: Maximum inflight messages must be greater than 0.\n\n" + helps, 1)

@@ -74,6 +74,7 @@ Broker:
   choose TLS v1.1, but this is not recommended and will be removed in a future
   version.
 - Add -q option to allow logging to be disabled at the command line.
+- Add suport for PROXY protocol v2.
 
 Plugins / plugin interface:
 - Add persist-sqlite plugin.

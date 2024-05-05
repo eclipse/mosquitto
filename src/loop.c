@@ -366,6 +366,9 @@ void do_disconnect(struct mosquitto *context, int reason)
 					case MOSQ_ERR_HTTP_BAD_ORIGIN:
 						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s disconnected, non-matching http origin.", id);
 						break;
+					case MOSQ_ERR_PROXY:
+						/* This was a proxy v2 health check connection, so don't report */
+						break;
 					default:
 						log__printf(NULL, MOSQ_LOG_NOTICE, "Bad socket read/write on client %s: %s", id, mosquitto_strerror(reason));
 						break;

@@ -215,11 +215,11 @@ static int client_restore(struct mosquitto_sqlite *ms)
 	while(sqlite3_step(stmt) == SQLITE_ROW){
 		str = (const char *)sqlite3_column_text(stmt, 0);
 		if(str){
-			client.clientid = strdup(str);
+			client.clientid = mosquitto_strdup(str);
 		}
 		str = (const char *)sqlite3_column_text(stmt, 1);
 		if(str){
-			client.username = strdup(str);
+			client.username = mosquitto_strdup(str);
 		}
 		client.will_delay_time = (time_t)sqlite3_column_int64(stmt, 2);
 		client.session_expiry_time = (time_t)sqlite3_column_int64(stmt, 3);
@@ -309,7 +309,7 @@ static int base_msg_restore(struct mosquitto_sqlite *ms)
 		base_msg.expiry_time = (time_t)sqlite3_column_int64(stmt, 1);
 		str = (const char *)sqlite3_column_text(stmt, 2);
 		if(str){
-			base_msg.topic = strdup(str);
+			base_msg.topic = mosquitto_strdup(str);
 			if(!base_msg.topic){
 				failed++;
 				continue;
@@ -320,9 +320,9 @@ static int base_msg_restore(struct mosquitto_sqlite *ms)
 		payload = (const void *)sqlite3_column_blob(stmt, 3);
 		base_msg.payloadlen = (uint32_t)sqlite3_column_int(stmt, 6);
 		if(payload && base_msg.payloadlen){
-			base_msg.payload = malloc(base_msg.payloadlen+1);
+			base_msg.payload = mosquitto_malloc(base_msg.payloadlen+1);
 			if(!base_msg.payload){
-				free(base_msg.topic);
+				mosquitto_free(base_msg.topic);
 				failed++;
 				continue;
 			}

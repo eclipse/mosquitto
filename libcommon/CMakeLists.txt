@@ -50,6 +50,19 @@ if (WITH_TLS)
 	)
 endif()
 
+if(INC_MEMTRACK)
+	target_compile_definitions(libmosquitto_common PUBLIC "WITH_MEMORY_TRACKING")
+endif()
+
+option(ALLOC_MISMATCH_INVALID_READ "Memory function mismatch detection." OFF)
+if(ALLOC_MISMATCH_INVALID_READ)
+	target_compile_definitions(libmosquitto_common PRIVATE "ALLOC_MISMATCH_INVALID_READ")
+endif()
+
+option(ALLOC_MISMATCH_ABORT "Memory function mismatch abort." OFF)
+if(ALLOC_MISMATCH_ABORT)
+	target_compile_definitions(libmosquitto_common PRIVATE "ALLOC_MISMATCH_ABORT")
+endif()
 
 set_target_properties(libmosquitto_common PROPERTIES
 	OUTPUT_NAME mosquitto_common

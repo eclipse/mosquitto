@@ -183,12 +183,6 @@ struct mosquitto *net__socket_accept(struct mosquitto__listener_sock *listensock
 		COMPAT_CLOSE(new_sock);
 		return NULL;
 	}
-	if(context__init_sock(new_context, new_sock) != MOSQ_ERR_SUCCESS){
-		context__cleanup(new_context, true);
-		COMPAT_CLOSE(new_sock);
-		return NULL;
-	}
-
 	new_context->listener = listensock->listener;
 	if(!new_context->listener){
 		context__cleanup(new_context, true);
@@ -196,21 +190,36 @@ struct mosquitto *net__socket_accept(struct mosquitto__listener_sock *listensock
 	}
 	new_context->listener->client_count++;
 
-	switch(new_context->listener->protocol){
-		case mp_mqtt:
-			new_context->transport = mosq_t_tcp;
-			break;
+	if(new_context->listener->enable_proxy_protocol_v2){
+		if(context__init_sock(new_context, new_sock, false) != MOSQ_ERR_SUCCESS){
+			context__cleanup(new_context, true);
+			COMPAT_CLOSE(new_sock);
+			return NULL;
+		}
+		new_context->transport = mosq_t_proxy_v2;
+		new_context->proxy.cmd = -1;
+	}else{
+		if(context__init_sock(new_context, new_sock, true) != MOSQ_ERR_SUCCESS){
+			context__cleanup(new_context, true);
+			COMPAT_CLOSE(new_sock);
+			return NULL;
+		}
+		switch(new_context->listener->protocol){
+			case mp_mqtt:
+				new_context->transport = mosq_t_tcp;
+				break;
 #if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_BUILTIN
-		case mp_websockets:
-			if(http__context_init(new_context)){
+			case mp_websockets:
+				if(http__context_init(new_context)){
+					context__cleanup(new_context, true);
+					return NULL;
+				}
+				break;
+#endif
+			default:
 				context__cleanup(new_context, true);
 				return NULL;
-			}
-			break;
-#endif
-		default:
-			context__cleanup(new_context, true);
-			return NULL;
+		}
 	}
 
 	if((new_context->listener->max_connections > 0 && new_context->listener->client_count > new_context->listener->max_connections)
@@ -241,7 +250,9 @@ struct mosquitto *net__socket_accept(struct mosquitto__listener_sock *listensock
 	}
 #endif
 
-	if(db.config->connection_messages == true){
+	if(db.config->connection_messages == true
+			&& !new_context->listener->enable_proxy_protocol_v2){
+
 		log__printf(NULL, MOSQ_LOG_NOTICE, "New connection from %s:%d on port %d.",
 				new_context->address, new_context->remote_port, new_context->listener->port);
 	}

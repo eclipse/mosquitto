@@ -73,7 +73,7 @@ static void plugin__unload_single(mosquitto_plugin_id_t *plugin)
 	}
 
 	if(plugin->lib.lib){
-		LIB_CLOSE(plugin->lib.lib);
+		//LIB_CLOSE(plugin->lib.lib);
 	}
 	memset(&plugin->lib, 0, sizeof(struct mosquitto__plugin_lib));
 }

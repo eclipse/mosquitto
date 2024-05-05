@@ -114,7 +114,7 @@ libmosq_EXPORT int mosquitto_subscribe_simple(
 
 	*messages = NULL;
 
-	userdata.messages = calloc(sizeof(struct mosquitto_message), (size_t)msg_count);
+	userdata.messages = mosquitto_calloc(sizeof(struct mosquitto_message), (size_t)msg_count);
 	if(!userdata.messages){
 		return MOSQ_ERR_NOMEM;
 	}
@@ -137,7 +137,7 @@ libmosq_EXPORT int mosquitto_subscribe_simple(
 		for(i=0; i<msg_count; i++){
 			mosquitto_message_free_contents(&userdata.messages[i]);
 		}
-		SAFE_FREE(userdata.messages);
+		mosquitto_FREE(userdata.messages);
 		return rc;
 	}
 }

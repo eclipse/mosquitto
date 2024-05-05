@@ -89,8 +89,8 @@ static int pw__create_argon2id(struct mosquitto_pw *pw, const char *password)
 	size_t encoded_len = argon2_encodedlen(MOSQ_ARGON2_T, MOSQ_ARGON2_M, MOSQ_ARGON2_P,
 			(uint32_t)pw->params.argon2id.salt_len, sizeof(pw->params.argon2id.password_hash), Argon2_id);
 
-	free(pw->encoded_password);
-	pw->encoded_password = calloc(1, encoded_len+1);
+	mosquitto_free(pw->encoded_password);
+	pw->encoded_password = mosquitto_calloc(1, encoded_len+1);
 
 	rc = argon2id_hash_encoded(MOSQ_ARGON2_T, MOSQ_ARGON2_M, MOSQ_ARGON2_P,
 			password, strlen(password),
@@ -131,10 +131,10 @@ static int pw__verify_argon2id(struct mosquitto_pw *pw, const char *password)
 static int pw__decode_argon2id(struct mosquitto_pw *pw, const char *password)
 {
 #ifdef WITH_ARGON2
-	char *new_password = strdup(password);
+	char *new_password = mosquitto_strdup(password);
 
 	if(new_password){
-		free(pw->encoded_password);
+		mosquitto_free(pw->encoded_password);
 		pw->encoded_password = new_password;
 		return MOSQ_ERR_SUCCESS;
 	}else{
@@ -227,19 +227,19 @@ static int pw__encode_sha512_pbkdf2(struct mosquitto_pw *pw)
 
 	rc = mosquitto_base64_encode(pw->params.sha512_pbkdf2.password_hash, sizeof(pw->params.sha512_pbkdf2.password_hash), &hash64);
 	if(rc){
-		free(salt64);
+		mosquitto_free(salt64);
 		return MOSQ_ERR_UNKNOWN;
 	}
 
-	free(pw->encoded_password);
+	mosquitto_free(pw->encoded_password);
 	size_t len = strlen("$6$$") + strlen("1,000,000,000,000") + strlen(salt64) + strlen(hash64) + 1;
-	pw->encoded_password = calloc(1, len);
+	pw->encoded_password = mosquitto_calloc(1, len);
 	if(!pw->encoded_password) return MOSQ_ERR_NOMEM;
 
 	snprintf(pw->encoded_password, len, "$%d$%d$%s$%s", pw->hashtype, pw->params.sha512_pbkdf2.iterations, salt64, hash64);
 
-	free(salt64);
-	free(hash64);
+	mosquitto_free(salt64);
+	mosquitto_free(hash64);
 
 	return MOSQ_ERR_SUCCESS;
 #else
@@ -257,51 +257,51 @@ static int pw__decode_sha512_pbkdf2(struct mosquitto_pw *pw, const char *salt_pa
 	unsigned int salt_len, password_len;
 	int rc;
 
-	sp_heap = strdup(salt_password);
+	sp_heap = mosquitto_strdup(salt_password);
 	if(!sp_heap) return MOSQ_ERR_NOMEM;
 
 	iterations_s = strtok_r(sp_heap, "$", &saveptr);
 	if(iterations_s == NULL){
-		free(sp_heap);
+		mosquitto_free(sp_heap);
 		return MOSQ_ERR_INVAL;
 	}
 	pw->params.sha512_pbkdf2.iterations = atoi(iterations_s);
 	if(pw->params.sha512_pbkdf2.iterations < 1){
-		free(sp_heap);
+		mosquitto_free(sp_heap);
 		return MOSQ_ERR_INVAL;
 	}
 
 	salt_b64 = strtok_r(NULL, "$", &saveptr);
 	if(salt_b64 == NULL){
-		free(sp_heap);
+		mosquitto_free(sp_heap);
 		return MOSQ_ERR_INVAL;
 	}
 
 	rc = mosquitto_base64_decode(salt_b64, &salt, &salt_len);
 	if(rc != MOSQ_ERR_SUCCESS || (salt_len != 12 && salt_len != HASH_LEN)){
-		free(sp_heap);
-		free(salt);
+		mosquitto_free(sp_heap);
+		mosquitto_free(salt);
 		return MOSQ_ERR_INVAL;
 	}
 	memcpy(pw->params.sha512_pbkdf2.salt, salt, salt_len);
-	free(salt);
+	mosquitto_free(salt);
 	pw->params.sha512_pbkdf2.salt_len = salt_len;
 
 	password_b64 = strtok_r(NULL, "$", &saveptr);
 	if(password_b64 == NULL){
-		free(sp_heap);
+		mosquitto_free(sp_heap);
 		return MOSQ_ERR_INVAL;
 	}
 
 	rc = mosquitto_base64_decode(password_b64, &password, &password_len);
-	free(sp_heap);
+	mosquitto_free(sp_heap);
 
 	if(rc != MOSQ_ERR_SUCCESS || password_len != HASH_LEN){
-		free(password);
+		mosquitto_free(password);
 		return MOSQ_ERR_INVAL;
 	}
 	memcpy(pw->params.sha512_pbkdf2.password_hash, password, password_len);
-	free(password);
+	mosquitto_free(password);
 
 	return MOSQ_ERR_SUCCESS;
 #else
@@ -400,15 +400,15 @@ static int pw__encode_sha512(struct mosquitto_pw *pw)
 		return MOSQ_ERR_UNKNOWN;
 	}
 
-	free(pw->encoded_password);
+	mosquitto_free(pw->encoded_password);
 	size_t len = strlen("$6$$") + strlen(salt64) + strlen(hash64) + 1;
-	pw->encoded_password = calloc(1, len);
+	pw->encoded_password = mosquitto_calloc(1, len);
 	if(!pw->encoded_password) return MOSQ_ERR_NOMEM;
 
 	snprintf(pw->encoded_password, len, "$%d$%s$%s", pw->hashtype, salt64, hash64);
 
-	free(salt64);
-	free(hash64);
+	mosquitto_free(salt64);
+	mosquitto_free(hash64);
 
 	return MOSQ_ERR_SUCCESS;
 #else
@@ -425,40 +425,40 @@ static int pw__decode_sha512(struct mosquitto_pw *pw, const char *salt_password)
 	unsigned int salt_len, password_len;
 	int rc;
 
-	sp_heap = strdup(salt_password);
+	sp_heap = mosquitto_strdup(salt_password);
 	if(!sp_heap) return MOSQ_ERR_NOMEM;
 
 	salt_b64 = strtok_r(sp_heap, "$", &saveptr);
 	if(salt_b64 == NULL){
-		free(sp_heap);
+		mosquitto_free(sp_heap);
 		return MOSQ_ERR_INVAL;
 	}
 
 	rc = mosquitto_base64_decode(salt_b64, &salt, &salt_len);
 	if(rc != MOSQ_ERR_SUCCESS || (salt_len != 12 && salt_len != HASH_LEN)){
-		free(sp_heap);
-		free(salt);
+		mosquitto_free(sp_heap);
+		mosquitto_free(salt);
 		return MOSQ_ERR_INVAL;
 	}
 	memcpy(pw->params.sha512.salt, salt, salt_len);
-	free(salt);
+	mosquitto_free(salt);
 	pw->params.sha512.salt_len = salt_len;
 
 	password_b64 = strtok_r(NULL, "$", &saveptr);
 	if(password_b64 == NULL){
-		free(sp_heap);
+		mosquitto_free(sp_heap);
 		return MOSQ_ERR_INVAL;
 	}
 
 	rc = mosquitto_base64_decode(password_b64, &password, &password_len);
-	free(sp_heap);
+	mosquitto_free(sp_heap);
 
 	if(rc != MOSQ_ERR_SUCCESS || password_len != HASH_LEN){
-		free(password);
+		mosquitto_free(password);
 		return MOSQ_ERR_INVAL;
 	}
 	memcpy(pw->params.sha512.password_hash, password, password_len);
-	free(password);
+	mosquitto_free(password);
 
 	return MOSQ_ERR_SUCCESS;
 #else
@@ -541,7 +541,7 @@ int pw__decode(struct mosquitto_pw *pw, const char *password)
 void pw__cleanup(struct mosquitto_pw *pw)
 {
 	if(pw){
-		free(pw->encoded_password);
+		mosquitto_free(pw->encoded_password);
 		pw->encoded_password = NULL;
 	}
 }

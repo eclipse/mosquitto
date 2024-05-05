@@ -110,7 +110,7 @@ int persist__chunk_client_msg_write_v6(FILE *db_fptr, struct P_client_msg *chunk
 	write_e(db_fptr, chunk->clientid, id_len);
 	if(chunk->subscription_identifier){
 		if(proplen > 0){
-			prop_packet = calloc(1, sizeof(struct mosquitto__packet)+proplen);
+			prop_packet = mosquitto_calloc(1, sizeof(struct mosquitto__packet)+proplen);
 			if(prop_packet == NULL){
 				return MOSQ_ERR_NOMEM;
 			}
@@ -118,7 +118,7 @@ int persist__chunk_client_msg_write_v6(FILE *db_fptr, struct P_client_msg *chunk
 			prop_packet->packet_length = proplen;
 			rc = property__write_all(prop_packet, &subscription_id_prop, true);
 			if(rc){
-				SAFE_FREE(prop_packet);
+				mosquitto_FREE(prop_packet);
 				return rc;
 			}
 
@@ -175,7 +175,7 @@ int persist__chunk_message_store_write_v6(FILE *db_fptr, struct P_base_msg *chun
 	}
 	if(chunk->properties){
 		if(proplen > 0){
-			struct mosquitto__packet *prop_packet = calloc(1, sizeof(struct mosquitto__packet)+proplen);
+			struct mosquitto__packet *prop_packet = mosquitto_calloc(1, sizeof(struct mosquitto__packet)+proplen);
 			if(prop_packet == NULL){
 				return MOSQ_ERR_NOMEM;
 			}
@@ -183,15 +183,15 @@ int persist__chunk_message_store_write_v6(FILE *db_fptr, struct P_base_msg *chun
 			prop_packet->packet_length = proplen;
 			rc = property__write_all(prop_packet, chunk->properties, true);
 			if(rc){
-				SAFE_FREE(prop_packet);
+				mosquitto_FREE(prop_packet);
 				return rc;
 			}
 
 			if(fwrite(prop_packet->payload, 1, proplen, db_fptr) != proplen){
-				SAFE_FREE(prop_packet);
+				mosquitto_FREE(prop_packet);
 				goto error;
 			}
-			SAFE_FREE(prop_packet);
+			mosquitto_FREE(prop_packet);
 		}
 	}
 

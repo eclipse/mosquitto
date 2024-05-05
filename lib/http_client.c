@@ -76,7 +76,7 @@ int http_c__context_init(struct mosquitto *context)
         "Sec-WebSocket-Protocol: mqtt\r\n"
         "Sec-WebSocket-Version: 13\r\n"
 		"\r\n", path, context->host, key);
-	SAFE_FREE(key);
+	mosquitto_FREE(key);
 	packet->packet_length += WS_PACKET_OFFSET;
 	packet->to_process = packet->packet_length;
 	context->http_request[0] = '\0';
@@ -86,7 +86,7 @@ int http_c__context_init(struct mosquitto *context)
 
 int http_c__context_cleanup(struct mosquitto *context)
 {
-	SAFE_FREE(context->wsd.accept_key);
+	mosquitto_FREE(context->wsd.accept_key);
 	mosquitto_FREE(context->http_request);
 	return MOSQ_ERR_SUCCESS;
 }

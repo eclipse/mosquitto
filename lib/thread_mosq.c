@@ -87,11 +87,7 @@ int mosquitto_loop_stop(struct mosquitto *mosq, bool force)
 	}
 #endif
 	pthread_join(mosq->thread_id, NULL);
-#ifdef WIN32
-	mosq->thread_id = NULL;
-#else
 	mosq->thread_id = pthread_self();
-#endif
 	mosq->threaded = mosq_ts_none;
 
 	return MOSQ_ERR_SUCCESS;

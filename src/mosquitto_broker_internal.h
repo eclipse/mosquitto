@@ -270,6 +270,8 @@ struct mosquitto__listener {
 	bool disable_protocol_v3;
 	bool disable_protocol_v4;
 	bool disable_protocol_v5;
+	bool enable_proxy_protocol_v2;
+	bool proxy_protocol_v2_require_tls;
 };
 
 
@@ -750,7 +752,7 @@ void sub__topic_tokens_free(struct sub__token *tokens);
  * Context functions
  * ============================================================ */
 struct mosquitto *context__init(void);
-int context__init_sock(struct mosquitto *context, mosq_sock_t sock);
+int context__init_sock(struct mosquitto *context, mosq_sock_t sock, bool get_address);
 void context__cleanup(struct mosquitto *context, bool force_free);
 void context__disconnect(struct mosquitto *context, int reason);
 void context__add_to_disused(struct mosquitto *context);
@@ -954,6 +956,11 @@ int http__read(struct mosquitto *context);
 int http__write(struct mosquitto *context);
 #endif
 void do_disconnect(struct mosquitto *context, int reason);
+
+/* ============================================================
+ * PROXY v2 related functions
+ * ============================================================ */
+int proxy_v2__read(struct mosquitto *context);
 
 /* ============================================================
  * Will delay

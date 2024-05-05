@@ -1289,6 +1289,61 @@ accept_protocol_versions 3, 4</programlisting>
 					</listitem>
 				</varlistentry>
 				<varlistentry>
+					<term><option>enable_proxy_protocol_v2</option>  [ true | false ]</term>
+					<listitem>
+						<para>
+							Enable PROXY protocol v2 support for this listener.
+							Defaults to false. This requires the use of a load
+							balancer/proxy such as HAProxy in front of
+							Mosquitto, with the proxy configured to use the
+							PROXY protocol.
+						</para>
+
+						<para>
+							The PROXY protocol is used to send information about
+							client socket connections from the proxy to the
+							broker. Without this, the connection information and
+							logs in the broker will contain the IP address and
+							port of the proxy itself, rather than the client.
+						</para>
+
+						<para>
+							Enabling this option should only be done when a
+							trusted proxy is placed in front of Mosquitto, and
+							when no other external access to Mosquitto is
+							possible. Giving external access to a listener with
+							this option enabled is a security risk, particularly
+							if you are using client certificates on the proxy.
+						</para>
+
+						<para>
+							This option can be used with TLS termination on the
+							proxy. In this case, TLS information will be passed
+							to the broker as well. Use <option>proxy_protocol_v2_require_tls</option>
+							to reject clients that do not use TLS - this is
+							strongly recommended. Enabling
+							<option>require_certificate</option> on the
+							listener will result in the broker checking the TLS
+							information provided to ensure that the client has
+							provided a valid certificate. Enabling
+							<option>use_identity_as_username</option> as well
+							will result in the
+							<replaceable>commonName</replaceable> value from
+							the certificate being used as the client username
+							instead of any provided in the CONNECT packet. In
+							both cases, the listener must not have TLS
+							configured.
+						</para>
+
+						<para>
+							It is not possible to use the <option>use_subject_as_username</option>,
+							<option>certfile</option>, or <option>keyfile</option> options
+							in conjunction with <option>enable_proxy_protocol_v2</option>.
+						</para>
+						<para>Not reloaded on reload signal.</para>
+					</listitem>
+				</varlistentry>
+				<varlistentry>
 					<term><option>http_dir</option> <replaceable>directory</replaceable></term>
 					<listitem>
 						<para>When a listener is using the websockets protocol,
@@ -1297,6 +1352,12 @@ accept_protocol_versions 3, 4</programlisting>
 							contains the files you wish to serve. If this
 							option is not specified, then no normal http
 							connections will be possible.</para>
+						<para>
+							This option is only available if Mosquitto is
+							compiled with websockets support provided by
+							libwebsockets. This is not the default, and will be
+							removed in version 3.0.
+						</para>
 						<para>Not reloaded on reload signal.</para>
 					</listitem>
 				</varlistentry>
@@ -1439,6 +1500,20 @@ accept_protocol_versions 3, 4</programlisting>
 							<option>keyfile</option>, <option>ciphers</option>, and
 							<option>ciphers_tls1.3</option> options are
 							supported.</para>
+						<para>Not reloaded on reload signal.</para>
+					</listitem>
+				</varlistentry>
+				<varlistentry>
+					<term><option>proxy_protocol_v2_require_tls</option> [ true | false ]</term>
+					<listitem>
+						<para>
+							When a listener is using the PROXY protocol, this
+							option can be used to require that the client
+							connection is using TLS. If set to true, then the
+							PROXY protocol header must contain a TLS
+							indicator. If it does not, the connection will be
+							closed. Defaults to false.
+						</para>
 						<para>Not reloaded on reload signal.</para>
 					</listitem>
 				</varlistentry>
