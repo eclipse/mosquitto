@@ -95,13 +95,11 @@ spec:
           volumeMounts:
             - name: config
               mountPath: {{ required ".Values.mosquitto.configurationLocation is required!" .Values.mosquitto.configurationLocation }}
+            - name: {{ include "mosquitto.fullname" . }}
+              mountPath: {{ required ".Values.mosquitto.persistence.location is required!" .Values.mosquitto.persistence.location }}
             {{- if .Values.mosquitto.ports.mqtts.enabled }}
             - name: certs
               mountPath: {{ required ".Values.mosquitto.certificateLocation is required!" .Values.mosquitto.certificateLocation }}
-            {{- end }}
-            {{- if .Values.mosquitto.persistence.enabled -}}
-            - name: data
-              mountPath: {{ required ".Values.mosquitto.persistence.location is required!" .Values.mosquitto.persistence.location }}
             {{- end }}
             {{- if and .Values.mosquitto.authentication.passworFile }}
             - name: passwordFile
@@ -123,6 +121,10 @@ spec:
         - name: config
           configMap:
             name: {{ include "mosquitto.fullname" . }}
+        {{- if not .Values.mosquitto.persistence.enabled }}
+        - name: {{ include "mosquitto.fullname" . }}
+          emptyDir: {}
+        {{- end }}
         {{- if .Values.mosquitto.ports.mqtts.enabled }}
         - name: certs
           secret:
@@ -144,7 +146,7 @@ spec:
   {{- if .Values.mosquitto.persistence.enabled -}}
   volumeClaimTemplates:
     - metadata:
-        name: data
+        name: {{ include "mosquitto.fullname" . }}
         labels: {{- include "mosquitto.labels.standard" . | nindent 10 }}
           {{- with .Values.mosquitto.common.labels }}
           {{- toYaml . | trim | nindent 10 }}
@@ -167,6 +169,20 @@ spec:
           {{- range . }}
           - {{ . }}
           {{- end }}
+        {{- end }}
+        {{- with .Values.mosquitto.persistentVolumeClaim.existingVolume }}
+        volumeName: {{ . }}
+        {{- end }}
+        {{- if or .Values.mosquitto.persistentVolumeClaim.matchLabels .Values.mosquitto.persistentVolumeClaim.matchExpressions) }}
+        selector:
+          {{- with .Values.mosquitto.persistentVolumeClaim.matchLabels }}
+          matchLabels:
+            {{- toYaml . | trim | nindent 12 }}
+          {{- end -}}
+          {{- with .Values.mosquitto.persistentVolumeClaim.matchExpressions }}
+          matchExpressions:
+            {{- toYaml . | trim | nindent 12 }}
+          {{- end -}}
         {{- end }}
         resources:
           requests:
