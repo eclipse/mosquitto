@@ -99,8 +99,10 @@ spec:
             - name: certs
               mountPath: {{ required ".Values.mosquitto.certificateLocation is required!" .Values.mosquitto.certificateLocation }}
             {{- end }}
+            {{- if .Values.mosquitto.persistence.enabled -}}
             - name: data
               mountPath: {{ required ".Values.mosquitto.persistence.location is required!" .Values.mosquitto.persistence.location }}
+            {{- end }}
             {{- if and .Values.mosquitto.authentication.passworFile }}
             - name: passwordFile
               mountPath: {{ required ".Values.mosquitto.authentication.passwordFilePath is required!" .Values.mosquitto.authentication.passwordFilePath }}
@@ -139,6 +141,7 @@ spec:
         {{- with .Values.mosquitto.pod.volumes }}
         {{- toYaml . | trim | nindent 8 }}
         {{- end }}
+  {{- if .Values.mosquitto.persistence.enabled -}}
   volumeClaimTemplates:
     - metadata:
         name: data
@@ -175,3 +178,4 @@ spec:
         storageClassName: {{ . }}
         {{- end }}
         {{- end }}
+  {{- end }}
