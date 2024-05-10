@@ -531,6 +531,7 @@ int mosquitto_void_option(struct mosquitto *mosq, enum mosq_opt_t option, void *
 			}
 			break;
 #else
+			UNUSED(value);
 			return MOSQ_ERR_NOT_SUPPORTED;
 #endif
 		default:
