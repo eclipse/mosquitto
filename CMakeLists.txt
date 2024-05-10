@@ -36,6 +36,12 @@ if (WITH_TLS)
 	find_package(OpenSSL REQUIRED)
 	add_definitions("-DWITH_TLS")
 
+	# mosquitto uses OpenSSL 1.1 API, so set OPENSSL_API_COMPAT accordingly:
+	# https://www.openssl.org/docs/manmaster/man7/OPENSSL_API_COMPAT.html
+	# TODO: migrate off ENGINE API (deprecated since OpenSSL 3.0), see:
+	#       https://www.openssl.org/docs/manmaster/man7/migration_guide.html#Engines-and-METHOD-APIs
+	add_definitions("-DOPENSSL_API_COMPAT=0x10100000L")
+
 	if (WITH_TLS_PSK)
 		add_definitions("-DWITH_TLS_PSK")
 	endif (WITH_TLS_PSK)
