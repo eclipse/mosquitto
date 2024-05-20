@@ -976,6 +976,7 @@ ssize_t net__read(struct mosquitto *mosq, void *buf, size_t count)
 	errno = 0;
 #ifdef WITH_TLS
 	if(mosq->ssl){
+		ERR_clear_error();
 		ret = SSL_read(mosq->ssl, buf, (int)count);
 		if(ret <= 0){
 			ret = net__handle_ssl(mosq, ret);
@@ -1008,6 +1009,7 @@ ssize_t net__write(struct mosquitto *mosq, const void *buf, size_t count)
 #ifdef WITH_TLS
 	if(mosq->ssl){
 		mosq->want_write = false;
+		ERR_clear_error();
 		ret = SSL_write(mosq->ssl, buf, (int)count);
 		if(ret < 0){
 			ret = net__handle_ssl(mosq, ret);
