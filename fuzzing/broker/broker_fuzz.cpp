@@ -33,7 +33,7 @@ Contributors:
 #define PORT 1883
 
 /* The broker fuzz-only main function. */
-extern "C" int mosquitto_fuzz_main(int argc, char *argv[]);
+extern "C" int mosquitto_broker_main(int argc, char *argv[]);
 
 void *run_broker(void *args)
 {
@@ -45,7 +45,7 @@ void *run_broker(void *args)
 	argv[2] = strdup("-c");
 	argv[3] = strdup("/tmp/mosquitto.conf");
 
-	mosquitto_fuzz_main(argc, argv);
+	mosquitto_broker_main(argc, argv);
 
 	for(int i=0; i<argc; i++){
 		free(argv[i]);

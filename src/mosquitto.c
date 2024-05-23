@@ -370,11 +370,7 @@ static void cjson_init(void)
 	cJSON_InitHooks(&hooks);
 }
 
-#ifdef WITH_FUZZING
-int mosquitto_fuzz_main(int argc, char *argv[])
-#else
-int main(int argc, char *argv[])
-#endif
+int mosquitto_broker_main(int argc, char *argv[])
 {
 	struct mosquitto__config config;
 	int rc;

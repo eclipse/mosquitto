@@ -30,7 +30,7 @@ Contributors:
  */
 
 /* The broker fuzz-only main function. */
-extern "C" int mosquitto_fuzz_main(int argc, char *argv[]);
+extern "C" int mosquitto_broker_main(int argc, char *argv[]);
 
 void run_broker(char *filename)
 {
@@ -43,7 +43,7 @@ void run_broker(char *filename)
 	argv[3] = strdup("-c");
 	argv[4] = strdup(filename);
 
-	mosquitto_fuzz_main(argc, argv);
+	mosquitto_broker_main(argc, argv);
 
 	for(int i=0; i<argc; i++){
 		free(argv[i]);

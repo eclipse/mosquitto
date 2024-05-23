@@ -116,6 +116,9 @@ endif
 	$(INSTALL) include/mosquitto_plugin.h "${DESTDIR}${prefix}/include/mosquitto_plugin.h"
 	$(INSTALL) include/mosquittopp.h "${DESTDIR}${prefix}/include/mosquittopp.h"
 	$(INSTALL) include/mqtt_protocol.h "${DESTDIR}${prefix}/include/mqtt_protocol.h"
+ifeq ($(WITH_EMBEDD_BROKER),yes)
+	$(INSTALL) include/mosquitto/embedded_broker.h "${DESTDIR}${prefix}/include/mosquitto/"
+endif
 
 uninstall :
 	set -e; for d in ${DIRS}; do $(MAKE) -C $${d} uninstall; done
@@ -133,6 +136,7 @@ uninstall :
 	rm -f "${DESTDIR}${prefix}/include/mosquitto_plugin.h"
 	rm -f "${DESTDIR}${prefix}/include/mosquittopp.h"
 	rm -f "${DESTDIR}${prefix}/include/mqtt_protocol.h"
+	rm -f "${DESTDIR}${prefix}/include/mosquitto/embedded_broker.h"
 
 dist : reallyclean
 	set -e; for d in ${DISTDIRS}; do $(MAKE) -C $${d} dist; done

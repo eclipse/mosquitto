@@ -83,6 +83,8 @@ if(WITH_THREADING)
 	endif()
 endif()
 
+option(WITH_EMBEDD_BROKER, "Create a library mosquitto_broker to embedd the broker" OFF)
+
 option(WITH_DLT "Include DLT support?" OFF)
 message(STATUS "WITH_DLT = ${WITH_DLT}")
 if(WITH_DLT)

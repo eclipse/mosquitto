@@ -15,7 +15,7 @@ LOCAL_CXXFLAGS+=-g -Wall -Werror -pthread
 LOCAL_LDFLAGS+=
 LOCAL_LIBADD+=$(LIB_FUZZING_ENGINE) \
 			  ${R}/plugins/dynamic-security/mosquitto_dynamic_security.a \
-			  ${R}/src/mosquitto_broker.a \
+			  ${R}/src/libmosquitto_broker.a \
 			  ${R}/libcommon/libmosquitto_common.a \
 			  -lssl -lcrypto -lcjson -lm \
 			  -Wl,-Bdynamic -Wl,-Bstatic -largon2 -Wl,-Bdynamic
