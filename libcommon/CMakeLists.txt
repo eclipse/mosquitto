@@ -3,6 +3,7 @@ set(C_SRC
 	file_common.c
 	memory_common.c
 	mqtt_common.c
+	password_common.c
 	property_common.c
 	random_common.c
 	strings_common.c
@@ -42,6 +43,10 @@ target_link_libraries(libmosquitto_common
 	PUBLIC
 		config-header
 )
+
+if(ARGON2_FOUND)
+	target_link_libraries(libmosquitto_common PRIVATE argon2)
+endif()
 
 if (WITH_TLS)
 	target_link_libraries(libmosquitto_common

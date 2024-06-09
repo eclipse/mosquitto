@@ -6,7 +6,7 @@ include ${R}/config.mk
 LOCAL_CFLAGS+=
 LOCAL_CPPFLAGS+=-DWITH_BROKER -I${R}/lib -I${R}/libcommon
 LOCAL_LDFLAGS+=
-LOCAL_LDADD+=-lcjson -lm ${LIB_ARGON2} ${LIBMOSQ_COMMON}
+LOCAL_LDADD+=-lcjson -lm ${LIBMOSQ_COMMON}
 
 # ------------------------------------------
 #  Platform specific
@@ -94,6 +94,7 @@ OBJS=	mosquitto.o \
 		plugin_unsubscribe.o \
 		plugin_tick.o \
 		proxy_v2.o \
+		psk_file.o \
 		read_handle.o \
 		retain.o \
 		security_default.o \
@@ -125,7 +126,6 @@ OBJS_EXTERNAL= \
 		net_ws.o \
 		packet_datatypes.o \
 		packet_mosq.o \
-		password_mosq.o \
 		property_mosq.o \
 		send_connect.o \
 		send_disconnect.o \
@@ -181,9 +181,6 @@ net_mosq.o : ${R}/lib/net_mosq.c ${R}/lib/net_mosq.h
 	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(LOCAL_CFLAGS) -c $< -o $@
 
 net_ws.o : ${R}/lib/net_ws.c ${R}/lib/net_mosq.h
-	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(LOCAL_CFLAGS) -c $< -o $@
-
-password_mosq.o : ${R}/common/password_mosq.c ${R}/common/password_mosq.h mosquitto_broker_internal.h
 	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(LOCAL_CFLAGS) -c $< -o $@
 
 packet_datatypes.o : ${R}/lib/packet_datatypes.c ${R}/lib/packet_mosq.h

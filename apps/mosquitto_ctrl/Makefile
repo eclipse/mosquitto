@@ -6,7 +6,7 @@ include ${R}/config.mk
 LOCAL_CFLAGS+=
 LOCAL_CPPFLAGS+=-I${R}/lib -I${R}/apps/mosquitto_passwd -I${R}/plugins/dynamic-security -I${R}/common
 LOCAL_LDFLAGS+=
-LOCAL_LDADD+=-lcjson -ldl ${LIBMOSQ} ${LIBMOSQ_COMMON} ${LIB_ARGON2}
+LOCAL_LDADD+=-lcjson -ldl ${LIBMOSQ} ${LIBMOSQ_COMMON}
 
 # ------------------------------------------
 #  Compile time options
@@ -34,8 +34,7 @@ OBJS= \
 
 OBJS_EXTERNAL= \
 	get_password.o \
-	json_help.o \
-	password_mosq.o
+	json_help.o
 
 EXAMPLE_OBJS= example.o
 
@@ -63,9 +62,6 @@ get_password.o : ${R}/apps/mosquitto_passwd/get_password.c ${R}/apps/mosquitto_p
 	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(LOCAL_CFLAGS) -c $< -o $@
 
 json_help.o : ${R}/common/json_help.c ${R}/common/json_help.h
-	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(LOCAL_CFLAGS) -c $< -o $@
-
-password_mosq.o : ${R}/common/password_mosq.c ${R}/common/password_mosq.h
 	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(LOCAL_CFLAGS) -c $< -o $@
 
 ${R}/lib/libmosquitto.so.${SOVERSION} :

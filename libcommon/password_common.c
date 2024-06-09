@@ -18,33 +18,23 @@ Contributors:
 
 #include "config.h"
 
+#include <stdbool.h>
+#include <string.h>
+
 #ifdef WITH_TLS
 #  include <openssl/opensslv.h>
 #  include <openssl/evp.h>
 #  include <openssl/rand.h>
+#  define HASH_LEN EVP_MAX_MD_SIZE
 #endif
-#include <string.h>
 
 #include "mosquitto.h"
-#include "password_mosq.h"
 
-#ifdef WIN32
-#  include <windows.h>
-#  include <process.h>
-#	ifndef __cplusplus
-#		if defined(_MSC_VER) && _MSC_VER < 1900
-#			define bool char
-#			define true 1
-#			define false 0
-#		else
-#			include <stdbool.h>
-#		endif
-#	endif
-#   define snprintf sprintf_s
-#	include <io.h>
-#	include <windows.h>
+#ifdef WITH_TLS
+#  define HASH_LEN EVP_MAX_MD_SIZE
 #else
-#  include <stdbool.h>
+   /* 64 bytes big enough for SHA512 */
+#  define HASH_LEN 64
 #endif
 
 #ifdef WITH_ARGON2
@@ -54,7 +44,35 @@ Contributors:
 #  define MOSQ_ARGON2_P 1
 #endif
 
-int pw__memcmp_const(const void *a, const void *b, size_t len)
+#define PW_DEFAULT_ITERATIONS 210000
+static int pw__encode(struct mosquitto_pw *pw);
+
+struct mosquitto_pw{
+	union {
+		struct {
+			unsigned char password_hash[HASH_LEN]; /* For SHA512 */
+			unsigned char salt[HASH_LEN];
+			size_t salt_len;
+		} sha512;
+		struct {
+			unsigned char password_hash[HASH_LEN]; /* For SHA512 */
+			unsigned char salt[HASH_LEN];
+			size_t salt_len;
+			int iterations;
+		} sha512_pbkdf2;
+		struct {
+			unsigned char password_hash[HASH_LEN];
+			unsigned char salt[HASH_LEN];
+			size_t salt_len;
+			int iterations;
+		} argon2id;
+	} params;
+	char *encoded_password;
+	enum mosquitto_pwhash_type hashtype;
+	bool valid;
+};
+
+static int pw__memcmp_const(const void *a, const void *b, size_t len)
 {
 #ifdef WITH_TLS
 	return CRYPTO_memcmp(a, b, len);
@@ -79,7 +97,7 @@ int pw__memcmp_const(const void *a, const void *b, size_t len)
 static int pw__create_argon2id(struct mosquitto_pw *pw, const char *password)
 {
 #ifdef WITH_ARGON2
-	pw->hashtype = pw_argon2id;
+	pw->hashtype = MOSQ_PW_ARGON2ID;
 	pw->params.argon2id.salt_len = HASH_LEN;
 	int rc = RAND_bytes(pw->params.argon2id.salt, (int)pw->params.argon2id.salt_len);
 	if(!rc){
@@ -99,6 +117,7 @@ static int pw__create_argon2id(struct mosquitto_pw *pw, const char *password)
 			pw->encoded_password, encoded_len+1);
 
 	if(rc == ARGON2_OK){
+		pw->valid = true;
 		return MOSQ_ERR_SUCCESS;
 	}else{
 		return MOSQ_ERR_UNKNOWN;
@@ -136,6 +155,7 @@ static int pw__decode_argon2id(struct mosquitto_pw *pw, const char *password)
 	if(new_password){
 		mosquitto_free(pw->encoded_password);
 		pw->encoded_password = new_password;
+		pw->valid = true;
 		return MOSQ_ERR_SUCCESS;
 	}else{
 		return MOSQ_ERR_NOMEM;
@@ -172,7 +192,7 @@ static int pw__hash_sha512_pbkdf2(const char *password, struct mosquitto_pw *pw,
 static int pw__create_sha512_pbkdf2(struct mosquitto_pw *pw, const char *password)
 {
 #ifdef WITH_TLS
-	pw->hashtype = pw_sha512_pbkdf2;
+	pw->hashtype = MOSQ_PW_SHA512_PBKDF2;
 	pw->params.sha512_pbkdf2.salt_len = HASH_LEN;
 	int rc = RAND_bytes(pw->params.sha512_pbkdf2.salt, (int)pw->params.sha512_pbkdf2.salt_len);
 	if(!rc){
@@ -182,10 +202,13 @@ static int pw__create_sha512_pbkdf2(struct mosquitto_pw *pw, const char *passwor
 	if(pw->params.sha512_pbkdf2.iterations == 0){
 		pw->params.sha512_pbkdf2.iterations = PW_DEFAULT_ITERATIONS;
 	}
-	return pw__hash_sha512_pbkdf2(password, pw,
+	rc = pw__hash_sha512_pbkdf2(password, pw,
 			pw->params.sha512_pbkdf2.password_hash,
 			sizeof(pw->params.sha512_pbkdf2.password_hash),
 			pw->params.sha512_pbkdf2.iterations);
+
+	pw->valid = (rc == MOSQ_ERR_SUCCESS);
+	return rc;
 #else
 	return MOSQ_ERR_NOT_SUPPORTED;
 #endif
@@ -303,6 +326,7 @@ static int pw__decode_sha512_pbkdf2(struct mosquitto_pw *pw, const char *salt_pa
 	memcpy(pw->params.sha512_pbkdf2.password_hash, password, password_len);
 	mosquitto_free(password);
 
+	pw->valid = true;
 	return MOSQ_ERR_SUCCESS;
 #else
 	return MOSQ_ERR_NOT_SUPPORTED;
@@ -351,14 +375,16 @@ static int pw__hash_sha512(const char *password, struct mosquitto_pw *pw, unsign
 static int pw__create_sha512(struct mosquitto_pw *pw, const char *password)
 {
 #ifdef WITH_TLS
-	pw->hashtype = pw_sha512;
+	pw->hashtype = MOSQ_PW_SHA512;
 	pw->params.sha512.salt_len = HASH_LEN;
 	int rc = RAND_bytes(pw->params.sha512.salt, (int)pw->params.sha512.salt_len);
 	if(!rc){
 		return MOSQ_ERR_UNKNOWN;
 	}
 
-	return pw__hash_sha512(password, pw, pw->params.sha512.password_hash, sizeof(pw->params.sha512.password_hash));
+	rc = pw__hash_sha512(password, pw, pw->params.sha512.password_hash, sizeof(pw->params.sha512.password_hash));
+	pw->valid = (rc == MOSQ_ERR_SUCCESS);
+	return rc;
 #else
 	return MOSQ_ERR_NOT_SUPPORTED;
 #endif
@@ -460,88 +486,153 @@ static int pw__decode_sha512(struct mosquitto_pw *pw, const char *salt_password)
 	memcpy(pw->params.sha512.password_hash, password, password_len);
 	mosquitto_free(password);
 
+	pw->valid = true;
 	return MOSQ_ERR_SUCCESS;
 #else
 	return MOSQ_ERR_NOT_SUPPORTED;
 #endif
 }
 
+static int pw__encode(struct mosquitto_pw *pw)
+{
+	switch(pw->hashtype){
+		case MOSQ_PW_ARGON2ID:
+			return MOSQ_ERR_SUCCESS;
+		case MOSQ_PW_SHA512_PBKDF2:
+			return pw__encode_sha512_pbkdf2(pw);
+		case MOSQ_PW_SHA512:
+			return pw__encode_sha512(pw);
+		case MOSQ_PW_DEFAULT:
+			break;
+	}
+
+	return MOSQ_ERR_AUTH;
+}
+
 /* ==================================================
  * Public
  * ================================================== */
 
-int pw__create(struct mosquitto_pw *pw, const char *password)
+int mosquitto_pw_new(struct mosquitto_pw **pw, enum mosquitto_pwhash_type hashtype)
 {
+	*pw = mosquitto_calloc(1, sizeof(struct mosquitto_pw));
+	if(*pw){
+		(*pw)->hashtype = hashtype;
+		return MOSQ_ERR_SUCCESS;
+	}else{
+		return MOSQ_ERR_NOMEM;
+	}
+}
+
+
+int mosquitto_pw_hash_encoded(struct mosquitto_pw *pw, const char *password)
+{
+	int rc = MOSQ_ERR_INVAL;
+
 	switch(pw->hashtype){
-		case pw_argon2id:
-			return pw__create_argon2id(pw, password);
-		case pw_sha512_pbkdf2:
-			return pw__create_sha512_pbkdf2(pw, password);
-		case pw_sha512:
-			return pw__create_sha512(pw, password);
+		case MOSQ_PW_DEFAULT:
+		case MOSQ_PW_ARGON2ID:
+			rc = pw__create_argon2id(pw, password);
+		case MOSQ_PW_SHA512_PBKDF2:
+			rc = pw__create_sha512_pbkdf2(pw, password);
+		case MOSQ_PW_SHA512:
+			rc = pw__create_sha512(pw, password);
 		default:
 #ifdef WITH_ARGON2
-			return pw__create_argon2id(pw, password);
+			rc = pw__create_argon2id(pw, password);
 #else
-			return pw__create_sha512_pbkdf2(pw, password);
+			rc = pw__create_sha512_pbkdf2(pw, password);
 #endif
 	}
-
-	return MOSQ_ERR_INVAL;
+	if(rc == MOSQ_ERR_SUCCESS){
+		return pw__encode(pw);
+	}else{
+		return rc;
+	}
 }
 
-int pw__verify(struct mosquitto_pw *pw, const char *password)
+int mosquitto_pw_verify(struct mosquitto_pw *pw, const char *password)
 {
-	switch(pw->hashtype){
-		case pw_argon2id:
-			return pw__verify_argon2id(pw, password);
-		case pw_sha512_pbkdf2:
-			return pw__verify_sha512_pbkdf2(pw, password);
-		case pw_sha512:
-			return pw__verify_sha512(pw, password);
+	if(pw && pw->valid){
+		switch(pw->hashtype){
+			case MOSQ_PW_ARGON2ID:
+				return pw__verify_argon2id(pw, password);
+			case MOSQ_PW_SHA512_PBKDF2:
+				return pw__verify_sha512_pbkdf2(pw, password);
+			case MOSQ_PW_SHA512:
+				return pw__verify_sha512(pw, password);
+			case MOSQ_PW_DEFAULT:
+				return MOSQ_ERR_AUTH;
+		}
 	}
 
 	return MOSQ_ERR_AUTH;
 }
 
-int pw__encode(struct mosquitto_pw *pw)
+void mosquitto_pw_set_valid(struct mosquitto_pw *pw, bool valid)
 {
-	switch(pw->hashtype){
-		case pw_argon2id:
-			return MOSQ_ERR_SUCCESS;
-		case pw_sha512_pbkdf2:
-			return pw__encode_sha512_pbkdf2(pw);
-		case pw_sha512:
-			return pw__encode_sha512(pw);
+	if(pw){
+		pw->valid = valid;
 	}
-
-	return MOSQ_ERR_AUTH;
 }
 
-int pw__decode(struct mosquitto_pw *pw, const char *password)
+bool mosquitto_pw_is_valid(struct mosquitto_pw *pw)
 {
+	return pw && pw->valid;
+}
+
+int mosquitto_pw_decode(struct mosquitto_pw *pw, const char *password)
+{
+	if(!pw) return MOSQ_ERR_INVAL;
+
+	pw->valid = false;
 	if(password[0] != '$'){
 		return MOSQ_ERR_INVAL;
 	}
+	pw->encoded_password = mosquitto_strdup(password);
+	if(!pw->encoded_password){
+		return MOSQ_ERR_NOMEM;
+	}
 
 	if(password[1] == '6' && password[2] == '$'){
-		pw->hashtype = pw_sha512;
+		pw->hashtype = MOSQ_PW_SHA512;
 		return pw__decode_sha512(pw, &password[3]);
 	}else if(password[1] == '7' && password[2] == '$'){
-		pw->hashtype = pw_sha512_pbkdf2;
+		pw->hashtype = MOSQ_PW_SHA512_PBKDF2;
 		return pw__decode_sha512_pbkdf2(pw, &password[3]);
 	}else if(!strncmp(password, "$argon2id$", strlen("$argon2id$"))){
-		pw->hashtype = pw_argon2id;
+		pw->hashtype = MOSQ_PW_ARGON2ID;
 		return pw__decode_argon2id(pw, password);
 	}else{
+		mosquitto_FREE(pw->encoded_password);
 		return MOSQ_ERR_INVAL;
 	}
 }
 
-void pw__cleanup(struct mosquitto_pw *pw)
+const char *mosquitto_pw_get_encoded(struct mosquitto_pw *pw)
+{
+	return pw?pw->encoded_password:NULL;
+}
+
+int mosquitto_pw_set_param(struct mosquitto_pw *pw, int param, int value)
+{
+	if(!pw) return MOSQ_ERR_INVAL;
+
+	switch(param){
+		case MOSQ_PW_PARAM_ITERATIONS:
+			if(pw->hashtype != MOSQ_PW_SHA512_PBKDF2) return MOSQ_ERR_INVAL;
+			pw->params.sha512_pbkdf2.iterations = value;
+			break;
+	}
+
+	return MOSQ_ERR_SUCCESS;
+}
+
+void mosquitto_pw_cleanup(struct mosquitto_pw *pw)
 {
 	if(pw){
 		mosquitto_free(pw->encoded_password);
 		pw->encoded_password = NULL;
+		mosquitto_free(pw);
 	}
 }

@@ -21,7 +21,6 @@ Contributors:
 #include <cjson/cJSON.h>
 #include <uthash.h>
 #include "mosquitto.h"
-#include "password_mosq.h"
 
 #define PRIORITY_MAX 100000
 
@@ -82,7 +81,7 @@ struct dynsec__kicklist{
 
 struct dynsec__client{
 	UT_hash_handle hh;
-	struct mosquitto_pw pw;
+	struct mosquitto_pw *pw;
 	struct dynsec__rolelist *rolelist;
 	struct dynsec__grouplist *grouplist;
 	char *clientid;

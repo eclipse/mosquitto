@@ -4,7 +4,7 @@ include ${R}/config.mk
 LOCAL_CFLAGS+=
 LOCAL_CPPFLAGS+=-I${R}/lib
 LOCAL_LDFLAGS+=
-LOCAL_LDADD+=-lcrypto ${LIB_ARGON2} ${LIBMOSQ_COMMON}
+LOCAL_LDADD+=-lcrypto ${LIBMOSQ_COMMON}
 
 .PHONY: all install uninstall clean reallyclean
 
@@ -12,8 +12,7 @@ OBJS= \
 	mosquitto_passwd.o \
 	get_password.o \
 
-OBJS_EXTERNAL= \
-	password_mosq.o
+OBJS_EXTERNAL=
 
 
 ifeq ($(WITH_TLS),yes)
@@ -34,9 +33,6 @@ mosquitto_passwd.a : ${OBJS} ${OBJS_EXTERNAL}
 
 ${OBJS} : %.o: %.c
 	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(LOCAL_CFLAGS) -c $< -o $@
-
-password_mosq.o : ${R}/common/password_mosq.c ${R}/common/password_mosq.h
-	${CROSS_COMPILE}${CC} ${LOCAL_CPPFLAGS} $(LOCAL_CFLAGS) -c $< -o $@
 
 install : all
 ifeq ($(WITH_TLS),yes)

@@ -24,7 +24,6 @@ Contributors:
 #include "mosquitto_ctrl.h"
 #include "get_password.h"
 #include "json_help.h"
-#include "password_mosq.h"
 #include "dynamic_security.h"
 
 int dynsec_client__create(int argc, char *argv[], cJSON *j_command)
@@ -161,6 +160,7 @@ int dynsec_client__file_set_password(int argc, char *argv[], const char *file)
 	struct dynsec__client client;
 	char *json_str;
 	int i;
+	int iterations = -1;
 
 	memset(&client, 0, sizeof(client));
 
@@ -176,7 +176,7 @@ int dynsec_client__file_set_password(int argc, char *argv[], const char *file)
 				fprintf(stderr, "Error: -i argument given, but no iterations provided.\n");
 				return MOSQ_ERR_INVAL;
 			}
-			client.pw.params.sha512_pbkdf2.iterations = atoi(argv[i+1]);
+			iterations = atoi(argv[i+1]);
 			i++;
 		}else{
 			fprintf(stderr, "Error: Unknown argument: %s\n", argv[i]);
@@ -231,89 +231,50 @@ int dynsec_client__file_set_password(int argc, char *argv[], const char *file)
 			const char *username_json;
 			if(json_get_string(j_client, "username", &username_json, false) == MOSQ_ERR_SUCCESS){
 				if(!strcmp(username_json, username)){
-					if(pw__create(&client.pw, password)){
+					if(iterations == -1){
+						mosquitto_pw_new(&client.pw, MOSQ_PW_DEFAULT);
+					}else{
+						mosquitto_pw_new(&client.pw, MOSQ_PW_SHA512_PBKDF2);
+						mosquitto_pw_set_param(client.pw, MOSQ_PW_PARAM_ITERATIONS, iterations);
+					}
+					if(!client.pw || mosquitto_pw_hash_encoded(client.pw, password)){
+						cJSON_Delete(j_tree);
+						mosquitto_pw_cleanup(client.pw);
+						client.pw = NULL;
 						fprintf(stderr, "Error: Problem generating password hash.\n");
 						return MOSQ_ERR_NOMEM;
 					}
 
-					if(client.pw.hashtype == pw_sha512_pbkdf2){
-						char *password_b64, *salt_b64;
-						cJSON *j_password = NULL, *j_salt = NULL, *j_iterations = NULL;
-
-						if(mosquitto_base64_encode(client.pw.params.sha512_pbkdf2.password_hash, sizeof(client.pw.params.sha512_pbkdf2.password_hash), &password_b64) != MOSQ_ERR_SUCCESS){
-							fprintf(stderr, "Error: Problem generating password hash.\n");
-							pw__cleanup(&client.pw);
-							return MOSQ_ERR_NOMEM;
-						}
-						if(mosquitto_base64_encode(client.pw.params.sha512_pbkdf2.salt, client.pw.params.sha512_pbkdf2.salt_len, &salt_b64) != MOSQ_ERR_SUCCESS){
-							pw__cleanup(&client.pw);
-							free(password_b64);
-							fprintf(stderr, "Error: Problem generating password hash.\n");
-							return MOSQ_ERR_NOMEM;
-						}
-						if((j_password = cJSON_CreateString(password_b64)) == NULL
-								|| (j_salt = cJSON_CreateString(salt_b64)) == NULL
-								|| (j_iterations = cJSON_CreateNumber(client.pw.params.sha512_pbkdf2.iterations)) == NULL
-								){
-
-							pw__cleanup(&client.pw);
-							free(password_b64);
-							free(salt_b64);
-							fprintf(stderr, "Error: Out of memory.\n");
-							return MOSQ_ERR_NOMEM;
-						}
-						free(password_b64);
-						free(salt_b64);
-
-						cJSON_DeleteItemFromObject(j_client, "password");
-						cJSON_DeleteItemFromObject(j_client, "salt");
-						cJSON_DeleteItemFromObject(j_client, "iterations");
-						cJSON_DeleteItemFromObject(j_client, "encoded_password");
-
-						cJSON_AddItemToObject(j_client, "password", j_password);
-						cJSON_AddItemToObject(j_client, "salt", j_salt);
-						cJSON_AddItemToObject(j_client, "iterations", j_iterations);
-						j_password = NULL;
-						j_salt = NULL;
-						j_iterations = NULL;
-					}else{
-						if(pw__encode(&client.pw)){
-							fprintf(stderr, "Error: Out of memory.\n");
-							pw__cleanup(&client.pw);
-							return MOSQ_ERR_NOMEM;
-						}
-						cJSON *j_encoded_password = cJSON_CreateString(client.pw.encoded_password);
-						if(!j_encoded_password){
-							fprintf(stderr, "Error: Out of memory.\n");
-							pw__cleanup(&client.pw);
-							return MOSQ_ERR_NOMEM;
-						}
-
-						cJSON_DeleteItemFromObject(j_client, "password");
-						cJSON_DeleteItemFromObject(j_client, "salt");
-						cJSON_DeleteItemFromObject(j_client, "iterations");
-						cJSON_DeleteItemFromObject(j_client, "encoded_password");
-						cJSON_AddItemToObject(j_client, "encoded_password", j_encoded_password);
+					cJSON *j_encoded_password = cJSON_CreateString(mosquitto_pw_get_encoded(client.pw));
+					if(!j_encoded_password){
+						fprintf(stderr, "Error: Out of memory.\n");
+						cJSON_Delete(j_tree);
+						mosquitto_pw_cleanup(client.pw);
+						return MOSQ_ERR_NOMEM;
 					}
+					mosquitto_pw_cleanup(client.pw);
+
+					cJSON_DeleteItemFromObject(j_client, "password");
+					cJSON_DeleteItemFromObject(j_client, "salt");
+					cJSON_DeleteItemFromObject(j_client, "iterations");
+					cJSON_DeleteItemFromObject(j_client, "encoded_password");
+					cJSON_AddItemToObject(j_client, "encoded_password", j_encoded_password);
 
 					json_str = cJSON_Print(j_tree);
 					cJSON_Delete(j_tree);
 					if(json_str == NULL){
 						fprintf(stderr, "Error: Out of memory.\n");
-						pw__cleanup(&client.pw);
 						return MOSQ_ERR_NOMEM;
 					}
 					fptr = fopen(file, "wb");
 					if(fptr == NULL){
 						fprintf(stderr, "Error: Unable to write to %s.\n", file);
 						free(json_str);
-						pw__cleanup(&client.pw);
 						return MOSQ_ERR_UNKNOWN;
 					}
 					fprintf(fptr, "%s", json_str);
 					free(json_str);
 					fclose(fptr);
-					pw__cleanup(&client.pw);
 					return MOSQ_ERR_SUCCESS;
 				}
 			}

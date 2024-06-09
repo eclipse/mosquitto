@@ -18,7 +18,7 @@ LOCAL_LIBADD+=$(LIB_FUZZING_ENGINE) \
 			  ${R}/src/mosquitto_broker.a \
 			  ${R}/libcommon/libmosquitto_common.a \
 			  -lssl -lcrypto -lcjson -lm \
-			  -Wl,-Bstatic -largon2 -Wl,-Bdynamic
+			  -Wl,-Bdynamic -Wl,-Bstatic -largon2 -Wl,-Bdynamic
 
 all: $(FUZZERS)
 

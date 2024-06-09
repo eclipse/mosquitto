@@ -36,7 +36,6 @@ add_executable(mosquitto
 	../lib/net_ws.c
 	../lib/packet_datatypes.c
 	../lib/packet_mosq.c ../lib/packet_mosq.h
-	../common/password_mosq.c ../common/password_mosq.h
 	persist_read_v234.c persist_read_v5.c persist_read.c
 	persist_write_v5.c persist_write.c
 	persist.h
@@ -51,6 +50,7 @@ add_executable(mosquitto
 	property_broker.c
 	proxy_v2.c
 	../lib/property_mosq.c ../lib/property_mosq.h
+	psk_file.c
 	read_handle.c
 	../lib/read_handle.h
 	retain.c
@@ -134,10 +134,6 @@ option(STATIC_WEBSOCKETS "Use the static libwebsockets library?" OFF)
 option(WITH_CONTROL "Include $CONTROL topic support?" ON)
 if(WITH_CONTROL)
 	target_compile_definitions(mosquitto PRIVATE "WITH_CONTROL")
-endif()
-
-if(ARGON2_FOUND)
-	target_link_libraries(mosquitto PRIVATE argon2)
 endif()
 
 if(WIN32 OR CYGWIN)

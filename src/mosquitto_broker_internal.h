@@ -39,7 +39,6 @@ Contributors:
 #include "mosquitto/broker_plugin.h"
 #include "mosquitto.h"
 #include "logging_mosq.h"
-#include "password_mosq.h"
 #include "tls_mosq.h"
 #include "uthash.h"
 
@@ -194,7 +193,7 @@ struct mosquitto__security_options {
 	 * should be disabled when these options are set.
 	 */
 	struct mosquitto__unpwd *unpwd;
-	struct mosquitto__unpwd *psk_id;
+	struct mosquitto__psk *psk_id;
 	struct mosquitto__acl_user *acl_list;
 	struct mosquitto__acl *acl_patterns;
 	char *password_file;
@@ -425,11 +424,17 @@ struct mosquitto__client_msg{
 };
 
 
+struct mosquitto__psk{
+	UT_hash_handle hh;
+	char *username;
+	char *password;
+};
+
 struct mosquitto__unpwd{
 	UT_hash_handle hh;
 	char *username;
 	char *clientid;
-	struct mosquitto_pw pw;
+	struct mosquitto_pw *pw;
 };
 
 struct mosquitto__acl{
@@ -910,6 +915,8 @@ int mosquitto_security_init_default(bool reload);
 int mosquitto_security_apply_default(void);
 int mosquitto_security_cleanup_default(bool reload);
 int mosquitto_psk_key_get_default(struct mosquitto *context, const char *hint, const char *identity, char *key, int max_key_len);
+int psk_file__init(void);
+int psk_file__cleanup(void);
 
 int mosquitto_security_auth_start(struct mosquitto *context, bool reauth, const void *data_in, uint16_t data_in_len, void **data_out, uint16_t *data_out_len);
 int mosquitto_security_auth_continue(struct mosquitto *context, const void *data_in, uint16_t data_len, void **data_out, uint16_t *data_out_len);

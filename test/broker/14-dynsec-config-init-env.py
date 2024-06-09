@@ -27,7 +27,7 @@ connack_packet = mosq_test.gen_connack(rc=0)
 
 env = os.environ
 env["MOSQUITTO_DYNSEC_PASSWORD"] = "adminadminadmin"
-broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port, env=env)
+broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port, env=env, timeout=3)
 
 try:
     sock = mosq_test.do_client_connect(connect_packet, connack_packet, timeout=5, port=port)

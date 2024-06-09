@@ -11,7 +11,7 @@ FUZZERS:= \
 LOCAL_CPPFLAGS+=-I${R}/include/
 LOCAL_CXXFLAGS+=-g -Wall -Werror -pthread
 LOCAL_LDFLAGS+=
-LOCAL_LIBADD+=$(LIB_FUZZING_ENGINE) ${R}/lib/libmosquitto.a -lssl -lcrypto ${R}/libcommon/libmosquitto_common.a
+LOCAL_LIBADD+=$(LIB_FUZZING_ENGINE) ${R}/lib/libmosquitto.a -lssl -lcrypto ${R}/libcommon/libmosquitto_common.a -Wl,-Bstatic -largon2 -Wl,-Bdynamic
 
 all: $(FUZZERS)
 

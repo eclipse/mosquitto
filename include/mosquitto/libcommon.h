@@ -39,6 +39,7 @@ extern "C" {
 #include <mosquitto/libcommon_base64.h>
 #include <mosquitto/libcommon_file.h>
 #include <mosquitto/libcommon_memory.h>
+#include <mosquitto/libcommon_password.h>
 #include <mosquitto/libcommon_properties.h>
 #include <mosquitto/libcommon_random.h>
 #include <mosquitto/libcommon_string.h>

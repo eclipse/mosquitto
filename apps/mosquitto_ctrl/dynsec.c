@@ -33,7 +33,6 @@ Contributors:
 #include "mosquitto_ctrl.h"
 #include "mosquitto.h"
 #include "json_help.h"
-#include "password_mosq.h"
 #include "get_password.h"
 
 #define MAX_STRING_LEN 4096
@@ -561,16 +560,16 @@ static cJSON *init_add_role(const char *rolename)
 static cJSON *init_add_client(const char *username, const char *password, const char *rolename)
 {
 	cJSON *j_client, *j_roles, *j_role;
-	struct mosquitto_pw pw;
+	struct mosquitto_pw *pw;
 
-	memset(&pw, 0, sizeof(pw));
-
-	if(pw__create(&pw, password) != MOSQ_ERR_SUCCESS){
+	if(mosquitto_pw_new(&pw, MOSQ_PW_DEFAULT) || mosquitto_pw_hash_encoded(pw, password)){
+		mosquitto_pw_cleanup(pw);
 		return NULL;
 	}
 
 	j_client = cJSON_CreateObject();
 	if(j_client == NULL){
+		mosquitto_pw_cleanup(pw);
 		return NULL;
 	}
 
@@ -579,38 +578,16 @@ static cJSON *init_add_client(const char *username, const char *password, const 
 			){
 
 		cJSON_Delete(j_client);
+		mosquitto_pw_cleanup(pw);
 		return NULL;
 	}
 
-	if(pw.hashtype == pw_sha512_pbkdf2){
-		char *salt_b64 = NULL, *password_b64 = NULL;
-
-		if(mosquitto_base64_encode(pw.params.sha512_pbkdf2.salt, pw.params.sha512_pbkdf2.salt_len, &salt_b64)
-				|| mosquitto_base64_encode(pw.params.sha512_pbkdf2.password_hash, sizeof(pw.params.sha512_pbkdf2.password_hash), &password_b64)
-				|| cJSON_AddStringToObject(j_client, "salt", salt_b64) == NULL
-				|| cJSON_AddStringToObject(j_client, "password", password_b64) == NULL
-				|| cJSON_AddNumberToObject(j_client, "iterations", pw.params.sha512_pbkdf2.iterations) == NULL){
-
-			cJSON_Delete(j_client);
-			free(password_b64);
-			free(salt_b64);
-			return NULL;
-		}
-		free(password_b64);
-		free(salt_b64);
-	}else{
-		if(pw__encode(&pw) != MOSQ_ERR_SUCCESS){
-			cJSON_Delete(j_client);
-			return NULL;
-		}
-
-		if(cJSON_AddStringToObject(j_client, "encoded_password", pw.encoded_password) == NULL){
-			free(pw.encoded_password);
-			cJSON_Delete(j_client);
-			return NULL;
-		}
-		free(pw.encoded_password);
+	if(cJSON_AddStringToObject(j_client, "encoded_password", mosquitto_pw_get_encoded(pw)) == NULL){
+		cJSON_Delete(j_client);
+		mosquitto_pw_cleanup(pw);
+		return NULL;
 	}
+	mosquitto_pw_cleanup(pw);
 
 	j_roles = cJSON_CreateArray();
 	if(j_roles == NULL){

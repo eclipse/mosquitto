@@ -10,7 +10,6 @@ if(WITH_TLS)
 		../mosquitto_passwd/get_password.c ../mosquitto_passwd/get_password.h
 		options.c
 		../../common/json_help.c ../../common/json_help.h
-		../../common/password_mosq.c ../../common/password_mosq.h
 	)
 
 	target_include_directories(mosquitto_ctrl PRIVATE
@@ -44,13 +43,6 @@ if(WITH_TLS)
 		else()
 			target_link_libraries(mosquitto_ctrl PRIVATE dl)
 		endif()
-	endif()
-
-	if(ARGON2_FOUND)
-		target_link_libraries(mosquitto_ctrl
-			PRIVATE
-				argon2
-		)
 	endif()
 
 	target_link_libraries(mosquitto_ctrl
