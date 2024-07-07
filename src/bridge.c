@@ -713,6 +713,16 @@ int bridge__on_connect(struct mosquitto *context)
 	return MOSQ_ERR_SUCCESS;
 }
 
+int bridge__on_suback(struct mosquitto *context, int qos) {
+	if(qos>2){
+		log__printf(NULL, MOSQ_LOG_ERR, "Error on bridge subscription: %s", mosquitto_reason_string(qos));
+		if(context->bridge->fatal_sub_errors){
+			do_disconnect(context, MOSQ_ERR_CONN_LOST);
+		}
+	}
+
+	return MOSQ_ERR_SUCCESS;
+}
 
 int bridge__register_local_connections(void)
 {

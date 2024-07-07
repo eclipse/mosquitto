@@ -1974,7 +1974,16 @@ openssl dhparam -out dhparam.pem 2048</programlisting>
 						other setting. Defaults to <replaceable>true</replaceable>.</para>
 				</listitem>
 			</varlistentry>
-
+			<varlistentry>
+				<term><option>bridge_fatal_sub_errors</option> [ true | false ]</term>
+				<listitem>
+					<para> A failure to subscribe to a topic will cause an immediate
+						disconnection. The hope is that a temporary failure will disappear
+						after reconnecting. If you desire to silently ignore subscription
+						errors (not advised), you can set the bridge_fatal_sub_errors
+						option to false. Defaults to <replaceable>true</replaceable>.</para>
+				</listitem>
+			</varlistentry>
 			<varlistentry>
 				<term><option>bridge_protocol_version</option> <replaceable>version</replaceable></term>
 				<listitem>

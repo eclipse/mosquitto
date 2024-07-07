@@ -38,6 +38,7 @@ do_test_broker_failure(conf_file, ["bridge_insecure true"], port, 3, "Error: The
 do_test_broker_failure(conf_file, ["bridge_max_packet_size 1000"], port, 3, "Error: The 'bridge_max_packet_size' option requires a bridge to be defined first.") # Missing bridge config
 do_test_broker_failure(conf_file, ["bridge_max_topic_alias 1000"], port, 3, "Error: The 'bridge_max_topic_alias' option requires a bridge to be defined first.") # Missing bridge config
 do_test_broker_failure(conf_file, ["bridge_outgoing_retain false"], port, 3, "Error: The 'bridge_outgoing_retain' option requires a bridge to be defined first.") # Missing bridge config
+do_test_broker_failure(conf_file, ["bridge_fatal_sub_errors false"], 3, "Error: The 'bridge_fatal_sub_errors' option requires a bridge to be defined first.") # Missing bridge config
 do_test_broker_failure(conf_file, ["bridge_protocol_version string"], port, 3, "Error: The 'bridge_protocol_version' option requires a bridge to be defined first.") # Missing bridge config
 do_test_broker_failure(conf_file, ["bridge_receive_maximum 10"], port, 3, "Error: The 'bridge_receive_maximum' option requires a bridge to be defined first.") # Missing bridge config
 do_test_broker_failure(conf_file, ["bridge_reload_type string"], port, 3, "Error: The 'bridge_reload_type' option requires a bridge to be defined first.") # Missing bridge config

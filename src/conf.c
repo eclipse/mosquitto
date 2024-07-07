@@ -1295,6 +1295,13 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 #else
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Bridge support not available.");
 #endif
+				}else if(!strcmp(token, "bridge_fatal_sub_errors")){
+#if defined(WITH_BRIDGE)
+					REQUIRE_BRIDGE(token);
+					if(conf__parse_bool(&token, "bridge_fatal_sub_errors", &cur_bridge->fatal_sub_errors, &saveptr)) return MOSQ_ERR_INVAL;
+#else
+					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Bridge support not available.");
+#endif
 				}else if(!strcmp(token, "bridge_keyfile")){
 #if defined(WITH_BRIDGE) && defined(WITH_TLS)
 					REQUIRE_BRIDGE(token);
@@ -1566,6 +1573,7 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 					cur_bridge->protocol_version = mosq_p_mqtt311;
 					cur_bridge->primary_retry_sock = INVALID_SOCKET;
 					cur_bridge->outgoing_retain = true;
+					cur_bridge->fatal_sub_errors = true;
 					cur_bridge->clean_start_local = -1;
 					cur_bridge->reload_type = brt_lazy;
 					cur_bridge->max_topic_alias = 10;
