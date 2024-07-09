@@ -3,7 +3,7 @@ Contributing to Mosquitto
 
 Thank you for your interest in this project.
 
-Project description:
+Project description
 --------------------
 
 The Mosquitto project has been created to provide a light weight, open-source
@@ -71,13 +71,13 @@ are required. These are detailed in the
 
 
 
-Contact:
+Contact
 --------
 
 Contact the project developers via the project's development
 [mailing list](https://dev.eclipse.org/mailman/listinfo/mosquitto-dev).
 
-Search for bugs:
+Search for bugs
 ----------------
 
 This project uses [Github](https://github.com/eclipse/mosquitto/issues)
