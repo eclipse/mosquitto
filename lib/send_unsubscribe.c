@@ -73,7 +73,7 @@ int send__unsubscribe(struct mosquitto *mosq, int *mid, int topic_count, char *c
 
 	/* Variable header */
 	local_mid = mosquitto__mid_generate(mosq);
-	if(mid) *mid = (int)local_mid;
+	if(mid) local_mid = (uint16_t)(*mid & 0xFFFF);
 	packet__write_uint16(packet, local_mid);
 
 	if(mosq->protocol == mosq_p_mqtt5){
