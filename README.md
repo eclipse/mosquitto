@@ -11,8 +11,8 @@ subscribing.
 See the following links for more information on MQTT:
 
 - Community page: <http://mqtt.org/>
-- MQTT v3.1.1 standard: <https://docs.oasis-open.org/mqtt/mqtt/v3.1.1/mqtt-v3.1.1.html>
 - MQTT v5.0 standard: <https://docs.oasis-open.org/mqtt/mqtt/v5.0/mqtt-v5.0.html>
+- MQTT v3.1.1 standard: <https://docs.oasis-open.org/mqtt/mqtt/v3.1.1/mqtt-v3.1.1.html>
 
 Mosquitto project information is available at the following locations:
 
