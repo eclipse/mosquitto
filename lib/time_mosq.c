@@ -36,6 +36,27 @@ Contributors:
 #include "mosquitto.h"
 #include "time_mosq.h"
 
+#if _POSIX_TIMERS>0 && defined(_POSIX_MONOTONIC_CLOCK)
+static clockid_t time_clock;
+#endif
+
+void mosquitto_time_init(void)
+{
+#if _POSIX_TIMERS>0 && defined(_POSIX_MONOTONIC_CLOCK)
+	struct timespec tp;
+
+#ifdef CLOCK_BOOTTIME
+	if (clock_gettime(CLOCK_BOOTTIME, &tp) == 0) {
+		time_clock = CLOCK_BOOTTIME;
+	} else {
+		time_clock = CLOCK_MONOTONIC;
+	}
+#else
+	time_clock = CLOCK_MONOTONIC;
+#endif
+#endif
+}
+
 time_t mosquitto_time(void)
 {
 #ifdef WIN32
@@ -43,12 +64,10 @@ time_t mosquitto_time(void)
 #elif _POSIX_TIMERS>0 && defined(_POSIX_MONOTONIC_CLOCK)
 	struct timespec tp;
 
-#ifdef CLOCK_BOOTTIME
-	clock_gettime(CLOCK_BOOTTIME, &tp);
-#else
-	clock_gettime(CLOCK_MONOTONIC, &tp);
-#endif
-	return tp.tv_sec;
+	if (clock_gettime(time_clock, &tp) == 0)
+		return tp.tv_sec;
+
+	return (time_t) -1;
 #elif defined(__APPLE__)
 	static mach_timebase_info_data_t tb;
     uint64_t ticks;

@@ -19,6 +19,7 @@ Contributors:
 #ifndef TIME_MOSQ_H
 #define TIME_MOSQ_H
 
+void mosquitto_time_init(void);
 time_t mosquitto_time(void);
 
 #endif
