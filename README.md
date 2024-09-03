@@ -10,15 +10,15 @@ subscribing.
 
 See the following links for more information on MQTT:
 
-- Community page: <http://mqtt.org/>
-- MQTT v3.1.1 standard: <https://docs.oasis-open.org/mqtt/mqtt/v3.1.1/mqtt-v3.1.1.html>
-- MQTT v5.0 standard: <https://docs.oasis-open.org/mqtt/mqtt/v5.0/mqtt-v5.0.html>
+- [Community page](http://mqtt.org/)
+- [MQTT v3.1.1 standard](https://docs.oasis-open.org/mqtt/mqtt/v3.1.1/mqtt-v3.1.1.html)
+- [MQTT v5.0 standar](https://docs.oasis-open.org/mqtt/mqtt/v5.0/mqtt-v5.0.htm)
 
 Mosquitto project information is available at the following locations:
 
-- Main homepage: <https://mosquitto.org/>
-- Find existing bugs or submit a new bug: <https://github.com/eclipse/mosquitto/issues>
-- Source code repository: <https://github.com/eclipse/mosquitto>
+- [Main homepage](https://mosquitto.org/)
+- [Find existing bugs or submit a new bu](https://github.com/eclipse/mosquitto/issues)
+- [Source code repositor](https://github.com/eclipse/mosquitto)
 
 There is also a public test server available at <https://test.mosquitto.org/>
 
