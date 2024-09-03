@@ -51,7 +51,7 @@ jobs:
         run: choco install openssl
 
       - name: Download cJSON
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: cjson-bin
           path: C:\Program Files\cJSON
