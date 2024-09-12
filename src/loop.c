@@ -160,13 +160,63 @@ static void queue_plugin_msgs(void)
 }
 
 
+#ifdef WITH_PERSISTENCE
+void check_persistence(time_t *last_backup){
+	if(db.config->persistence && db.config->autosave_interval){
+		if(db.config->autosave_on_changes){
+			if(db.persistence_changes >= db.config->autosave_interval){
+				persist__backup(false);
+				db.persistence_changes = 0;
+			}
+		}else{
+			if(*last_backup + db.config->autosave_interval < db.now_s){
+				persist__backup(false);
+				*last_backup = db.now_s;
+			}
+		}
+	}
+
+	if(flag_db_backup){
+		flag_db_backup = false;
+		persist__backup(false);
+	}
+}
+
+void threaded_persistence(bool *run)
+{
+	time_t last_backup = mosquitto_time();
+	pthread_mutex_t persistence_mutex;
+	pthread_mutex_init(&persistence_mutex, NULL);
+
+	while(*run){
+
+		if(!pthread_mutex_trylock(&persistence_mutex)){
+			check_persistence(&last_backup);
+
+			pthread_mutex_unlock(&persistence_mutex);
+		}
+#ifdef WIN32
+		Sleep(1000);
+#else
+		sleep(1);
+#endif
+	}
+
+	pthread_mutex_destroy(&persistence_mutex);
+}
+#endif
+
 int mosquitto_main_loop(struct mosquitto__listener_sock *listensock, int listensock_count)
 {
 #ifdef WITH_SYS_TREE
 	time_t start_time = mosquitto_time();
 #endif
 #ifdef WITH_PERSISTENCE
+#  ifdef WITH_THREADING
+	pthread_t thread__persist_id;
+#  else
 	time_t last_backup = mosquitto_time();
+#  endif
 #endif
 #ifdef WITH_WEBSOCKETS
 	int i;
@@ -186,6 +236,10 @@ int mosquitto_main_loop(struct mosquitto__listener_sock *listensock, int listens
 	if(rc) return rc;
 #endif
 
+#if defined(WITH_PERSISTENCE) && defined(WITH_THREADING)
+	pthread_create(&thread__persist_id, NULL, (void*) &threaded_persistence, &run);
+#endif
+
 	while(run){
 		queue_plugin_msgs();
 		context__free_disused();
@@ -202,32 +256,15 @@ int mosquitto_main_loop(struct mosquitto__listener_sock *listensock, int listens
 #endif
 
 		rc = mux__handle(listensock, listensock_count);
-		if(rc) return rc;
+		if(rc) goto error;
 
 		session_expiry__check();
 		will_delay__check();
-#ifdef WITH_PERSISTENCE
-		if(db.config->persistence && db.config->autosave_interval){
-			if(db.config->autosave_on_changes){
-				if(db.persistence_changes >= db.config->autosave_interval){
-					persist__backup(false);
-					db.persistence_changes = 0;
-				}
-			}else{
-				if(last_backup + db.config->autosave_interval < db.now_s){
-					persist__backup(false);
-					last_backup = db.now_s;
-				}
-			}
-		}
+
+#if defined(WITH_PERSISTENCE) && !defined(WITH_THREADING)
+		check_persistence(&last_backup);
 #endif
 
-#ifdef WITH_PERSISTENCE
-		if(flag_db_backup){
-			persist__backup(false);
-			flag_db_backup = false;
-		}
-#endif
 		if(flag_reload){
 			log__printf(NULL, MOSQ_LOG_INFO, "Reloading config.");
 			config__read(db.config, true);
@@ -269,6 +306,14 @@ int mosquitto_main_loop(struct mosquitto__listener_sock *listensock, int listens
 	}
 
 	mux__cleanup();
+
+error:
+
+#if defined(WITH_PERSISTENCE) && defined(WITH_THREADING)
+	run = false;
+	pthread_join(thread__persist_id, NULL);
+#endif
+	if(rc) return rc;
 
 	return MOSQ_ERR_SUCCESS;
 }

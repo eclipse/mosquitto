@@ -9,6 +9,7 @@
 #define pthread_mutex_init(A, B)
 #define pthread_mutex_destroy(A)
 #define pthread_mutex_lock(A)
+#define pthread_mutex_trylock(A) false
 #define pthread_mutex_unlock(A)
 
 #endif
