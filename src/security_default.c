@@ -31,7 +31,6 @@ static int aclfile__parse(struct mosquitto__security_options *security_opts);
 static int unpwd__file_parse(struct mosquitto__unpwd **unpwd, const char *password_file);
 static int acl__cleanup(bool reload);
 static int unpwd__cleanup(struct mosquitto__unpwd **unpwd, bool reload);
-static int psk__file_parse(struct mosquitto__unpwd **psk_id, const char *psk_file);
 static int mosquitto_basic_auth_default(int event, void *event_data, void *userdata);
 static int mosquitto_acl_check_default(int event, void *event_data, void *userdata);
 
@@ -40,7 +39,6 @@ int mosquitto_security_init_default(bool reload)
 {
 	int rc;
 	char *pwf;
-	char *pskf = NULL;
 
 	UNUSED(reload);
 
@@ -128,28 +126,8 @@ int mosquitto_security_init_default(bool reload)
 		}
 	}
 
-	/* Load psk data if required. */
-	if(db.config->per_listener_settings){
-		for(int i=0; i<db.config->listener_count; i++){
-			pskf = db.config->listeners[i].security_options->psk_file;
-			if(pskf){
-				rc = psk__file_parse(&db.config->listeners[i].security_options->psk_id, pskf);
-				if(rc){
-					log__printf(NULL, MOSQ_LOG_ERR, "Error opening psk file \"%s\".", pskf);
-					return rc;
-				}
-			}
-		}
-	}else{
-		pskf = db.config->security_options.psk_file;
-		if(pskf){
-			rc = psk__file_parse(&db.config->security_options.psk_id, pskf);
-			if(rc){
-				log__printf(NULL, MOSQ_LOG_ERR, "Error opening psk file \"%s\".", pskf);
-				return rc;
-			}
-		}
-	}
+	rc = psk_file__init();
+	if(rc) return rc;
 
 	return MOSQ_ERR_SUCCESS;
 }
@@ -171,15 +149,8 @@ int mosquitto_security_cleanup_default(bool reload)
 		}
 	}
 
-	rc = unpwd__cleanup(&db.config->security_options.psk_id, reload);
+	rc = psk_file__cleanup();
 	if(rc != MOSQ_ERR_SUCCESS) return rc;
-
-	for(int i=0; i<db.config->listener_count; i++){
-		if(db.config->listeners[i].security_options->psk_id){
-			rc = unpwd__cleanup(&db.config->listeners[i].security_options->psk_id, reload);
-			if(rc != MOSQ_ERR_SUCCESS) return rc;
-		}
-	}
 
 	if(db.config->per_listener_settings){
 		for(int i=0; i<db.config->listener_count; i++){
@@ -782,18 +753,20 @@ static int pwfile__parse(const char *file, struct mosquitto__unpwd **root)
 						continue;
 					}
 
-					unpwd->pw.encoded_password = mosquitto_strdup(password);
-					if(!unpwd->pw.encoded_password){
-						fclose(pwfile);
+					if(mosquitto_pw_new(&unpwd->pw, MOSQ_PW_DEFAULT)
+							|| mosquitto_pw_decode(unpwd->pw, password)){
+
+						log__printf(NULL, MOSQ_LOG_NOTICE, "Warning: Unable to decode line in password file '%s'.", file);
+						mosquitto_pw_cleanup(unpwd->pw);
 						mosquitto_FREE(unpwd->username);
 						mosquitto_FREE(unpwd);
-						mosquitto_FREE(buf);
-						return MOSQ_ERR_NOMEM;
+						continue;
 					}
 
 					HASH_ADD_KEYPTR(hh, *root, unpwd->username, strlen(unpwd->username), unpwd);
 				}else{
 					log__printf(NULL, MOSQ_LOG_NOTICE, "Warning: Invalid line in password file '%s': %s", file, buf);
+					mosquitto_pw_cleanup(unpwd->pw);
 					mosquitto_FREE(unpwd->username);
 					mosquitto_FREE(unpwd);
 				}
@@ -810,36 +783,10 @@ static int pwfile__parse(const char *file, struct mosquitto__unpwd **root)
 void unpwd__free_item(struct mosquitto__unpwd **unpwd, struct mosquitto__unpwd *item)
 {
 	mosquitto_FREE(item->username);
-	mosquitto_FREE(item->pw.encoded_password);
+	mosquitto_pw_cleanup(item->pw);
 	HASH_DEL(*unpwd, item);
 	mosquitto_FREE(item);
 }
-
-
-#ifdef WITH_TLS
-static int unpwd__decode_passwords(struct mosquitto__unpwd **unpwd)
-{
-	struct mosquitto__unpwd *u, *tmp = NULL;
-	int rc;
-
-	HASH_ITER(hh, *unpwd, u, tmp){
-		/* Need to decode password into hashed data + salt. */
-		if(u->pw.encoded_password == NULL){
-			log__printf(NULL, MOSQ_LOG_ERR, "Error: Missing password hash for user %s, removing entry.", u->username);
-			unpwd__free_item(unpwd, u);
-			continue;
-		}
-
-		rc = pw__decode(&u->pw, u->pw.encoded_password);
-		if(rc){
-			log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to decode password/salt for user %s, removing entry.", u->username);
-			unpwd__free_item(unpwd, u);
-		}
-	}
-
-	return MOSQ_ERR_SUCCESS;
-}
-#endif
 
 
 static int unpwd__file_parse(struct mosquitto__unpwd **unpwd, const char *password_file)
@@ -851,41 +798,8 @@ static int unpwd__file_parse(struct mosquitto__unpwd **unpwd, const char *passwo
 
 	rc = pwfile__parse(password_file, unpwd);
 
-#if defined(WITH_TLS) || defined(WITH_ARGON2)
-	if(rc) return rc;
-	rc = unpwd__decode_passwords(unpwd);
-#endif
-
 	return rc;
 }
-
-static int psk__file_parse(struct mosquitto__unpwd **psk_id, const char *psk_file)
-{
-	int rc;
-	struct mosquitto__unpwd *u, *tmp = NULL;
-
-	if(!db.config || !psk_id) return MOSQ_ERR_INVAL;
-
-	/* We haven't been asked to parse a psk file. */
-	if(!psk_file) return MOSQ_ERR_SUCCESS;
-
-	rc = pwfile__parse(psk_file, psk_id);
-	if(rc) return rc;
-
-	HASH_ITER(hh, (*psk_id), u, tmp){
-		/* Check for hex only digits */
-		if(!u->pw.encoded_password){
-			log__printf(NULL, MOSQ_LOG_ERR, "Error: Empty psk for identity \"%s\".", u->username);
-			return MOSQ_ERR_INVAL;
-		}
-		if(strspn(u->pw.encoded_password, "0123456789abcdefABCDEF") < strlen(u->pw.encoded_password)){
-			log__printf(NULL, MOSQ_LOG_ERR, "Error: psk for identity \"%s\" contains non-hexadecimal characters.", u->username);
-			return MOSQ_ERR_INVAL;
-		}
-	}
-	return MOSQ_ERR_SUCCESS;
-}
-
 
 static int mosquitto_basic_auth_default(int event, void *event_data, void *userdata)
 {
@@ -910,9 +824,9 @@ static int mosquitto_basic_auth_default(int event, void *event_data, void *userd
 
 	HASH_FIND(hh, unpwd_ref, ed->client->username, strlen(ed->client->username), u);
 	if(u){
-		if(u->pw.encoded_password){
+		if(u->pw){
 			if(ed->client->password){
-				return pw__verify(&u->pw, ed->client->password);
+				return mosquitto_pw_verify(u->pw, ed->client->password);
 			}else{
 				return MOSQ_ERR_AUTH;
 			}
@@ -934,7 +848,7 @@ static int unpwd__cleanup(struct mosquitto__unpwd **root, bool reload)
 
 	HASH_ITER(hh, *root, u, tmp){
 		HASH_DEL(*root, u);
-		mosquitto_FREE(u->pw.encoded_password);
+		mosquitto_pw_cleanup(u->pw);
 		mosquitto_FREE(u->username);
 		mosquitto_FREE(u);
 	}
@@ -1154,29 +1068,4 @@ int mosquitto_security_apply_default(void)
 		}
 	}
 	return MOSQ_ERR_SUCCESS;
-}
-
-int mosquitto_psk_key_get_default(struct mosquitto *context, const char *hint, const char *identity, char *key, int max_key_len)
-{
-	struct mosquitto__unpwd *u, *tmp = NULL;
-	struct mosquitto__unpwd *psk_id_ref = NULL;
-
-	if(!hint || !identity || !key) return MOSQ_ERR_INVAL;
-
-	if(db.config->per_listener_settings){
-		if(!context->listener) return MOSQ_ERR_INVAL;
-		psk_id_ref = context->listener->security_options->psk_id;
-	}else{
-		psk_id_ref = db.config->security_options.psk_id;
-	}
-	if(!psk_id_ref) return MOSQ_ERR_PLUGIN_IGNORE;
-
-	HASH_ITER(hh, psk_id_ref, u, tmp){
-		if(!strcmp(u->username, identity)){
-			strncpy(key, u->pw.encoded_password, (size_t)max_key_len);
-			return MOSQ_ERR_SUCCESS;
-		}
-	}
-
-	return MOSQ_ERR_AUTH;
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from mosq_test_helper import *
-from proxy_v2_helper import *
+from proxy_helper import *
 import json
 import shutil
 import socket
@@ -11,7 +11,7 @@ def write_config(filename, port):
         f.write("log_type all\n")
         f.write("listener %d\n" % (port))
         f.write("allow_anonymous true\n")
-        f.write("enable_proxy_protocol_v2 true\n")
+        f.write("enable_proxy_protocol 2\n")
         f.write("require_certificate true\n")
         f.write("use_identity_as_username true\n")
 
@@ -28,7 +28,7 @@ def do_test(data, expect_log):
     rc = 1
 
     try:
-        sock = do_proxy_connect(port, PROXY_VER, PROXY_CMD_PROXY, PROXY_FAM_IPV4 | PROXY_PROTO_TCP, data)
+        sock = do_proxy_v2_connect(port, PROXY_VER, PROXY_CMD_PROXY, PROXY_FAM_IPV4 | PROXY_PROTO_TCP, data)
         sock.send(connect_packet)
         try:
             mosq_test.expect_packet(sock, "connack", connack_packet)

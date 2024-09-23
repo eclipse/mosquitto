@@ -801,7 +801,11 @@ void bridge__cleanup(struct mosquitto *context)
 	}
 
 	db.bridge_count--;
-	db.bridges = mosquitto_realloc(db.bridges, (unsigned) db.bridge_count * sizeof(db.bridges[0]));
+	if(db.bridge_count == 0){
+		mosquitto_FREE(db.bridges);
+	}else{
+		db.bridges = mosquitto_realloc(db.bridges, (unsigned) db.bridge_count * sizeof(db.bridges[0]));
+	}
 
 	mosquitto_FREE(context->bridge->name);
 	mosquitto_FREE(context->bridge->local_clientid);

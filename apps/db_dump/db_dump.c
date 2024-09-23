@@ -61,6 +61,7 @@ extern uint32_t db_version;
 static int stats = 0;
 static int client_stats = 0;
 static int do_print = 1;
+static int do_json = 0;
 
 /* Counts */
 static long cfg_count = 0;
@@ -168,6 +169,9 @@ static int dump__client_chunk_process(FILE *db_fd, uint32_t length)
 		HASH_ADD_KEYPTR(hh_id, clients_by_id, cc->id, strlen(cc->id), cc);
 	}
 
+	if(do_json){
+		json_add_client(&chunk);
+	}
 	if(do_print) {
 		print__client(&chunk, length);
 	}
@@ -210,6 +214,9 @@ static int dump__client_msg_chunk_process(FILE *db_fd, uint32_t length)
 		}
 	}
 
+	if(do_json){
+		json_add_client_msg(&chunk);
+	}
 	if(do_print) {
 		print__client_msg(&chunk, length);
 	}
@@ -272,6 +279,10 @@ static int dump__base_msg_chunk_process(FILE *db_fptr, uint32_t length)
 	rc = db__message_store(&chunk.source, stored, &message_expiry_interval,
 			mosq_mo_client);
 
+	if(do_json){
+		json_add_base_msg(&chunk);
+	}
+
 	mosquitto_free(chunk.source.id);
 	mosquitto_free(chunk.source.username);
 	chunk.source.id = NULL;
@@ -326,6 +337,10 @@ static int dump__retain_chunk_process(FILE *db_fd, uint32_t length)
 		return rc;
 	}
 
+	if(do_json){
+		json_add_retained_msg(&chunk);
+	}
+
 	if(do_print) printf("\tStore ID: %" PRIu64 "\n", chunk.F.store_id);
 	return 0;
 }
@@ -358,6 +373,9 @@ static int dump__sub_chunk_process(FILE *db_fd, uint32_t length)
 		}
 	}
 
+	if(do_json){
+		json_add_subscription(&chunk);
+	}
 	if(do_print) {
 		print__sub(&chunk, length);
 	}
@@ -408,7 +426,6 @@ static void cleanup_msg_store()
 	}
 }
 
-
 #ifdef WITH_FUZZING
 int db_dump_fuzz_main(int argc, char *argv[])
 #else
@@ -434,10 +451,19 @@ int main(int argc, char *argv[])
 		client_stats = 1;
 		do_print = 0;
 		filename = argv[2];
+	}else if(argc == 3 && !strcmp(argv[1], "--json")){
+		do_print = 0;
+		do_json = 1;
+		filename = argv[2];
 	}else{
-		fprintf(stderr, "Usage: db_dump [--stats | --client-stats] <mosquitto db filename>\n");
+		fprintf(stderr, "Usage: db_dump [--stats | --client-stats | --json] <mosquitto db filename>\n");
 		return 1;
 	}
+
+	if(do_json){
+		json_init();
+	}
+
 	memset(&db, 0, sizeof(struct mosquitto_db));
 	fd = fopen(filename, "rb");
 	if(!fd){
@@ -500,6 +526,10 @@ int main(int argc, char *argv[])
 
 	fclose(fd);
 
+	if(do_json){
+		json_print();
+		json_cleanup();
+	}
 	if(stats){
 		printf("DB_CHUNK_CFG:        %ld\n", cfg_count);
 		printf("DB_CHUNK_BASE_MSG:   %ld\n", base_msg_count);

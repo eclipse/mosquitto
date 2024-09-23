@@ -1289,11 +1289,18 @@ accept_protocol_versions 3, 4</programlisting>
 					</listitem>
 				</varlistentry>
 				<varlistentry>
-					<term><option>enable_proxy_protocol_v2</option>  [ true | false ]</term>
+					<term><option>enable_proxy_protocol</option>  [ 2 | 1 ]</term>
 					<listitem>
 						<para>
-							Enable PROXY protocol v2 support for this listener.
-							Defaults to false. This requires the use of a load
+							Enable PROXY protocol support for this listener.
+							Versions 1 and 2 are supported, if you have the
+							choice then version 2 is recommended because it
+							gives you access to TLS information, and support
+							Unix sockets.
+						</para>
+
+						<para>
+							This option requires the use of a load
 							balancer/proxy such as HAProxy in front of
 							Mosquitto, with the proxy configured to use the
 							PROXY protocol.
@@ -1317,28 +1324,25 @@ accept_protocol_versions 3, 4</programlisting>
 						</para>
 
 						<para>
-							This option can be used with TLS termination on the
-							proxy. In this case, TLS information will be passed
-							to the broker as well. Use <option>proxy_protocol_v2_require_tls</option>
-							to reject clients that do not use TLS - this is
-							strongly recommended. Enabling
-							<option>require_certificate</option> on the
-							listener will result in the broker checking the TLS
-							information provided to ensure that the client has
-							provided a valid certificate. Enabling
-							<option>use_identity_as_username</option> as well
-							will result in the
-							<replaceable>commonName</replaceable> value from
-							the certificate being used as the client username
-							instead of any provided in the CONNECT packet. In
-							both cases, the listener must not have TLS
-							configured.
+							When using PROXY version 2, this option can be used
+							with TLS termination on the proxy. In this case, TLS
+							information will be passed to the broker as well.
+							Use <option>proxy_protocol_v2_require_tls</option>
+							to reject clients that do not use TLS - this is strongly
+							recommended. Enabling <option>require_certificate</option>
+							on the listener will result in the broker checking the TLS
+							information provided to ensure that the client has provided
+							a valid certificate. Enabling <option>use_identity_as_username</option>
+							as well will result in the <replaceable>commonName</replaceable>
+							value from the certificate being used as the client username instead
+							of any provided in the CONNECT packet. In both cases, the listener
+							must not have TLS configured.
 						</para>
 
 						<para>
 							It is not possible to use the <option>use_subject_as_username</option>,
 							<option>certfile</option>, or <option>keyfile</option> options
-							in conjunction with <option>enable_proxy_protocol_v2</option>.
+							in conjunction with <option>enable_proxy_protocol</option>.
 						</para>
 						<para>Not reloaded on reload signal.</para>
 					</listitem>

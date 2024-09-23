@@ -1,8 +1,10 @@
 set(C_SRC
 	base64_common.c
+	cjson_common.c
 	file_common.c
 	memory_common.c
 	mqtt_common.c
+	password_common.c
 	property_common.c
 	random_common.c
 	strings_common.c
@@ -12,6 +14,7 @@ set(C_SRC
 
 	"${mosquitto_SOURCE_DIR}/include/mosquitto/libcommon.h"
 	"${mosquitto_SOURCE_DIR}/include/mosquitto/libcommon_base64.h"
+	"${mosquitto_SOURCE_DIR}/include/mosquitto/libcommon_cjson.h"
 	"${mosquitto_SOURCE_DIR}/include/mosquitto/libcommon_file.h"
 	"${mosquitto_SOURCE_DIR}/include/mosquitto/libcommon_memory.h"
 	"${mosquitto_SOURCE_DIR}/include/mosquitto/libcommon_properties.h"
@@ -41,7 +44,12 @@ target_include_directories(libmosquitto_common
 target_link_libraries(libmosquitto_common
 	PUBLIC
 		config-header
+		cJSON
 )
+
+if(ARGON2_FOUND)
+	target_link_libraries(libmosquitto_common PRIVATE argon2)
+endif()
 
 if (WITH_TLS)
 	target_link_libraries(libmosquitto_common

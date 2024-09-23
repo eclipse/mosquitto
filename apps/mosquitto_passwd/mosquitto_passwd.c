@@ -29,7 +29,6 @@ Contributors:
 
 #include "mosquitto.h"
 #include "get_password.h"
-#include "password_mosq.h"
 
 #ifdef WIN32
 #  include <windows.h>
@@ -63,7 +62,7 @@ struct cb_helper {
 	bool found;
 };
 
-static enum mosquitto_pwhash_type hashtype = pw_argon2id;
+static enum mosquitto_pwhash_type hashtype = MOSQ_PW_ARGON2ID;
 
 #ifdef WIN32
 static FILE *mpw_tmpfile(void)
@@ -123,33 +122,30 @@ static void print_usage(void)
 static int output_new_password(FILE *fptr, const char *username, const char *password, int iterations)
 {
 	int rc;
-	struct mosquitto_pw pw;
+	struct mosquitto_pw *pw;
 
 	if(password == NULL){
 		fprintf(stderr, "Error: Internal error, no password given.\n");
 		return 1;
 	}
-	memset(&pw, 0, sizeof(pw));
-
-	pw.hashtype = hashtype;
-	if(hashtype == pw_sha512_pbkdf2){
-		pw.params.sha512_pbkdf2.iterations = iterations;
+	if(mosquitto_pw_new(&pw, hashtype)){
+		fprintf(stderr, "Error: Out of memory.\n");
+		return 1;
 	}
 
-	rc = pw__create(&pw, password);
+	if(hashtype == MOSQ_PW_SHA512_PBKDF2 && iterations > 0){
+		mosquitto_pw_set_param(pw, MOSQ_PW_PARAM_ITERATIONS, iterations);
+	}
+
+	rc = mosquitto_pw_hash_encoded(pw, password);
 	if(rc){
+		mosquitto_pw_cleanup(pw);
 		fprintf(stderr, "Error: Unable to hash password.\n");
 		return rc;
 	}
 
-	rc = pw__encode(&pw);
-	if(rc){
-		fprintf(stderr, "Error: Unable to encode password.\n");
-		return rc;
-	}
-
-	fprintf(fptr, "%s:%s\n", username, pw.encoded_password);
-	mosquitto_FREE(pw.encoded_password);
+	fprintf(fptr, "%s:%s\n", username, mosquitto_pw_get_encoded(pw));
+	mosquitto_pw_cleanup(pw);
 
 	return rc;
 }
@@ -269,7 +265,7 @@ static int update_file_cb(FILE *fptr, FILE *ftmp, const char *username, const ch
 	if(helper){
 		return output_new_password(ftmp, username, password, helper->iterations);
 	}else{
-		return output_new_password(ftmp, username, password, PW_DEFAULT_ITERATIONS);
+		return output_new_password(ftmp, username, password, -1);
 	}
 }
 
@@ -431,7 +427,7 @@ int main(int argc, char *argv[])
 	bool do_update_file = false;
 	char *backup_file;
 	int idx;
-	int iterations = PW_DEFAULT_ITERATIONS;
+	int iterations = -1;
 
 	signal(SIGINT, handle_sigint);
 	signal(SIGTERM, handle_sigint);
@@ -457,11 +453,11 @@ int main(int argc, char *argv[])
 				return 1;
 			}
 			if(!strcmp(argv[idx+1], "argon2id")){
-				hashtype = pw_argon2id;
+				hashtype = MOSQ_PW_ARGON2ID;
 			}else if(!strcmp(argv[idx+1], "sha512-pbkdf2")){
-				hashtype = pw_sha512_pbkdf2;
+				hashtype = MOSQ_PW_SHA512_PBKDF2;
 			}else if(!strcmp(argv[idx+1], "sha512")){
-				hashtype = pw_sha512;
+				hashtype = MOSQ_PW_SHA512;
 			}else{
 				fprintf(stderr, "Error: Unknown hash type '%s'\n", argv[idx+1]);
 				return 1;

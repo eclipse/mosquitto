@@ -142,7 +142,7 @@ static int config__check_bridges(struct mosquitto__config *config);
 static int config__add_listener(struct mosquitto__config *config)
 {
 	struct mosquitto__listener *listener;
-	struct mosquitto__listener **new_listeners;
+	struct mosquitto__listener *new_listeners;
 	int def_listener = -1;
 
 	if(config->default_listener){
@@ -1600,9 +1600,13 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 #else
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: $CONTROL support not available (enable_control_api).");
 #endif
-				}else if(!strcmp(token, "enable_proxy_protocol_v2")){
+				}else if(!strcmp(token, "enable_proxy_protocol")){
 					REQUIRE_LISTENER(token);
-					if(conf__parse_bool(&token, "enable_proxy_protocol_v2", &cur_listener->enable_proxy_protocol_v2, &saveptr)) return MOSQ_ERR_INVAL;
+					if(conf__parse_int(&token, "enable_proxy_protocol", &cur_listener->enable_proxy_protocol, &saveptr)) return MOSQ_ERR_INVAL;
+					if(cur_listener->enable_proxy_protocol < 1 || cur_listener->enable_proxy_protocol > 2){
+						log__printf(NULL, MOSQ_LOG_ERR, "Error: enable_proxy_protocol must be 1 or 2.");
+						return MOSQ_ERR_INVAL;
+					}
 				}else if(!strcmp(token, "global_max_clients")){
 					if(conf__parse_int(&token, "global_max_clients", &config->global_max_clients, &saveptr)) return MOSQ_ERR_INVAL;
 				}else if(!strcmp(token, "global_max_connections")){
@@ -2517,19 +2521,19 @@ int config__read_file(struct mosquitto__config *config, bool reload, const char 
 	return rc;
 }
 
-static int config__check_proxy_v2(struct mosquitto__config *config)
+static int config__check_proxy(struct mosquitto__config *config)
 {
 	for(int i=0; i<config->listener_count; i++){
 		struct mosquitto__listener *l = &config->listeners[i];
 
-		if(l->enable_proxy_protocol_v2){
+		if(l->enable_proxy_protocol == 2){
 			if(l->use_subject_as_username){
-				log__printf(NULL, MOSQ_LOG_ERR, "Error: use_subject_as_username cannot be used with enable_proxy_protocol_v2.");
+				log__printf(NULL, MOSQ_LOG_ERR, "Error: use_subject_as_username cannot be used with `enable_proxy_protocol 2`.");
 				return MOSQ_ERR_INVAL;
 			}
 
 			if(l->certfile || l->keyfile){
-				log__printf(NULL, MOSQ_LOG_ERR, "Error: certfile and keyfile cannot be used with enable_proxy_protocol_v2.");
+				log__printf(NULL, MOSQ_LOG_ERR, "Error: certfile and keyfile cannot be used with `enable_proxy_protocol 2`.");
 				return MOSQ_ERR_INVAL;
 			}
 		}
@@ -2563,7 +2567,7 @@ static int config__check(struct mosquitto__config *config)
 		}
 	}
 
-	return config__check_proxy_v2(config);
+	return config__check_proxy(config);
 }
 
 #ifdef WITH_BRIDGE

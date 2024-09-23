@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from mosq_test_helper import *
-from proxy_v2_helper import *
+from proxy_helper import *
 import json
 import shutil
 import socket
@@ -11,7 +11,7 @@ def write_config(filename, port):
         f.write("log_type all\n")
         f.write("listener %d\n" % (port))
         f.write("allow_anonymous true\n")
-        f.write("enable_proxy_protocol_v2 true\n")
+        f.write("enable_proxy_protocol 2\n")
         f.write("protocol websockets\n")
 
 port = mosq_test.get_port()
@@ -29,7 +29,7 @@ expect_log = "New client connected from 192.0.2.5:6275"
 
 try:
     data = b"\xC0\x00\x02\x05" + b"\x00\x00\x00\x00" + b"\x18\x83" + b"\x00\x00"
-    sock = do_proxy_connect(port, PROXY_VER, PROXY_CMD_PROXY, PROXY_FAM_IPV4 | PROXY_PROTO_TCP, data)
+    sock = do_proxy_v2_connect(port, PROXY_VER, PROXY_CMD_PROXY, PROXY_FAM_IPV4 | PROXY_PROTO_TCP, data)
     websocket_req_good = b"GET /mqtt HTTP/1.1\r\n" \
         + b"Host: localhost\r\n" \
         + b"Upgrade: websocket\r\n" \

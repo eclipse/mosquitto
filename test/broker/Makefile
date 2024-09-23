@@ -320,6 +320,9 @@ endif
 	./20-sparkplug-aware.py
 
 21:
+	./21-proxy-bad-version.py
+	./21-proxy-v1-bad.py
+	./21-proxy-v1-success.py
 	./21-proxy-v2-bad-config.py
 	./21-proxy-v2-bad-header.py
 	./21-proxy-v2-local.py

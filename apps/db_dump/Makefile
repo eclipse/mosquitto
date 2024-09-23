@@ -17,6 +17,7 @@ include ${R}/make/broker.mk
 
 OBJS = \
 	db_dump.o \
+	json.o \
 	print.o \
 	stubs.o
 

@@ -190,13 +190,17 @@ struct mosquitto *net__socket_accept(struct mosquitto__listener_sock *listensock
 	}
 	new_context->listener->client_count++;
 
-	if(new_context->listener->enable_proxy_protocol_v2){
+	if(new_context->listener->enable_proxy_protocol){
 		if(context__init_sock(new_context, new_sock, false) != MOSQ_ERR_SUCCESS){
 			context__cleanup(new_context, true);
 			COMPAT_CLOSE(new_sock);
 			return NULL;
 		}
-		new_context->transport = mosq_t_proxy_v2;
+		if(new_context->listener->enable_proxy_protocol == 2){
+			new_context->transport = mosq_t_proxy_v2;
+		}else{
+			new_context->transport = mosq_t_proxy_v1;
+		}
 		new_context->proxy.cmd = -1;
 	}else{
 		if(context__init_sock(new_context, new_sock, true) != MOSQ_ERR_SUCCESS){
@@ -251,7 +255,7 @@ struct mosquitto *net__socket_accept(struct mosquitto__listener_sock *listensock
 #endif
 
 	if(db.config->connection_messages == true
-			&& !new_context->listener->enable_proxy_protocol_v2){
+			&& !new_context->listener->enable_proxy_protocol){
 
 		log__printf(NULL, MOSQ_LOG_NOTICE, "New connection from %s:%d on port %d.",
 				new_context->address, new_context->remote_port, new_context->listener->port);

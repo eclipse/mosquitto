@@ -60,11 +60,9 @@ def listen_sock(port):
     sock.listen(5)
     return sock
 
-def start_broker(filename, cmd=None, port=0, use_conf=False, expect_fail=False, expect_fail_log=None, nolog=False, checkhost="localhost", env=None, check_port=True, cmd_args=None):
+def start_broker(filename, cmd=None, port=0, use_conf=False, expect_fail=False, expect_fail_log=None, nolog=False, checkhost="localhost", env=None, check_port=True, cmd_args=None, timeout=0.1):
     global vg_index
     global vg_logfiles
-
-    delay = 0.1
 
     if use_conf:
         cmd = [get_build_root() + '/src/mosquitto', '-v', '-c', filename.replace('.py', '.conf')]
@@ -86,7 +84,7 @@ def start_broker(filename, cmd=None, port=0, use_conf=False, expect_fail=False, 
             cmd = ['valgrind', '-q', '--track-fds=yes', '--trace-children=yes', '--leak-check=full', '--show-leak-kinds=all', '--log-file='+logfile] + cmd
         vg_logfiles.append(logfile)
         vg_index += 1
-        delay = 1
+        timeout = 1
 
     if cmd_args:
         cmd.extend(cmd_args)
@@ -102,7 +100,7 @@ def start_broker(filename, cmd=None, port=0, use_conf=False, expect_fail=False, 
 
     if expect_fail:
         try:
-            broker.wait(delay*10)
+            broker.wait(timeout*10)
             if expect_fail_log is not None:
                 (_, stde) = broker.communicate()
                 if expect_fail_log not in stde.decode('utf-8'):
@@ -119,9 +117,9 @@ def start_broker(filename, cmd=None, port=0, use_conf=False, expect_fail=False, 
         return broker
 
     assert port != 0
-    
+
     for i in range(0, 20):
-        time.sleep(delay)
+        time.sleep(timeout)
         c = None
         try:
             c = socket.create_connection((checkhost, port))
@@ -134,7 +132,7 @@ def start_broker(filename, cmd=None, port=0, use_conf=False, expect_fail=False, 
             return broker
 
     if expect_fail == False:
-        outs, errs = broker.communicate(timeout=1)
+        outs, errs = broker.communicate(timeout=timeout)
         print("FAIL: unable to start broker: %s" % errs)
         raise IOError
     else:

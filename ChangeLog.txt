@@ -74,7 +74,7 @@ Broker:
   choose TLS v1.1, but this is not recommended and will be removed in a future
   version.
 - Add -q option to allow logging to be disabled at the command line.
-- Add suport for PROXY protocol v2.
+- Add suport for PROXY protocol v1 and v2.
 
 Plugins / plugin interface:
 - Add persist-sqlite plugin.
@@ -183,6 +183,9 @@ Clients:
 - Add `--tls-keylog` option which can be used to generate a file that can be
   used by wireshark to decrypt TLS traffic for debugging purposes.
 - mosquitto_sub payload hex output can now be split by fixed field length.
+
+DB Dump:
+- Add `--json` output mode.
 
 Build:
 - Increased CMake minimal required version to 3.14, which is required for the

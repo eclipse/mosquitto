@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from mosq_test_helper import *
-from proxy_v2_helper import *
+from proxy_helper import *
 import json
 import shutil
 import socket
@@ -11,7 +11,7 @@ def write_config(filename, port):
         f.write("log_type all\n")
         f.write("listener %d\n" % (port))
         f.write("allow_anonymous true\n")
-        f.write("enable_proxy_protocol_v2 true\n")
+        f.write("enable_proxy_protocol 2\n")
 
 port = mosq_test.get_port()
 conf_file = os.path.basename(__file__).replace('.py', '.conf')
@@ -28,7 +28,7 @@ expected_log = "New client connected from /path:0 as proxy-test (p5, c0, k42)."
 
 try:
     data = b"/path"
-    sock = do_proxy_connect(port, PROXY_VER, PROXY_CMD_PROXY, PROXY_FAM_UNIX | PROXY_PROTO_TCP, data)
+    sock = do_proxy_v2_connect(port, PROXY_VER, PROXY_CMD_PROXY, PROXY_FAM_UNIX | PROXY_PROTO_TCP, data)
     mosq_test.do_send_receive(sock, connect_packet, connack_packet, "connack")
     mosq_test.do_ping(sock)
     sock.close()

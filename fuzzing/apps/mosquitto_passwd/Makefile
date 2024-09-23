@@ -9,7 +9,7 @@ FUZZERS:= \
 LOCAL_CPPFLAGS+=
 LOCAL_CXXFLAGS+=-g -Wall -Werror -pthread
 LOCAL_LDFLAGS+=
-LOCAL_LIBADD+=$(LIB_FUZZING_ENGINE) ${R}/apps/mosquitto_passwd/mosquitto_passwd.a -lssl -lcrypto -Wl,-Bstatic -largon2 -Wl,-Bdynamic ${R}/libcommon/libmosquitto_common.a
+LOCAL_LIBADD+=$(LIB_FUZZING_ENGINE) ${R}/apps/mosquitto_passwd/mosquitto_passwd.a -lssl -lcrypto ${R}/libcommon/libmosquitto_common.a -Wl,-Bstatic -largon2 -Wl,-Bdynamic
 
 all: $(FUZZERS)
 

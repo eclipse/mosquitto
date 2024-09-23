@@ -40,8 +40,8 @@ jobs:
         submodules: 'true'
     -
       name: make
-      run: make ALLOC_MISMATCH_ABORT=yes
+      run: make
     -
       name: make test
       run: |
-        make ALLOC_MISMATCH_ABORT=yes ptest
+        make test

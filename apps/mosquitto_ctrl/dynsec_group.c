@@ -25,7 +25,6 @@ Contributors:
 #include "mosquitto.h"
 #include "mosquitto_ctrl.h"
 #include "json_help.h"
-#include "password_mosq.h"
 
 int dynsec_group__create(int argc, char *argv[], cJSON *j_command)
 {

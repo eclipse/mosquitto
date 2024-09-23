@@ -22,7 +22,7 @@ except FileExistsError:
     pass
 
 rc = 1
-broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port)
+broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port, timeout=3)
 
 with open(f"{port}/dynamic-security.json.pw", "r") as f:
     data = f.readlines()

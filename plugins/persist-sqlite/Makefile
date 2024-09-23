@@ -4,7 +4,7 @@ include ${R}/config.mk
 PLUGIN_NAME=mosquitto_persist_sqlite
 LOCAL_CFLAGS+=
 LOCAL_CPPFLAGS+=-I${R}/src/ -I${R}/plugins/common
-LOCAL_LIBADD+=-lsqlite3 -lcjson
+LOCAL_LIBADD+=-lsqlite3 ${LIBMOSQ_COMMON}
 LOCAL_LDFLAGS+=
 
 OBJS = \

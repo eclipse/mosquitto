@@ -232,7 +232,7 @@ ifeq ($(WITH_SHARED_LIBRARIES),yes)
 else
 	LIBMOSQ:=${R}/lib/libmosquitto.a
 endif
-LIBMOSQ_COMMON:=-Wl,--whole-archive ${R}/libcommon/libmosquitto_common.a -Wl,--no-whole-archive
+LIBMOSQ_COMMON:=-Wl,--whole-archive ${R}/libcommon/libmosquitto_common.a -Wl,--no-whole-archive -lcjson
 
 ifeq ($(WITH_TLS),yes)
 	LOCAL_CPPFLAGS+=-DWITH_TLS
@@ -298,4 +298,5 @@ endif
 ifeq ($(WITH_ARGON2),yes)
 	LOCAL_CPPFLAGS+=-DWITH_ARGON2
 	LIB_ARGON2=-largon2
+	LIBMOSQ_COMMON+=${LIB_ARGON2}
 endif

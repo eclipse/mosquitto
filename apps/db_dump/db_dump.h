@@ -25,4 +25,13 @@ void print__client_msg(struct P_client_msg *chunk, uint32_t length);
 void print__base_msg(struct P_base_msg *chunk, uint32_t length);
 void print__sub(struct P_sub *chunk, uint32_t length);
 
+void json_init(void);
+void json_print(void);
+void json_cleanup(void);
+void json_add_base_msg(struct P_base_msg *msg);
+void json_add_client(struct P_client *chunk);
+void json_add_client_msg(struct P_client_msg *chunk);
+void json_add_retained_msg(struct P_retain *msg);
+void json_add_subscription(struct P_sub *chunk);
+
 #endif

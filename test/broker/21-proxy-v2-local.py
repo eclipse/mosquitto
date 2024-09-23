@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from mosq_test_helper import *
-from proxy_v2_helper import *
+from proxy_helper import *
 import json
 import shutil
 import socket
@@ -11,7 +11,7 @@ def write_config(filename, port):
         f.write("log_type all\n")
         f.write("listener %d\n" % (port))
         f.write("allow_anonymous true\n")
-        f.write("enable_proxy_protocol_v2 true\n")
+        f.write("enable_proxy_protocol 2\n")
 
 def do_test(header):
     port = mosq_test.get_port()

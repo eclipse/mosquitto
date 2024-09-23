@@ -109,14 +109,12 @@ static int get_password_from_init_file(struct dynsec__data *data, char **pw)
  */
 static int generate_password(struct dynsec__data *data, cJSON *j_client, char **password)
 {
-	struct mosquitto_pw pw;
+	struct mosquitto_pw *pw;
 	int i;
 	unsigned char vb;
 	unsigned long v;
 	size_t len;
 	char *pwenv;
-
-	memset(&pw, 0, sizeof(struct mosquitto_pw));
 
 	if(data->init_mode == dpwim_file){
 		if(get_password_from_init_file(data, password)){
@@ -151,44 +149,17 @@ static int generate_password(struct dynsec__data *data, cJSON *j_client, char **
 		(*password)[20] = '\0';
 	}
 
-	if(pw__create(&pw, *password) != MOSQ_ERR_SUCCESS){
+	if(mosquitto_pw_new(&pw, MOSQ_PW_DEFAULT) != MOSQ_ERR_SUCCESS
+			|| mosquitto_pw_hash_encoded(pw, *password) != MOSQ_ERR_SUCCESS
+			|| cJSON_AddStringToObject(j_client, "encoded_password", mosquitto_pw_get_encoded(pw)) == NULL){
+
+		mosquitto_pw_cleanup(pw);
 		free(*password);
 		*password = NULL;
 		return MOSQ_ERR_UNKNOWN;
 	}
 
-	if(pw.hashtype == pw_sha512_pbkdf2){
-		char *salt_b64 = NULL, *password_b64 = NULL;
-
-		if(mosquitto_base64_encode(pw.params.sha512_pbkdf2.salt, pw.params.sha512_pbkdf2.salt_len, &salt_b64)
-				|| mosquitto_base64_encode(pw.params.sha512_pbkdf2.password_hash, sizeof(pw.params.sha512_pbkdf2.password_hash), &password_b64)
-				|| cJSON_AddStringToObject(j_client, "salt", salt_b64) == NULL
-				|| cJSON_AddStringToObject(j_client, "password", password_b64) == NULL
-				|| cJSON_AddNumberToObject(j_client, "iterations", pw.params.sha512_pbkdf2.iterations) == NULL){
-
-			free(password_b64);
-			free(salt_b64);
-			free(*password);
-			*password = NULL;
-			return MOSQ_ERR_UNKNOWN;
-		}
-		free(password_b64);
-		free(salt_b64);
-	}else{
-		if(pw__encode(&pw) != MOSQ_ERR_SUCCESS){
-			free(*password);
-			*password = NULL;
-			return MOSQ_ERR_UNKNOWN;
-		}
-
-		if(cJSON_AddStringToObject(j_client, "encoded_password", pw.encoded_password) == NULL){
-			free(pw.encoded_password);
-			free(*password);
-			*password = NULL;
-			return MOSQ_ERR_UNKNOWN;
-		}
-		free(pw.encoded_password);
-	}
+	mosquitto_pw_cleanup(pw);
 
 	return MOSQ_ERR_SUCCESS;
 }

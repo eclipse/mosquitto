@@ -2,7 +2,6 @@ if(WITH_TLS)
 	add_executable(mosquitto_passwd
 		mosquitto_passwd.c
 		get_password.c get_password.h
-		../../common/password_mosq.c ../../common/password_mosq.h
 	)
 
 	target_include_directories(mosquitto_passwd PRIVATE
@@ -12,13 +11,6 @@ if(WITH_TLS)
 		"${mosquitto_SOURCE_DIR}/lib"
 		"${mosquitto_SOURCE_DIR}/src"
 	)
-
-	if(ARGON2_FOUND)
-		target_link_libraries(mosquitto_passwd
-			PRIVATE
-				argon2
-		)
-	endif()
 
     target_link_libraries(mosquitto_passwd
 	  PRIVATE

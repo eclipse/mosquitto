@@ -25,9 +25,11 @@ endif
 
 OBJS= \
 	base64_common.o \
+	cjson_common.o \
 	file_common.o \
 	memory_common.o \
 	mqtt_common.o \
+	password_common.o \
 	property_common.o \
 	random_common.o \
 	strings_common.o \

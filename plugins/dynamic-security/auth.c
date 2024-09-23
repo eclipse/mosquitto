@@ -25,7 +25,6 @@ Contributors:
 
 #include "dynamic_security.h"
 
-
 /* ################################################################
  * #
  * # Username/password check
@@ -55,7 +54,7 @@ int dynsec_auth__basic_auth_callback(int event, void *event_data, void *userdata
 				return MOSQ_ERR_AUTH;
 			}
 		}
-		if(client->pw.valid && pw__verify(&client->pw, ed->password) == MOSQ_ERR_SUCCESS){
+		if(mosquitto_pw_verify(client->pw, ed->password) == MOSQ_ERR_SUCCESS){
 			return MOSQ_ERR_SUCCESS;
 		}else{
 			return MOSQ_ERR_AUTH;

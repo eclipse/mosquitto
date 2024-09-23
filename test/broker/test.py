@@ -5,7 +5,7 @@ import ptest
 
 tests = [
     #(ports required, 'path'),
-	(1, './01-bad-initial-packets.py'),
+    (1, './01-bad-initial-packets.py'),
     (1, './01-connect-575314.py'),
     (1, './01-connect-accept-protocol.py'),
     (1, './01-connect-allow-anonymous.py'),
@@ -194,7 +194,7 @@ tests = [
     (2, './10-listener-mount-point.py'),
 
     (1, './11-message-expiry.py'),
-	(1, './11-persistence-autosave-changes.py'),
+    (1, './11-persistence-autosave-changes.py'),
     (1, './11-persistent-subscription.py'),
     (1, './11-persistent-subscription-v5.py'),
     (1, './11-persistent-subscription-no-local.py'),
@@ -265,6 +265,9 @@ tests = [
     (1, './20-sparkplug-compliance.py'),
     (1, './20-sparkplug-aware.py'),
 
+    (1, './21-proxy-bad-version.py'),
+    (1, './21-proxy-v1-bad.py'),
+    (1, './21-proxy-v1-success.py'),
     (1, './21-proxy-v2-bad-config.py'),
     (1, './21-proxy-v2-bad-header.py'),
     (1, './21-proxy-v2-local.py'),

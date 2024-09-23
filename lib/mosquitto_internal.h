@@ -149,6 +149,7 @@ enum mosquitto__transport {
 	mosq_t_sctp = 3,
 	mosq_t_http = 4, /* not valid for MQTT, just as a ws precursor */
 	mosq_t_proxy_v2 = 5, /* not valid for MQTT, just as a PROXY protocol v2 precursor */
+	mosq_t_proxy_v1 = 6, /* not valid for MQTT, just as a PROXY protocol v1 precursor */
 };
 
 /* Alias direction - local <-> remote */

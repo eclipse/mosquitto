@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from mosq_test_helper import *
-from proxy_v2_helper import *
+from proxy_helper import *
 import json
 import shutil
 import socket
@@ -11,7 +11,7 @@ def write_config(filename, port):
         f.write("log_type all\n")
         f.write("listener %d\n" % (port))
         f.write("allow_anonymous true\n")
-        f.write("enable_proxy_protocol_v2 true\n")
+        f.write("enable_proxy_protocol 2\n")
 
 def do_test(fam):
     port = mosq_test.get_port()
@@ -29,7 +29,7 @@ def do_test(fam):
 
     try:
         data = b"a"*501
-        sock = do_proxy_connect(port, PROXY_VER, PROXY_CMD_PROXY, fam | PROXY_PROTO_TCP, data)
+        sock = do_proxy_v2_connect(port, PROXY_VER, PROXY_CMD_PROXY, fam | PROXY_PROTO_TCP, data)
         try:
             data = sock.recv(10)
             if len(data) == 0:
