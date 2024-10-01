@@ -58,3 +58,16 @@ docker run -it -p 1883:1883 -v <path-to-configuration-file>:/mosquitto/config/mo
 :boom: if the mosquitto configuration (mosquitto.conf) was modified
 to use non-default ports, the docker run command will need to be updated
 to expose the ports that have been configured.
+
+**Important**: The default configuration only listens on the
+loopback interface. This means that there is no way to access Mosquitto in the
+docker container without using a custom configuration containing at least
+a listener. You also need to make a decision to allow anonymous connections or
+to set up a different method of client authentication.
+
+i.e. to configure a Mosquitto docker container as if it was running locally,
+add the following to `mosquitto.conf`:
+```
+listener 1883
+allow_anonymous true
+```
