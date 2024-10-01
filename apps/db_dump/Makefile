@@ -20,6 +20,10 @@ OBJS = \
 	   topic_tok.o \
 	   utf8_mosq.o
 
+ifeq ($(UNAME),Linux)
+    LIBS:=$(LIBS) -lrt
+endif
+
 .PHONY: all clean reallyclean
 
 all : mosquitto_db_dump
