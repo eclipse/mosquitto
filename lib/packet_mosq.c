@@ -190,7 +190,7 @@ int packet__queue(struct mosquitto *mosq, struct mosquitto__packet *packet)
 
 	/* Write a single byte to sockpairW (connected to sockpairR) to break out
 	 * of select() if in threaded mode. */
-	if(mosq->sockpairW != INVALID_SOCKET){
+	if(mosq->threaded == mosq_ts_self && mosq->sockpairW != INVALID_SOCKET){
 #ifndef WIN32
 		if(write(mosq->sockpairW, &sockpair_data, 1)){
 		}
