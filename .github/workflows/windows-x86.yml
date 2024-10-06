@@ -1,0 +1,53 @@
+name: Windows x86 build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "master", "fixes", "develop" ]
+    tags: [ "v[0-9]+.*" ]
+  pull_request:
+    branches: [ "master", "fixes", "develop" ]
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+
+jobs:
+  mosquitto:
+    runs-on: windows-2022
+
+    steps:
+      - uses: actions/checkout@v4
+
+
+      - name: vcpkg build
+        uses: johnwason/vcpkg-action@v6
+        id: vcpkg
+        with:
+          manifest-dir: ${{ github.workspace }}
+          triplet: x86-windows
+          token: ${{ github.token }}
+          github-binarycache: true
+
+      - name: Configure CMake
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DWITH_LIBWEBSOCKETS=ON -DWITH_TESTS=OFF -DCMAKE_GENERATOR_PLATFORM=x86 -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x86-windows -DVCPKG_MANIFEST_MODE=ON
+      - name: Build
+        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+      - uses: suisei-cn/actions-download-file@v1.6.0
+        id: vcredist
+        name: Download VC redistributable
+        with:
+          url: https://aka.ms/vs/17/release/vc_redist.x86.exe
+          target: ${{github.workspace}}/installer/
+
+      - name: Installer
+        uses: joncloud/makensis-action@v4
+        with:
+          script-file: ${{github.workspace}}/installer/mosquitto.nsi
+
+      - name: Upload installer to artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: installer
+          path: ${{ github.workspace }}/installer/mosquitto*.exe
