@@ -655,14 +655,14 @@ BROKER_EXPORT int mosquitto_persist_client_msg_delete(struct mosquitto_client_ms
 		return MOSQ_ERR_NOT_FOUND;
 	}
 
+
+	int rc = MOSQ_ERR_INVAL;
 	if(client_msg->direction == mosq_md_out){
-		return db__message_delete_outgoing(context, client_msg->mid, client_msg->state, client_msg->qos);
+		rc = db__message_delete_outgoing(context, client_msg->mid, mosq_ms_any, client_msg->qos);
 	}else if(client_msg->direction == mosq_md_in){
-		return db__message_remove_incoming(context, client_msg->mid);
-	}else{
-		return MOSQ_ERR_INVAL;
+		rc = db__message_remove_incoming(context, client_msg->mid);
 	}
-	return MOSQ_ERR_SUCCESS;
+	return rc;
 }
 
 

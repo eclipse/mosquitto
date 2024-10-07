@@ -89,6 +89,7 @@ enum mosquitto_msg_direction {
 };
 
 enum mosquitto_msg_state {
+	mosq_ms_any = -1,
 	mosq_ms_invalid = 0,
 	mosq_ms_publish_qos0 = 1,
 	mosq_ms_publish_qos1 = 2,
