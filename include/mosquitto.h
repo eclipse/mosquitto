@@ -1601,7 +1601,7 @@ libmosq_EXPORT int mosquitto_int_option(struct mosquitto *mosq, enum mosq_opt_t 
  *	          private key for a TLS connection will be obtained. Defaults to
  *	          "pem", a normal private key file.
  *
- *	MOSQ_OPT_TLS_KPASS_SHA1 - Where the TLS Engine requires the use of
+ *	MOSQ_OPT_TLS_ENGINE_KPASS_SHA1 - Where the TLS Engine requires the use of
  *	          a password to be accessed, this option allows a hex encoded
  *	          SHA1 hash of the private key password to be passed to the
  *	          engine directly. Must be set before <mosquitto_connect>.
