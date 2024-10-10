@@ -733,6 +733,7 @@ int bridge__register_local_connections(void)
 
 void bridge__reload(void)
 {
+	struct mosquitto *context;
 	int i;
 	int j;
 
@@ -768,7 +769,8 @@ void bridge__reload(void)
 			assert(j<db.bridge_count);
 			db.bridges[j]->will_delay_interval = 0;
 			bridge__destroy(db.bridges[j]);
-			bridge__new(db.config->bridges[i]);
+			context = bridge__new(db.config->bridges[i]);
+			context->bridge->restart_t = 1; /* force quick restart of bridge */
 			db.config->bridges[i] = NULL;
 		}
 	}
