@@ -35,10 +35,18 @@ include ${R}/make/broker.mk
 #  Targets
 # ------------------------------------------
 ifeq ($(WITH_FUZZING),yes)
-all : mosquitto_broker.a
+ALL_TARGETS=libmosquitto_broker.a
 else
-all : mosquitto
+ALL_TARGETS=mosquitto
+ifeq ($(WITH_EMBEDD_BROKER),yes)
+ALL_TARGETS+=libmosquitto_broker.a
+ifeq ($(WITH_SHARED_LIBRARIES),yes)
+ALL_TARGETS+=libmosquitto_broker.so.${SOVERSION}
 endif
+endif
+endif
+
+all : ${ALL_TARGETS}
 
 OBJS=	mosquitto.o \
 		bridge.o \
@@ -62,6 +70,7 @@ OBJS=	mosquitto.o \
 		listeners.o \
 		logging.o \
 		loop.o \
+		main.o \
 		mux.o \
 		mux_epoll.o \
 		mux_kqueue.o \
@@ -142,11 +151,14 @@ ifeq ($(WITH_WEBSOCKETS),yes)
 	OBJS_EXTERNAL+=${R}/deps/picohttpparser/picohttpparser.o
 endif
 
-mosquitto : ${OBJS} ${OBJS_EXTERNAL}
-	${CROSS_COMPILE}${CC} ${LOCAL_LDFLAGS} $^ -o $@ $(LOCAL_LDADD)
-
-mosquitto_broker.a : ${OBJS} ${OBJS_EXTERNAL}
+libmosquitto_broker.a : ${OBJS} ${OBJS_EXTERNAL}
 	${CROSS_COMPILE}$(AR) cr $@ $^
+
+libmosquitto_broker.so.${SOVERSION} : ${OBJS} ${OBJS_EXTERNAL}
+	${CROSS_COMPILE}$(CC) $(LOCAL_LDFLAGS) $^ -o $@ ${LOCAL_LDADD}
+
+mosquitto : main.o ${OBJS} ${OBJS_EXTERNAL}
+	${CROSS_COMPILE}${CC} ${LOCAL_LDFLAGS} $^ -o $@ $(LOCAL_LDADD)
 
 ${OBJS} : %.o: %.c mosquitto_broker_internal.h
 	${CROSS_COMPILE}${CC} $(LOCAL_CPPFLAGS) $(LOCAL_CFLAGS) -c $< -o $@
@@ -226,14 +238,24 @@ will_mosq.o : ${R}/lib/will_mosq.c ${R}/lib/will_mosq.h
 install : all
 	$(INSTALL) -d "${DESTDIR}$(prefix)/sbin"
 	$(INSTALL) ${STRIP_OPTS} mosquitto "${DESTDIR}${prefix}/sbin/mosquitto"
+ifeq ($(WITH_EMBEDD_BROKER),yes)
+	$(INSTALL) ${STRIP_OPTS} libmosquitto_broker.so.${SOVERSION} "${DESTDIR}${libdir}/libmosquitto_broker.so.${SOVERSION}"
+	ln -sf libmosquitto_broker.so.${SOVERSION} "${DESTDIR}${libdir}/libmosquitto_broker.so"
+ifeq ($(WITH_STATIC_LIBRARIES),yes)
+	$(INSTALL) ${STRIP_OPTS} libmosquitto_broker.a "${DESTDIR}${libdir}/libmosquitto_broker.a"
+endif
+endif
 
 uninstall :
 	-rm -f "${DESTDIR}${prefix}/sbin/mosquitto"
 	-rm -f "${DESTDIR}${prefix}/include/mosquitto_broker.h"
 	-rm -f "${DESTDIR}${prefix}/include/mosquitto_plugin.h"
+	-rm -f "${DESTDIR}${libdir}/libmosquitto_broker.so.${SOVERSION}"
+	-rm -f "${DESTDIR}${libdir}/libmosquitto_broker.so"
+	-rm -f "${DESTDIR}${libdir}/libmosquitto_broker.a"
 
 clean :
-	-rm -f ${OBJS} ${OBJS_EXTERNAL} mosquitto mosquitto_broker.a *.gcda *.gcno
+	-rm -f ${OBJS} ${OBJS_EXTERNAL} mosquitto libmosquitto_broker.a libmosquitto_broker.so.${VERSION} *.gcda *.gcno
 
 reallyclean : clean
 	-rm -rf *.orig *.db
