@@ -154,14 +154,19 @@ int handle__publish(struct mosquitto *mosq)
 			return MOSQ_ERR_SUCCESS;
 		case 1:
 			util__decrement_receive_quota(mosq);
-			rc = send__puback(mosq, mid, 0, NULL);
+			/* Application callbacks should be called before PUBACK is sent (and ownership given to the 
+			   receiver). An application crash within the callback will result in message retransmission. */
 			callback__on_message(mosq, &message->msg, properties);
+			rc = send__puback(mosq, mid, 0, NULL);
 			message__cleanup(&message);
 			mosquitto_property_free_all(&properties);
 			return rc;
 		case 2:
 			message->properties = properties;
 			util__decrement_receive_quota(mosq);
+			/* Application callbacks should be called before PUBREC is sent (and ownership given to the 
+			   receiver). An application crash within the callback will result in message retransmission. */
+			callback__on_message(mosq, &message->msg, message->properties);
 			rc = send__pubrec(mosq, mid, 0, NULL);
 			pthread_mutex_lock(&mosq->msgs_in.mutex);
 			message->state = mosq_ms_wait_for_pubrel;
