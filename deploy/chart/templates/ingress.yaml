@@ -1,0 +1,44 @@
+{{- if .Values.mosquitto.ingress.enabled -}}
+apiVersion: {{ include "mosquitto.capabilities.ingress.apiVersion" . }}
+kind: Ingress
+metadata:
+  name: {{ include "mosquitto.fullname" . }}
+  labels: {{- include "mosquitto.labels.standard" . | nindent 4 }}
+    {{- with .Values.mosquitto.common.labels }}
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
+    {{- with .Values.mosquitto.ingress.labels }}
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
+  {{- if or .Values.mosquitto.common.annotations .Values.mosquitto.ingress.annotations }}
+  annotations:
+    {{- with .Values.mosquitto.common.annotations }}
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
+    {{- with .Values.mosquitto.ingress.annotations }}
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
+  {{- end }}
+spec:
+  rules:
+    {{- range $host := (required ".Values.mosquitto.ingress.hosts is required" .Values.mosquitto.ingress.hosts) }}
+    - host: {{ required "$host.name is required!" $host.name }}
+      http:
+        paths:
+          {{- range $path := (required "$host.paths is required" $host.paths) }}
+          - path: {{ required "$path.name is required" $path.name }}
+            {{- if eq "true" (include "mosquitto.ingress.supportsPathType" $) }}
+            pathType: {{ $path.type | default "ImplementationSpecific" }}
+            {{- end }}
+            backend: {{- include "mosquitto.ingress.backend" (dict "serviceName" (include "mosquitto.fullname" $) "servicePort" (required "$path.port is required!" $path.port) "context" $) | nindent 14 }}
+          {{- end }}
+    {{- end }}
+  {{- if .Values.mosquitto.ingress.tls.enabled }}
+  tls:
+    - secretName: {{ printf "%s-certs" (include "mosquitto.fullname" .) }}
+      hosts:
+        {{- range $host := (required ".Values.mosquitto.ingress.hosts is required!" .Values.mosquitto.ingress.hosts) }}
+        - {{ printf "%s" (required "$host.name is required" $host.name) }}
+        {{- end }}
+  {{- end }}
+{{- end -}}

@@ -1,0 +1,197 @@
+apiVersion: {{ include "mosquitto.capabilities.statefulset.apiVersion" . }}
+kind: StatefulSet
+metadata:
+  name: {{ include "mosquitto.fullname" . }}
+  labels: {{- include "mosquitto.labels.standard" . | nindent 4 }}
+    {{- with .Values.mosquitto.common.labels }}
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
+    {{- with .Values.mosquitto.statefulSet.labels }}
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
+  {{- if or .Values.mosquitto.common.annotations .Values.mosquitto.statefulSet.annotations }}
+  annotations:
+    {{- with .Values.mosquitto.common.annotations }}
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
+    {{- with .Values.mosquitto.statefulSet.annotations }}
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
+  {{- end }}
+spec:
+  replicas: {{ required ".Values.mosquitto.statefulSet.replicas is required!" .Values.mosquitto.statefulSet.replicas }}
+  {{- with .Values.mosquitto.statefulSet.updateStrategy }}
+  updateStrategy: {{- toYaml . | trim | nindent 4 }}
+  {{- end }}
+  serviceName: {{ include "mosquitto.fullname" . }}
+  selector:
+    matchLabels: {{- include "mosquitto.labels.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "mosquitto.labels.standard" . | nindent 8 }}
+        {{- with .Values.mosquitto.common.labels }}
+        {{- toYaml . | trim | nindent 8 }}
+        {{- end }}
+        {{- with .Values.mosquitto.pod.labels }}
+        {{- toYaml . | trim | nindent 8 }}
+        {{- end }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- with .Values.mosquitto.imageDigest }}
+        imageDigest: {{ . }}
+        {{- end }}
+        {{- with .Values.mosquitto.common.annotations }}
+        {{- toYaml . | trim | nindent 8 }}
+        {{- end }}
+        {{- with .Values.mosquitto.pod.annotations }}
+        {{- toYaml . | trim | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.mosquitto.pod.nodeSelector }}
+      nodeSelector: {{- toYaml . | trim | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ if .Values.mosquitto.rbac.create }}{{ include "mosquitto.fullname" . }}{{ else }}{{ required ".Values.mosquitto.serviceAccount.existing is required!" .Values.mosquitto.serviceAccount.existing }}{{ end }}
+      {{- with .Values.mosquitto.pod.tolerations }}
+      tolerations: {{- toYaml . | trim | nindent 8 }}
+      {{- end }}
+      {{- with .Values.mosquitto.pod.imagePullSecrets }}
+      imagePullSecrets:
+        {{- range . }}
+        - name: {{ . }}
+        {{- end }}
+      {{- end }}
+      containers:
+        - name: mosquitto
+          {{- if .Values.mosquitto.imageDigest }}
+          image: {{ printf "%s@%s" (required ".Values.mosquitto.image is required!" .Values.mosquitto.image) .Values.mosquitto.imageDigest }}
+          {{- else }}
+          image: {{ printf "%s:%s" (required ".Values.mosquitto.image is required!" .Values.mosquitto.image) (required ".Values.mosquitto.imageTag is required!" .Values.mosquitto.imageTag) }}
+          {{- end }}
+          imagePullPolicy: {{ required ".Values.mosquitto.imagePullPolicy is required!" .Values.mosquitto.imagePullPolicy }}
+          {{- with .Values.mosquitto.livenessProbe }}
+          livenessProbe: {{- toYaml .| trim | nindent 12 }}
+          {{- end }}
+          {{- with .Values.mosquitto.readinessProbe }}
+          readinessProbe: {{- toYaml .| trim | nindent 12 }}
+          {{- end }}
+          {{- with .Values.mosquitto.resources }}
+          resources: {{- toYaml . | trim | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: mqtt
+              containerPort: {{ required ".Values.mosquitto.ports.mqtt is required!" .Values.mosquitto.ports.mqtt.containerPort }}
+              protocol: TCP
+            {{- if .Values.mosquitto.ports.mqtts.enabled }}
+            - name: mqtts
+              containerPort: {{ required ".Values.mosquitto.ports.mqtts.number is required!" .Values.mosquitto.ports.mqtts.containerPort }}
+              protocol: TCP
+            {{- end  }}
+            {{- if .Values.mosquitto.ports.websocket.enabled }}
+            - name: websocket
+              containerPort: {{ required ".Values.mosquitto.ports.websocket.number is required!" .Values.mosquitto.ports.websocket.containerPort }}
+              protocol: TCP
+            {{- end }}
+          volumeMounts:
+            - name: config
+              mountPath: {{ required ".Values.mosquitto.configurationLocation is required!" .Values.mosquitto.configurationLocation }}
+            - name: {{ include "mosquitto.fullname" . }}
+              mountPath: {{ required ".Values.mosquitto.persistence.location is required!" .Values.mosquitto.persistence.location }}
+            {{- if .Values.mosquitto.ports.mqtts.enabled }}
+            - name: certs
+              mountPath: {{ required ".Values.mosquitto.certificateLocation is required!" .Values.mosquitto.certificateLocation }}
+            {{- end }}
+            {{- if and .Values.mosquitto.authentication.passworFile }}
+            - name: passwordFile
+              mountPath: {{ required ".Values.mosquitto.authentication.passwordFilePath is required!" .Values.mosquitto.authentication.passwordFilePath }}
+              subPath: passwordFile
+            {{- end }}
+            {{- if and .Values.mosquitto.authorization.aclFile }}
+            - name: aclFile
+              mountPath: {{ required ".Values.mosquitto.authorization.aclFilePath is required!" .Values.mosquitto.authorization.aclFilePath }}
+              subPath: aclFile
+            {{- end }}
+            {{- with .Values.mosquitto.volumeMounts }}
+            {{- toYaml . | trim | nindent 12 }}
+            {{- end }}
+      {{- with .Values.mosquitto.pod.affinities }}
+      affinity: {{- toYaml . | trim | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "mosquitto.fullname" . }}
+        {{- if not .Values.mosquitto.persistence.enabled }}
+        - name: {{ include "mosquitto.fullname" . }}
+          emptyDir: {}
+        {{- end }}
+        {{- if .Values.mosquitto.ports.mqtts.enabled }}
+        - name: certs
+          secret:
+            secretName: {{ printf "%s-certs" (include "mosquitto.fullname" .) }}
+        {{- end }}
+        {{- if and .Values.mosquitto.authentication.passwordFile }}
+        - name: passwordFile
+          secret:
+            secretName: {{ include "mosquitto.fullname" . }}
+        {{- end }}
+        {{- if .Values.mosquitto.authorization.aclFile }}
+        - name: aclFile
+          secret:
+            secretName: {{ include "mosquitto.fullname" . }}
+        {{- end }}
+        {{- with .Values.mosquitto.pod.volumes }}
+        {{- toYaml . | trim | nindent 8 }}
+        {{- end }}
+  {{- if .Values.mosquitto.persistence.enabled -}}
+  volumeClaimTemplates:
+    - metadata:
+        name: {{ include "mosquitto.fullname" . }}
+        labels: {{- include "mosquitto.labels.standard" . | nindent 10 }}
+          {{- with .Values.mosquitto.common.labels }}
+          {{- toYaml . | trim | nindent 10 }}
+          {{- end }}
+          {{- with .Values.mosquitto.persistentVolumeClaim.labels }}
+          {{- toYaml . | trim | nindent 10 }}
+          {{- end }}
+        {{- if or .Values.mosquitto.common.annotations .Values.mosquitto.persistentVolumeClaim.annotations }}
+        annotations:
+          {{- with .Values.mosquitto.common.annotations }}
+          {{- toYaml . | trim | nindent 10 }}
+          {{- end }}
+          {{- with .Values.mosquitto.persistentVolumeClaim.annotations }}
+          {{- toYaml . | trim | nindent 10 }}
+          {{- end }}
+        {{- end }}
+      spec:
+        {{- with .Values.mosquitto.persistentVolumeClaim.accessModes }}
+        accessModes:
+          {{- range . }}
+          - {{ . }}
+          {{- end }}
+        {{- end }}
+        {{- with .Values.mosquitto.persistentVolumeClaim.existingVolume }}
+        volumeName: {{ . }}
+        {{- end }}
+        {{- if or .Values.mosquitto.persistentVolumeClaim.matchLabels .Values.mosquitto.persistentVolumeClaim.matchExpressions) }}
+        selector:
+          {{- with .Values.mosquitto.persistentVolumeClaim.matchLabels }}
+          matchLabels:
+            {{- toYaml . | trim | nindent 12 }}
+          {{- end -}}
+          {{- with .Values.mosquitto.persistentVolumeClaim.matchExpressions }}
+          matchExpressions:
+            {{- toYaml . | trim | nindent 12 }}
+          {{- end -}}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ required ".Values.mosquitto.persistence.size is required!" .Values.mosquitto.persistence.size }}
+        {{- with .Values.mosquitto.persistentVolumeClaim.storageClassName }}
+        {{- if eq "-" . }}
+        storageClassName: ""
+        {{- else }}
+        storageClassName: {{ . }}
+        {{- end }}
+        {{- end }}
+  {{- end }}

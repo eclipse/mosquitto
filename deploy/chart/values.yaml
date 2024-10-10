@@ -1,0 +1,615 @@
+# Default values for Mosquitto.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+## Mosquitto configuration
+##
+mosquitto:
+  ## Override the components name (defaults to `mosquitto`).
+  ##
+  nameOverride:
+
+  ## Common configuration for all components
+  ##
+  common:
+    ## Labels to be added to all components.
+    ##
+    ## Example:
+    ##   key1: "value1"
+    ##   key2: "value2"
+    ##
+    ## Ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+    ##
+    labels: {}
+
+    ## Annotations to be added to all components.
+    ##
+    ## Example:
+    ##   key1: "value1"
+    ##   key2: "value2"
+    ##
+    ## Ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+    ##
+    annotations: {}
+
+  ## For Kubernetes RBAC support:
+  ##
+  rbac:
+    ## Enable the creation of RBAC resources.
+    ##
+    create: true
+
+  ## Role configuration.
+  ##
+  role:
+    ## Labels to be added to the role.
+    ##
+    ## Example:
+    ##   key1: "value1"
+    ##   key2: "value2"
+    ##
+    ## Ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+    ##
+    labels: {}
+
+    ## Annotations for the role.
+    ##
+    ## Example:
+    ##   key1: "value1"
+    ##   key2: "value2"
+    ##
+    ## Ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+    ##
+    annotations: {}
+
+  ## Role binding configuration.
+  ##
+  roleBinding:
+    ## Labels to be added to the role binding.
+    ##
+    ## Example:
+    ##   key1: "value1"
+    ##   key2: "value2"
+    ##
+    ## Ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+    ##
+    labels: {}
+
+    ## Annotations for the role binding.
+    ##
+    ## Example:
+    ##   key1: "value1"
+    ##   key2: "value2"
+    ##
+    ## Ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+    ##
+    annotations: {}
+
+  ## Service account configuration.
+  ##
+  serviceAccount:
+    ## The name of the service account to use for api pods if rbac.create is false
+    ##
+    existing: default
+
+    ## Labels to be added to the service account.
+    ##
+    ## Example:
+    ##   key1: "value1"
+    ##   key2: "value2"
+    ##
+    ## Ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+    ##
+    labels: {}
+
+    ## Annotations for the service account.
+    ##
+    ## Example:
+    ##   key1: "value1"
+    ##   key2: "value2"
+    ##
+    ## Ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+    ##
+    annotations: {}
+
+  ## Pod distribution budget configuration for pod(s)
+  ##
+  podDisruptionBudget:
+    ## Labels to be added to the pod disruption budget.
+    ##
+    ## Example:
+    ##   key1: "value1"
+    ##   key2: "value2"
+    ##
+    ## Ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+    ##
+    labels: {}
+
+    ## Annotations for the pod disruption budget.
+    ##
+    ## Example:
+    ##   key1: "value1"
+    ##   key2: "value2"
+    ##
+    ## Ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+    ##
+    annotations: {}
+
+    ## Minimum available pods. This can be either a number or percentage value.
+    ## It's important to know that 'minAvailable' and 'maxUnavailable' are mutually exclusive
+    ##
+    minAvailable:
+
+    ## Maximum unavailable pods. This can be either a number or percentage value.
+    ## It's important to know that 'minAvailable' and 'maxUnavailable' are mutually exclusive
+    ##
+    maxUnavailable:
+
+  ## Secret definition
+  ##
+  secret:
+    ## Labels to be added to the secret.
+    ##
+    ## Example:
+    ##   key1: "value1"
+    ##   key2: "value2"
+    ##
+    ## Ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+    ##
+    labels: {}
+
+    ## Annotations for the secret.
+    ##
+    ## Example:
+    ##   key1: "value1"
+    ##   key2: "value2"
+    ##
+    ## Ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+    ##
+    annotations: {}
+
+  ## Configmap settings.
+  ##
+  configMap:
+    ## Labels to be added to the config map.
+    ##
+    ## Example:
+    ##   key1: "value1"
+    ##   key2: "value2"
+    ##
+    ## Ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+    ##
+    labels: {}
+
+    ## Annotations for the config map.
+    ##
+    ## Example:
+    ##   key1: "value1"
+    ##   key2: "value2"
+    ##
+    ## Ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+    ##
+    annotations: {}
+
+  persistence:
+    ## Enable persistence
+    ##
+    enabled: false
+
+    ## Persistence block size
+    ##
+    size: 1Gi
+
+    ## Persistent storage location
+    ##
+    location: /mosquitto/data
+
+  ## Persistent volume claim settings
+  ##
+  persistentVolumeClaim:
+    ## Labels to be added to the persistent volume claim.
+    ##
+    ## Example:
+    ##   key1: "value1"
+    ##   key2: "value2"
+    ##
+    ## Ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+    ##
+    labels: {}
+
+    ## Annotations for the persistent volume claim.
+    ##
+    ## Example:
+    ##   key1: "value1"
+    ##   key2: "value2"
+    ##
+    ## Ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+    ##
+    annotations: {}
+
+    ## Persistent volume claim access modes
+    ##
+    accessModes:
+      - ReadWriteOnce
+
+    ## Existing PVC volume name
+    ##
+    existingVolume:
+
+    ## PVC match labels
+    ##
+    matchLabels: {}
+
+    ## PVC match expressions
+    ##
+    matchExpressions: {}
+
+    ## Persistent Volume storage class.
+    ## If set to "-", the storageClassName will be set to "", which disables dynamic provisioning
+    ## If storage class is not set, no storageClassName spec is set, choosing the default provisioner.
+    ##
+    storageClassName:
+
+  ## StatefulSet configuration
+  ##
+  statefulSet:
+    ## Number of replicas.
+    ##
+    replicas: 1
+
+    ## Labels to be added to the deployment.
+    ##
+    ## Example:
+    ##   key1: "value1"
+    ##   key2: "value2"
+    ##
+    ## Ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+    ##
+    labels: {}
+
+    ## Annotations for the deployment.
+    ##
+    ## Example:
+    ##   key1: "value1"
+    ##   key2: "value2"
+    ##
+    ## Ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+    ##
+    annotations: {}
+
+    ## Strategy for deployment updates.
+    ##
+    ## Example:
+    ##   updateStrategy:
+    ##     type: RollingUpdate
+    ##     rollingUpdate:
+    ##       maxSurge: 1
+    ##       maxUnavailable: 25%
+    updateStrategy: {}
+
+  ## Pod(s) configuration
+  ##
+  pod:
+    ## Labels to be added to the pod(s).
+    ##
+    ## Example:
+    ##   key1: "value1"
+    ##   key2: "value2"
+    ##
+    ## Ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+    ##
+    labels: {}
+
+    ## Annotations for the pod(s).
+    ##
+    ## Example:
+    ##   key1: "value1"
+    ##   key2: "value2"
+    ##
+    ## Ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+    ##
+    annotations: {}
+
+    ## Node selector for pod(s).
+    ## Ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+    ##
+    nodeSelector: {}
+
+    ## Tolerations for the pod(s).
+    ##
+    ## Example:
+    ##   - key: "toleration=key"
+    ##     operator: "Equal"
+    ##     value: "value"
+    ##     effect: "NoSchedule"
+    ##
+    ## Ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+    ##
+    tolerations: {}
+
+    ## Array of imagePullSecrets to allow pulling the Identity Set Management image from private registries.
+    ## ps.: secrets must be manually created in the namespace.
+    ## Ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+    ##
+    ## Example:
+    ##   imagePullSecrets:
+    ##    - myRegistryKeySecretName
+    ##
+    imagePullSecrets: []
+
+    ## Affinities to add to the pod(s).
+    ##
+    ## Example:
+    ##   nodeAffinity:
+    ##     preferredDuringSchedulingIgnoredDuringExecution:
+    ##       - weight: 50
+    ##         preference:
+    ##           matchExpressions:
+    ##             - key: spot
+    ##               operator: NotIn
+    ##               values:
+    ##                 - "true"
+    ##
+    ## Ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+    ##
+    affinities: {}
+
+    ## Configure volumes for the pod(s).
+    ##
+    ## Example:
+    ##   - name: some-volume
+    ##     configMap:
+    ##       name: some-config
+    ##
+    ## Ref: https://kubernetes.io/docs/concepts/storage/volumes/
+    ##
+    volumes: {}
+
+  ## Service configuration.
+  ## Ref: https://kubernetes.io/docs/user-guide/services/
+  ##
+  service:
+    ## For minikube, set this to ClusterIP, elsewhere use LoadBalancer or NodePort
+    ## Ref: https://kubernetes.io/docs/user-guide/services/#publishing-services---service-types
+    ##
+    type: ClusterIP
+
+    ## When using `mosquitto.service.type: LoadBalancer`, sets the user-specified load balancer IP.
+    ## Example: 172.217.1.174
+    ##
+    loadBalancerIP:
+
+    ## Labels to be added to the api service.
+    ##
+    labels: {}
+
+    ## Annotations to be added to the api service.
+    ##
+    ## Example:
+    ##   prometheus.io/probe: "true"
+    ##   prometheus.io/probe_path: "/"
+    ##
+    ## When using `mosquitto.service.type: LoadBalancer` in AWS, enable HTTPS with an ACM cert:
+    ##   service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "arn:aws:acm:eu-west-1:123456789:certificate/abc123-abc123-abc123-abc123"
+    ##   service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "http"
+    ##   service.beta.kubernetes.io/aws-load-balancer-backend-port: "api"
+    ##   service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443"
+    ##
+    annotations: {}
+
+    ## When using `mosquitto.service.type: LoadBalancer`, whitelist the load balancer to particular IPs
+    ## Example:
+    ##   - 192.168.1.10/32
+    ##
+    loadBalancerSourceRanges: []
+
+  ## Ingress configuration.
+  ## Ref: https://kubernetes.io/docs/user-guide/ingress/
+  ##
+  ingress:
+    ## Enable Ingress.
+    ##
+    enabled: false
+
+    ## Labels to be added to the ingress.
+    ##
+    ## Example:
+    ##   key1: "value1"
+    ##   key2: "value2"
+    ##
+    ## Ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+    ##
+    labels: {}
+
+    ## Annotations to be added to the ingress.
+    ## Example:
+    ##   kubernetes.io/ingress.class: nginx
+    ##   kubernetes.io/tls-acme: 'true'
+    ##
+    annotations: {}
+
+    ## Hostnames.
+    ## Must be provided if Ingress is enabled.
+    ##
+    ## Example:
+    ##   - name: mosquitto.domain.com
+    ##     paths:
+    ##       - name: /
+    ##         type: Prefix
+    ##         port: 8883
+    ##
+    hosts: []
+
+    ## TLS.
+    ##
+    tls:
+      ## Enable TLS
+      ##
+      enabled: false
+
+  ## Mosquitto config file contents
+  ##
+  ## Example:
+  ##   configFile: |
+  ##     allow_anonymous true
+  ##
+  configFile:
+
+  ## Mosquitto authentication settings
+  ##
+  authentication:
+    ## Mosquitto password file contents
+    ## To use authentication with mosquitto, you can set a list of password entries to be used.
+    ## reference https://mosquitto.org/man/mosquitto_passwd-1.html to generate these entries.
+    ##
+    ## Example:
+    ##   passwordEntries: |-
+    ##     user1:$6$BKzw0RKerxV4Esbj$Uz5slWGB1TiOtYIEokEl0eR1YSEQAdKpcdRYMsLYbwjktlVzdLyGk41YCPGyMLnBePtdwPhkcm8kjGI0R9s57w==
+    ##
+    passwordFile:
+
+    ## Location of password file
+    ##
+    passwordFilePath: /etc/mosquitto/password-file
+
+  ## Mosquitto authorization settings
+  ##
+  authorization:
+    ## Mosquitto ACL file contents
+    ## To use authorizations with mosquitto, you can set a list of per user or pattern-based rules.
+    ## reference https://mosquitto.org/man/mosquitto-conf-5.html for further information.
+    ##
+    ## Example:
+    ##   aclFile: |-
+    ##     pattern read cmnd/%u/#
+    ##     pattern write stat/%u/#
+    ##     pattern write tele/%u/#
+    ##
+    aclFile:
+
+    ## Location of ACL file
+    ##
+    aclFilePath: /etc/mosquitto/acl-file
+
+  ## Mosquitto image to use in api server container(s).
+  ##
+  image: eclipse-mosquitto
+
+  ## Identity Set Management image tag.
+  ##
+  imageTag: 2.0.18-openssl
+
+  ## Specific image digest to use in place of a tag.
+  ## Ref: https://kubernetes.io/docs/concepts/configuration/overview/#container-images
+  ##
+  imageDigest:
+
+  ## Specify a imagePullPolicy regarding the fetching of container images.
+  ## Ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+  ##
+  imagePullPolicy: IfNotPresent
+
+  ## Mosquitto container ports
+  ##
+  ports:
+    ## MQTT port
+    ##
+    mqtt:
+      ## MQTT port
+      ##
+      containerPort: 1883
+
+      ## When using `mosquitto.service.type: NodePort`, by default and for convenience, the Kubernetes control plane
+      ## will allocate a port from a range (default: 30000-32767)
+      ##
+      nodePort:
+
+    ## MQTTS port
+    ##
+    mqtts:
+      ## Enable MQTT over TLS port
+      ##
+      enabled: false
+
+      ## MQTT over TLS port number
+      ##
+      containerPort: 8883
+
+      ## When using `mosquitto.service.type: NodePort`, by default and for convenience, the Kubernetes control plane
+      ## will allocate a port from a range (default: 30000-32767)
+      ##
+      nodePort:
+
+    ## WebSocket port
+    ##
+    websocket:
+      ## Enable WebSocket port
+      ##
+      enabled: false
+
+      ## WebSocket port number
+      ##
+      containerPort: 9001
+
+      ## When using `mosquitto.service.type: NodePort`, by default and for convenience, the Kubernetes control plane
+      ## will allocate a port from a range (default: 30000-32767)
+      ##
+      nodePort:
+
+  ## Security context configuration for pod(s)
+  ##
+  securityContext:
+    ## File System group ID
+    ##
+    fsGroup: 1883
+
+  ## Mosquitto broker configuration location
+  ##
+  configurationLocation: /mosquitto/config
+
+  ## Mosquitto certificate location
+  ##
+  certificateLocation: /mosquitto/certs
+
+  ## Configures the liveness probe used to determine if the api component is up.
+  ## ps.: if you're upgrading Audience Management from one version  to another, the probe will
+  ## probably fail for some time before migrations are finished - in such situations,
+  ## consider bumping the values set here.
+  ## Ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/
+  ##
+  livenessProbe:
+    failureThreshold: 5
+    initialDelaySeconds: 5
+    periodSeconds: 1
+    timeoutSeconds: 1
+    tcpSocket:
+      port: mqtt
+
+  ## Configures the readiness probes.
+  ## Ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/
+  ##
+  readinessProbe:
+    failureThreshold: 5
+    initialDelaySeconds: 3
+    periodSeconds: 1
+    timeoutSeconds: 1
+    tcpSocket:
+      port: mqtt
+
+  ## Configure resource requests and limits.
+  ## Ref: https://kubernetes.io/docs/user-guide/compute-resources/
+  ##
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+  ## Configure volumeMounts for the container(s)
+  ##
+  ## Example:
+  ##  - name: some-volume
+  ##    mountPath: /usr/some-volume
+  ##
+  ## Ref: https://kubernetes.io/docs/concepts/storage/volumes/
+  ##
+  volumeMounts: {}
