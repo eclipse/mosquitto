@@ -383,7 +383,8 @@ process_bad_message:
 		}
 		db__msg_store_free(msg);
 	}
-	if(context->out_packet_count >= db.config->max_queued_messages){
+	if(context->out_packet_count >= db.config->max_queued_messages
+			&& db.config->max_queued_messages > 0){
 		rc = MQTT_RC_QUOTA_EXCEEDED;
 	}
 	return rc;
