@@ -660,7 +660,6 @@ static int net__init_ssl_ctx(struct mosquitto *mosq)
 	 * has not been set, or if both of MOSQ_OPT_SSL_CTX and
 	 * MOSQ_OPT_SSL_CTX_WITH_DEFAULTS are set. */
 	if(mosq->tls_cafile || mosq->tls_capath || mosq->tls_psk || mosq->tls_use_os_certs){
-		net__init_tls();
 		if(!mosq->ssl_ctx){
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000L

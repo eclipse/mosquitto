@@ -84,6 +84,10 @@ int mosquitto_lib_init(void)
 		if (rc != MOSQ_ERR_SUCCESS) {
 			return rc;
 		}
+		
+		#ifdef WITH_TLS
+			net__init_tls();
+		#endif
 	}
 
 	init_refcount++;
