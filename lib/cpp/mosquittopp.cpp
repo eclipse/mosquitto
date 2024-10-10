@@ -195,6 +195,16 @@ int topic_matches_sub_with_pattern(const char *sub, const char *topic, const cha
 	return mosquitto_topic_matches_sub_with_pattern(sub, topic, clientid, username, result);
 }
 
+int pub_topic_check(const char *topic)
+{
+	return mosquitto_pub_topic_check(topic);
+}
+
+int sub_topic_check(const char *topic)
+{
+	return mosquitto_sub_topic_check(topic);
+}
+
 int sub_matches_acl(const char *acl, const char *sub, bool *result)
 {
 	return mosquitto_sub_matches_acl(acl, sub, result);
@@ -509,6 +519,11 @@ int mosquittopp::tls_insecure_set(bool value)
 int mosquittopp::tls_psk_set(const char *psk, const char *identity, const char *ciphers)
 {
 	return mosquitto_tls_psk_set(m_mosq, psk, identity, ciphers);
+}
+
+void *mosquittopp::ssl_get()
+{
+	return mosquitto_ssl_get(m_mosq);
 }
 
 }
