@@ -915,6 +915,9 @@ int mosquitto_security_init_default(bool reload);
 int mosquitto_security_apply_default(void);
 int mosquitto_security_cleanup_default(bool reload);
 int mosquitto_psk_key_get_default(struct mosquitto *context, const char *hint, const char *identity, char *key, int max_key_len);
+int acl_file__init(void);
+int acl_file__cleanup(void);
+int acl_file__apply(void);
 int psk_file__init(void);
 int psk_file__cleanup(void);
 

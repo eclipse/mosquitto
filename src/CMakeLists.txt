@@ -1,4 +1,5 @@
 add_executable(mosquitto
+	acl_file.c
 	../lib/alias_mosq.c ../lib/alias_mosq.h
 	bridge.c bridge_topic.c
 	broker_control.c
