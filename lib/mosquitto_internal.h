@@ -33,7 +33,7 @@ Contributors:
 #endif
 #include <stdlib.h>
 
-#if defined(WITH_THREADING) && !defined(WITH_BROKER)
+#if defined(WITH_THREADING)
 #  include <pthread.h>
 #else
 #  include <dummypthread.h>
@@ -203,9 +203,9 @@ struct mosquitto_msg_data{
 #else
 	struct mosquitto_message_all *inflight;
 	int queue_len;
-#  ifdef WITH_THREADING
+#endif
+#ifdef WITH_THREADING
 	pthread_mutex_t mutex;
-#  endif
 #endif
 	int inflight_quota;
 	uint16_t inflight_maximum;
@@ -272,7 +272,7 @@ struct mosquitto {
 	enum mosquitto__keyform tls_keyform;
 #endif
 	bool want_write;
-#if defined(WITH_THREADING) && !defined(WITH_BROKER)
+#if defined(WITH_THREADING)
 	pthread_mutex_t callback_mutex;
 	pthread_mutex_t log_callback_mutex;
 	pthread_mutex_t msgtime_mutex;
