@@ -141,3 +141,9 @@ MOSQ_1.7 {
 		mosquitto_property_next;
 		mosquitto_ssl_get;
 } MOSQ_1.6;
+
+MOSQ_2.0 {
+       global:
+               mosquitto_connect_async_v5;
+               mosquitto_connect_bind_async_v5;
+} MOSQ_1.7;
