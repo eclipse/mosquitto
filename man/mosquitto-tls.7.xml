@@ -96,7 +96,7 @@
 			</member>
 			<member>
 				<citerefentry>
-					<refentrytitle><link xlink:href="mosquitto-conf-5.html">mosquitto-conf</link></refentrytitle>
+					<refentrytitle><link xlink:href="mosquitto-conf-5.html">mosquitto.conf</link></refentrytitle>
 					<manvolnum>5</manvolnum>
 				</citerefentry>
 			</member>
