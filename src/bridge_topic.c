@@ -59,9 +59,11 @@ static int bridge__create_prefix(char **full_prefix, const char *topic, const ch
 {
 	size_t len;
 
-	if(mosquitto_pub_topic_check(prefix) != MOSQ_ERR_SUCCESS){
-		log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge topic local prefix '%s'.", prefix);
-		return MOSQ_ERR_INVAL;
+	if(!prefix || strlen(prefix) != 0){
+		if(mosquitto_pub_topic_check(prefix) != MOSQ_ERR_SUCCESS){
+			log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid bridge topic local prefix '%s'.", prefix);
+			return MOSQ_ERR_INVAL;
+		}
 	}
 
 	if(topic){

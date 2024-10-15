@@ -196,6 +196,7 @@ static void TEST_invalid(void)
 	no_match_helper(MOSQ_ERR_INVAL, "foo/#abc", "foo");
 	no_match_helper(MOSQ_ERR_INVAL, "#abc", "foo");
 	no_match_helper(MOSQ_ERR_INVAL, "/#a", "foo/bar");
+	no_match_helper(MOSQ_ERR_INVAL, "", "foo/bar/#");
 }
 
 /* ========================================================================
@@ -233,6 +234,7 @@ static void TEST_pub_topic_invalid(void)
 	pub_topic_helper("pub/topic#", MOSQ_ERR_INVAL);
 	pub_topic_helper("pub/topic/#", MOSQ_ERR_INVAL);
 	pub_topic_helper("+/pub/topic", MOSQ_ERR_INVAL);
+	pub_topic_helper("", MOSQ_ERR_INVAL);
 }
 
 
@@ -278,6 +280,7 @@ static void TEST_sub_topic_invalid(void)
 	sub_topic_helper("sub/#topic", MOSQ_ERR_INVAL);
 	sub_topic_helper("sub/topic#", MOSQ_ERR_INVAL);
 	sub_topic_helper("#/sub/topic", MOSQ_ERR_INVAL);
+	sub_topic_helper("", MOSQ_ERR_INVAL);
 }
 
 /* ========================================================================

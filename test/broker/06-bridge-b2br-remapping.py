@@ -17,6 +17,9 @@ def write_config(filename, port1, port2, protocol_version):
         f.write("topic +/value in 0 local3/topic/ remote3/topic/\n")
         f.write("topic ic/+ in 0 local4/top remote4/tip\n")
         f.write("topic clients/total in 0 test/mosquitto/org $SYS/broker/\n")
+        f.write('topic rmapped in 0 "" remote/mapped/\n')
+        f.write('topic lmapped in 0 local/mapped/ ""\n')
+        f.write('topic "" in 0 local/single remote/single\n')
         f.write("notifications false\n")
         f.write("restart_timeout 5\n")
         f.write("bridge_protocol_version %s\n" % (protocol_version))
@@ -70,6 +73,9 @@ def inner_test(bridge, sock, proto_ver):
         ('local3/topic/something/value', 'remote3/topic/something/value'),
         ('local4/topic/something', 'remote4/tipic/something'),
         ('test/mosquitto/orgclients/total', '$SYS/broker/clients/total'),
+        ('local/mapped/lmapped', 'lmapped'),
+        ('rmapped', 'remote/mapped/rmapped'),
+        ('local/single', 'remote/single'),
     ]
 
     for (local_topic, remote_topic) in cases:
