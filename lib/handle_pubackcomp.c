@@ -137,7 +137,7 @@ int handle__pubackcomp(struct mosquitto *mosq, const char *type)
 	rc = message__delete(mosq, mid, mosq_md_out, qos);
 	if(rc == MOSQ_ERR_SUCCESS){
 		/* Only inform the client the message has been sent once. */
-		pthread_mutex_lock(&mosq->callback_mutex);
+		COMPAT_pthread_mutex_lock(&mosq->callback_mutex);
 		if(mosq->on_publish){
 			mosq->in_callback = true;
 			mosq->on_publish(mosq, mosq->userdata, mid);
@@ -148,14 +148,14 @@ int handle__pubackcomp(struct mosquitto *mosq, const char *type)
 			mosq->on_publish_v5(mosq, mosq->userdata, mid, reason_code, properties);
 			mosq->in_callback = false;
 		}
-		pthread_mutex_unlock(&mosq->callback_mutex);
+		COMPAT_pthread_mutex_unlock(&mosq->callback_mutex);
 		mosquitto_property_free_all(&properties);
 	}else if(rc != MOSQ_ERR_NOT_FOUND){
 		return rc;
 	}
-	pthread_mutex_lock(&mosq->msgs_out.mutex);
+	COMPAT_pthread_mutex_lock(&mosq->msgs_out.mutex);
 	message__release_to_inflight(mosq, mosq_md_out);
-	pthread_mutex_unlock(&mosq->msgs_out.mutex);
+	COMPAT_pthread_mutex_unlock(&mosq->msgs_out.mutex);
 
 	return MOSQ_ERR_SUCCESS;
 #endif

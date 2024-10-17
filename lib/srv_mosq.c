@@ -49,7 +49,7 @@ static void srv_callback(void *arg, int status, int timeouts, unsigned char *abu
 	}else{
 		log__printf(mosq, MOSQ_LOG_ERR, "Error: SRV lookup failed (%d).", status);
 		/* FIXME - calling on_disconnect here isn't correct. */
-		pthread_mutex_lock(&mosq->callback_mutex);
+		COMPAT_pthread_mutex_lock(&mosq->callback_mutex);
 		if(mosq->on_disconnect){
 			mosq->in_callback = true;
 			mosq->on_disconnect(mosq, mosq->userdata, MOSQ_ERR_LOOKUP);
@@ -60,7 +60,7 @@ static void srv_callback(void *arg, int status, int timeouts, unsigned char *abu
 			mosq->on_disconnect_v5(mosq, mosq->userdata, MOSQ_ERR_LOOKUP, NULL);
 			mosq->in_callback = false;
 		}
-		pthread_mutex_unlock(&mosq->callback_mutex);
+		COMPAT_pthread_mutex_unlock(&mosq->callback_mutex);
 	}
 }
 #endif

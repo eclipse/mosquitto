@@ -142,7 +142,7 @@ void message__reconnect_reset(struct mosquitto *mosq, bool update_quota_only)
 	struct mosquitto_message_all *message, *tmp;
 	assert(mosq);
 
-	pthread_mutex_lock(&mosq->msgs_in.mutex);
+	COMPAT_pthread_mutex_lock(&mosq->msgs_in.mutex);
 	mosq->msgs_in.inflight_quota = mosq->msgs_in.inflight_maximum;
 	mosq->msgs_in.queue_len = 0;
 	DL_FOREACH_SAFE(mosq->msgs_in.inflight, message, tmp){
@@ -157,10 +157,10 @@ void message__reconnect_reset(struct mosquitto *mosq, bool update_quota_only)
 			util__decrement_receive_quota(mosq);
 		}
 	}
-	pthread_mutex_unlock(&mosq->msgs_in.mutex);
+	COMPAT_pthread_mutex_unlock(&mosq->msgs_in.mutex);
 
 
-	pthread_mutex_lock(&mosq->msgs_out.mutex);
+	COMPAT_pthread_mutex_lock(&mosq->msgs_out.mutex);
 	mosq->msgs_out.inflight_quota = mosq->msgs_out.inflight_maximum;
 	mosq->msgs_out.queue_len = 0;
 	DL_FOREACH_SAFE(mosq->msgs_out.inflight, message, tmp){
@@ -185,7 +185,7 @@ void message__reconnect_reset(struct mosquitto *mosq, bool update_quota_only)
 			message->state = mosq_ms_invalid;
 		}
 	}
-	pthread_mutex_unlock(&mosq->msgs_out.mutex);
+	COMPAT_pthread_mutex_unlock(&mosq->msgs_out.mutex);
 }
 
 
@@ -228,12 +228,12 @@ int message__remove(struct mosquitto *mosq, uint16_t mid, enum mosquitto_msg_dir
 	assert(message);
 
 	if(dir == mosq_md_out){
-		pthread_mutex_lock(&mosq->msgs_out.mutex);
+		COMPAT_pthread_mutex_lock(&mosq->msgs_out.mutex);
 
 		DL_FOREACH_SAFE(mosq->msgs_out.inflight, cur, tmp){
 			if(found == false && cur->msg.mid == mid){
 				if(cur->msg.qos != qos){
-					pthread_mutex_unlock(&mosq->msgs_out.mutex);
+					COMPAT_pthread_mutex_unlock(&mosq->msgs_out.mutex);
 					return MOSQ_ERR_PROTOCOL;
 				}
 				DL_DELETE(mosq->msgs_out.inflight, cur);
@@ -244,18 +244,18 @@ int message__remove(struct mosquitto *mosq, uint16_t mid, enum mosquitto_msg_dir
 				break;
 			}
 		}
-		pthread_mutex_unlock(&mosq->msgs_out.mutex);
+		COMPAT_pthread_mutex_unlock(&mosq->msgs_out.mutex);
 		if(found){
 			return MOSQ_ERR_SUCCESS;
 		}else{
 			return MOSQ_ERR_NOT_FOUND;
 		}
 	}else{
-		pthread_mutex_lock(&mosq->msgs_in.mutex);
+		COMPAT_pthread_mutex_lock(&mosq->msgs_in.mutex);
 		DL_FOREACH_SAFE(mosq->msgs_in.inflight, cur, tmp){
 			if(cur->msg.mid == mid){
 				if(cur->msg.qos != qos){
-					pthread_mutex_unlock(&mosq->msgs_in.mutex);
+					COMPAT_pthread_mutex_unlock(&mosq->msgs_in.mutex);
 					return MOSQ_ERR_PROTOCOL;
 				}
 				DL_DELETE(mosq->msgs_in.inflight, cur);
@@ -266,7 +266,7 @@ int message__remove(struct mosquitto *mosq, uint16_t mid, enum mosquitto_msg_dir
 			}
 		}
 
-		pthread_mutex_unlock(&mosq->msgs_in.mutex);
+		COMPAT_pthread_mutex_unlock(&mosq->msgs_in.mutex);
 		if(found){
 			return MOSQ_ERR_SUCCESS;
 		}else{
@@ -282,7 +282,7 @@ void message__retry_check(struct mosquitto *mosq)
 	assert(mosq);
 
 #ifdef WITH_THREADING
-	pthread_mutex_lock(&mosq->msgs_out.mutex);
+	COMPAT_pthread_mutex_lock(&mosq->msgs_out.mutex);
 #endif
 
 	DL_FOREACH(mosq->msgs_out.inflight, msg){
@@ -309,7 +309,7 @@ void message__retry_check(struct mosquitto *mosq)
 		}
 	}
 #ifdef WITH_THREADING
-	pthread_mutex_unlock(&mosq->msgs_out.mutex);
+	COMPAT_pthread_mutex_unlock(&mosq->msgs_out.mutex);
 #endif
 }
 
@@ -325,20 +325,20 @@ int message__out_update(struct mosquitto *mosq, uint16_t mid, enum mosquitto_msg
 	struct mosquitto_message_all *message, *tmp;
 	assert(mosq);
 
-	pthread_mutex_lock(&mosq->msgs_out.mutex);
+	COMPAT_pthread_mutex_lock(&mosq->msgs_out.mutex);
 	DL_FOREACH_SAFE(mosq->msgs_out.inflight, message, tmp){
 		if(message->msg.mid == mid){
 			if(message->msg.qos != qos){
-				pthread_mutex_unlock(&mosq->msgs_out.mutex);
+				COMPAT_pthread_mutex_unlock(&mosq->msgs_out.mutex);
 				return MOSQ_ERR_PROTOCOL;
 			}
 			message->state = state;
 			message->timestamp = mosquitto_time();
-			pthread_mutex_unlock(&mosq->msgs_out.mutex);
+			COMPAT_pthread_mutex_unlock(&mosq->msgs_out.mutex);
 			return MOSQ_ERR_SUCCESS;
 		}
 	}
-	pthread_mutex_unlock(&mosq->msgs_out.mutex);
+	COMPAT_pthread_mutex_unlock(&mosq->msgs_out.mutex);
 	return MOSQ_ERR_NOT_FOUND;
 }
 

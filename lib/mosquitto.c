@@ -209,18 +209,18 @@ int mosquitto_reinitialise(struct mosquitto *mosq, const char *id, bool clean_st
 	mosq->tls_ocsp_required = false;
 #endif
 #ifdef WITH_THREADING
-	pthread_mutex_init(&mosq->callback_mutex, NULL);
-	pthread_mutex_init(&mosq->log_callback_mutex, NULL);
-	pthread_mutex_init(&mosq->state_mutex, NULL);
-	pthread_mutex_init(&mosq->out_packet_mutex, NULL);
-	pthread_mutex_init(&mosq->current_out_packet_mutex, NULL);
-	pthread_mutex_init(&mosq->msgtime_mutex, NULL);
-	pthread_mutex_init(&mosq->msgs_in.mutex, NULL);
-	pthread_mutex_init(&mosq->msgs_out.mutex, NULL);
-	pthread_mutex_init(&mosq->mid_mutex, NULL);
+	COMPAT_pthread_mutex_init(&mosq->callback_mutex, NULL);
+	COMPAT_pthread_mutex_init(&mosq->log_callback_mutex, NULL);
+	COMPAT_pthread_mutex_init(&mosq->state_mutex, NULL);
+	COMPAT_pthread_mutex_init(&mosq->out_packet_mutex, NULL);
+	COMPAT_pthread_mutex_init(&mosq->current_out_packet_mutex, NULL);
+	COMPAT_pthread_mutex_init(&mosq->msgtime_mutex, NULL);
+	COMPAT_pthread_mutex_init(&mosq->msgs_in.mutex, NULL);
+	COMPAT_pthread_mutex_init(&mosq->msgs_out.mutex, NULL);
+	COMPAT_pthread_mutex_init(&mosq->mid_mutex, NULL);
 	mosq->thread_id = pthread_self();
 #endif
-	/* This must be after pthread_mutex_init(), otherwise the log mutex may be
+	/* This must be after COMPAT_pthread_mutex_init(), otherwise the log mutex may be
 	 * used before being initialised. */
 	if(net__socketpair(&mosq->sockpairR, &mosq->sockpairW)){
 		log__printf(mosq, MOSQ_LOG_WARNING,
@@ -238,8 +238,8 @@ void mosquitto__destroy(struct mosquitto *mosq)
 #ifdef WITH_THREADING
 #  ifdef HAVE_PTHREAD_CANCEL
 	if(mosq->threaded == mosq_ts_self && !pthread_equal(mosq->thread_id, pthread_self())){
-		pthread_cancel(mosq->thread_id);
-		pthread_join(mosq->thread_id, NULL);
+		COMPAT_pthread_cancel(mosq->thread_id);
+		COMPAT_pthread_join(mosq->thread_id, NULL);
 		mosq->threaded = mosq_ts_none;
 	}
 #  endif
@@ -248,15 +248,15 @@ void mosquitto__destroy(struct mosquitto *mosq)
 		/* If mosq->id is not NULL then the client has already been initialised
 		 * and so the mutexes need destroying. If mosq->id is NULL, the mutexes
 		 * haven't been initialised. */
-		pthread_mutex_destroy(&mosq->callback_mutex);
-		pthread_mutex_destroy(&mosq->log_callback_mutex);
-		pthread_mutex_destroy(&mosq->state_mutex);
-		pthread_mutex_destroy(&mosq->out_packet_mutex);
-		pthread_mutex_destroy(&mosq->current_out_packet_mutex);
-		pthread_mutex_destroy(&mosq->msgtime_mutex);
-		pthread_mutex_destroy(&mosq->msgs_in.mutex);
-		pthread_mutex_destroy(&mosq->msgs_out.mutex);
-		pthread_mutex_destroy(&mosq->mid_mutex);
+		COMPAT_pthread_mutex_destroy(&mosq->callback_mutex);
+		COMPAT_pthread_mutex_destroy(&mosq->log_callback_mutex);
+		COMPAT_pthread_mutex_destroy(&mosq->state_mutex);
+		COMPAT_pthread_mutex_destroy(&mosq->out_packet_mutex);
+		COMPAT_pthread_mutex_destroy(&mosq->current_out_packet_mutex);
+		COMPAT_pthread_mutex_destroy(&mosq->msgtime_mutex);
+		COMPAT_pthread_mutex_destroy(&mosq->msgs_in.mutex);
+		COMPAT_pthread_mutex_destroy(&mosq->msgs_out.mutex);
+		COMPAT_pthread_mutex_destroy(&mosq->mid_mutex);
 	}
 #endif
 	if(mosq->sock != INVALID_SOCKET){

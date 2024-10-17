@@ -76,7 +76,7 @@ int handle__unsuback(struct mosquitto *mosq)
 	/* Immediately free, we don't do anything with Reason String or User Property at the moment */
 	mosquitto_property_free_all(&properties);
 #else
-	pthread_mutex_lock(&mosq->callback_mutex);
+	COMPAT_pthread_mutex_lock(&mosq->callback_mutex);
 	if(mosq->on_unsubscribe){
 		mosq->in_callback = true;
 		mosq->on_unsubscribe(mosq, mosq->userdata, mid);
@@ -87,7 +87,7 @@ int handle__unsuback(struct mosquitto *mosq)
 		mosq->on_unsubscribe_v5(mosq, mosq->userdata, mid, properties);
 		mosq->in_callback = false;
 	}
-	pthread_mutex_unlock(&mosq->callback_mutex);
+	COMPAT_pthread_mutex_unlock(&mosq->callback_mutex);
 	mosquitto_property_free_all(&properties);
 #endif
 

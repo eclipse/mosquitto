@@ -42,7 +42,7 @@ int mosquitto_loop_start(struct mosquitto *mosq)
 	if(!mosq || mosq->threaded != mosq_ts_none) return MOSQ_ERR_INVAL;
 
 	mosq->threaded = mosq_ts_self;
-	if(!pthread_create(&mosq->thread_id, NULL, mosquitto__thread_main, mosq)){
+	if(!COMPAT_pthread_create(&mosq->thread_id, NULL, mosquitto__thread_main, mosq)){
 #if defined(__linux__)
 		pthread_setname_np(mosq->thread_id, "mosquitto loop");
 #elif defined(__NetBSD__)
@@ -83,10 +83,10 @@ int mosquitto_loop_stop(struct mosquitto *mosq, bool force)
 
 #ifdef HAVE_PTHREAD_CANCEL
 	if(force){
-		pthread_cancel(mosq->thread_id);
+		COMPAT_pthread_cancel(mosq->thread_id);
 	}
 #endif
-	pthread_join(mosq->thread_id, NULL);
+	COMPAT_pthread_join(mosq->thread_id, NULL);
 	mosq->thread_id = pthread_self();
 	mosq->threaded = mosq_ts_none;
 

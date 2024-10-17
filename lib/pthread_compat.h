@@ -10,7 +10,7 @@
 #  define COMPAT_pthread_testcancel() pthread_testcancel()
 
 #  define COMPAT_pthread_mutex_init(A, B) pthread_mutex_init((A), (B))
-#  define COMPAT_pthread_mutex_destroy(A) pthread_mutex_init((A))
+#  define COMPAT_pthread_mutex_destroy(A) pthread_mutex_destroy((A))
 #  define COMPAT_pthread_mutex_lock(A) pthread_mutex_lock((A))
 #  define COMPAT_pthread_mutex_unlock(A) pthread_mutex_unlock((A))
 #else
