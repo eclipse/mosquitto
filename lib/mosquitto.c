@@ -203,6 +203,9 @@ int mosquitto_reinitialise(struct mosquitto *mosq, const char *id, bool clean_st
 	mosq->ssl = NULL;
 	mosq->ssl_ctx = NULL;
 	mosq->ssl_ctx_defaults = true;
+#ifndef WITH_BROKER
+	mosq->user_ssl_ctx = NULL;
+#endif
 	mosq->tls_cert_reqs = SSL_VERIFY_PEER;
 	mosq->tls_insecure = false;
 	mosq->want_write = false;
@@ -268,9 +271,17 @@ void mosquitto__destroy(struct mosquitto *mosq)
 	if(mosq->ssl){
 		SSL_free(mosq->ssl);
 	}
-	if(mosq->ssl_ctx){
-		SSL_CTX_free(mosq->ssl_ctx);
-	}
+#ifndef WITH_BROKER
+	if(mosq->user_ssl_ctx){
+		SSL_CTX_free(mosq->user_ssl_ctx);
+	}else if(mosq->ssl_ctx){
+ 		SSL_CTX_free(mosq->ssl_ctx);
+ 	}
+#else
+ 	if(mosq->ssl_ctx){
+ 		SSL_CTX_free(mosq->ssl_ctx);
+ 	}
+#endif
 	mosquitto__free(mosq->tls_cafile);
 	mosquitto__free(mosq->tls_capath);
 	mosquitto__free(mosq->tls_certfile);
@@ -281,6 +292,10 @@ void mosquitto__destroy(struct mosquitto *mosq)
 	mosquitto__free(mosq->tls_psk);
 	mosquitto__free(mosq->tls_psk_identity);
 	mosquitto__free(mosq->tls_alpn);
+#ifndef OPENSSL_NO_ENGINE
+	mosquitto__free(mosq->tls_engine);
+	mosq->tls_engine = NULL;
+#endif
 #endif
 
 	mosquitto__free(mosq->address);
