@@ -672,6 +672,9 @@ static int net__bind_interface(struct mosquitto__listener *listener, struct addr
 						memcpy(&((struct sockaddr_in6 *)rp->ai_addr)->sin6_addr,
 								&((struct sockaddr_in6 *)ifa->ifa_addr)->sin6_addr,
 								sizeof(struct in6_addr));
+
+						((struct sockaddr_in6 *)rp->ai_addr)->sin6_scope_id = ((struct sockaddr_in6 *)ifa->ifa_addr)->sin6_scope_id;
+
 						freeifaddrs(ifaddr);
 						return MOSQ_ERR_SUCCESS;
 					}

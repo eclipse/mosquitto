@@ -17,3 +17,5 @@ Numbering is as follows:
 10: Listener tests
 11: Persistence tests
 12: Property tests
+13: Malformed tests
+14: Dynamic security tests
