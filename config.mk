@@ -314,7 +314,6 @@ ifeq ($(WITH_EC),yes)
 endif
 
 ifeq ($(WITH_ADNS),yes)
-	BROKER_LDADD:=$(BROKER_LDADD) -lanl
 	BROKER_CPPFLAGS:=$(BROKER_CPPFLAGS) -DWITH_ADNS
 endif
 
