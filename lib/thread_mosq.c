@@ -129,9 +129,9 @@ void *mosquitto__thread_main(void *obj)
 		/* Sleep for our keepalive value. publish() etc. will wake us up. */
 		mosquitto_loop_forever(mosq, mosq->keepalive*1000, 1);
 	}
-	if(mosq->threaded == mosq_ts_self){
-		mosq->threaded = mosq_ts_none;
-	}
+	// if(mosq->threaded == mosq_ts_self){
+	// 	mosq->threaded = mosq_ts_none;
+	// }
 
 	return obj;
 }
