@@ -1,0 +1,31 @@
+---
+name: Linux
+
+on:
+  pull_request:
+    paths:
+      - '**.c'
+      - '**.h'
+      - '**.sh'
+      - .github/workflows/linux-build-test.yml
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  build-ubuntu-latest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: sudo apt install -y libcjson-dev libsqlite3-dev libssl-dev uthash-dev xsltproc docbook-xsl libcunit1-ncurses-dev python3-psutil
+      - run: make
+      - run: make test
+
+  build-ubuntu-20:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+      - run: sudo apt install -y libcjson-dev libsqlite3-dev libssl-dev uthash-dev xsltproc docbook-xsl libcunit1-ncurses-dev python3-psutil
+      - run: make
+      - run: make test

@@ -218,6 +218,12 @@ static int mosquitto__reconnect(struct mosquitto *mosq, bool blocking)
 	{
 		mosquitto__set_state(mosq, mosq_cs_connected);
 		rc = send__connect(mosq, mosq->keepalive, mosq->clean_start, outgoing_properties);
+		/* for non blocking connect - mosquito_connect_async(), the send__connectsend__connect()
+		   function may fail, we ignore this error (send will be repeated).
+		 */
+		if(rc == EFAULT && blocking == 0)
+			return 0;
+
 		if(rc){
 			packet__cleanup_all(mosq);
 			net__socket_close(mosq);
