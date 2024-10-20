@@ -111,9 +111,7 @@ int handle__pubrel(struct mosquitto *mosq)
 
 	rc = message__remove(mosq, mid, mosq_md_in, &message, 2);
 	if(rc == MOSQ_ERR_SUCCESS){
-		/* Only pass the message on if we have removed it from the queue - this
-		 * prevents multiple callbacks for the same message. */
-		callback__on_message(mosq, &message->msg, message->properties);
+		/* Message was already passed to the application prior to PUBREC. */
 		message__cleanup(&message);
 	}else if(rc == MOSQ_ERR_NOT_FOUND){
 		return MOSQ_ERR_SUCCESS;

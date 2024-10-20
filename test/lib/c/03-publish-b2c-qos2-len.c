@@ -18,6 +18,7 @@ static void on_connect(struct mosquitto *mosq, void *obj, int rc)
 
 static void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg)
 {
+	(void)mosq;
 	(void)obj;
 
 	if(msg->mid != 56){
@@ -45,7 +46,7 @@ static void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto
 		exit(1);
 	}
 
-	mosquitto_disconnect(mosq);
+	run = 0;
 }
 
 static void on_disconnect(struct mosquitto *mosq, void *obj, int rc)
@@ -54,7 +55,7 @@ static void on_disconnect(struct mosquitto *mosq, void *obj, int rc)
 	(void)obj;
 	(void)rc;
 
-	run = 0;
+	run = rc;
 }
 
 int main(int argc, char *argv[])
@@ -82,6 +83,17 @@ int main(int argc, char *argv[])
 	rc = mosquitto_connect(mosq, "localhost", port, 60);
 	if(rc != MOSQ_ERR_SUCCESS) return rc;
 
+	while(run == -1){
+		mosquitto_loop(mosq, 100, 1);
+	}
+
+	/* Drain the PUBREL and PUBCOMP messages. */
+	for(int i = 0; i < 2; i++){
+		mosquitto_loop(mosq, 300, 1);
+	}
+
+	run = -1;
+	mosquitto_disconnect(mosq);
 	while(run == -1){
 		mosquitto_loop(mosq, 100, 1);
 	}

@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
 	struct mosquitto *mosq;
 	int port;
 
-	if(argc < 2){
+	if(argc < 3){
 		return 1;
 	}
 	port = atoi(argv[1]);
@@ -81,6 +81,14 @@ int main(int argc, char *argv[])
 		rc = mosquitto_loop(mosq, -1, 1);
 		if(rc != MOSQ_ERR_SUCCESS) return rc;
 	}
+
+	if (qos > 1){
+		/* Drain the PUBREL and PUBCOMP messages. */
+		for(int i = 0; i < 2; i++){
+			mosquitto_loop(mosq, 300, 1);
+		}
+	}
+
 	mosquitto_destroy(mosq);
 
 	mosquitto_lib_cleanup();
