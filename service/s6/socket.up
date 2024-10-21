@@ -1,0 +1,12 @@
+#!/bin/execlineb -P
+
+foreground {
+  s6-tcpserver6-socketbinder ::1 1883
+  s6-fdholder-store /service/s6rc-fdholder/s pipe:s6rc-mosquitto::1:1883
+}
+foreground {
+  s6-tcpserver4-socketbinder 127.0.0.1 1883
+  s6-fdholder-store /service/s6rc-fdholder/s pipe:s6rc-mosquitto:127.0.0.1:1883
+}
+s6-ipcserver-socketbinder /run/mosquitto/s
+s6-fdholder-store /service/s6rc-fdholder/s pipe:s6rc-mosquitto:/run/mosquitto/s
