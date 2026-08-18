@@ -13,16 +13,15 @@ if [ "$(/usr/bin/id -u)" != '0' ]; then
 else
 	# change user and/or group to PUID/PGID
 	if [[ "${PGID}" != "${CURRENT_GID}" ]]; then
-		/usr/sbin/groupmod --gid "${PGID}" mosquitto 2>/dev/null && \
-		/bin/chgrp --recursive "${PGID}" /mosquitto 2>/dev/null || true
+		/usr/sbin/groupmod --gid "${PGID}" mosquitto 2>/dev/null || true
 	fi
 	if [[ "${PUID}" != "${CURRENT_UID}" ]]; then
 		# if modification of gid failed, the user's primary group will no longer be mosquitto
-		/usr/sbin/usermod --uid "${PUID}" --gid "${PGID}" --groups mosquitto mosquitto 2>/dev/null && \
-		/bin/chown --recursive "${PUID}" /mosquitto 2>/dev/null || true
+		/usr/sbin/usermod --uid "${PUID}" --gid "${PGID}" --groups mosquitto mosquitto 2>/dev/null || true
 	fi
 	# modify filesystem ownership, otherwise /mosquitto will be inaccessible (and mode=0750)
-	#[ -d "/mosquitto" ] && /bin/chown --recursive "${PUID}:${PGID}" /mosquitto 2>/dev/null || true
+	#/bin/chown --recursive "mosquitto:mosquitto" /mosquitto 2>/dev/null || true
+	/usr/bin/find /mosquitto -xdev -exec chown mosquitto:mosquitto {} \;
 fi
 
 # execute CMD
