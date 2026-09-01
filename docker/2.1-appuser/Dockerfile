@@ -24,8 +24,8 @@ ENV PGID=${GID}
 
 RUN set -x && \
     apk --no-cache add \
-        daemontools-encore \
         shadow \
+        tini \
         && \
     apk --no-cache add --virtual build-deps \
         argon2-dev \
@@ -111,5 +111,5 @@ VOLUME ["/mosquitto/data", "/mosquitto/log"]
 # Set up the entry point script and default command
 COPY --chmod=0755 docker-entrypoint.sh /
 EXPOSE 1883
-ENTRYPOINT ["/docker-entrypoint.sh"]
+ENTRYPOINT ["/sbin/tini","-g", "--", "/docker-entrypoint.sh"]
 CMD ["/usr/sbin/mosquitto", "-c", "/mosquitto/config/mosquitto.conf"]

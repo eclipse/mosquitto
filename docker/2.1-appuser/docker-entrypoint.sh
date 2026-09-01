@@ -31,11 +31,4 @@ else
 fi
 
 # execute CMD
-if [ "$(/usr/bin/id -u)" != '0' ]; then
-	# already running as unprivileged user
-	exec "$@"
-else
-	[ -x /usr/bin/setuidgid ] || apk --no-cache add daemontools-encore
-	# drop from root to mosquitto
-	/usr/bin/setuidgid mosquitto "$@"
-fi
+exec "$@"
