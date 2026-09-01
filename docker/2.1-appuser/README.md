@@ -13,21 +13,18 @@ Two docker volumes have been created in the image to be used for persistent stor
 /mosquitto/log
 ```
 
-## User/Group
+## User/Group on docker (env PUID/PGID)
 
 The image runs mosquitto under the mosquitto user and group.
 Default uid and gid are 1883.
 
 - uid and gid can be specified at build time with `--build-arg UID={uid}` and`--build-arg GID={gid}`
 - uid and gid can be specified at runtime with `--env PUID={uid}` and `--env PGID={gid}`
-- changing of uid/gid will fail, if uid/gid already used
 
 The `docker-entrypoint.sh` script modifies
 group mosquitto's gid and user mosquitto's uid.
 Those will fail silently, if uid or gid is already occupied.
 The filesystem ownership will be changed, if group/user modification succeded.
-After modifications, the root privileges will be dropped
-and the process will be started under user account mosquitto.
 
 ## Running without a configuration file
 Mosquitto 2.0 and up requires you to configure listeners and authentication
