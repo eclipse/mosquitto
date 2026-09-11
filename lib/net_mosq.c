@@ -1073,7 +1073,7 @@ ssize_t net__write(struct mosquitto *mosq, const void *buf, size_t count)
 		ERR_clear_error();
 		mosq->want_write = false;
 		ret = SSL_write(mosq->ssl, buf, (int)count);
-		if(ret < 0){
+		if(ret <= 0){
 			net__handle_ssl(mosq, ret);
 		}
 		return (ssize_t )ret;
