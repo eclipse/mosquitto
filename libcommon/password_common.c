@@ -276,6 +276,8 @@ static int pw__encode_sha512_pbkdf2(struct mosquitto_pw *pw)
 	size_t len = strlen("$6$$") + strlen("1,000,000,000,000") + strlen(salt64) + strlen(hash64) + 1;
 	pw->encoded_password = mosquitto_calloc(1, len);
 	if(!pw->encoded_password){
+		mosquitto_free(salt64);
+		mosquitto_free(hash64);
 		return MOSQ_ERR_NOMEM;
 	}
 
@@ -459,6 +461,7 @@ static int pw__encode_sha512(struct mosquitto_pw *pw)
 
 	rc = mosquitto_base64_encode(pw->params.sha512.password_hash, sizeof(pw->params.sha512.password_hash), &hash64);
 	if(rc){
+		mosquitto_free(salt64);
 		return MOSQ_ERR_UNKNOWN;
 	}
 
@@ -466,6 +469,8 @@ static int pw__encode_sha512(struct mosquitto_pw *pw)
 	size_t len = strlen("$6$$") + strlen(salt64) + strlen(hash64) + 1;
 	pw->encoded_password = mosquitto_calloc(1, len);
 	if(!pw->encoded_password){
+		mosquitto_free(salt64);
+		mosquitto_free(hash64);
 		return MOSQ_ERR_NOMEM;
 	}
 
