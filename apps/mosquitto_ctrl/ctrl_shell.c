@@ -822,6 +822,9 @@ void ctrl_shell__main(struct mosq_config *config)
 static void print_label(unsigned int level, const char *label)
 {
 	char *str = calloc(1, level*2 + strlen(label) + 30);
+	if(!str){
+		return;
+	}
 
 	for(unsigned int i=0; i<level; i++){
 		sprintf(&str[strlen(str)], "  ");
@@ -850,6 +853,9 @@ void ctrl_shell_print_label_value(unsigned int level, const char *label, int ali
 	va_list va;
 	int levels = align-((int)strlen(label)+2*(int)level)+2;
 	char *str = calloc(1, (size_t)levels + 200);
+	if(!str){
+		return;
+	}
 
 	print_label(level, label);
 
@@ -870,6 +876,9 @@ void ctrl_shell_print_value(unsigned int level, const char *fmt, ...)
 {
 	va_list va;
 	char *str = calloc(1, level*2 + 200);
+	if(!str){
+		return;
+	}
 
 	for(unsigned int i=0; i<level; i++){
 		sprintf(&str[strlen(str)], "  ");
