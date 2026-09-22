@@ -74,6 +74,7 @@ msg_sequence_test:
 	./03-publish-bad-flags.py
 	./03-publish-b2c-disconnect-qos1.py
 	./03-publish-b2c-disconnect-qos2.py
+	./03-publish-b2c-qos2-expiry-inflight.py
 	./03-publish-b2c-qos1-len.py
 	./03-publish-b2c-qos2-len.py
 	./03-publish-c2b-disconnect-qos2.py

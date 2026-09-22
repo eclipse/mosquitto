@@ -1283,6 +1283,13 @@ void db__expire_all_messages(struct mosquitto *context)
 
 	DL_FOREACH_SAFE(context->msgs_out.inflight, client_msg, tmp){
 		if(client_msg->base_msg->data.expiry_time && db.now_real_s > client_msg->base_msg->data.expiry_time){
+			/* Message Expiry Interval covers Application Messages being held.
+			 * After PUBREC the broker owes PUBREL; that exchange is Session
+			 * State and must survive expiry (see #3744 / MQTT-4.4.0-1). */
+			if(client_msg->data.state == mosq_ms_wait_for_pubcomp
+					|| client_msg->data.state == mosq_ms_resend_pubrel){
+				continue;
+			}
 			if(client_msg->data.qos > 0){
 				util__increment_send_quota(context);
 			}
@@ -1297,6 +1304,10 @@ void db__expire_all_messages(struct mosquitto *context)
 	}
 	DL_FOREACH_SAFE(context->msgs_in.inflight, client_msg, tmp){
 		if(client_msg->base_msg->data.expiry_time && db.now_real_s > client_msg->base_msg->data.expiry_time){
+			/* Inbound QoS 2 past PUBREC is waiting for PUBREL - keep it. */
+			if(client_msg->data.state == mosq_ms_wait_for_pubrel){
+				continue;
+			}
 			if(client_msg->data.qos > 0){
 				util__increment_receive_quota(context);
 			}
@@ -1369,13 +1380,20 @@ static int db__message_write_inflight_out_single(struct mosquitto *context, stru
 	expiry_interval = 0;
 	if(base_msg->data.expiry_time){
 		if(db.now_real_s > base_msg->data.expiry_time){
-			/* Message is expired, must not send. */
-			if(client_msg->data.direction == mosq_md_out && client_msg->data.qos > 0){
-				util__increment_send_quota(context);
+			/* After PUBREC the owed PUBREL is Session State, not a held
+			 * Application Message — still send it (#3744). */
+			if(client_msg->data.state == mosq_ms_wait_for_pubcomp
+					|| client_msg->data.state == mosq_ms_resend_pubrel){
+				expiry_interval = 0;
+			}else{
+				/* Message is expired, must not send. */
+				if(client_msg->data.direction == mosq_md_out && client_msg->data.qos > 0){
+					util__increment_send_quota(context);
+				}
+				db__message_remove_inflight(context, &context->msgs_out, client_msg);
+				db__fill_inflight_out_from_queue(context);
+				return MOSQ_ERR_SUCCESS;
 			}
-			db__message_remove_inflight(context, &context->msgs_out, client_msg);
-			db__fill_inflight_out_from_queue(context);
-			return MOSQ_ERR_SUCCESS;
 		}else{
 			expiry_interval = (uint32_t)(base_msg->data.expiry_time - db.now_real_s);
 		}
