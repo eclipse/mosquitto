@@ -809,6 +809,7 @@ int db__messages_delete_incoming(struct mosquitto *context)
 	context->msgs_in.queued_bytes12 = 0;
 	context->msgs_in.queued_count = 0;
 	context->msgs_in.queued_count12 = 0;
+	context->msgs_in.inflight_quota = context->msgs_in.inflight_maximum;
 
 	return MOSQ_ERR_SUCCESS;
 }
@@ -830,6 +831,7 @@ int db__messages_delete_outgoing(struct mosquitto *context)
 	context->msgs_out.queued_bytes12 = 0;
 	context->msgs_out.queued_count = 0;
 	context->msgs_out.queued_count12 = 0;
+	context->msgs_out.inflight_quota = context->msgs_out.inflight_maximum; /* quota taken by db__message_reconnect_reset() for the deleted messages */
 
 	return MOSQ_ERR_SUCCESS;
 }
