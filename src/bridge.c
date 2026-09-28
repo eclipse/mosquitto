@@ -269,6 +269,7 @@ static int bridge__connect_step1(struct mosquitto *context)
 	context->clean_start = context->bridge->clean_start;
 	context->in_packet.payload = NULL;
 	context->ping_t = 0;
+	context->is_dropping = false;
 	context->bridge->lazy_reconnect = false;
 	context->maximum_packet_size = context->bridge->maximum_packet_size;
 	bridge__packet_cleanup(context);
@@ -507,6 +508,7 @@ int bridge__connect(struct mosquitto *context)
 	context->clean_start = context->bridge->clean_start;
 	context->in_packet.payload = NULL;
 	context->ping_t = 0;
+	context->is_dropping = false;
 	context->bridge->lazy_reconnect = false;
 	context->maximum_packet_size = context->bridge->maximum_packet_size;
 	bridge__packet_cleanup(context);
