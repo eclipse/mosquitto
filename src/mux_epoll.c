@@ -239,6 +239,7 @@ static void loop_handle_reads_writes(struct mosquitto *context, uint32_t events)
 			){
 
 		if(context->state == mosq_cs_connect_pending){
+			context->connect_event_received = true;
 			len = sizeof(int);
 			if(!getsockopt(context->sock, SOL_SOCKET, SO_ERROR, (char *)&err, &len)){
 				if(err == 0){

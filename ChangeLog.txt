@@ -12,6 +12,8 @@
   Closes #3515.
 - Fix will messages being incorrectly delayed if a client set
   session-expiry-interval=0 when using will-delay-interval>0. Closes #3505.
+- Fix bridges on Windows treating an outgoing connection as established
+  before the connect had completed.
 
 # Common lib:
 - Fix potential crash if reading a file in restricted mode and the group id

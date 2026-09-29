@@ -296,6 +296,7 @@ static void loop_handle_reads_writes(void)
 		if(pollfds[context->pollfd_index].revents & POLLOUT){
 #endif
 			if(context->state == mosq_cs_connect_pending){
+				context->connect_event_received = true;
 				len = sizeof(int);
 				if(!getsockopt(context->sock, SOL_SOCKET, SO_ERROR, (char *)&err, &len)){
 					if(err == 0){
