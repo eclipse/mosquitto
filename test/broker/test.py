@@ -85,6 +85,7 @@ tests = [
     (2, './06-bridge-br2b-disconnect-qos1.py'),
     (2, './06-bridge-br2b-disconnect-qos2.py'),
     (2, './06-bridge-br2b-remapping.py'),
+    (2, './06-bridge-clean-session-inflight-quota.py'),
     (2, './06-bridge-clean-session-csF-lcsF.py'),
     (2, './06-bridge-clean-session-csF-lcsN.py'),
     (2, './06-bridge-clean-session-csF-lcsT.py'),

@@ -107,6 +107,7 @@ msg_sequence_test:
 	./06-bridge-br2b-disconnect-qos1.py
 	./06-bridge-br2b-disconnect-qos2.py
 	./06-bridge-br2b-remapping.py
+	./06-bridge-clean-session-inflight-quota.py
 	./06-bridge-clean-session-csF-lcsF.py
 	./06-bridge-clean-session-csF-lcsN.py
 	./06-bridge-clean-session-csF-lcsT.py
