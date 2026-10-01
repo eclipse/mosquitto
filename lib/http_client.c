@@ -59,11 +59,13 @@ int http_c__context_init(struct mosquitto *context)
 		return MOSQ_ERR_UNKNOWN;
 	}
 	if(ws__create_accept_key(key, strlen(key), &context->wsd.accept_key)){
+		mosquitto_FREE(key);
 		return MOSQ_ERR_UNKNOWN;
 	}
 
 	packet = mosquitto_calloc(1, sizeof(struct mosquitto__packet) + 1024 + WS_PACKET_OFFSET);
 	if(!packet){
+		mosquitto_FREE(key);
 		return MOSQ_ERR_NOMEM;
 	}
 
