@@ -21,6 +21,9 @@
 # Lib
 - Fix mosquitto_loop_start() leaving the mosq struct in an invalid state if
   thread creation fails. Closes #3496.
+- Fix a failure to build the WebSockets upgrade request being ignored, which
+  left the client reporting a successful connection that would never complete.
+- Fix a memory leak on the error paths of the WebSockets upgrade request.
 
 # Plugins
 - Fix migrate_to_persist_sqlite.py not base64 decoding message payloads when
