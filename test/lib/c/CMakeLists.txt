@@ -4,6 +4,7 @@ set(BINARIES
     01-con-discon-will
     01-con-discon-will-clear
     01-con-discon-will-v5
+    01-connect-transport
 	01-extended-auth-continue
 	01-extended-auth-failure
     01-keepalive-pingreq
