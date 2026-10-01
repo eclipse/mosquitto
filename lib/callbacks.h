@@ -21,6 +21,8 @@ Contributors:
 #include "mosquitto.h"
 
 void callback__on_pre_connect(struct mosquitto *mosq);
+int callback__on_transport_open(struct mosquitto *mosq, int *sock);
+int callback__on_transport_close(struct mosquitto *mosq, int sock);
 void callback__on_connect(struct mosquitto *mosq, uint8_t reason_code, uint8_t connect_flags, const mosquitto_property *properties);
 void callback__on_publish(struct mosquitto *mosq, int mid, int reason_code, const mosquitto_property *properties);
 void callback__on_message(struct mosquitto *mosq, const struct mosquitto_message *message, const mosquitto_property *properties);

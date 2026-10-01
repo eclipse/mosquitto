@@ -45,17 +45,16 @@ static char alphanum[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01
 
 static int mosquitto__reconnect(struct mosquitto *mosq, bool blocking);
 static int mosquitto__connect_init(struct mosquitto *mosq, const char *host, int port, int keepalive);
+static int mosquitto__session_init(struct mosquitto *mosq, int keepalive);
+static int mosquitto__connect_properties_set(struct mosquitto *mosq, const mosquitto_property *properties);
 
 
-static int mosquitto__connect_init(struct mosquitto *mosq, const char *host, int port, int keepalive)
+static int mosquitto__session_init(struct mosquitto *mosq, int keepalive)
 {
 	int i;
 	int rc;
 
 	if(!mosq){
-		return MOSQ_ERR_INVAL;
-	}
-	if(!host || port < 0 || port > UINT16_MAX){
 		return MOSQ_ERR_INVAL;
 	}
 	if(keepalive != 0 && (keepalive < 2 || keepalive > UINT16_MAX)){
@@ -84,6 +83,32 @@ static int mosquitto__connect_init(struct mosquitto *mosq, const char *host, int
 		}
 	}
 
+	mosq->keepalive = (uint16_t)keepalive;
+	mosq->msgs_in.inflight_quota = mosq->msgs_in.inflight_maximum;
+	mosq->msgs_out.inflight_quota = mosq->msgs_out.inflight_maximum;
+	mosq->retain_available = 1;
+	mosquitto__set_request_disconnect(mosq, false);
+
+	return MOSQ_ERR_SUCCESS;
+}
+
+
+static int mosquitto__connect_init(struct mosquitto *mosq, const char *host, int port, int keepalive)
+{
+	int rc;
+
+	if(!mosq){
+		return MOSQ_ERR_INVAL;
+	}
+	if(!host || port < 0 || port > UINT16_MAX){
+		return MOSQ_ERR_INVAL;
+	}
+
+	rc = mosquitto__session_init(mosq, keepalive);
+	if(rc){
+		return rc;
+	}
+
 	mosquitto_FREE(mosq->host);
 	mosq->host = mosquitto_strdup(host);
 	if(!mosq->host){
@@ -91,12 +116,27 @@ static int mosquitto__connect_init(struct mosquitto *mosq, const char *host, int
 	}
 	mosq->port = (uint16_t)port;
 
-	mosq->keepalive = (uint16_t)keepalive;
-	mosq->msgs_in.inflight_quota = mosq->msgs_in.inflight_maximum;
-	mosq->msgs_out.inflight_quota = mosq->msgs_out.inflight_maximum;
-	mosq->retain_available = 1;
-	mosquitto__set_request_disconnect(mosq, false);
+	return MOSQ_ERR_SUCCESS;
+}
 
+
+static int mosquitto__connect_properties_set(struct mosquitto *mosq, const mosquitto_property *properties)
+{
+	int rc;
+
+	mosquitto_property_free_all(&mosq->connect_properties);
+	if(properties){
+		rc = mosquitto_property_check_all(CMD_CONNECT, properties);
+		if(rc){
+			return rc;
+		}
+
+		rc = mosquitto_property_copy_all(&mosq->connect_properties, properties);
+		if(rc){
+			return rc;
+		}
+		mosq->connect_properties->client_generated = true;
+	}
 	return MOSQ_ERR_SUCCESS;
 }
 
@@ -124,21 +164,39 @@ int mosquitto_connect_bind_v5(struct mosquitto *mosq, const char *host, int port
 		}
 	}
 
-	mosquitto_property_free_all(&mosq->connect_properties);
-	if(properties){
-		rc = mosquitto_property_check_all(CMD_CONNECT, properties);
-		if(rc){
-			return rc;
-		}
-
-		rc = mosquitto_property_copy_all(&mosq->connect_properties, properties);
-		if(rc){
-			return rc;
-		}
-		mosq->connect_properties->client_generated = true;
+	rc = mosquitto__connect_properties_set(mosq, properties);
+	if(rc){
+		return rc;
 	}
 
 	rc = mosquitto__connect_init(mosq, host, port, keepalive);
+	if(rc){
+		return rc;
+	}
+
+	mosquitto__set_state(mosq, mosq_cs_new);
+
+	return mosquitto__reconnect(mosq, true);
+}
+
+
+int mosquitto_connect_transport(struct mosquitto *mosq, int keepalive, const mosquitto_property *properties)
+{
+	int rc;
+
+	if(!mosq){
+		return MOSQ_ERR_INVAL;
+	}
+	if(!mosq->on_transport_open){
+		return MOSQ_ERR_INVAL;
+	}
+
+	rc = mosquitto__connect_properties_set(mosq, properties);
+	if(rc){
+		return rc;
+	}
+
+	rc = mosquitto__session_init(mosq, keepalive);
 	if(rc){
 		return rc;
 	}
@@ -224,7 +282,7 @@ static int mosquitto__reconnect(struct mosquitto *mosq, bool blocking)
 	if(!mosq){
 		return MOSQ_ERR_INVAL;
 	}
-	if(!mosq->host){
+	if(!mosq->host && !mosq->on_transport_open){
 		return MOSQ_ERR_INVAL;
 	}
 

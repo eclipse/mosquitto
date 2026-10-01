@@ -416,6 +416,8 @@ struct mosquitto {
 	struct mosquitto_msg_data msgs_in;
 	struct mosquitto_msg_data msgs_out;
 	LIBMOSQ_CB_pre_connect on_pre_connect;
+	LIBMOSQ_CB_transport_open on_transport_open;
+	LIBMOSQ_CB_transport_close on_transport_close;
 	LIBMOSQ_CB_connect on_connect;
 	LIBMOSQ_CB_connect_with_flags on_connect_with_flags;
 	LIBMOSQ_CB_connect_v5 on_connect_v5;

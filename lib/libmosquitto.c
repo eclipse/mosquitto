@@ -261,7 +261,15 @@ void mosquitto__destroy(struct mosquitto *mosq)
 		mosq->threaded = mosq_ts_none;
 	}
 #  endif
+#endif
 
+	/* Must happen before the mutexes are destroyed, closing the socket calls
+	 * the transport close callback, which takes callback_mutex. */
+	if(net__is_connected(mosq)){
+		net__socket_close(mosq);
+	}
+
+#ifdef WITH_THREADING
 	COMPAT_pthread_mutex_destroy(&mosq->callback_mutex);
 	COMPAT_pthread_mutex_destroy(&mosq->log_callback_mutex);
 	COMPAT_pthread_mutex_destroy(&mosq->state_mutex);
@@ -271,9 +279,6 @@ void mosquitto__destroy(struct mosquitto *mosq)
 	COMPAT_pthread_mutex_destroy(&mosq->msgs_out.mutex);
 	COMPAT_pthread_mutex_destroy(&mosq->mid_mutex);
 #endif
-	if(net__is_connected(mosq)){
-		net__socket_close(mosq);
-	}
 	message__cleanup_all(mosq);
 	will__clear(mosq);
 #ifdef WITH_TLS

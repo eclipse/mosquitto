@@ -188,6 +188,10 @@ libmosq_EXPORT int mosquitto_int_option(struct mosquitto *mosq, enum mosq_opt_t 
  *
  *	MOSQ_OPT_BIND_ADDRESS - Set the hostname or ip address of the local network
  *	          interface to bind to when connecting.
+ *
+ *	MOSQ_OPT_PEER_NAME - Set the name of the remote peer when connecting with
+ *	          <mosquitto_connect_transport>. Used for the TLS server name and
+ *	          hostname check, and for the WebSockets Host header.
  */
 libmosq_EXPORT int mosquitto_string_option(struct mosquitto *mosq, enum mosq_opt_t option, const char *value);
 

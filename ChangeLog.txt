@@ -21,6 +21,11 @@
 # Lib
 - Fix mosquitto_loop_start() leaving the mosq struct in an invalid state if
   thread creation fails. Closes #3496.
+- Add mosquitto_connect_transport(), mosquitto_transport_open_callback_set()
+  and mosquitto_transport_close_callback_set() to connect over a socket
+  provided and torn down by the application rather than one opened by the
+  library, with MOSQ_OPT_PEER_NAME for the TLS and WebSockets layers on top
+  of it.
 
 # Plugins
 - Fix migrate_to_persist_sqlite.py not base64 decoding message payloads when
