@@ -32,11 +32,15 @@ void mqtt_tempconv::on_message(const struct mosquitto_message *message)
 {
 	double temp_celsius, temp_fahrenheit;
 	char buf[51];
+	size_t len;
 
 	if(!strcmp(message->topic, "temperature/celsius")){
 		memset(buf, 0, 51*sizeof(char));
-		/* Copy N-1 bytes to ensure always 0 terminated. */
-		memcpy(buf, message->payload, 50*sizeof(char));
+		if(message->payloadlen > 0){
+			/* Copy at most N-1 bytes to ensure always 0 terminated. */
+			len = message->payloadlen < 50 ? (size_t)message->payloadlen : 50;
+			memcpy(buf, message->payload, len*sizeof(char));
+		}
 		temp_celsius = atof(buf);
 		temp_fahrenheit = temp_celsius*9.0/5.0 + 32.0;
 		snprintf(buf, 50, "%f", temp_fahrenheit);
