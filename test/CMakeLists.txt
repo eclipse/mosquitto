@@ -1,5 +1,9 @@
 add_subdirectory(mock)
 
+if(WITH_LIB_CPP AND NOT WIN32)
+	add_subdirectory(examples)
+endif()
+
 if(WITH_APPS)
 	add_subdirectory(apps)
 endif()

@@ -126,6 +126,8 @@ class LibMosquittoMock : public CFunctionMock<LibMosquittoMock> {
 		MOCK_METHOD(void, mosquitto_message_free_contents, (struct mosquitto_message *message));
 		MOCK_METHOD(void, mosquitto_message_retry_set, (struct mosquitto *mosq,
 			unsigned int message_retry));
+		MOCK_METHOD(int, mosquitto_max_inflight_messages_set, (struct mosquitto *mosq,
+			unsigned int max_inflight_messages));
 
 		/* net_mosq.c */
 		MOCK_METHOD(void *, mosquitto_ssl_get, (struct mosquitto *mosq));
