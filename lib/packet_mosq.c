@@ -290,12 +290,13 @@ int packet__write(struct mosquitto *mosq)
 		return MOSQ_ERR_SUCCESS;
 	}
 
-#ifdef WITH_BROKER
-	mux__add_out(mosq);
-#endif
-
 	state = mosquitto__get_state(mosq);
 	if(state == mosq_cs_connect_pending){
+#ifdef WITH_BROKER
+		/* Outgoing connection still in progress - ask the event loop to
+		 * notify us when the socket becomes writable (== connected). */
+		mux__add_out(mosq);
+#endif
 		return MOSQ_ERR_SUCCESS;
 	}
 
@@ -313,6 +314,13 @@ int packet__write(struct mosquitto *mosq)
 						|| errno == WSAENOTCONN
 #endif
 						){
+#ifdef WITH_BROKER
+					/* Socket buffer full - only now do we need the event
+					 * loop to tell us when it is writable again. In the
+					 * common case where the write completes synchronously
+					 * this avoids two epoll_ctl() calls per write. */
+					mux__add_out(mosq);
+#endif
 					return MOSQ_ERR_SUCCESS;
 				}else{
 					switch(errno){

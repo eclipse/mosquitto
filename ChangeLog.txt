@@ -2,6 +2,10 @@
 ==================
 
 # Broker
+- Improve outgoing message throughput by no longer registering and immediately
+  deregistering EPOLLOUT for every write. The socket is only added to the write
+  set when a write actually blocks, removing two epoll_ctl() syscalls per write
+  in the common case where the socket accepts the data straight away.
 - Fix MOSQ_EVT_DISCONNECT being called before MOSQ_EVT_ACL_CHECK for the will
   of that client. Closes #3487.
 - Fix password length not being passed to MOSQ_EVT_BASIC_AUTH events.
