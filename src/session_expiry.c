@@ -198,7 +198,8 @@ void session_expiry__check(void)
 	last_check = db.now_real_s;
 
 	DL_FOREACH_SAFE(expiry_list, item, tmp){
-		if(item->context->session_expiry_time < db.now_real_s){
+		if(item->context->session_expiry_time < db.now_real_s
+				&& item->context->bridge == NULL){   /* Outgoing bridge connections never expire */
 
 			context = item->context;
 			session_expiry__remove(context);
