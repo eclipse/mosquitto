@@ -121,6 +121,7 @@ msg_sequence_test:
 	./06-bridge-fail-persist-resend-qos1.py
 	./06-bridge-fail-persist-resend-qos2.py
 	./06-bridge-no-local.py
+	./06-bridge-notification-payload.py
 	./06-bridge-outgoing-retain.py
 	./06-bridge-per-listener-settings.py
 	./06-bridge-reconnect-local-out.py

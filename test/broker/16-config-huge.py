@@ -97,6 +97,8 @@ def write_config(filename, ports, per_listener_settings, plugver, acl_file):
             f.write("idle_timeout 60\n")
             f.write("keepalive_interval 40\n")
             f.write("notification_topic notifications\n")
+            f.write("notification_payload_up bridge is up\n")
+            f.write("notification_payload_down bridge is down\n")
             f.write("notifications false\n")
             f.write("notifications_local_only true\n")
             f.write("remote_clientid brci\n")

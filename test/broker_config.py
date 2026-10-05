@@ -75,6 +75,8 @@ class MQTTBridgeConfig:
     keepalive_interval: Optional[int] = None
     local_cleansession: bool = False
     notifications: bool = True
+    notification_payload_up: Optional[str] = None
+    notification_payload_down: Optional[str] = None
     remote_clientid: Optional[str] = None
     restart_timeout: Optional[int] = None
     try_private: Optional[bool] = None

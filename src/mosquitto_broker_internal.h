@@ -578,6 +578,8 @@ struct mosquitto__bridge {
 	char *local_username;
 	char *local_password;
 	char *notification_topic;
+	char *notification_payload_up;
+	char *notification_payload_down;
 	char *bind_address;
 	bool notifications;
 	bool notifications_local_only;

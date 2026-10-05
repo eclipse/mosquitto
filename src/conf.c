@@ -516,6 +516,8 @@ void config__bridge_cleanup(struct mosquitto__bridge *bridge)
 		mosquitto_FREE(bridge->topics);
 	}
 	mosquitto_FREE(bridge->notification_topic);
+	mosquitto_FREE(bridge->notification_payload_up);
+	mosquitto_FREE(bridge->notification_payload_down);
 #ifdef WITH_TLS
 	mosquitto_FREE(bridge->tls_certfile);
 	mosquitto_FREE(bridge->tls_keyfile);
@@ -2323,6 +2325,24 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 #ifdef WITH_BRIDGE
 					REQUIRE_BRIDGE(token);
 					if(conf__parse_string(&token, "notification_topic", &cur_bridge->notification_topic, &saveptr)){
+						return MOSQ_ERR_INVAL;
+					}
+#else
+					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Bridge support not available.");
+#endif
+				}else if(!strcmp(token, "notification_payload_up")){
+#ifdef WITH_BRIDGE
+					REQUIRE_BRIDGE(token);
+					if(conf__parse_string(&token, "notification_payload_up", &cur_bridge->notification_payload_up, &saveptr)){
+						return MOSQ_ERR_INVAL;
+					}
+#else
+					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Bridge support not available.");
+#endif
+				}else if(!strcmp(token, "notification_payload_down")){
+#ifdef WITH_BRIDGE
+					REQUIRE_BRIDGE(token);
+					if(conf__parse_string(&token, "notification_payload_down", &cur_bridge->notification_payload_down, &saveptr)){
 						return MOSQ_ERR_INVAL;
 					}
 #else

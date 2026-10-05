@@ -2364,6 +2364,24 @@ openssl dhparam -out dhparam.pem 2048</programlisting>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
+				<term><option>notification_payload_up</option> <replaceable>value</replaceable></term>
+				<listitem>
+					<para>Choose the payload for "up" bridge notifications. This
+						payload is used for notifications sent to local and
+						remote brokers. Empty values are not valid. Defaults to
+						<replaceable>1</replaceable>.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>notification_payload_down</option> <replaceable>value</replaceable></term>
+				<listitem>
+					<para>Choose the payload for "down" bridge notifications.
+						This payload is also used when setting the bridge Last
+						Will and Testament (LWT). Empty values are not valid.
+						Defaults to <replaceable>0</replaceable>.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
 				<term><option>remote_clientid</option> <replaceable>id</replaceable></term>
 				<listitem>
 					<para>Set the client id for this bridge connection. If not
