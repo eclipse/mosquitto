@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 find -name '*.c' -exec uncrustify -c .uncrustify.cfg --no-backup {} \;
 find -name '*.cpp' -exec uncrustify -c .uncrustify.cfg --no-backup {} \;

@@ -1,4 +1,4 @@
-#!/bin/bash -eu
+#!/usr/bin/env bash
 #
 # Copyright (c) 2023 Cedalo GmbH
 #
@@ -15,6 +15,8 @@
 #
 # Contributors:
 #    Roger Light - initial implementation and documentation.
+
+set -eu
 
 export CC="${CC:-clang}"
 export CXX="${CXX:-clang++}"
