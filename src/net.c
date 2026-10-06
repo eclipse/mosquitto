@@ -680,6 +680,7 @@ int net__tls_load_verify(struct mosquitto__listener *listener)
 		if(rc == 0){
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to load CA certificates. Check cafile \"%s\".", listener->cafile);
 			net__print_ssl_error(NULL, NULL);
+			sk_X509_NAME_pop_free(ca_names, X509_NAME_free);
 			return MOSQ_ERR_TLS;
 		}
 

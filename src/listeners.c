@@ -66,9 +66,24 @@ void listeners__reload_all_certificates(void)
 #ifdef WITH_TLS
 	for(int i=0; i<db.config->listener_count; i++){
 		struct mosquitto__listener *listener = &db.config->listeners[i];
+#if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
+		/* libwebsockets owns the SSL_CTX of its listeners and we only hold a
+		 * borrowed pointer to it, so it must not be freed and recreated here. */
+		if(listener->ws_context){
+			continue;
+		}
+#endif
 		if(listener->ssl_ctx && listener->certfile && listener->keyfile){
-			int rc = net__load_certificates(listener);
-			if(rc){
+			/* Recreate the SSL_CTX so that removals from cafile/capath/crlfile take
+			 * effect; loading into the existing context can only add trust anchors,
+			 * never drop the ones that are no longer configured. Connections already
+			 * established keep the old context alive via their own reference. */
+			if(net__tls_server_ctx(listener)){
+				log__printf(NULL, MOSQ_LOG_ERR, "Error recreating TLS context for certificate '%s'.",
+						listener->certfile);
+				continue;
+			}
+			if(net__tls_load_verify(listener)){
 				log__printf(NULL, MOSQ_LOG_ERR, "Error when reloading certificate '%s' or key '%s'.",
 						listener->certfile, listener->keyfile);
 			}

@@ -1802,6 +1802,8 @@ accept_protocol_versions 3, 4</programlisting>
 							certificates that are trusted when checking incoming
 							client certificates.
 						</para>
+						<para>Reloaded when Mosquitto receives a SIGHUP signal.
+						</para>
 					</listitem>
 				</varlistentry>
 				<varlistentry>
@@ -1817,6 +1819,8 @@ accept_protocol_versions 3, 4</programlisting>
 							you add/remove a certificate.
 						</para>
 						<para><option>capath</option> is not supported for websockets.</para>
+						<para>Reloaded when Mosquitto receives a SIGHUP signal.
+						</para>
 					</listitem>
 				</varlistentry>
 				<varlistentry>
@@ -1828,10 +1832,12 @@ accept_protocol_versions 3, 4</programlisting>
 							to enable certificate based TLS encryption.
 						</para>
 						<para>
-							The certificate pointed to by this option will be
-							reloaded when Mosquitto receives a SIGHUP signal.
-							This can be used to load new certificates prior to
-							the existing ones expiring.
+							The certificate pointed to by this option, together
+							with <option>keyfile</option>, <option>cafile</option>,
+							and <option>crlfile</option>, will be reloaded when
+							Mosquitto receives a SIGHUP signal. This can be used
+							to load new certificates prior to the existing ones
+							expiring.
 						</para>
 					</listitem>
 				</varlistentry>
@@ -1864,6 +1870,8 @@ accept_protocol_versions 3, 4</programlisting>
 							access to particular client certificates. If you
 							have done this, use crlfile to point to the PEM
 							encoded revocation file.</para>
+						<para>Reloaded when Mosquitto receives a SIGHUP signal.
+						</para>
 					</listitem>
 				</varlistentry>
 				<varlistentry>

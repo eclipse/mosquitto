@@ -59,7 +59,9 @@ Contributors:
 
 #ifdef WITH_TLS
 #include <openssl/conf.h>
-#include <openssl/engine.h>
+#if !defined(OPENSSL_NO_ENGINE)
+#  include <openssl/engine.h>
+#endif
 #include <openssl/err.h>
 #include <openssl/ui.h>
 #include <tls_mosq.h>
