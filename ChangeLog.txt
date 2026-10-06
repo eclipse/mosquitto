@@ -12,6 +12,9 @@
   Closes #3515.
 - Fix will messages being incorrectly delayed if a client set
   session-expiry-interval=0 when using will-delay-interval>0. Closes #3505.
+- Fix builtin websockets treating a data frame with an empty payload as a
+  framing error, which desynchronised the MQTT stream and dropped the
+  session. Closes #3704.
 
 # Common lib:
 - Fix potential crash if reading a file in restricted mode and the group id

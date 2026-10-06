@@ -206,6 +206,7 @@ tests = [
     (1, './12-prop-server-keepalive.py'),
 
     (1, './13-websocket-bad-origin.py'),
+    (1, './13-websocket-empty-frame.py'),
 
     (1, './14-dynsec-acl.py'),
     (1, './14-dynsec-allow-wildcard.py'),

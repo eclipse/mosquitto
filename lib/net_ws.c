@@ -332,6 +332,15 @@ ssize_t net__read_ws(struct mosquitto *mosq, void *buf, size_t count)
 			* packet__queue. */
 			len = -1;
 			errno = EAGAIN;
+		}else if(mosq->wsd.payloadlen == 0){
+			/* A data frame with no payload. This is valid - a frame carries a
+			* piece of the MQTT byte stream and is allowed to carry none of it -
+			* but no application data has been produced. Without this, `len`
+			* still holds the size of the last header field read, and returning
+			* it tells the caller that many bytes of MQTT data are waiting in a
+			* buffer nothing was written to. */
+			len = -1;
+			errno = EAGAIN;
 		}
 		mosq->wsd.payloadlen = 0;
 		mosq->wsd.opcode = UINT8_MAX;
