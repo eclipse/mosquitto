@@ -1242,7 +1242,8 @@ int handle__connect(struct mosquitto *context)
 		}
 	}else{
 #ifdef WITH_TLS
-		if(context->listener->ssl_ctx && (context->listener->use_identity_as_username || context->listener->use_subject_as_username)){
+		if((context->listener->ssl_ctx || context->listener->enable_proxy_protocol > 0)
+				&& (context->listener->use_identity_as_username || context->listener->use_subject_as_username)){
 			/* Authentication assumed to be cleared */
 		}else
 #endif
