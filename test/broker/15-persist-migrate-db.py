@@ -7,7 +7,7 @@ from mosq_test_helper import *
 
 persist_help = persist_module()
 
-port = mosq_test.get_port()
+port, _ = mosq_test.get_port(2)
 conf_file = os.path.basename(__file__).replace(".py", ".conf")
 persist_help.write_config(conf_file, port)
 
@@ -40,17 +40,16 @@ def do_success_test(create_db_of_version: list[int]):
         print(f"{err}")
     finally:
         if broker is not None:
-            broker.terminate()
+            mosq_test.terminate_broker(broker)
             if mosq_test.wait_for_subprocess(broker):
                 print("broker not terminated")
                 if rc == 0:
                     rc = 1
-                (_, stde) = broker.communicate()
 
         rc += persist_help.cleanup(port)
 
         if rc:
-            print(stde.decode("utf-8"))
+            print(mosq_test.broker_log(broker))
             exit(rc)
 
 

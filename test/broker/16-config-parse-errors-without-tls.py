@@ -24,7 +24,8 @@ do_test_broker_failure(conf_file, ["listener"], port, 3, "Error: Empty 'listener
 do_test_broker_failure(conf_file, ["mount_point test/"], port, 3, "Error: The 'mount_point' option requires a listener to be defined first.") # Missing listener config
 do_test_broker_failure(conf_file, [f"listener {port}","mount_point test/+/"], port, 3, "Error: Invalid 'mount_point' value (test/+/). Does it contain a wildcard character?") # Wildcard in mount point.
 do_test_broker_failure(conf_file, [f"listener 100000"], port, 3, "Error: Invalid 'port' value (100000).") # Out of range
-do_test_broker_failure(conf_file, [f"listener 0"], port, 3, "Error: A listener with port 0 must provide a Unix socket path.") # Missing unix socket
+if mosq_test.check_features(["WITH_UNIX_SOCKETS"]):
+    do_test_broker_failure(conf_file, [f"listener 0"], port, 3, "Error: A listener with port 0 must provide a Unix socket path.") # Missing unix socket
 do_test_broker_failure(conf_file, [f"listener {port}","protocol"], port, 3, "Error: Empty 'protocol' value in configuration.") # Empty proto
 do_test_broker_failure(conf_file, [f"listener {port}","protocol test"], port, 3, "Error: Invalid 'protocol' value (test).") # Invalid proto
 do_test_broker_failure(conf_file, [f"listener {port}","accept_protocol_versions"], port, 3, "Error: Empty 'accept_protocol_versions' value in configuration.")
@@ -33,40 +34,40 @@ do_test_broker_failure(conf_file, ["plugin_opt_inval string"], port, 3, "Error: 
 do_test_broker_failure(conf_file, ["plugin c/auth_plugin.so","plugin_opt_ string"], port, 3, "Error: Invalid 'plugin_opt_' config option.") # Incomplete plugin_opt_
 do_test_broker_failure(conf_file, ["plugin c/auth_plugin.so","plugin_opt_test"], port, 3, "Error: Empty 'test' value in configuration.") # Empty plugin_opt_
 
-do_test_broker_failure(conf_file, ["bridge_attempt_unsubscribe true"], port, 3, "Error: The 'bridge_attempt_unsubscribe' option requires a bridge to be defined first.") # Missing bridge config
-do_test_broker_failure(conf_file, ["bridge_bind_address string"], port, 3, "Error: The 'bridge_bind_address' option requires a bridge to be defined first.") # Missing bridge config
-do_test_broker_failure(conf_file, ["bridge_insecure true"], port, 3, "Error: The 'bridge_insecure' option requires a bridge to be defined first.") # Missing bridge config
-#do_test_broker_failure(conf_file, ["bridge_require_oscp true"], port, 3, "Error: The 'bridge_require_oscp' option requires a bridge to be defined first.") # Missing bridge config
-do_test_broker_failure(conf_file, ["bridge_max_packet_size 1000"], port, 3, "Error: The 'bridge_max_packet_size' option requires a bridge to be defined first.") # Missing bridge config
-do_test_broker_failure(conf_file, ["bridge_max_topic_alias 1000"], port, 3, "Error: The 'bridge_max_topic_alias' option requires a bridge to be defined first.") # Missing bridge config
-do_test_broker_failure(conf_file, ["bridge_outgoing_retain false"], port, 3, "Error: The 'bridge_outgoing_retain' option requires a bridge to be defined first.") # Missing bridge config
-do_test_broker_failure(conf_file, ["bridge_protocol_version string"], port, 3, "Error: The 'bridge_protocol_version' option requires a bridge to be defined first.") # Missing bridge config
-do_test_broker_failure(conf_file, ["bridge_receive_maximum 10"], port, 3, "Error: The 'bridge_receive_maximum' option requires a bridge to be defined first.") # Missing bridge config
-do_test_broker_failure(conf_file, ["bridge_reload_type string"], port, 3, "Error: The 'bridge_reload_type' option requires a bridge to be defined first.") # Missing bridge config
-do_test_broker_failure(conf_file, ["bridge_session_expiry_interval 10000"], port, 3, "Error: The 'bridge_session_expiry_interval' option requires a bridge to be defined first.") # Missing bridge config
-do_test_broker_failure(conf_file, ["bridge_tcp_keepalive 10000"], port, 3, "Error: The 'bridge_tcp_keepalive' option requires a bridge to be defined first.") # Missing bridge config
-do_test_broker_failure(conf_file, ["bridge_tcp_user_timeout 10000"], port, 3, "Error: The 'bridge_tcp_user_timeout' option requires a bridge to be defined first.") # Missing bridge config
-do_test_broker_failure(conf_file, ["connection"], port, 3, "Error: Empty 'connection' value in configuration.") # Missing bridge name
-do_test_broker_failure(conf_file, ["connection just-name"], port, 3, "Error: Invalid bridge configuration: no remote addresses defined.") # Missing bridge topic and address
-do_test_broker_failure(conf_file, ["connection no-topic", "address localhost"], port, 3, "Error: Invalid bridge configuration: no topics defined.") # Missing bridge topic
-do_test_broker_failure(conf_file, ["connection no-address", "topic dummy-topic"], port, 3, "Error: Invalid bridge configuration: no remote addresses defined.") # Missing bridge address
-do_test_broker_failure(conf_file, ["connection no-address", "topic \"missing quote"], port, 3, "Error: Missing closing quote in topic value (quote).") # Missing topic quote
+if mosq_test.check_features(["INC_BRIDGE_SUPPORT"]):
+    do_test_broker_failure(conf_file, ["bridge_attempt_unsubscribe true"], port, 3, "Error: The 'bridge_attempt_unsubscribe' option requires a bridge to be defined first.") # Missing bridge config
+    do_test_broker_failure(conf_file, ["bridge_bind_address string"], port, 3, "Error: The 'bridge_bind_address' option requires a bridge to be defined first.") # Missing bridge config
+    #do_test_broker_failure(conf_file, ["bridge_require_oscp true"], port, 3, "Error: The 'bridge_require_oscp' option requires a bridge to be defined first.") # Missing bridge config
+    do_test_broker_failure(conf_file, ["bridge_max_packet_size 1000"], port, 3, "Error: The 'bridge_max_packet_size' option requires a bridge to be defined first.") # Missing bridge config
+    do_test_broker_failure(conf_file, ["bridge_max_topic_alias 1000"], port, 3, "Error: The 'bridge_max_topic_alias' option requires a bridge to be defined first.") # Missing bridge config
+    do_test_broker_failure(conf_file, ["bridge_outgoing_retain false"], port, 3, "Error: The 'bridge_outgoing_retain' option requires a bridge to be defined first.") # Missing bridge config
+    do_test_broker_failure(conf_file, ["bridge_protocol_version string"], port, 3, "Error: The 'bridge_protocol_version' option requires a bridge to be defined first.") # Missing bridge config
+    do_test_broker_failure(conf_file, ["bridge_receive_maximum 10"], port, 3, "Error: The 'bridge_receive_maximum' option requires a bridge to be defined first.") # Missing bridge config
+    do_test_broker_failure(conf_file, ["bridge_reload_type string"], port, 3, "Error: The 'bridge_reload_type' option requires a bridge to be defined first.") # Missing bridge config
+    do_test_broker_failure(conf_file, ["bridge_session_expiry_interval 10000"], port, 3, "Error: The 'bridge_session_expiry_interval' option requires a bridge to be defined first.") # Missing bridge config
+    do_test_broker_failure(conf_file, ["bridge_tcp_keepalive 10000"], port, 3, "Error: The 'bridge_tcp_keepalive' option requires a bridge to be defined first.") # Missing bridge config
+    do_test_broker_failure(conf_file, ["bridge_tcp_user_timeout 10000"], port, 3, "Error: The 'bridge_tcp_user_timeout' option requires a bridge to be defined first.") # Missing bridge config
+    do_test_broker_failure(conf_file, ["connection"], port, 3, "Error: Empty 'connection' value in configuration.") # Missing bridge name
+    do_test_broker_failure(conf_file, ["connection just-name"], port, 3, "Error: Invalid bridge configuration: no remote addresses defined.") # Missing bridge topic and address
+    do_test_broker_failure(conf_file, ["connection no-topic", "address localhost"], port, 3, "Error: Invalid bridge configuration: no topics defined.") # Missing bridge topic
+    do_test_broker_failure(conf_file, ["connection no-address", "topic dummy-topic"], port, 3, "Error: Invalid bridge configuration: no remote addresses defined.") # Missing bridge address
+    do_test_broker_failure(conf_file, ["connection no-address", "topic \"missing quote"], port, 3, "Error: Missing closing quote in topic value (quote).") # Missing topic quote
 
-do_test_broker_failure(conf_file, ["local_clientid str"], port, 3, "Error: The 'local_clientid' option requires a bridge to be defined first.") # Missing bridge config
-do_test_broker_failure(conf_file, ["local_password str"], port, 3, "Error: The 'local_password' option requires a bridge to be defined first.") # Missing bridge config
-do_test_broker_failure(conf_file, ["local_username str"], port, 3, "Error: The 'local_username' option requires a bridge to be defined first.") # Missing bridge config
-do_test_broker_failure(conf_file, ["notifications true"], port, 3, "Error: The 'notifications' option requires a bridge to be defined first.") # Missing bridge config
-do_test_broker_failure(conf_file, ["notifications_local_only true"], port, 3, "Error: The 'notifications_local_only' option requires a bridge to be defined first.") # Missing bridge config
-do_test_broker_failure(conf_file, ["notification_topic true"], port, 3, "Error: The 'notification_topic' option requires a bridge to be defined first.") # Missing bridge config
-do_test_broker_failure(conf_file, ["password pw"], port, 3, "Error: The 'password' option requires a bridge to be defined first.") # Missing bridge config
-do_test_broker_failure(conf_file, ["remote_password pw"], port, 3, "Error: The 'remote_password' option requires a bridge to be defined first.") # Missing bridge config
-do_test_broker_failure(conf_file, ["restart_timeout 10"], port, 3, "Error: The 'restart_timeout' option requires a bridge to be defined first.") # Missing bridge config
-do_test_broker_failure(conf_file, ["round_robin true"], port, 3, "Error: The 'round_robin' option requires a bridge to be defined first.") # Missing bridge config
-do_test_broker_failure(conf_file, ["start_type lazy"], port, 3, "Error: The 'start_type' option requires a bridge to be defined first.") # Missing bridge config
-do_test_broker_failure(conf_file, ["threshold 10"], port, 3, "Error: The 'threshold' option requires a bridge to be defined first.") # Missing bridge config
-do_test_broker_failure(conf_file, ["topic topic/10"], port, 3, "Error: The 'topic' option requires a bridge to be defined first.") # Missing bridge config
-do_test_broker_failure(conf_file, ["try_private true"], port, 3, "Error: The 'try_private' option requires a bridge to be defined first.") # Missing bridge config
-do_test_broker_failure(conf_file, ["username un"], port, 3, "Error: The 'username' option requires a bridge to be defined first.") # Missing bridge config
+    do_test_broker_failure(conf_file, ["local_clientid str"], port, 3, "Error: The 'local_clientid' option requires a bridge to be defined first.") # Missing bridge config
+    do_test_broker_failure(conf_file, ["local_password str"], port, 3, "Error: The 'local_password' option requires a bridge to be defined first.") # Missing bridge config
+    do_test_broker_failure(conf_file, ["local_username str"], port, 3, "Error: The 'local_username' option requires a bridge to be defined first.") # Missing bridge config
+    do_test_broker_failure(conf_file, ["notifications true"], port, 3, "Error: The 'notifications' option requires a bridge to be defined first.") # Missing bridge config
+    do_test_broker_failure(conf_file, ["notifications_local_only true"], port, 3, "Error: The 'notifications_local_only' option requires a bridge to be defined first.") # Missing bridge config
+    do_test_broker_failure(conf_file, ["notification_topic true"], port, 3, "Error: The 'notification_topic' option requires a bridge to be defined first.") # Missing bridge config
+    do_test_broker_failure(conf_file, ["password pw"], port, 3, "Error: The 'password' option requires a bridge to be defined first.") # Missing bridge config
+    do_test_broker_failure(conf_file, ["remote_password pw"], port, 3, "Error: The 'remote_password' option requires a bridge to be defined first.") # Missing bridge config
+    do_test_broker_failure(conf_file, ["restart_timeout 10"], port, 3, "Error: The 'restart_timeout' option requires a bridge to be defined first.") # Missing bridge config
+    do_test_broker_failure(conf_file, ["round_robin true"], port, 3, "Error: The 'round_robin' option requires a bridge to be defined first.") # Missing bridge config
+    do_test_broker_failure(conf_file, ["start_type lazy"], port, 3, "Error: The 'start_type' option requires a bridge to be defined first.") # Missing bridge config
+    do_test_broker_failure(conf_file, ["threshold 10"], port, 3, "Error: The 'threshold' option requires a bridge to be defined first.") # Missing bridge config
+    do_test_broker_failure(conf_file, ["topic topic/10"], port, 3, "Error: The 'topic' option requires a bridge to be defined first.") # Missing bridge config
+    do_test_broker_failure(conf_file, ["try_private true"], port, 3, "Error: The 'try_private' option requires a bridge to be defined first.") # Missing bridge config
+    do_test_broker_failure(conf_file, ["username un"], port, 3, "Error: The 'username' option requires a bridge to be defined first.") # Missing bridge config
 
 do_test_broker_failure(conf_file, ["maximum_qos 3"], port, 3, "Error: 'max_qos' must be between 0 and 2 inclusive.") # Invalid maximum qos
 do_test_broker_failure(conf_file, ["maximum_qos -1"], port, 3, "Error: 'max_qos' must be between 0 and 2 inclusive.") # Invalid maximum qos

@@ -9,29 +9,29 @@ def do_test(testdir):
     pub_topic = "request/topic"
 
     rc = 1
-    connect1_packet = mosq_test.gen_connect("request-test", proto_ver=5)
-    connect2_packet = mosq_test.gen_connect("response-test", proto_ver=5)
-    connack_packet = mosq_test.gen_connack(rc=0, proto_ver=5)
+    connect1_packet = mqtt_packets.gen_connect("request-test", proto_ver=5)
+    connect2_packet = mqtt_packets.gen_connect("response-test", proto_ver=5)
+    connack_packet = mqtt_packets.gen_connack(rc=0, proto_ver=5)
 
     mid = 1
-    subscribe1_packet = mosq_test.gen_subscribe(mid, resp_topic, 0, proto_ver=5)
-    subscribe2_packet = mosq_test.gen_subscribe(mid, pub_topic, 0, proto_ver=5)
-    suback_packet = mosq_test.gen_suback(mid, 0, proto_ver=5)
+    subscribe1_packet = mqtt_packets.gen_subscribe(mid, resp_topic, 0, proto_ver=5)
+    subscribe2_packet = mqtt_packets.gen_subscribe(mid, pub_topic, 0, proto_ver=5)
+    suback_packet = mqtt_packets.gen_suback(mid, 0, proto_ver=5)
 
     props = mqtt5_props.gen_string_prop(mqtt5_props.RESPONSE_TOPIC, resp_topic)
-    publish1_packet = mosq_test.gen_publish(pub_topic, qos=0, payload="action", proto_ver=5, properties=props)
+    publish1_packet = mqtt_packets.gen_publish(pub_topic, qos=0, payload="action", proto_ver=5, properties=props)
 
-    publish2_packet = mosq_test.gen_publish(resp_topic, qos=0, payload="a response", proto_ver=5)
+    publish2_packet = mqtt_packets.gen_publish(resp_topic, qos=0, payload="a response", proto_ver=5)
 
     sock = mosq_test.listen_sock(port);
 
-    client1 = mosq_test.start_client(filename=f"{testdir}-03-request-response-1.log", cmd=[f"{testdir}/03-request-response-1.test", str(port)])
+    client1 = mosq_test.start_client(filename=f"{testdir}-03-request-response-1.log", cmd=[testdir / mosq_test.get_build_type() / "03-request-response-1.exe", str(port)])
 
     try:
         (conn1, address) = sock.accept()
         conn1.settimeout(10)
 
-        client2 = mosq_test.start_client(filename=f"{testdir}-03-request-response-2.log", cmd=[f"{testdir}/03-request-response-2.test", str(port)])
+        client2 = mosq_test.start_client(filename=f"{testdir}-03-request-response-2.log", cmd=[testdir / mosq_test.get_build_type() / "03-request-response-2.exe", str(port)])
         (conn2, address) = sock.accept()
         conn2.settimeout(10)
 
@@ -67,5 +67,6 @@ def do_test(testdir):
             print(stde)
             exit(1)
 
-do_test("c")
-do_test("cpp")
+do_test(Path("c"))
+if mosq_test.check_features(["WITH_LIB_CPP"]):
+    do_test(Path("cpp"))

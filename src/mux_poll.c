@@ -217,7 +217,7 @@ int mux_poll__handle(struct mosquitto__listener_sock *listensock, int listensock
 	db.now_real_s = time(NULL);
 
 	if(fdcount == -1){
-#  ifdef WIN32
+#  if defined(WIN32) && defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_LWS
 		if(WSAGetLastError() == WSAEINVAL){
 			/* WSAPoll() immediately returns an error if it is not given
 			 * any sockets to wait on. This can happen if we only have

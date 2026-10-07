@@ -6,21 +6,11 @@
 # https://github.com/eclipse/mosquitto/issues/1402
 
 from mosq_test_helper import *
-import signal
 
-if sys.version < '2.7':
-    print("WARNING: SSL not supported on Python 2.6")
-    exit(0)
+from broker_config import BrokerConfig, ListenerConfig
+from mosquitto_broker import MosquittoBroker
 
-def write_config(filename, pw_file, port, option):
-    with open(filename, 'w') as f:
-        f.write("listener %d\n" % (port))
-        f.write(f"cafile {ssl_dir}/all-ca.crt\n")
-        f.write(f"certfile {ssl_dir}/server.crt\n")
-        f.write(f"keyfile {ssl_dir}/server.key\n")
-        f.write("require_certificate true\n")
-        f.write("%s true\n" % (option))
-        f.write("password_file %s\n" % (pw_file))
+mosq_test.require_features(["WITH_TLS"])
 
 def write_pwfile(filename):
     with open(filename, 'w') as f:
@@ -28,19 +18,30 @@ def write_pwfile(filename):
         f.write('test client:$6$njERlZMi/7DzNB9E$iiavfuXvUm8iyDZArTy7smTxh07GXXOrOsqxfW6gkOYVXHGk+W+i/8d3xDxrMwEPygEBhoA8A/gjQC0N2M4Lkw==\n')
 
 def do_test(option):
-    port = mosq_test.get_port()
-    conf_file = os.path.basename(__file__).replace('.py', '.conf')
     pw_file = os.path.basename(__file__).replace('.py', '.pwfile')
-    write_config(conf_file, pw_file, port, option)
     write_pwfile(pw_file)
 
-    rc = 1
-    connect_packet = mosq_test.gen_connect("connect-success-test")
-    connack_packet = mosq_test.gen_connack(rc=0)
+    connect_packet = mqtt_packets.gen_connect("connect-success-test")
+    connack_packet = mqtt_packets.gen_connack(rc=0)
 
-    broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port, use_conf=True)
-
-    try:
+    port = mosq_test.get_port()
+    broker_config = BrokerConfig(
+        listeners = [
+            ListenerConfig(
+                port=port,
+                cafile=ssl_dir/"all-ca.crt",
+                certfile=ssl_dir/"server.crt",
+                keyfile=ssl_dir/"server.key",
+                require_certificate=True,
+            )
+        ],
+        password_file=pw_file,
+        allow_anonymous=True,
+    )
+    setattr(broker_config.listeners[0], option, True)
+    broker = MosquittoBroker(config=broker_config)
+    broker.add_extra_file(pw_file)
+    with broker:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH, cafile=f"{ssl_dir}/test-root-ca.crt")
         context.minimum_version = ssl.TLSVersion.TLSv1_2
@@ -50,29 +51,13 @@ def do_test(option):
         ssock.connect(("localhost", port))
         mosq_test.do_send_receive(ssock, connect_packet, connack_packet, "connack")
 
-        broker.send_signal(signal.SIGHUP)
+        broker.reload()
         time.sleep(1)
 
         # This will fail if we've been disconnected
         mosq_test.do_ping(ssock)
-        rc = 0
-
         ssock.close()
-    except mosq_test.TestError:
-        pass
-    finally:
-        os.remove(conf_file)
-        os.remove(pw_file)
-        broker.terminate()
-        if mosq_test.wait_for_subprocess(broker):
-            print("broker not terminated")
-            if rc == 0: rc=1
-        (stdo, stde) = broker.communicate()
-        if rc:
-            print(stde.decode('utf-8'))
-            exit(rc)
+
 
 do_test("use_identity_as_username")
 do_test("use_subject_as_username")
-exit(0)
-

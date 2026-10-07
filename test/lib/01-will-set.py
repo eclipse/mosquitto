@@ -10,10 +10,11 @@
 from mosq_test_helper import *
 
 def do_test(conn, data):
-    connect_packet = mosq_test.gen_connect("01-will-set", will_topic="topic/on/unexpected/disconnect", will_qos=1, will_retain=True, will_payload=b"will message")
+    connect_packet = mqtt_packets.gen_connect("01-will-set", will_topic="topic/on/unexpected/disconnect", will_qos=1, will_retain=True, will_payload=b"will message")
 
     mosq_test.expect_packet(conn, "connect", connect_packet)
 
 
-mosq_test.client_test("c/01-will-set.test", [], do_test, None)
-mosq_test.client_test("cpp/01-will-set.test", [], do_test, None)
+mosq_test.client_test(Path("c", mosq_test.get_build_type(), "01-will-set.exe"), [], do_test, None)
+if mosq_test.check_features(["WITH_LIB_CPP"]):
+    mosq_test.client_test(Path("cpp", mosq_test.get_build_type(), "01-will-set.exe"), [], do_test, None)

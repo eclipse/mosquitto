@@ -4,6 +4,8 @@
 
 from mosq_test_helper import *
 
+mosq_test.require_features(["WITH_BROKER"])
+
 def write_file(filename):
     with open(filename, 'w') as f:
         pass
@@ -26,7 +28,7 @@ def do_test(proto_ver):
         'XDG_CONFIG_HOME':'/tmp/missing'
     }
     env = mosq_test.env_add_ld_library_path(env)
-    cmd = [f'{mosq_test.get_build_root()}/client/mosquitto_pub',
+    cmd = [mosq_paths.mosquitto_pub,
             '-p', str(port),
             '-q', '1',
             '-t', '03/pub/file/empty/test',
@@ -34,7 +36,7 @@ def do_test(proto_ver):
             '-V', V
             ]
 
-    publish_packet = mosq_test.gen_publish("03/pub/file/empty/test", qos=0, payload="", proto_ver=proto_ver)
+    publish_packet = mqtt_packets.gen_publish("03/pub/file/empty/test", qos=0, payload="", proto_ver=proto_ver)
 
     broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port)
 
@@ -58,7 +60,7 @@ def do_test(proto_ver):
         print(e)
     finally:
         os.remove(data_file)
-        broker.terminate()
+        mosq_test.terminate_broker(broker)
         if mosq_test.wait_for_subprocess(broker):
             print("broker not terminated")
             if rc == 0: rc=1

@@ -3,6 +3,7 @@
 #  include <ws2tcpip.h>
 #else
 #  include <arpa/inet.h>
+#  include <netinet/in.h>
 #endif
 #include <stdint.h>
 #include "mosquitto_broker_internal.h"

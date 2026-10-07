@@ -162,10 +162,9 @@ int mux_kqueue__handle(void)
 	timeout.tv_nsec = 100000000; /* 100 ms */
 #else
 	timeout.tv_sec = db.next_event_ms/1000;
-	timeout.tv_nsec = (db.next_event_ms - timeout.tv_sec*100) * 1000000;
+	timeout.tv_nsec = (db.next_event_ms - timeout.tv_sec*1000) * 1000000;
 #endif
 
-	memset(&event_list, 0, sizeof(event_list));
 	event_count = kevent(db.kqueuefd,
 			NULL, 0,
 			event_list, MAX_EVENTS,
@@ -187,6 +186,9 @@ int mux_kqueue__handle(void)
 				context = event_list[i].udata;
 				if(context->ident == id_client){
 					loop_handle_reads_writes(context, event_list[i].filter);
+					if(event_list[i].flags & (EV_EOF | EV_ERROR)){
+						do_disconnect(context, MOSQ_ERR_CONN_LOST);
+					}
 				}else if(context->ident == id_listener){
 					listensock = event_list[i].udata;
 
@@ -228,8 +230,20 @@ static void loop_handle_reads_writes(struct mosquitto *context, short event)
 	if(context->wsi){
 		struct lws_pollfd wspoll;
 		wspoll.fd = context->sock;
-		wspoll.events = (int16_t)context->events;
-		wspoll.revents = (int16_t)events;
+		int16_t lws_events;
+		switch(event){
+			case EVFILT_READ:
+				lws_events = LWS_POLLIN;
+				break;
+			case EVFILT_WRITE:
+				lws_events = LWS_POLLOUT;
+				break;
+			default:
+				lws_events = LWS_POLLHUP;
+				break;
+		}
+		wspoll.events = lws_events;
+		wspoll.revents = lws_events;
 		lws_service_fd(lws_get_context(context->wsi), &wspoll);
 		return;
 	}

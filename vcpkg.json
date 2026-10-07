@@ -1,9 +1,15 @@
 {
 	"name": "mosquitto",
-	"version-string": "2.1.0",
+	"version-string": "2.1.2",
 	"dependencies": [
 		"argon2",
 		"cjson",
+		"cunit",
+		{
+			"name": "dlfcn-win32",
+			"platform": "windows"
+		},
+		"gtest",
 		"libmicrohttpd",
 		"openssl",
 		"pthreads",

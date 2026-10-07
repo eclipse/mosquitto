@@ -49,28 +49,28 @@ def do_test(test_case_name: str, bridging_add_config: dict, target_add_config: d
 
     def gen_pub_packets(idx: int, mid_offset: int):
         payload = f"queued message {idx:3}"
-        publish_packet = mosq_test.gen_publish(
+        publish_packet = mqtt_packets.gen_publish(
             topic,
             mid=mid_offset + idx,
             qos=qos,
             payload=payload.encode("UTF-8"),
             proto_ver=proto_ver,
         )
-        puback_packet = mosq_test.gen_puback(mid=mid_offset + idx, proto_ver=proto_ver)
+        puback_packet = mqtt_packets.gen_puback(mid=mid_offset + idx, proto_ver=proto_ver)
         return publish_packet, puback_packet
 
-    connect_packet = mosq_test.gen_connect(
+    connect_packet = mqtt_packets.gen_connect(
         client_id, proto_ver=proto_ver, clean_session=False
     )
-    connack_packet1 = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
-    connack_packet2 = mosq_test.gen_connack(rc=0, flags=1, proto_ver=proto_ver)
+    connack_packet1 = mqtt_packets.gen_connack(rc=0, proto_ver=proto_ver)
+    connack_packet2 = mqtt_packets.gen_connack(rc=0, flags=1, proto_ver=proto_ver)
 
     mid = 1
-    subscribe_packet = mosq_test.gen_subscribe(mid, topic, qos, proto_ver=proto_ver)
-    suback_packet = mosq_test.gen_suback(mid, qos=qos, proto_ver=proto_ver)
+    subscribe_packet = mqtt_packets.gen_subscribe(mid, topic, qos, proto_ver=proto_ver)
+    suback_packet = mqtt_packets.gen_suback(mid, qos=qos, proto_ver=proto_ver)
 
-    connect2_packet = mosq_test.gen_connect(source_id, proto_ver=proto_ver)
-    connack2_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
+    connect2_packet = mqtt_packets.gen_connect(source_id, proto_ver=proto_ver)
+    connack2_packet = mqtt_packets.gen_connack(rc=0, proto_ver=proto_ver)
 
     num_messages = 100
 
@@ -228,17 +228,17 @@ def do_test(test_case_name: str, bridging_add_config: dict, target_add_config: d
         rc = broker_terminate_rc
     finally:
         if broker is not None:
-            broker.terminate()
+            mosq_test.terminate_broker(broker)
             if mosq_test.wait_for_subprocess(broker):
                 if rc == 0:
                     rc = 1
-            (_, stde) = broker.communicate()
+            stde = mosq_test.broker_log(broker)
         if bridge_target_broker is not None:
-            bridge_target_broker.terminate()
+            mosq_test.terminate_broker(bridge_target_broker)
             if mosq_test.wait_for_subprocess(bridge_target_broker):
                 if rc == 0:
                     rc = 1
-            (_, stde2) = bridge_target_broker.communicate()
+            stde2 = mosq_test.broker_log(bridge_target_broker)
         os.remove(conf_file_bridge_target)
         os.remove(conf_file)
         rc += persist_help.cleanup(bridge_target_port)
@@ -248,13 +248,13 @@ def do_test(test_case_name: str, bridging_add_config: dict, target_add_config: d
         if rc:
             if stde2 is not None:
                 print("Bridge target brocker log:")
-                print(stde2.decode("utf-8"))
+                print(stde2)
             if stde3 is not None:
                 print("Bridging brocker log (first run):")
-                print(stde3.decode("utf-8"))
+                print(stde3)
             if stde is not None:
                 print("Bridging brocker log:")
-                print(stde.decode("utf-8"))
+                print(stde)
         assert rc == 0, f"rc: {rc}"
 
 

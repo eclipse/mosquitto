@@ -1,0 +1,51 @@
+<para>
+	There are three ways to provide options to &commandname;: the
+	default config file, a specified config file, or options on
+	the command line.
+</para>
+
+<refsect2>
+	<title>Default Config File</title>
+	<para>
+		The default config file is located at
+		<option>$XDG_CONFIG_HOME/&commandname;</option> or
+		<option>$HOME/.config/&commandname;</option> on POSIX systems, or
+		<option>%USERPROFILE%\&commandname;</option> on Windows.
+	</para>
+
+	<para>
+		The contents of the config file should consist of
+		options, one per line in the format:
+		<option>-option <replaceable>value</replaceable></option>. If
+		options are also specified on the command line, those
+		options will override the same options set in the config
+		file. The exceptions to this are the message type options, of which
+		only one can be specified. Note also that currently some options
+		cannot be negated, e.g. <option>-S</option>. TLS encryption options
+		can be negated with the <option>--no-tls</option> option.
+	</para>
+	<para>
+		Config file lines that have a <option>#</option> as the first
+		character are treated as comments and not processed any further.
+	</para>
+	<para>
+		It is suggested that config files are primarily used for
+		authentication purposes. Use of a config file allows you to
+		authenticate without the need to show the username and password
+		on the command line.
+	</para>
+</refsect2>
+
+<refsect2>
+	<title>Config File</title>
+	&from-version21;
+	<para>
+		A config file can be specified on the command line using
+		<option>-o <replaceable>config-file</replaceable></option>.
+		If the <option>-o</option> option is used, the default config
+		file will not be loaded.
+	</para>
+	<para>
+		The format is the same as for the default config file.
+	</para>
+</refsect2>

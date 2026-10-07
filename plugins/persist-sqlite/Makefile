@@ -23,11 +23,7 @@ OBJS = \
 OBJS_EXTERNAL = \
 	json_help.o
 
-ifeq ($(WITH_SQLITE),yes)
 ALL_DEPS:= binary
-else
-ALL_DEPS:=
-endif
 
 all : ${ALL_DEPS}
 

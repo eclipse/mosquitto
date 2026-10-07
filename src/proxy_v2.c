@@ -3,6 +3,7 @@
 #  include <ws2tcpip.h>
 #else
 #  include <arpa/inet.h>
+#  include <netinet/in.h>
 #endif
 #include <stdint.h>
 #include "mosquitto_broker_internal.h"
@@ -116,16 +117,25 @@ static int read_tlv_ssl(struct mosquitto *context, uint16_t len, bool *have_cert
 
 		switch(tlv->type){
 			case PP2_SUBTYPE_SSL_VERSION:
+#ifdef WITH_TLS
 				mosquitto_free(context->proxy.tls_version);
 				context->proxy.tls_version = mosquitto_strndup((const char *)&context->proxy.buf[context->proxy.pos], tlv_len);
+#else
+				return MOSQ_ERR_NOT_SUPPORTED;
+#endif
 				break;
 
 			case PP2_SUBTYPE_SSL_CIPHER:
+#ifdef WITH_TLS
 				mosquitto_free(context->proxy.cipher);
 				context->proxy.cipher = mosquitto_strndup((const char *)&context->proxy.buf[context->proxy.pos], tlv_len);
+#else
+				return MOSQ_ERR_NOT_SUPPORTED;
+#endif
 				break;
 
 			case PP2_SUBTYPE_SSL_CN:
+#ifdef WITH_TLS
 				if(context->listener->use_identity_as_username){
 					mosquitto_free(context->username);
 					context->username = mosquitto_strndup((const char *)&context->proxy.buf[context->proxy.pos], tlv_len);
@@ -133,6 +143,9 @@ static int read_tlv_ssl(struct mosquitto *context, uint16_t len, bool *have_cert
 						return MOSQ_ERR_NOMEM;
 					}
 				}
+#else
+				return MOSQ_ERR_NOT_SUPPORTED;
+#endif
 				break;
 		}
 		len = (uint16_t)(len - (sizeof(uint8_t) + sizeof(uint8_t) + sizeof(uint8_t) + tlv_len));
@@ -267,7 +280,7 @@ int proxy_v2__read(struct mosquitto *context)
 			union proxy_addr *addr = (union proxy_addr *)context->proxy.buf;
 			context->address = mosquitto_strndup((char *)addr->unix_addr.src_addr, sizeof(addr->unix_addr.src_addr));
 			context->remote_port = 0;
-			context->proxy.pos = (uint16_t)(strlen(context->address) + 1);
+			context->proxy.pos = (uint16_t)(sizeof(addr->unix_addr.src_addr) + 1);
 		}else{
 			/* Must be LOCAL */
 			/* Ignore address */
@@ -299,6 +312,7 @@ int proxy_v2__read(struct mosquitto *context)
 			return MOSQ_ERR_PROXY;
 		}
 
+#ifdef WITH_TLS
 		if(context->listener->require_certificate){
 			if(!have_certificate){
 				log__printf(NULL, MOSQ_LOG_NOTICE, "Connection from %s:%d rejected, client did not provide a certificate.",
@@ -312,6 +326,7 @@ int proxy_v2__read(struct mosquitto *context)
 			log__printf(NULL, MOSQ_LOG_NOTICE, "Connection from %s:%d negotiated %s cipher %s",
 					context->address, context->remote_port, context->proxy.tls_version, context->proxy.cipher);
 		}
+#endif
 		proxy_cleanup(context);
 
 #if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_BUILTIN

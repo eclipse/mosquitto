@@ -34,7 +34,7 @@ Contributors:
 #include "config.h"
 
 
-static const char *msig_to_string(enum mosq_sig msig)
+static const char *msig_to_string(enum mosq_signal msig)
 {
 	switch(msig){
 		case MSIG_CONFIG_RELOAD:

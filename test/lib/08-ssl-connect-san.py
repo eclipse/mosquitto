@@ -13,6 +13,8 @@
 
 from mosq_test_helper import *
 
+mosq_test.require_features(["WITH_TLS"])
+
 if sys.version < '2.7':
     print("WARNING: SSL not supported on Python 2.6")
     exit(0)
@@ -21,21 +23,14 @@ def do_test(client_cmd, host):
     port = mosq_test.get_port()
 
     rc = 1
-    connect_packet = mosq_test.gen_connect("08-ssl-connect-san")
-    connack_packet = mosq_test.gen_connack(rc=0)
-    disconnect_packet = mosq_test.gen_disconnect()
+    connect_packet = mqtt_packets.gen_connect("08-ssl-connect-san")
+    connack_packet = mqtt_packets.gen_connack(rc=0)
+    disconnect_packet = mqtt_packets.gen_disconnect()
 
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH, cafile=f"{ssl_dir}/all-ca.crt")
-    context.load_cert_chain(certfile=f"{ssl_dir}/server-san.crt", keyfile=f"{ssl_dir}/server-san.key")
-    ssock = context.wrap_socket(sock, server_side=True)
-    ssock.settimeout(10)
-    ssock.bind(('', port))
-    ssock.listen(5)
+    ssock = mosq_test.listen_sock(port, ssl_dir / 'all-ca.crt', ssl_dir  / 'server-san.crt', ssl_dir / 'server-san.key')
 
-    client_args = [mosq_test.get_build_root() + "/test/lib/" + client_cmd, str(port), host]
-    client = mosq_test.start_client(filename=client_cmd.replace('/', '-'), cmd=client_args)
+    client_args = [Path(mosq_test.get_build_root(), "test", "lib") / client_cmd, str(port), host]
+    client = mosq_test.start_client(filename=str(client_cmd).replace('/', '-'), cmd=client_args)
 
     try:
         (conn, address) = ssock.accept()
@@ -57,7 +52,8 @@ def do_test(client_cmd, host):
         if rc:
             exit(rc)
 
-do_test("c/08-ssl-connect-san.test", "localhost")
-do_test("cpp/08-ssl-connect-san.test", "localhost")
-do_test("c/08-ssl-connect-san.test", "127.0.0.1")
-do_test("cpp/08-ssl-connect-san.test", "127.0.0.1")
+do_test(Path("c", mosq_test.get_build_type(), "08-ssl-connect-san.exe"), "localhost")
+do_test(Path("c", mosq_test.get_build_type(), "08-ssl-connect-san.exe"), "127.0.0.1")
+if mosq_test.check_features(["WITH_LIB_CPP"]):
+    do_test(Path("cpp", mosq_test.get_build_type(), "08-ssl-connect-san.exe"), "localhost")
+    do_test(Path("cpp", mosq_test.get_build_type(), "08-ssl-connect-san.exe"), "127.0.0.1")

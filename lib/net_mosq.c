@@ -46,7 +46,11 @@ Contributors:
 #endif
 
 #ifdef WITH_UNIX_SOCKETS
-#  include <sys/un.h>
+#  ifdef WIN32
+#    include <afunix.h>
+#  else
+#    include <sys/un.h>
+#  endif
 #endif
 
 #ifdef __QNX__
@@ -523,7 +527,7 @@ static int net__try_connect_tcp(const char *host, uint16_t port, mosq_sock_t *so
 static int net__try_connect_unix(const char *host, mosq_sock_t *sock)
 {
 	struct sockaddr_un addr;
-	int s;
+	mosq_sock_t s;
 	int rc;
 
 	if(host == NULL || strlen(host) == 0 || strlen(host) > sizeof(addr.sun_path)-1){
@@ -538,14 +542,16 @@ static int net__try_connect_unix(const char *host, mosq_sock_t *sock)
 	if(s < 0){
 		return MOSQ_ERR_ERRNO;
 	}
+#ifndef WIN32
 	rc = net__socket_nonblock(&s);
 	if(rc){
 		return rc;
 	}
+#endif
 
 	rc = connect(s, (struct sockaddr *)&addr, sizeof(struct sockaddr_un));
 	if(rc < 0){
-		close(s);
+		COMPAT_CLOSE(s);
 		return MOSQ_ERR_ERRNO;
 	}
 

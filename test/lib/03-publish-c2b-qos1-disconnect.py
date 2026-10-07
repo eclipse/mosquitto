@@ -8,26 +8,22 @@ def do_test(client_cmd):
     port = mosq_test.get_port()
 
     rc = 1
-    connect_packet = mosq_test.gen_connect("publish-qos1-test")
-    connack_packet = mosq_test.gen_connack(rc=0)
+    connect_packet = mqtt_packets.gen_connect("publish-qos1-test")
+    connack_packet = mqtt_packets.gen_connack(rc=0)
 
-    disconnect_packet = mosq_test.gen_disconnect()
+    disconnect_packet = mqtt_packets.gen_disconnect()
 
     mid = 1
-    publish_packet = mosq_test.gen_publish("pub/qos1/test", qos=1, mid=mid, payload="message")
-    publish_packet_dup = mosq_test.gen_publish("pub/qos1/test", qos=1, mid=mid, payload="message", dup=True)
-    puback_packet = mosq_test.gen_puback(mid)
+    publish_packet = mqtt_packets.gen_publish("pub/qos1/test", qos=1, mid=mid, payload="message")
+    publish_packet_dup = mqtt_packets.gen_publish("pub/qos1/test", qos=1, mid=mid, payload="message", dup=True)
+    puback_packet = mqtt_packets.gen_puback(mid)
 
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    sock.settimeout(10)
-    sock.bind(('', port))
-    sock.listen(5)
+    sock = mosq_test.listen_sock(port)
 
     client_args = [client_cmd, str(port)]
     env = mosq_test.env_add_ld_library_path()
 
-    client = mosq_test.start_client(filename=client_cmd.replace('/', '-'), cmd=client_args, env=env)
+    client = mosq_test.start_client(filename=str(client_args).replace('/', '-'), cmd=client_args, env=env)
 
     try:
         (conn, address) = sock.accept()
@@ -58,5 +54,6 @@ def do_test(client_cmd):
             rc=1
             exit(1)
 
-do_test("c/03-publish-c2b-qos1-disconnect.test")
-do_test("cpp/03-publish-c2b-qos1-disconnect.test")
+do_test(Path("c", mosq_test.get_build_type(), "03-publish-c2b-qos1-disconnect.exe"))
+if mosq_test.check_features(["WITH_LIB_CPP"]):
+    do_test(Path("cpp", mosq_test.get_build_type(), "03-publish-c2b-qos1-disconnect.exe"))

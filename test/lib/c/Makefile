@@ -79,15 +79,15 @@ SRC += \
 LOCAL_LIBADD+=-lssl -lcrypto
 endif
 
-TESTS = ${SRC:.c=.test}
+TESTS = ${SRC:.c=.exe}
 
 all : ${TESTS}
 
-${TESTS} : %.test: %.c ${R}/test/path_helper.h
+${TESTS} : %.exe: %.c ${R}/test/path_helper.h
 	$(CC) $< -o $@ -D TEST_SOURCE_DIR='"$(realpath .)"' $(LOCAL_CPPFLAGS) $(LOCAL_CFLAGS) $(LOCAL_LIBADD) $(LOCAL_LDFLAGS)
 
 reallyclean : clean
 	-rm -f *.orig
 
 clean :
-	rm -f *.test
+	rm -f *.exe

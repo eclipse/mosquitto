@@ -4,17 +4,21 @@
 
 from mosq_test_helper import *
 
+mosq_test.require_features(["WITH_TLS"])
+
 conf_file = os.path.basename(__file__).replace('.py', '.conf')
 port = mosq_test.get_port()
 
-do_test_broker_failure(conf_file, ["bridge_cafile string"], port, 3) # Missing bridge config
-do_test_broker_failure(conf_file, ["bridge_alpn string"], port, 3) # Missing bridge config
-do_test_broker_failure(conf_file, ["bridge_ciphers string"], port, 3) # Missing bridge config
-do_test_broker_failure(conf_file, ["bridge_ciphers_tls1.3 string"], port, 3) # Missing bridge config
-do_test_broker_failure(conf_file, ["bridge_capath string"], port, 3) # Missing bridge config
-do_test_broker_failure(conf_file, ["bridge_certfile string"], port, 3) # Missing bridge config
-do_test_broker_failure(conf_file, ["bridge_keyfile string"], port, 3) # Missing bridge config
-do_test_broker_failure(conf_file, ["bridge_tls_version string"], port, 3) # Missing bridge config
+if mosq_test.check_features(["INC_BRIDGE_SUPPORT"]):
+    do_test_broker_failure(conf_file, ["bridge_cafile string"], port, 3) # Missing bridge config
+    do_test_broker_failure(conf_file, ["bridge_alpn string"], port, 3) # Missing bridge config
+    do_test_broker_failure(conf_file, ["bridge_ciphers string"], port, 3) # Missing bridge config
+    do_test_broker_failure(conf_file, ["bridge_ciphers_tls1.3 string"], port, 3) # Missing bridge config
+    do_test_broker_failure(conf_file, ["bridge_capath string"], port, 3) # Missing bridge config
+    do_test_broker_failure(conf_file, ["bridge_certfile string"], port, 3) # Missing bridge config
+    do_test_broker_failure(conf_file, ["bridge_keyfile string"], port, 3) # Missing bridge config
+    do_test_broker_failure(conf_file, ["bridge_tls_version string"], port, 3) # Missing bridge config
+    do_test_broker_failure(conf_file, ["bridge_insecure true"], port, 3, "Error: The 'bridge_insecure' option requires a bridge to be defined first.") # Missing bridge config
 
 do_test_broker_failure(conf_file, [f"listener {port}","certfile"], port, 3) # empty certfile
 do_test_broker_failure(conf_file, [f"listener {port}","keyfile"], port, 3) # empty keyfile

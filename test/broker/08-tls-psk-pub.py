@@ -2,68 +2,43 @@
 
 from mosq_test_helper import *
 
-if sys.version < '2.7':
-    print("WARNING: SSL not supported on Python 2.6")
-    exit(0)
+from broker_config import BrokerConfig, ListenerConfig
+from mosquitto_broker import MosquittoBroker
 
+mosq_test.require_features(["WITH_TLS", "WITH_TLS_PSK"])
 
-def write_config(filename, port1, port2):
-    with open(filename, 'w') as f:
-        f.write("allow_anonymous true\n")
-        f.write(f"psk_file {str(source_dir/'08-tls-psk-pub.psk')}\n")
-        f.write("\n")
-        f.write("listener %d\n" % (port1))
-        f.write("psk_hint hint\n")
-        f.write("\n")
-        f.write("listener %d\n" % (port2))
-        f.write("log_type all\n")
-
-(port1, port2) = mosq_test.get_port(2)
-conf_file = os.path.basename(__file__).replace('.py', '.conf')
-write_config(conf_file, port1, port2)
-
-env = mosq_test.env_add_ld_library_path()
-
-rc = 1
-connect_packet = mosq_test.gen_connect("no-psk-test-client")
-connack_packet = mosq_test.gen_connack(rc=0)
+connect_packet = mqtt_packets.gen_connect("no-psk-test-client")
+connack_packet = mqtt_packets.gen_connack(rc=0)
 
 mid = 1
-subscribe_packet = mosq_test.gen_subscribe(mid, "psk/test", 0)
-suback_packet = mosq_test.gen_suback(mid, 0)
+subscribe_packet = mqtt_packets.gen_subscribe(mid, "psk/test", 0)
+suback_packet = mqtt_packets.gen_suback(mid, 0)
 
-publish_packet = mosq_test.gen_publish(topic="psk/test", payload="message", qos=0)
+publish_packet = mqtt_packets.gen_publish(topic="psk/test", payload="message", qos=0)
 
-broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port2)
+(port1, port2) = mosq_test.get_port(2)
 
-try:
+broker_config = BrokerConfig(
+    listeners = [
+        ListenerConfig(
+            port=port1,
+            psk_hint="hint",
+        ),
+        ListenerConfig(port=port2)
+    ],
+    allow_anonymous=True,
+    psk_file=source_dir/'08-tls-psk-pub.psk',
+)
+broker = MosquittoBroker(config=broker_config)
+with broker:
     sock = mosq_test.do_client_connect(connect_packet, connack_packet, timeout=20, port=port2)
     mosq_test.do_send_receive(sock, subscribe_packet, suback_packet, "suback")
 
-    pub = subprocess.Popen(['./c/08-tls-psk-pub.test', str(port1)], env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    pub_terminate_rc = 0
+    env = mosq_test.env_add_ld_library_path()
+    pub = subprocess.Popen([Path('c', mosq_test.get_build_type(), '08-tls-psk-pub.exe'), str(port1)], env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if mosq_test.wait_for_subprocess(pub):
-        print("pub not terminated")
-        pub_terminate_rc = 1
+        raise RuntimeError("pub not terminated")
     if pub.returncode != 0:
-        raise ValueError
-    (stdo, stde) = pub.communicate()
-
+        raise ValueError(pub.returncode)
     mosq_test.expect_packet(sock, "publish", publish_packet)
-    rc = pub_terminate_rc
-
     sock.close()
-except mosq_test.TestError:
-    pass
-finally:
-    os.remove(conf_file)
-    broker.terminate()
-    if mosq_test.wait_for_subprocess(broker):
-        print("broker not terminated")
-        if rc == 0: rc=1
-    (stdo, stde) = broker.communicate()
-    if rc:
-        print(stde.decode('utf-8'))
-
-exit(rc)
-

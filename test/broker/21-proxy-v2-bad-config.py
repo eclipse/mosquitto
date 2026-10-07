@@ -6,6 +6,8 @@ import json
 import shutil
 import socket
 
+mosq_test.require_features(["WITH_WEBSOCKETS", "WITH_WEBSOCKETS_BUILTIN"])
+
 def write_config(filename, port, extra_options):
     with open(filename, 'w') as f:
         f.write("log_type all\n")
@@ -30,5 +32,6 @@ def do_test(extra_options, expect_fail_log):
     if rc != 0:
         raise ValueError(rc)
 
-do_test("use_subject_as_username true\n", "Error: use_subject_as_username cannot be used with `enable_proxy_protocol 2`.")
-do_test(f"certfile {ssl_dir}/server.crt\nkeyfile {ssl_dir}/server.key\n", "Error: certfile and keyfile cannot be used with `enable_proxy_protocol 2`.")
+if mosq_test.check_features(["WITH_TLS"]):
+    do_test("use_subject_as_username true\n", "Error: use_subject_as_username cannot be used with `enable_proxy_protocol 2`.")
+    do_test(f"certfile {ssl_dir}/server.crt\nkeyfile {ssl_dir}/server.key\n", "Error: certfile and keyfile cannot be used with `enable_proxy_protocol 2`.")

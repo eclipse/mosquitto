@@ -226,7 +226,7 @@ static void init_config(struct mosq_config *cfg, int pub_or_sub)
 	}else{
 		cfg->protocol_version = MQTT_PROTOCOL_V311;
 	}
-	cfg->session_expiry_interval = -1; /* -1 means unset here, the user can't set it to -1. */
+	cfg->session_expiry_interval = -2; /* -2 means unset here, the user can't set it to -2. */
 	cfg->transport = MOSQ_T_TCP;
 }
 
@@ -481,10 +481,14 @@ int client_config_load(struct mosq_config *cfg, int pub_or_sub, int argc, char *
 #endif
 
 	if(cfg->protocol_version == 5){
-		if(cfg->clean_session == false && cfg->session_expiry_interval == -1){
-			/* User hasn't set session-expiry-interval, but has cleared clean
-			 * session so default to persistent session. */
-			cfg->session_expiry_interval = UINT32_MAX;
+		if(cfg->session_expiry_interval == -2){
+			if(cfg->clean_session == false){
+				/* User hasn't set session-expiry-interval, but has cleared clean
+				* session so default to persistent session. */
+				cfg->session_expiry_interval = UINT32_MAX;
+			}else{
+				cfg->session_expiry_interval = 0;
+			}
 		}
 		if(cfg->session_expiry_interval > 0){
 			if(cfg->session_expiry_interval == UINT32_MAX && (cfg->id_prefix || !cfg->id)){
@@ -1310,19 +1314,21 @@ int client_config_line_proc(struct mosq_config *cfg, int pub_or_sub, int argc, c
 					cfg->session_expiry_interval = UINT32_MAX;
 				}else{
 					char *endptr = NULL;
-					cfg->session_expiry_interval = strtol(argv[i+1], &endptr, 0);
+					long long llvalue = strtoll(argv[i+1], &endptr, 0);
 					if(endptr == argv[i+1] || endptr[0] != '\0'){
 						/* Entirety of argument wasn't a number */
 						fprintf(stderr, "Error: session-expiry-interval not a number.\n\n");
 						return 1;
 					}
-					if(cfg->session_expiry_interval > UINT32_MAX || cfg->session_expiry_interval < -1){
+					if(llvalue > UINT32_MAX || llvalue < -1){
 						fprintf(stderr, "Error: session-expiry-interval out of range.\n\n");
 						return 1;
 					}
-					if(cfg->session_expiry_interval == -1){
+					if(llvalue == -1LL){
 						/* Convenience value for infinity. */
 						cfg->session_expiry_interval = UINT32_MAX;
+					}else{
+						cfg->session_expiry_interval = llvalue;
 					}
 				}
 				cfg->protocol_version = MQTT_PROTOCOL_V5;

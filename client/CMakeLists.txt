@@ -5,7 +5,6 @@ target_link_libraries(client-common INTERFACE common-options)
 target_include_directories(client-common INTERFACE
 	"${CJSON_INCLUDE_DIRS}"
 	"${OPENSSL_INCLUDE_DIR}"
-	"${mosquitto_SOURCE_DIR}"
 )
 
 target_sources(client-common INTERFACE ${shared_src})
@@ -22,9 +21,9 @@ if(WITH_WEBSOCKETS AND WITH_WEBSOCKETS_BUILTIN)
 	target_compile_definitions(client-common INTERFACE "-DWITH_WEBSOCKETS=WS_IS_BUILTIN")
 endif()
 
-add_executable(mosquitto_pub pub_client.c pub_shared.c)
-add_executable(mosquitto_sub sub_client.c sub_client_output.c)
-add_executable(mosquitto_rr rr_client.c pub_shared.c sub_client_output.c)
+custom_add_executable(mosquitto_pub pub_client.c pub_shared.c)
+custom_add_executable(mosquitto_sub sub_client.c sub_client_output.c)
+custom_add_executable(mosquitto_rr rr_client.c pub_shared.c sub_client_output.c)
 
 
 if (WITH_THREADING AND NOT WIN32)
@@ -34,13 +33,8 @@ if (WITH_THREADING AND NOT WIN32)
 	target_link_libraries(client-common INTERFACE Threads::Threads)
 endif()
 
-if(WITH_BUNDLED_DEPS)
-	target_include_directories(mosquitto_sub PRIVATE "${mosquitto_SOURCE_DIR}/deps")
-	target_include_directories(mosquitto_rr PRIVATE "${mosquitto_SOURCE_DIR}/deps")
-endif()
-
 if(CJSON_FOUND)
-	target_link_libraries(client-common INTERFACE cJSON)
+	target_link_libraries(client-common INTERFACE cjson)
 endif()
 
 if(WITH_STATIC_LIBRARIES)
@@ -57,6 +51,6 @@ target_link_libraries(mosquitto_pub PRIVATE client-common libmosquitto_common)
 target_link_libraries(mosquitto_sub PRIVATE client-common libmosquitto_common)
 target_link_libraries(mosquitto_rr PRIVATE client-common libmosquitto_common)
 
-install(TARGETS mosquitto_pub RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
-install(TARGETS mosquitto_sub RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
-install(TARGETS mosquitto_rr RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+custom_install(TARGETS mosquitto_pub RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+custom_install(TARGETS mosquitto_sub RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+custom_install(TARGETS mosquitto_rr RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")

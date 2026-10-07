@@ -41,6 +41,19 @@ Contributors:
 #  endif
 #endif
 
+#ifdef WITH_FUZZING
+int32_t fuzz_memory_check_count = 0;
+int32_t fuzz_memory_check_limit = -1;
+bool fuzz_memory_check(void)
+{
+	fuzz_memory_check_count++;
+	return (fuzz_memory_check_limit > 0 && fuzz_memory_check_count >= fuzz_memory_check_limit);
+}
+#  define FUZZ_MEMORY_CHECK() if(fuzz_memory_check()){ return NULL; }
+#else
+#  define FUZZ_MEMORY_CHECK()
+#endif
+
 static unsigned long memcount = 0;
 static unsigned long max_memcount = 0;
 
@@ -181,6 +194,8 @@ BROKER_EXPORT void *mosquitto_realloc(void *ptr, size_t size)
 #if ALLOC_MARKER_SIZE
 	bool alloc_mismatch = free_size > 0 && !check_alloc_marker(ptr, free_size);
 #endif
+
+	FUZZ_MEMORY_CHECK();
 
 	/* Avoid counter underflow due to mismatched memory allocation function usage */
 	if(free_size > memcount){

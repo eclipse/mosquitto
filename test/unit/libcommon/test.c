@@ -5,6 +5,7 @@
 #include <CUnit/Basic.h>
 
 int init_base64_tests(void);
+int init_file_tests(void);
 int init_property_add_tests(void);
 int init_property_value_tests(void);
 int init_strings_tests(void);
@@ -26,7 +27,10 @@ int main(int argc, char *argv[])
 	}
 
 	if(0
+#ifdef WITH_TLS
 			|| init_base64_tests()
+#endif
+			|| init_file_tests()
 			|| init_property_add_tests()
 			|| init_property_value_tests()
 			|| init_strings_tests()

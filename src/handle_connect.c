@@ -649,8 +649,8 @@ static int read_and_verify_v5_connect_properties(struct mosquitto *context, mosq
 static int verify_will_options(struct mosquitto *context, uint8_t will, uint8_t will_qos, uint8_t will_retain, uint8_t protocol_version)
 {
 	if(will_qos == 3){
-		log__printf(NULL, MOSQ_LOG_INFO, "Invalid Will QoS in CONNECT from %s.",
-				context->address);
+		log__printf(NULL, MOSQ_LOG_INFO, "Protocol error from %s:%d: CONNECT with invalid Will QoS (%d).",
+				context->address, context->remote_port, will_qos);
 		return MOSQ_ERR_PROTOCOL;
 	}
 
@@ -776,11 +776,11 @@ static int set_username_from_packet(struct mosquitto *context, char **username, 
 }
 
 
-static int set_password_from_packet(struct mosquitto *context, char **password, const char *clientid)
+static int set_password_from_packet(struct mosquitto *context, char **password, uint16_t *password_len, const char *clientid)
 {
 	int rc;
 
-	rc = packet__read_binary(&context->in_packet, (uint8_t **)password, &(uint16_t){0});
+	rc = packet__read_binary(&context->in_packet, (uint8_t **)password, password_len);
 	if(rc == MOSQ_ERR_NOMEM){
 		return MOSQ_ERR_NOMEM;
 	}
@@ -801,7 +801,7 @@ static int set_password_from_packet(struct mosquitto *context, char **password, 
 
 static int read_and_verify_client_credentials_from_packet(struct mosquitto *context,
 		char **username, uint8_t username_flag,
-		char **password, uint8_t password_flag,
+		char **password, uint16_t *password_len, uint8_t password_flag,
 		const char *clientid)
 {
 	int rc;
@@ -821,7 +821,7 @@ static int read_and_verify_client_credentials_from_packet(struct mosquitto *cont
 		}
 	}
 	if(password_flag){
-		rc = set_password_from_packet(context, password, clientid);
+		rc = set_password_from_packet(context, password, password_len, clientid);
 		if(rc != MOSQ_ERR_SUCCESS){
 			return rc;
 		}
@@ -971,7 +971,7 @@ static int set_username_from_cert_subject_name(struct mosquitto *context)
 #endif
 
 
-static int handle_username_from_cert_options(struct mosquitto *context, char **username, char **password)
+static int handle_username_from_cert_options(struct mosquitto *context, char **username, char **password, uint16_t password_len)
 {
 	int rc;
 
@@ -1005,6 +1005,7 @@ static int handle_username_from_cert_options(struct mosquitto *context, char **u
 	}else
 #endif /* WITH_TLS */
 	{
+#ifdef WITH_TLS
 		if(context->listener->use_identity_as_username && context->listener->require_certificate){
 			mosquitto_FREE(*username);
 			mosquitto_FREE(*password);
@@ -1012,11 +1013,14 @@ static int handle_username_from_cert_options(struct mosquitto *context, char **u
 			if(!context->username){
 				return send__connack_bad_username_or_password_error(context, MOSQ_ERR_AUTH);
 			}
-		}else{
+		}else
+#endif
+		{
 			/* FIXME - these ensure the mosquitto_clientid() and
 			* mosquitto_client_username() functions work, but is hacky */
 			context->username = *username;
 			context->password = *password;
+			context->password_len = password_len;
 			*username = NULL; /* Avoid free() in error: below. */
 			*password = NULL;
 		}
@@ -1056,6 +1060,7 @@ int handle__connect(struct mosquitto *context)
 	uint8_t will, will_retain, will_qos, clean_start;
 	uint8_t username_flag, password_flag;
 	char *username = NULL, *password = NULL;
+	uint16_t password_len = 0;
 	int rc;
 	mosquitto_property *properties = NULL;
 	void *auth_data = NULL;
@@ -1076,12 +1081,14 @@ int handle__connect(struct mosquitto *context)
 		goto handle_connect_error;
 	}
 
+#ifdef WITH_TLS
 	if(context->in_packet.command == 0x16 && context->listener->ssl_ctx == NULL){ /* 0x16 is TLS handshake client hello */
 		log__printf(NULL, MOSQ_LOG_NOTICE, "Client from %s:%d appears to be using TLS to connect to a non-TLS listener.",
 				context->address, context->remote_port);
 		rc = MOSQ_ERR_PROTOCOL;
 		goto handle_connect_error;
 	}
+#endif
 
 	rc = read_protocol_name(context, protocol_name);
 	if(rc != MOSQ_ERR_SUCCESS){
@@ -1116,12 +1123,6 @@ int handle__connect(struct mosquitto *context)
 
 	will = connect_flags & 0x04;
 	will_qos = (connect_flags & 0x18) >> 3;
-	if(will_qos == 3){
-		log__printf(NULL, MOSQ_LOG_INFO, "Protocol error from %s:%d: CONNECT with invalid Will QoS (%d).",
-				context->address, context->remote_port, will_qos);
-		rc = MOSQ_ERR_PROTOCOL;
-		goto handle_connect_error;
-	}
 	will_retain = ((connect_flags & 0x20) == 0x20);
 	rc = verify_will_options(context, will, will_qos, will_retain, protocol_version);
 	if(rc != MOSQ_ERR_SUCCESS){
@@ -1171,7 +1172,7 @@ int handle__connect(struct mosquitto *context)
 	// Client credentials
 	password_flag = connect_flags & 0x40;
 	username_flag = connect_flags & 0x80;
-	rc = read_and_verify_client_credentials_from_packet(context, &username, username_flag, &password, password_flag, clientid);
+	rc = read_and_verify_client_credentials_from_packet(context, &username, username_flag, &password, &password_len, password_flag, clientid);
 	if(rc != MOSQ_ERR_SUCCESS){
 		goto handle_connect_error;
 	}
@@ -1188,7 +1189,7 @@ int handle__connect(struct mosquitto *context)
 	clientid = NULL;
 
 	/* use_identity_as_username or use_subject_as_username */
-	rc = handle_username_from_cert_options(context, &username, &password);
+	rc = handle_username_from_cert_options(context, &username, &password, password_len);
 	if(rc != MOSQ_ERR_SUCCESS){
 		goto handle_connect_error;
 	}

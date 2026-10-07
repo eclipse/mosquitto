@@ -4,21 +4,29 @@ on:
   workflow_dispatch:
   push:
     branches:
+      - master
       - develop
       - fixes
+      - release/*
   pull_request:
     branches:
+      - master
       - develop
       - fixes
+      - release/*
+
+permissions:
+  contents: read
 
 jobs:
   coverage:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
     - run: |
         sudo apt-get update
         sudo apt-get install -y \
+            cmake \
             docbook-xsl \
             lcov \
             libargon2-dev \
@@ -32,6 +40,8 @@ jobs:
             libssl-dev \
             libwrap0-dev \
             microsocks \
+            ninja-build \
+            pkgconf \
             python3-all \
             python3-paho-mqtt \
             python3-psutil \
@@ -40,25 +50,34 @@ jobs:
 
     - uses: actions/checkout@v6
 
-    - run: |
-        make \
-          WITH_COVERAGE=yes \
-          CFLAGS="-O0 -Wall -ggdb -fprofile-arcs" \
-          -j $(nproc) \
-          binary
-        make \
-          WITH_COVERAGE=yes \
-          CFLAGS="-O0 -Wall -ggdb -fprofile-arcs" \
-          -j $(nproc) \
-          test-compile
+    - name: Configure
+      run: |
+        cmake \
+          -G Ninja \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -S . \
+          -B build
+      env:
+        CFLAGS: "-coverage -O0 -Wall -ggdb -fprofile-arcs -fprofile-dir=${{github.workspace}}/coverage.%p"
+        CXXFLAGS: "-coverage -O0 -Wall -ggdb -fprofile-arcs -fprofile-dir=${{github.workspace}}/coverage.%p"
+        LDFLAGS: "-coverage"
 
-    - run: |
-        make -C test test
+    - name: Build
+      run: cmake --build build --parallel $(nproc)
 
-    - run: |
-        lcov --capture --directory . --output-file coverage.info --no-external
+    - name: Tests
+      working-directory: build/
+      run: ctest -j20 --resource-spec-file ../test/resource.json --output-on-failure --repeat until-pass:5
 
-    - uses: codecov/codecov-action@v4
+    - name: Merge GCDA files
+      run: test/merge-gcda.py
+
+    - name: Generate coverage data
+      run: |
+        lcov --capture --directory . --output-file coverage.info --no-external --exclude test/ --exclude deps/ --exclude include/
+
+    - name: Update to Codecov
+      uses: codecov/codecov-action@v6
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         fail_ci_if_error: true

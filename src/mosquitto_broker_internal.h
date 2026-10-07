@@ -935,6 +935,7 @@ void unpwd__free_item(struct mosquitto__unpwd **unpwd, struct mosquitto__unpwd *
  * ============================================================ */
 int session_expiry__add(struct mosquitto *context);
 int session_expiry__add_from_persistence(struct mosquitto *context, time_t expiry_time);
+void session_expiry__add_on_shutdown(void);
 void session_expiry__remove(struct mosquitto *context);
 void session_expiry__remove_all(void);
 void session_expiry__check(void);

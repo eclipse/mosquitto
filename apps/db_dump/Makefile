@@ -62,7 +62,7 @@ json_help.o : ${R}/common/json_help.c ${R}/common/json_help.h
 reallyclean: clean
 
 clean :
-	-rm -f $(OBJS) $(BROKER_OBJS)  mosquitto_db_dump mosquitto_db_dump.a *.gcda *.gcno
+	-rm -f $(OBJS) $(OBJS_EXTERNAL) $(BROKER_OBJS)  mosquitto_db_dump mosquitto_db_dump.a *.gcda *.gcno
 
 install:
 	$(INSTALL) -d "${DESTDIR}$(prefix)/bin"

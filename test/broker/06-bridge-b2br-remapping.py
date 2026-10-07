@@ -4,13 +4,15 @@
 
 from mosq_test_helper import *
 
+mosq_test.require_features(["INC_BRIDGE_SUPPORT"])
+
 def write_config(filename, port1, port2, protocol_version):
     with open(filename, 'w') as f:
         f.write("listener %d\n" % (port2))
         f.write("allow_anonymous true\n")
         f.write("\n")
         f.write("connection bridge_sample\n")
-        f.write("address 127.0.0.1:%d\n" % (port1))
+        f.write("address localhost:%d\n" % (port1))
         f.write("bridge_attempt_unsubscribe false\n")
         f.write("topic # in 0 local/topic/ remote/topic/\n")
         f.write("topic prefix/# in 0 local2/topic/ remote2/topic/\n")
@@ -51,15 +53,15 @@ def inner_test(bridge, sock, proto_ver):
     ]
     for pattern in ("remote/topic/#", "remote2/topic/prefix/#", "remote3/topic/+/value"):
         mid += 1
-        subscribe_packet = mosq_test.gen_subscribe(mid, pattern, 0 | opts, proto_ver=proto_ver)
-        suback_packet = mosq_test.gen_suback(mid, 0, proto_ver=proto_ver)
+        subscribe_packet = mqtt_packets.gen_subscribe(mid, pattern, 0 | opts, proto_ver=proto_ver)
+        suback_packet = mqtt_packets.gen_suback(mid, 0, proto_ver=proto_ver)
         if not mosq_test.expect_packet(bridge, "subscribe", subscribe_packet):
             return 1
         bridge.send(suback_packet)
 
     mid += 1
-    subscribe_packet = mosq_test.gen_subscribe(mid, "#", 0 | opts, proto_ver=proto_ver)
-    suback_packet = mosq_test.gen_suback(mid, 0, proto_ver=proto_ver)
+    subscribe_packet = mqtt_packets.gen_subscribe(mid, "#", 0 | opts, proto_ver=proto_ver)
+    suback_packet = mqtt_packets.gen_suback(mid, 0, proto_ver=proto_ver)
     sock.send(subscribe_packet)
     if not mosq_test.expect_packet(sock, "suback", suback_packet):
         return 1
@@ -81,9 +83,9 @@ def inner_test(bridge, sock, proto_ver):
 
     for (local_topic, remote_topic) in cases:
         mid += 1
-        remote_publish_packet = mosq_test.gen_publish(
+        remote_publish_packet = mqtt_packets.gen_publish(
             remote_topic, qos=0, mid=mid, payload='', proto_ver=proto_ver)
-        local_publish_packet = mosq_test.gen_publish(
+        local_publish_packet = mqtt_packets.gen_publish(
             local_topic, qos=0, mid=mid, payload='', proto_ver=proto_ver)
 
         bridge.send(remote_publish_packet)
@@ -114,17 +116,13 @@ def do_test(proto_ver):
 
     client_id = socket.gethostname()+".bridge_sample"
 
-    connect_packet = mosq_test.gen_connect(client_id, clean_session=False, proto_ver=proto_ver_connect)
-    connack_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
+    connect_packet = mqtt_packets.gen_connect(client_id, clean_session=False, proto_ver=proto_ver_connect)
+    connack_packet = mqtt_packets.gen_connack(rc=0, proto_ver=proto_ver)
 
-    client_connect_packet = mosq_test.gen_connect("pub-test", proto_ver=proto_ver)
-    client_connack_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
+    client_connect_packet = mqtt_packets.gen_connect("pub-test", proto_ver=proto_ver)
+    client_connack_packet = mqtt_packets.gen_connack(rc=0, proto_ver=proto_ver)
 
-    ssock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    ssock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    ssock.settimeout(4)
-    ssock.bind(('', port1))
-    ssock.listen(5)
+    ssock = mosq_test.listen_sock(port1)
 
     broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port2, use_conf=True)
     try:
@@ -149,14 +147,13 @@ def do_test(proto_ver):
         except NameError:
             pass
 
-        broker.terminate()
+        mosq_test.terminate_broker(broker)
         if mosq_test.wait_for_subprocess(broker):
             print("broker not terminated")
             if rc == 0: rc=1
-        (stdo, stde) = broker.communicate()
         ssock.close()
         if rc:
-            print(stde.decode('utf-8'))
+            print(mosq_test.broker_log(broker))
             exit(rc)
 
 

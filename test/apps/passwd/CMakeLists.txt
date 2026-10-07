@@ -1,19 +1,10 @@
+set(EXCLUDE_LIST " ")
+set(PREFIX "apps-")
 file(GLOB PY_TEST_FILES passwd-*.py)
+get_test_files(PY_TEST_FILES "${EXCLUDE_LIST}" PY_TEST_NAMES)
 
-set(EXCLUDE_LIST
-    # none
-)
+add_python_test(PY_TEST_NAMES ${PREFIX} 0 "passwd-args.py")
+add_python_test(PY_TEST_NAMES ${PREFIX} 1 "passwd-changes.py")
+add_python_test(PY_TEST_NAMES ${PREFIX} 0 "passwd-stdout.py")
 
-foreach(PY_TEST_FILE ${PY_TEST_FILES})
-    get_filename_component(PY_TEST_NAME ${PY_TEST_FILE} NAME_WE)
-    if(${PY_TEST_NAME} IN_LIST EXCLUDE_LIST)
-        continue()
-    endif()
-    add_test(NAME apps-${PY_TEST_NAME}
-        COMMAND ${PY_TEST_FILE}
-    )
-    set_tests_properties(apps-${PY_TEST_NAME}
-        PROPERTIES
-            ENVIRONMENT "BUILD_ROOT=${CMAKE_BINARY_DIR}"
-    )
-endforeach()
+check_for_missing_tests(PY_TEST_NAMES)

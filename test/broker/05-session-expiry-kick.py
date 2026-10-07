@@ -3,28 +3,22 @@
 # MQTT v5. Test whether session expiry interval works correctly.
 
 from mosq_test_helper import *
-
-def write_config(filename, port):
-    with open(filename, 'w') as f:
-        f.write("listener %d\n" % (port))
-        f.write("plugin c/kick_last_client.so\n")
-        f.write("allow_anonymous true\n")
-        f.write("log_type all\n")
+from broker_config import BrokerConfig, ListenerConfig
 
 def do_test():
-    rc = 1
-
     port = mosq_test.get_port()
-    conf_file = os.path.basename(__file__).replace('.py', '.conf')
-    write_config(conf_file, port)
-    broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port)
 
     # Test the case of connect with session-expiry>0, kick, expiry for a crash
     props = mqtt5_props.gen_uint32_prop(mqtt5_props.SESSION_EXPIRY_INTERVAL, 1)
-    connect_packet = mosq_test.gen_connect("05-session-expiry", clean_session=False, proto_ver=5, properties=props)
-    connack_packet = mosq_test.gen_connack(flags=0, rc=0, proto_ver=5)
+    connect_packet = mqtt_packets.gen_connect("05-session-expiry", clean_session=False, proto_ver=5, properties=props)
+    connack_packet = mqtt_packets.gen_connack(flags=0, rc=0, proto_ver=5)
 
-    try:
+    config = BrokerConfig(
+        allow_anonymous=True,
+        log_type="all",
+    )
+    broker = MosquittoBroker(port=port, config=config)
+    with broker:
         sock = mosq_test.client_connect_only(port=port)
         sock.send(connect_packet)
         # Immediately disconnect, this should now be queued to expire, but the plugin should kick it first
@@ -36,20 +30,5 @@ def do_test():
         # The "session present" flag must *not* be set
         sock = mosq_test.do_client_connect(connect_packet, connack_packet, port=port, connack_error="connack 1")
         sock.close()
-
-        rc = 0
-    except mosq_test.TestError:
-        pass
-    finally:
-        broker.terminate()
-        os.remove(conf_file)
-        if mosq_test.wait_for_subprocess(broker):
-            print("broker not terminated")
-            if rc == 0: rc=1
-        (stdo, stde) = broker.communicate()
-        if rc:
-            print(stde.decode('utf-8'))
-            exit(rc)
-
 
 do_test()

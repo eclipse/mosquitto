@@ -73,8 +73,6 @@ foreach(BINARY ${BINARIES})
     add_executable(${BINARY}
         ${BINARY}.c
     )
-    set_property(TARGET ${BINARY}
-        PROPERTY SUFFIX .test
-    )
     target_link_libraries(${BINARY} PRIVATE common-options libmosquitto)
+    set_property(TARGET ${BINARY} PROPERTY SUFFIX .exe)
 endforeach()

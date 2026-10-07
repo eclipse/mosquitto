@@ -1,4 +1,5 @@
-The following packages can be used to add features to mosquitto.
+The following packages can be used to add features to mosquitto. See below for
+platform specific package lists.
 
 * cJSON - required
 * c-ares (libc-ares-dev on Debian based systems) - optional, enable with
@@ -36,3 +37,24 @@ cases, and that the plain makefiles will be removed in version 3.0.
 If you have any questions, problems or suggestions (particularly related to
 installing on a more unusual device) then please get in touch using the details
 in README.md.
+
+## Platform specific dependencies
+
+### Alpine Linux
+
+apk add cjson-dev cmake cunit-dev docbook-xsl g++ gcc gtest-dev libmicrohttpd-dev \
+    libxslt make musl-dev openssl-dev sqlite-dev
+
+### Fedora Linux
+
+dnf install CUnit-devel cjson-devel cmake docbook-style-xsl gcc gcc-g++ gmock-devel \
+    gtest-devel libmicrohttpd-devel libxslt openssl-devel openssl-devel-engine sqlite-devel
+
+### FreeBSD
+
+pkg install cunit gmake googletest libcjson libmicrohttpd libxslt python3 sqlite3 uthash
+
+### Ubuntu Linux
+
+apt install cmake docbook-xsl gcc g++ libcjson-dev libcunit1-dev libeditreadline-dev \
+    libgmock-dev libgtest-dev libmicrohttpd-dev libsqlite3-dev libssl-dev xsltproc

@@ -15,6 +15,8 @@ if test_dir not in sys.path:
 
 ssl_dir = test_dir / "ssl"
 
+import mosq_paths
 import mosq_test
+import mqtt_packets
 import subprocess
 import os

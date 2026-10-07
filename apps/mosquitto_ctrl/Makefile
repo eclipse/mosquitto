@@ -55,11 +55,7 @@ OBJS_EXTERNAL= \
 
 EXAMPLE_OBJS= example.o
 
-ifeq ($(WITH_TLS),yes)
 TARGET:=mosquitto_ctrl mosquitto_ctrl_example.so
-else
-TARGET:=
-endif
 
 all : ${TARGET}
 

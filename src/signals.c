@@ -190,7 +190,7 @@ DWORD WINAPI SigThreadProc(void *data)
 
 	for(int i=0; i<MOSQ_MAX_EVTS; i++){
 		sprintf_s(evt_name, MAX_PATH, "mosq%d_%s", pid, evt_names[i]);
-		evt[i] = CreateEvent(NULL, TRUE, FALSE, evt_name);
+		evt[i] = CreateEvent(NULL, FALSE, FALSE, evt_name);
 	}
 
 	while(g_run){

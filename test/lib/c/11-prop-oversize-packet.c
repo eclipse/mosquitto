@@ -27,12 +27,12 @@ static void on_connect(struct mosquitto *mosq, void *obj, int rc)
 			exit(1);
 		}
 
-		rc = mosquitto_publish(mosq, &sent_mid, "pub/test", strlen("0123456789012345678"), "0123456789012345678", 0, false);
+		rc = mosquitto_publish(mosq, &sent_mid, "pub/test", strlen("123456789012345678"), "123456789012345678", 0, false);
 		if(rc != MOSQ_ERR_OVERSIZE_PACKET){
 			printf("Fail on publish 1\n");
 			exit(1);
 		}
-		rc = mosquitto_publish(mosq, &sent_mid, "pub/test", strlen("012345678901234567"), "012345678901234567", 0, false);
+		rc = mosquitto_publish(mosq, &sent_mid, "pub/test", strlen("12345678901234567"), "12345678901234567", 0, false);
 		if(rc != MOSQ_ERR_SUCCESS){
 			printf("Fail on publish 2\n");
 			exit(1);

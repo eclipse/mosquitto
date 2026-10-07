@@ -189,29 +189,38 @@ void bridge__start_all(void)
 
 static int bridge__set_tcp_keepalive(struct mosquitto *context)
 {
-	unsigned int idle = context->bridge->tcp_keepalive_idle;
-	unsigned int interval = context->bridge->tcp_keepalive_interval;
-	unsigned int counter = context->bridge->tcp_keepalive_counter;
 	unsigned int enabled = 1;
 	bool ret;
 
-	if(idle == 0 || interval == 0 || counter == 0){
+	if(context->bridge->tcp_keepalive_idle == 0
+			|| context->bridge->tcp_keepalive_interval == 0
+			|| context->bridge->tcp_keepalive_counter == 0){
+
 		return MOSQ_ERR_SUCCESS;
 	}
 
 #ifdef WIN32
-	ret = setsockopt(context->sock, SOL_SOCKET, SO_KEEPALIVE, (char *)&enabled, sizeof(enabled)) ||
-			setsockopt(context->sock, IPPROTO_TCP, TCP_KEEPIDLE, (char *)&idle, sizeof(idle)) ||
-			setsockopt(context->sock, IPPROTO_TCP, TCP_KEEPINTVL, (char *)&interval, sizeof(interval)) ||
-			setsockopt(context->sock, IPPROTO_TCP, TCP_KEEPCNT, (char *)&counter, sizeof(counter));
+#  define SETSOCKOPT_TYPE char *
 #else
-	ret = setsockopt(context->sock, SOL_SOCKET, SO_KEEPALIVE, (const void *)&enabled, sizeof(enabled)) ||
-#ifndef __APPLE__
-			setsockopt(context->sock, IPPROTO_TCP, TCP_KEEPIDLE, (const void *)&idle, sizeof(idle)) ||
+#  define SETSOCKOPT_TYPE const void *
 #endif
-			setsockopt(context->sock, IPPROTO_TCP, TCP_KEEPINTVL, (const void *)&interval, sizeof(interval)) ||
-			setsockopt(context->sock, IPPROTO_TCP, TCP_KEEPCNT, (const void *)&counter, sizeof(counter));
+
+	ret = setsockopt(context->sock, SOL_SOCKET, SO_KEEPALIVE, (SETSOCKOPT_TYPE)&enabled, sizeof(enabled));
+
+#ifdef TCP_KEEPIDLE
+	ret = ret || setsockopt(context->sock, IPPROTO_TCP, TCP_KEEPIDLE,
+			(SETSOCKOPT_TYPE)&context->bridge->tcp_keepalive_idle, sizeof(context->bridge->tcp_keepalive_idle));
 #endif
+#ifdef TCP_KEEPINTVL
+	ret = ret || setsockopt(context->sock, IPPROTO_TCP, TCP_KEEPINTVL,
+			(SETSOCKOPT_TYPE)&context->bridge->tcp_keepalive_interval, sizeof(context->bridge->tcp_keepalive_interval));
+#endif
+#ifdef TCP_KEEPCNT
+	ret = ret || setsockopt(context->sock, IPPROTO_TCP, TCP_KEEPCNT,
+			(SETSOCKOPT_TYPE)&context->bridge->tcp_keepalive_counter, sizeof(context->bridge->tcp_keepalive_counter));
+#endif
+
+#undef SETSOCKOPT_TYPE
 
 	if(ret){
 		return MOSQ_ERR_UNKNOWN;
@@ -854,8 +863,10 @@ void bridge__cleanup(struct mosquitto *context)
 	mosquitto_FREE(context->bridge->local_clientid);
 	mosquitto_FREE(context->bridge->local_username);
 	mosquitto_FREE(context->bridge->local_password);
+#ifdef WITH_TLS
 	mosquitto_FREE(context->bridge->tls_certfile);
 	mosquitto_FREE(context->bridge->tls_keyfile);
+#endif
 
 	if(context->bridge->remote_clientid != context->id){
 		mosquitto_FREE(context->bridge->remote_clientid);

@@ -4,12 +4,14 @@ from mosq_test_helper import *
 import json
 import shutil
 
+mosq_test.require_features(["WITH_CONTROL", "WITH_PLUGINS", "WITH_PLUGIN_DYNAMIC_SECURITY", "WITH_TLS"])
+
 def write_config(filename, port):
     with open(filename, 'w') as f:
         f.write("listener %d\n" % (port))
         f.write("allow_anonymous false\n")
-        f.write(f"plugin {mosq_test.get_build_root()}/plugins/dynamic-security/mosquitto_dynamic_security.so\n")
-        f.write("plugin_opt_config_file %d/dynamic-security.json\n" % (port))
+        f.write(f"plugin {mosq_paths.plugin_dynamic_security}\n")
+        f.write(f"plugin_opt_config_file {Path(str(port), 'dynamic-security.json')}\n")
 
 
 port = mosq_test.get_port()
@@ -32,26 +34,26 @@ user_pw = data[1].split(" ")[1].strip()
 
 try:
     # Admin user
-    connect_packet = mosq_test.gen_connect("ctrl-test", username="admin", password=admin_pw)
-    connack_packet = mosq_test.gen_connack(rc=0)
+    connect_packet = mqtt_packets.gen_connect("ctrl-test", username="admin", password=admin_pw)
+    connack_packet = mqtt_packets.gen_connack(rc=0)
     sock = mosq_test.do_client_connect(connect_packet, connack_packet, timeout=5, port=port)
 
     # Subscribe should be allowed
     mid = 2
-    subscribe_packet = mosq_test.gen_subscribe(mid, "$CONTROL/dynamic-security/#", 1)
-    suback_packet = mosq_test.gen_suback(mid, 1)
+    subscribe_packet = mqtt_packets.gen_subscribe(mid, "$CONTROL/dynamic-security/#", 1)
+    suback_packet = mqtt_packets.gen_suback(mid, 1)
     mosq_test.do_send_receive(sock, subscribe_packet, suback_packet, "admin suback")
     sock.close()
 
     # Basic user
-    connect_packet = mosq_test.gen_connect("ctrl-test", username="democlient", password=user_pw)
-    connack_packet = mosq_test.gen_connack(rc=0)
+    connect_packet = mqtt_packets.gen_connect("ctrl-test", username="democlient", password=user_pw)
+    connack_packet = mqtt_packets.gen_connack(rc=0)
     sock = mosq_test.do_client_connect(connect_packet, connack_packet, timeout=5, port=port)
 
     # Subscribe should not be allowed
     mid = 2
-    subscribe_packet = mosq_test.gen_subscribe(mid, "$CONTROL/dynamic-security/#", 1)
-    suback_packet = mosq_test.gen_suback(mid, 128)
+    subscribe_packet = mqtt_packets.gen_subscribe(mid, "$CONTROL/dynamic-security/#", 1)
+    suback_packet = mqtt_packets.gen_suback(mid, 128)
     mosq_test.do_send_receive(sock, subscribe_packet, suback_packet, "user suback")
     sock.close()
 
@@ -69,11 +71,10 @@ finally:
     except FileNotFoundError:
         pass
     os.rmdir(f"{port}")
-    broker.terminate()
+    mosq_test.terminate_broker(broker)
     broker.wait()
-    (stdo, stde) = broker.communicate()
     if rc:
-        print(stde.decode('utf-8'))
+        print(mosq_test.broker_log(broker))
 
 
 exit(rc)

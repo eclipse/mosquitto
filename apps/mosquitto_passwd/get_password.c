@@ -61,14 +61,19 @@ static int gets_quiet(char *s, int len)
 
 	memset(s, 0, len);
 	h  = GetStdHandle(STD_INPUT_HANDLE);
-	GetConsoleMode(h, &con_orig);
-	con_quiet = con_orig;
-	con_quiet &= ~ENABLE_ECHO_INPUT;
-	con_quiet |= ENABLE_LINE_INPUT;
-	SetConsoleMode(h, con_quiet);
-	if(!ReadConsole(h, s, len, &read_len, NULL)){
+	if(GetConsoleMode(h, &con_orig)){
+		con_quiet = con_orig;
+		con_quiet &= ~ENABLE_ECHO_INPUT;
+		con_quiet |= ENABLE_LINE_INPUT;
+		SetConsoleMode(h, con_quiet);
+		if(!ReadConsole(h, s, len, &read_len, NULL)){
+			SetConsoleMode(h, con_orig);
+			fprintf(stderr, "ReadConsole\n");
+			return 1;
+		}
 		SetConsoleMode(h, con_orig);
-		return 1;
+	}else{
+		fgets(s, len, stdin);
 	}
 	while(s[strlen(s)-1] == 10 || s[strlen(s)-1] == 13){
 		s[strlen(s)-1] = 0;
@@ -76,8 +81,6 @@ static int gets_quiet(char *s, int len)
 	if(strlen(s) == 0){
 		return 1;
 	}
-	SetConsoleMode(h, con_orig);
-
 	return 0;
 #else
 	struct termios ts_quiet;

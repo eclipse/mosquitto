@@ -5,10 +5,10 @@
 from mosq_test_helper import *
 import json
 
-def do_test(proto_ver):
-    rc = 1
+mosq_test.require_features(["WITH_BROKER"])
 
-    port = mosq_test.get_port()
+def do_test(port, proto_ver):
+    rc = 1
 
     if proto_ver == 5:
         V = 'mqttv5'
@@ -21,7 +21,7 @@ def do_test(proto_ver):
         'XDG_CONFIG_HOME':'/tmp/missing'
     }
     env = mosq_test.env_add_ld_library_path(env)
-    cmd = [f'{mosq_test.get_build_root()}/client/mosquitto_sub',
+    cmd = [mosq_paths.mosquitto_sub,
             '-p', str(port),
             '-q', '1',
             '-F', '%j',
@@ -30,48 +30,37 @@ def do_test(proto_ver):
             '-C', '1'
             ]
 
-    publish_packet = mosq_test.gen_publish("02/sub/format/json/qos1/test", mid=1, qos=1, payload="message", proto_ver=proto_ver)
-
-    broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port)
+    publish_packet = mqtt_packets.gen_publish("02/sub/format/json/qos1/test", mid=1, qos=1, payload="message", proto_ver=proto_ver)
 
     expected = {"tst": "", "topic": "02/sub/format/json/qos1/test", "qos": 1, "mid": 1, "retain": 0, "payloadlen": 7, "payload": "message"}
 
-    try:
-        sock = mosq_test.pub_helper(port=port, proto_ver=proto_ver)
+    sock = mosq_test.pub_helper(port=port, proto_ver=proto_ver)
 
-        sub = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
-        time.sleep(0.1)
-        sock.send(publish_packet)
-        sub_terminate_rc = 0
-        if mosq_test.wait_for_subprocess(sub):
-            print("sub not terminated")
-            sub_terminate_rc = 1
-        (stdo, stde) = sub.communicate()
-        j = json.loads(stdo.decode('utf-8'))
-        j['tst'] = ""
+    sub = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+    time.sleep(0.1)
+    sock.send(publish_packet)
+    sub_terminate_rc = 0
+    if mosq_test.wait_for_subprocess(sub):
+        print("sub not terminated")
+        sub_terminate_rc = 1
+    (stdo, stde) = sub.communicate()
+    j = json.loads(stdo.decode('utf-8'))
+    j['tst'] = ""
+    sock.close()
 
-        if j == expected:
-            rc = sub_terminate_rc
-        else:
-            print(json.dumps(expected))
-            print(json.dumps(j))
-        sock.close()
-    except mosq_test.TestError:
-        pass
-    except Exception as e:
-        print(e)
-    finally:
-        broker.terminate()
-        if mosq_test.wait_for_subprocess(broker):
-            print("broker not terminated")
-            if rc == 0: rc=1
-        (stdo, stde) = broker.communicate()
-        if rc:
-            print(stde.decode('utf-8'))
-            print("proto_ver=%d" % (proto_ver))
-            exit(rc)
+    if j == expected:
+        rc = sub_terminate_rc
+    else:
+        print(json.dumps(expected))
+        print(json.dumps(j))
+    if rc:
+        raise ValueError(rc)
 
 
-do_test(proto_ver=3)
-do_test(proto_ver=4)
-do_test(proto_ver=5)
+if __name__ == '__main__':
+    port = mosq_test.get_port()
+    broker = MosquittoBroker(port=port)
+    with broker:
+        do_test(port, proto_ver=3)
+        do_test(port, proto_ver=4)
+        do_test(port, proto_ver=5)

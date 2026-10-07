@@ -22,6 +22,7 @@ Contributors:
 
 #include <assert.h>
 #include <errno.h>
+#include <limits.h>
 #include <microhttpd.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -210,8 +211,13 @@ static enum MHD_Result http_api__process_listeners(struct MHD_Connection *connec
 				break;
 		}
 
+#ifdef WITH_TLS
 		cJSON_AddBoolToObject(j_listener, "tls", listener->certfile && listener->keyfile);
 		cJSON_AddBoolToObject(j_listener, "mtls", listener->require_certificate);
+#else
+		cJSON_AddBoolToObject(j_listener, "tls", false);
+		cJSON_AddBoolToObject(j_listener, "mtls", false);
+#endif
 		if(listener->security_options->allow_anonymous == -1){
 			cJSON_AddBoolToObject(j_listener, "allow_anonymous", db.config->security_options.allow_anonymous);
 		}else{
@@ -462,6 +468,7 @@ int http_api__start(struct mosquitto__listener *listener)
 	bind_address = listener->host;
 	port = listener->port;
 
+#ifdef WITH_TLS
 	if(listener->certfile && listener->keyfile){
 		if(mosquitto_read_file(listener->certfile, false, &x509_cert, NULL)){
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to load server certificate \"%s\". Check certfile.", listener->certfile);
@@ -474,6 +481,7 @@ int http_api__start(struct mosquitto__listener *listener)
 		}
 		flags |= MHD_USE_TLS;
 	}
+#endif
 
 	if(bind_address){
 		char service[10];
@@ -489,7 +497,7 @@ int http_api__start(struct mosquitto__listener *listener)
 
 		int rc = getaddrinfo(bind_address, service, &hints, &ainfo);
 		if(rc){
-			log__printf(NULL, MOSQ_LOG_ERR, "Unable to start http api listener.");
+			log__printf(NULL, MOSQ_LOG_ERR, "Unable to start http api listener (%s).", strerror(errno));
 			mosquitto_FREE(x509_cert);
 			mosquitto_FREE(x509_key);
 			return MOSQ_ERR_ERRNO;

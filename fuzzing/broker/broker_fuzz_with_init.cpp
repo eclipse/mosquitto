@@ -130,6 +130,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	pthread_t thread;
 	static bool initialised = false;
 
+	mallocfailwrap_init(data, size);
+
 	if(!initialised){
 		initialised = initialise(&thread);
 	}

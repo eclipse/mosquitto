@@ -149,14 +149,14 @@ int dynsec__process_get_default_acl_access(struct dynsec__data *data, struct mos
 		goto internal_error;
 	}
 
-	cJSON_AddItemToArray(cmd->j_responses, tree);
-
 	if(cmd->correlation_data){
 		jtmp = cJSON_AddStringToObject(tree, "correlationData", cmd->correlation_data);
 		if(jtmp == NULL){
 			goto internal_error;
 		}
 	}
+
+	cJSON_AddItemToArray(cmd->j_responses, tree);
 
 	return MOSQ_ERR_SUCCESS;
 

@@ -1,7 +1,10 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <?xml-stylesheet type="text/xsl" href="manpage.xsl"?>
 
-<refentry xml:id="mosquitto.conf" xmlns:xlink="http://www.w3.org/1999/xlink">
+<refentry xml:id="mosquitto.conf"
+		xmlns:xlink="http://www.w3.org/1999/xlink"
+		xmlns:xi="http://www.w3.org/2001/XInclude">
+
 	<refmeta>
 		<refentrytitle>mosquitto.conf</refentrytitle>
 		<manvolnum>5</manvolnum>
@@ -416,13 +419,15 @@
 			<varlistentry>
 				<term><option>autosave_interval</option> <replaceable>seconds</replaceable></term>
 				<listitem>
-					<para>The number of seconds that mosquitto will wait
+					<para>
+						The number of seconds that mosquitto will wait
 						between each time it saves the in-memory database to
 						disk. If set to 0, the in-memory database will only be
 						saved when mosquitto exits or when receiving the
 						SIGUSR1 signal. Note that this setting only has an
-						effect if persistence is enabled. Defaults to 1800
-						seconds (30 minutes).</para>
+						effect if the built-in persistence is enabled. Defaults
+						to 1800 seconds (30 minutes).
+					</para>
 
 					<para>This option applies globally.</para>
 
@@ -442,6 +447,7 @@
 						<option>autosave_interval</option> as a time in
 						seconds.</para>
 
+					<para>Applies to built-in persistence only.</para>
 					<para>This option applies globally.</para>
 
 					<para>Reloaded on reload signal.</para>
@@ -1000,18 +1006,25 @@ log_timestamp_format %Y-%m-%dT%H:%M:%S
 			<varlistentry>
 				<term><option>persistence</option> [ true | false ]</term>
 				<listitem>
-					<para>If <replaceable>true</replaceable>, connection,
-						subscription and message data will be written to the
-						disk in mosquitto.db at the location dictated by
-						persistence_location. When mosquitto is restarted, it
-						will reload the information stored in mosquitto.db. The
-						data will be written to disk when mosquitto closes and
-						also at periodic intervals as defined by
-						autosave_interval. Writing of the persistence database
-						may also be forced by sending mosquitto the SIGUSR1
-						signal. If <replaceable>false</replaceable>, the data
-						will be stored in memory only. Defaults to
-						<replaceable>false</replaceable>.</para>
+					<para>
+						If <replaceable>true</replaceable>, then built-in persistence
+						is enabled. It is recommended that a plugin based persistence
+						is used instead.
+					</para>
+
+					<para>
+						If enabled, connection, subscription and message data
+						will be written to disk in mosquitto.db at the location
+						dictated by persistence_location. When mosquitto is
+						restarted, it will reload the information stored in
+						mosquitto.db. The data will be written to disk when
+						mosquitto closes and also at periodic intervals as
+						defined by autosave_interval. Writing of the persistence
+						database may also be forced by sending mosquitto the
+						SIGUSR1 signal. If <replaceable>false</replaceable>,
+						the data will be stored in memory only. Defaults to
+						<replaceable>false</replaceable>.
+					</para>
 					<para>The persistence file may change its format in a new
 						version. The broker can currently read all old formats,
 						but will only save in the latest format. It should always
@@ -1028,8 +1041,10 @@ log_timestamp_format %Y-%m-%dT%H:%M:%S
 			<varlistentry>
 				<term><option>persistence_file</option> <replaceable>file name</replaceable></term>
 				<listitem>
-					<para>The filename to use for the persistent database.
-						Defaults to mosquitto.db.</para>
+					<para>
+						The filename to use for the built-in persistent database.
+						Defaults to mosquitto.db.
+					</para>
 
 					<para>This option applies globally.</para>
 
@@ -1039,8 +1054,12 @@ log_timestamp_format %Y-%m-%dT%H:%M:%S
 			<varlistentry>
 				<term><option>persistence_location</option> <replaceable>path</replaceable></term>
 				<listitem>
-					<para>The path where the persistence database should be
-						stored. If not given, then the current directory is used.</para>
+					<para>
+						The path where plugins should store any persistence
+						data, and the path where the built-in persistence will
+						store its data. If not given, then the current directory
+						is used.
+					</para>
 
 					<para>This option applies globally.</para>
 
@@ -2775,7 +2794,7 @@ topic clients/total in 0 test/mosquitto/org/ $SYS/broker/
 		<para>mosquitto.conf</para>
 	</refsect1>
 
-	<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/section-bugs.xml" />
+	<xi:include href="common/section-bugs.xml" />
 
 	<refsect1>
 		<title>See Also</title>

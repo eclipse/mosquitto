@@ -181,6 +181,11 @@ int retain__store(const char *topic, struct mosquitto__base_msg *base_msg, char 
 #endif
 
 	if(retainhier->retained){
+		if(retainhier->retained == base_msg){
+			/* This may occur if multiple persistence providers are used */
+			return MOSQ_ERR_SUCCESS;
+		}
+
 		if(persist && retainhier->retained->data.topic[0] != '$' && base_msg->data.payloadlen == 0){
 			/* Only delete if another retained message isn't replacing this one */
 			plugin_persist__handle_retain_msg_delete(retainhier->retained);

@@ -1,6 +1,10 @@
+<!DOCTYPE varlistentry [
+	<!ENTITY from-version21 SYSTEM "version-2.1.xml">
+]>
 <varlistentry>
 	<term><option>--no-tls</option></term>
 	<listitem>
+		&from-version21;
 		<para>
 			Disable all use of TLS encryption. This is useful if you specify TLS
 			options in a configuration file but want to disable those options.

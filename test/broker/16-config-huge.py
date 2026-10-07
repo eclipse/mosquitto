@@ -5,8 +5,8 @@
 # options being set.
 
 from mosq_test_helper import *
+import os
 import platform
-import signal
 
 def write_acl(filename):
     with open(filename, 'w') as f:
@@ -50,8 +50,9 @@ def write_config(filename, ports, per_listener_settings, plugver, acl_file):
         f.write("set_tcp_nodelay true\n")
         f.write("sys_interval 60\n")
         f.write("upgrade_outgoing_qos true\n")
-        f.write("websockets_log_level 255\n")
-        f.write("websockets_headers_size 4096\n")
+        if os.environ.get('WITH_WEBSOCKETS') != "no":
+            f.write("websockets_log_level 255\n")
+            f.write("websockets_headers_size 4096\n")
 
         # Listener and global
         if not per_listener_settings:
@@ -59,58 +60,59 @@ def write_config(filename, ports, per_listener_settings, plugver, acl_file):
             f.write("auto_id_prefix pre\n")
             f.write(f"acl_file {acl_file}\n")
 
-        # Bridge options
-        f.write("connection bridge\n")
-        f.write(f"address 127.0.0.1:{ports[2]} 127.0.0.1:{ports[3]}\n")
-        f.write("bridge_alpn alpn\n")
-        f.write("bridge_attempt_unsubscribe false\n")
-        f.write("bridge_bind_address 127.0.0.1\n")
-        f.write(f"bridge_cafile {ssl_dir}/all-ca.crt\n")
-        f.write("bridge_capath asasdf\n")
-        f.write(f"bridge_certfile {ssl_dir}/client.crt\n")
-        f.write(f"bridge_keyfile {ssl_dir}/client.key\n")
-        f.write("bridge_ciphers ECDHE-ECDSA-AES256-GCM-SHA384\n")
-        f.write("bridge_ciphers_tls1.3 TLS_AES_256_GCM_SHA384\n")
-        #f.write("bridge_identity identity\n")
-        f.write("bridge_insecure true\n")
-        f.write("bridge_max_packet_size 10000\n")
-        f.write("bridge_max_topic_alias 1000\n")
-        f.write("bridge_outgoing_retain false\n")
-        f.write("bridge_protocol_version mqttv50\n")
-        #f.write("bridge_psk\n")
-        f.write("bridge_receive_maximum 100\n")
-        #f.write("bridge_reload_type immediate\n")
-        f.write("bridge_reload_type lazy\n")
-        f.write("bridge_require_ocsp false\n")
-        f.write("bridge_session_expiry_interval 63\n")
-        f.write("bridge_tcp_keepalive 100 100 100\n")
-        f.write("bridge_tcp_user_timeout 60\n")
-        f.write("bridge_tls_use_os_certs true\n")
-        f.write("bridge_tls_version tlsv1.2\n")
-        f.write("local_cleansession true\n")
-        f.write("local_clientid blci\n")
-        #f.write("local_username username\n")
-        #f.write("local_password password\n")
-        f.write("connection_messages true\n")
-        f.write("idle_timeout 60\n")
-        f.write("keepalive_interval 40\n")
-        f.write("notification_topic notifications\n")
-        f.write("notifications false\n")
-        f.write("notifications_local_only true\n")
-        f.write("remote_clientid brci\n")
-        f.write("remote_username username\n")
-        f.write("remote_password password\n")
-        f.write("restart_timeout 60\n")
-        f.write("round_robin false\n")
-        f.write("start_type lazy\n")
-        f.write("threshold 100\n")
-        f.write("try_private false\n")
-        f.write("topic bridge both 1\n")
+        if mosq_test.check_features(["INC_BRIDGE_SUPPORT"]):
+            # Bridge options
+            f.write("connection bridge\n")
+            f.write(f"address 127.0.0.1:{ports[2]} 127.0.0.1:{ports[3]}\n")
+            f.write("bridge_alpn alpn\n")
+            f.write("bridge_attempt_unsubscribe false\n")
+            f.write("bridge_bind_address 127.0.0.1\n")
+            f.write(f"bridge_cafile {ssl_dir}/all-ca.crt\n")
+            f.write("bridge_capath asasdf\n")
+            f.write(f"bridge_certfile {ssl_dir}/client.crt\n")
+            f.write(f"bridge_keyfile {ssl_dir}/client.key\n")
+            f.write("bridge_ciphers ECDHE-ECDSA-AES256-GCM-SHA384\n")
+            f.write("bridge_ciphers_tls1.3 TLS_AES_256_GCM_SHA384\n")
+            #f.write("bridge_identity identity\n")
+            f.write("bridge_insecure true\n")
+            f.write("bridge_max_packet_size 10000\n")
+            f.write("bridge_max_topic_alias 1000\n")
+            f.write("bridge_outgoing_retain false\n")
+            f.write("bridge_protocol_version mqttv50\n")
+            #f.write("bridge_psk\n")
+            f.write("bridge_receive_maximum 100\n")
+            #f.write("bridge_reload_type immediate\n")
+            f.write("bridge_reload_type lazy\n")
+            f.write("bridge_require_ocsp false\n")
+            f.write("bridge_session_expiry_interval 63\n")
+            f.write("bridge_tcp_keepalive 100 100 100\n")
+            f.write("bridge_tcp_user_timeout 60\n")
+            f.write("bridge_tls_use_os_certs true\n")
+            f.write("bridge_tls_version tlsv1.2\n")
+            f.write("local_cleansession true\n")
+            f.write("local_clientid blci\n")
+            #f.write("local_username username\n")
+            #f.write("local_password password\n")
+            f.write("connection_messages true\n")
+            f.write("idle_timeout 60\n")
+            f.write("keepalive_interval 40\n")
+            f.write("notification_topic notifications\n")
+            f.write("notifications false\n")
+            f.write("notifications_local_only true\n")
+            f.write("remote_clientid brci\n")
+            f.write("remote_username username\n")
+            f.write("remote_password password\n")
+            f.write("restart_timeout 60\n")
+            f.write("round_robin false\n")
+            f.write("start_type lazy\n")
+            f.write("threshold 100\n")
+            f.write("try_private false\n")
+            f.write("topic bridge both 1\n")
 
         # Default listener
 
         # Listeners
-        f.write("plugin_load auth c/auth_plugin_v%d.so\n" % (plugver))
+        f.write(f"plugin_load auth {mosq_paths.test_plugin(f'auth_plugin_v{plugver}')}\n")
         f.write("plugin_opt_test true\n")
         f.write("auth_plugin_deny_special_chars false\n")
 
@@ -126,23 +128,27 @@ def write_config(filename, ports, per_listener_settings, plugver, acl_file):
         f.write("accept_protocol_versions 3,4,5\n")
         if platform.system() == "Darwin":
             f.write("bind_interface lo0\n")
+        elif platform.system() == "Windows":
+            # bind_interface not supported
+            pass
         else:
             f.write("bind_interface lo\n")
-        f.write(f"cafile {ssl_dir}/all-ca.crt\n")
-        f.write(f"certfile {ssl_dir}/server.crt\n")
+        f.write(f"cafile {ssl_dir / 'all-ca.crt'}\n")
+        f.write(f"certfile {ssl_dir / 'server.crt'}\n")
         f.write(f"keyfile {ssl_dir}/server.key\n")
         #f.write("capath path\n")
         f.write("ciphers ECDHE-ECDSA-AES256-GCM-SHA384\n")
         f.write("ciphers_tls1.3 TLS_AES_256_GCM_SHA384\n")
         f.write("clientid_prefixes client\n")
-        f.write(f"crlfile {ssl_dir}/crl.pem\n")
+        f.write(f"crlfile {ssl_dir / 'crl.pem'}\n")
         #f.write("dhparamfile file\n")
         f.write("disable_client_cert_date_checks true\n")
         f.write("http_dir .\n")
         f.write("max_connections 10\n")
         f.write("max_qos 1\n")
         f.write("mount_point mount/\n")
-        f.write("protocol websockets\n")
+        if mosq_test.check_features(["WITH_WEBSOCKETS"]):
+            f.write("protocol websockets\n")
         f.write("require_certificate true\n")
         f.write("socket_domain ipv4\n")
         f.write("tls_version tlsv1.2\n")
@@ -151,7 +157,8 @@ def write_config(filename, ports, per_listener_settings, plugver, acl_file):
         f.write("use_identity_as_username true\n")
         f.write("use_subject_as_username true\n")
         f.write("use_username_as_clientid true\n")
-        f.write("websockets_origin localhost\n")
+        if mosq_test.check_features(["WITH_WEBSOCKETS"]):
+            f.write("websockets_origin localhost\n")
         if per_listener_settings:
             f.write("allow_zero_length_clientid false\n")
             f.write("auto_id_prefix pre\n")
@@ -160,8 +167,8 @@ def write_config(filename, ports, per_listener_settings, plugver, acl_file):
         f.write("port %d\n" % (ports[3]))
 
 def client_check(username, password, rc, port):
-    connect_packet = mosq_test.gen_connect(client_id="client-id", username=username, password=password)
-    connack_packet = mosq_test.gen_connack(rc=rc)
+    connect_packet = mqtt_packets.gen_connect(client_id="client-id", username=username, password=password)
+    connack_packet = mqtt_packets.gen_connack(rc=rc)
     sock = mosq_test.do_client_connect(connect_packet, connack_packet, port=port)
     sock.close()
 
@@ -186,17 +193,17 @@ def do_test(per_listener_settings):
         client_check(None, None, 5, ports[0]) # Should fail
         client_check(None, None, 5, ports[1]) # Should fail
 
-        broker.send_signal(signal.SIGHUP)
+        mosq_test.reload_broker(broker)
         client_check("test-username", "cnwTICONIURW", 0, ports[0]) # Should succeed
 
-        broker.send_signal(signal.SIGHUP)
+        mosq_test.reload_broker(broker)
         client_check("test-username", "cnwTICONIURW", 0, ports[0]) # Should succeed
 
         rc = 0
     except Exception as err:
         print(err)
     finally:
-        broker.terminate()
+        mosq_test.terminate_broker(broker)
         broker.wait()
         os.remove(conf_file)
         os.remove(acl_file)

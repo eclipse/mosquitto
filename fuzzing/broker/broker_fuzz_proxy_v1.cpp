@@ -20,12 +20,13 @@ Contributors:
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <mallocfail/wrap.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
 static const uint8_t *packet_data = NULL;
 static int packet_data_pos = 0;
-static int packet_data_remaining = 0;
+static size_t packet_data_remaining = 0;
 
 extern "C" {
 #include "mosquitto_broker_internal.h"
@@ -33,15 +34,17 @@ extern "C" {
 
 ssize_t net__read(struct mosquitto *mosq, void *buf, size_t count)
 {
-	int res = count < packet_data_remaining?count:packet_data_remaining;
+	size_t res = count < packet_data_remaining?count:packet_data_remaining;
+	UNUSED(mosq);
 	memcpy(buf, &packet_data[packet_data_pos], res);
 	packet_data_remaining -= res;
-	return res;
+	return (ssize_t)res;
 }
 
 
 int net__socket_get_address(mosq_sock_t sock, char *buf, size_t len, uint16_t *remote_port)
 {
+	UNUSED(sock);
 	snprintf(buf, len, "localhost");
 	*remote_port = 1883;
 	return MOSQ_ERR_SUCCESS;
@@ -58,6 +61,10 @@ int http__context_init(struct mosquitto *context)
 
 int log__printf(struct mosquitto *mosq, unsigned int priority, const char *fmt, ...)
 {
+	UNUSED(mosq);
+	UNUSED(priority);
+	UNUSED(fmt);
+
 	return MOSQ_ERR_SUCCESS;
 }
 
@@ -68,6 +75,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
 	struct mosquitto context {};
 	struct mosquitto__listener listener {};
+
+	mallocfailwrap_init(data, size);
 
 	packet_data = data;
 	packet_data_pos = 0;

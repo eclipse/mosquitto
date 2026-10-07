@@ -1,4 +1,4 @@
-name: Windows build
+name: Windows
 
 on:
   workflow_dispatch:
@@ -17,49 +17,112 @@ on:
       - develop
       - release/*
 
+permissions:
+  contents: read
+
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
 
+
 jobs:
-  mosquitto:
+  build:
     runs-on: windows-2022
+
+    strategy:
+      matrix:
+        arch: [x86, x64]
+        include:
+          - arch: x86
+            buildloc: build
+            nsis: mosquitto.nsi
+            platform: WIN32
+            programfiles: "Program Files (x86)"
+            triplet: x86-windows
+          - arch: x64
+            buildloc: build64
+            nsis: mosquitto64.nsi
+            platform: x64
+            programfiles: "Program Files"
+            triplet: x64-windows-release
 
     steps:
       - uses: actions/checkout@v6
 
-      - name: pin cmake to 3.x series
-        uses: jwlawson/actions-setup-cmake@09fd9b0fb3b239b4b68d9256cd65adf8d6b91da0
+      - name: Configure MSVC
+        uses: ilammy/msvc-dev-cmd@v1
         with:
-          cmake-version: '3.31.6'
+          arch: ${{ matrix.arch }}
+
+      - name: Install sccache
+        run: |
+          choco install sccache -y
+          echo "SCCACHE_DIR=${{ github.workspace }}\sccache" >> $env:GITHUB_ENV
+
+      - name: Restore sccache
+        uses: actions/cache@v5
+        with:
+          path: ${{ github.workspace }}\sccache
+          key: ${{ runner.os }}-${{ matrix.arch }}-windows-sccache
+
+      - name: Start sccache
+        run: sccache --start-server
 
       - name: vcpkg build
         uses: johnwason/vcpkg-action@v7
         id: vcpkg
         with:
           manifest-dir: ${{ github.workspace }}
-          triplet: x64-windows-release
+          triplet: ${{ matrix.triplet }}
           token: ${{ github.token }}
+          cache-key: ${{ matrix.arch }}
+          vcpkg-subdir: vcpkg-${{ matrix.arch }}
 
       - name: Configure CMake
-        run: cmake -B ${{github.workspace}}/build64 -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DWITH_WEBSOCKETS=ON -DWITH_TESTS=OFF -DCMAKE_GENERATOR_PLATFORM=x64 -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-release -DVCPKG_MANIFEST_MODE=ON -DWITH_HTTP_API=ON -DHTTP_API_DIR="C:\\Program Files\\Mosquitto\\dashboard"
+        run: |
+          cmake `
+            -G "Ninja Multi-Config" `
+            -B ${{github.workspace}}/${{ matrix.buildloc }} `
+            -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} `
+            -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg-${{ matrix.arch }}/scripts/buildsystems/vcpkg.cmake `
+            -DHTTP_API_DIR="C:\\${{ matrix.programfiles }}\\Mosquitto\\dashboard" `
+            -DVCPKG_MANIFEST_MODE=ON `
+            -DVCPKG_TARGET_TRIPLET=${{ matrix.triplet }} `
+            -DWITH_HTTP_API=ON `
+            -DWITH_WEBSOCKETS=ON `
+            -DCMAKE_C_COMPILER_LAUNCHER=sccache `
+            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache `
+            -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT=Embedded
+
       - name: Build
-        run: cmake --build ${{github.workspace}}/build64 --config ${{env.BUILD_TYPE}}
+        run: cmake --build ${{github.workspace}}/${{ matrix.buildloc }} --config ${{env.BUILD_TYPE}}
+
+      - name: Report sccache stats
+        run: sccache --show-stats
 
       - uses: suisei-cn/actions-download-file@v1.6.1
         id: vcredist
         name: Download VC redistributable
         with:
-          url: https://aka.ms/vs/17/release/vc_redist.x64.exe
+          url: https://aka.ms/vs/17/release/vc_redist.${{ matrix.arch }}.exe
           target: ${{github.workspace}}/installer/
 
       - name: Installer
         uses: joncloud/makensis-action@v5.0
         with:
-          script-file: ${{github.workspace}}/installer/mosquitto64.nsi
+          script-file: ${{github.workspace}}/installer/${{ matrix.nsis }}
 
       - name: Upload installer to artifacts
         uses: actions/upload-artifact@v6
         with:
-          name: installer
+          name: installer${{ matrix.arch }}
           path: ${{ github.workspace }}/installer/mosquitto*.exe
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+          cache: 'pip' # caching pip dependencies
+      - run: pip install -r requirements.txt
+
+      - name: Tests
+        run: ctest --timeout 60 --test-dir ${{ github.workspace }}/${{ matrix.buildloc }} -C ${{ env.BUILD_TYPE }} --output-on-failure --repeat until-pass:5 -j20 --resource-spec-file ../test/resource.json

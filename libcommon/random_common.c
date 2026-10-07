@@ -26,16 +26,16 @@ Contributors:
 #  include <lmcons.h>
 #endif
 
-#if !defined(WITH_TLS) && defined(__linux__) && defined(__GLIBC__)
+#ifdef WITH_TLS
+#  include <openssl/bn.h>
+#  include <openssl/rand.h>
+#elif defined(HAVE_GETRANDOM)  /* From CMakeLists.txt */
+# include <sys/random.h>
+#elif defined(__linux__) && defined(__GLIBC__) /* For legacy Makefiles */
 #  if __GLIBC_PREREQ(2, 25)
 #    include <sys/random.h>
 #    define HAVE_GETRANDOM 1
 #  endif
-#endif
-
-#ifdef WITH_TLS
-#  include <openssl/bn.h>
-#  include <openssl/rand.h>
 #endif
 
 #include "mosquitto.h"
@@ -65,7 +65,7 @@ int mosquitto_getrandom(void *bytes, int count)
 	}
 
 	CryptReleaseContext(provider, 0);
-#else
+#else /* For legacy Makefiles */
 #  error "No suitable random function found."
 #endif
 	return rc;

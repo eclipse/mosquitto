@@ -2,6 +2,9 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#ifdef WIN32
+#  include <windows.h>
+#endif
 
 #include <mosquitto/libmosquittopp.h>
 
@@ -80,9 +83,13 @@ int main(int argc, char *argv[])
 	mosq->connect_v5("localhost", port, 60, NULL, NULL);
 
 	mosq->loop_start();
-	struct timespec tv = { 0, (long)50e6 };
 	while(run == -1){
+#ifdef WIN32
+		Sleep(50);
+#else
+		struct timespec tv = { 0, 50000000 };
 		nanosleep(&tv, NULL);
+#endif
 	}
 
 	delete mosq;

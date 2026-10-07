@@ -4,32 +4,18 @@
 
 from mosq_test_helper import *
 
-def write_config(filename, port1, port2):
-    with open(filename, 'w') as f:
-        f.write(f"listener {port2}\n")
-        f.write("allow_anonymous true\n")
-        f.write("connection bridge1\n")
-        f.write(f"address 127.0.0.1:{port1}\n")
-        f.write("topic room1/# both 2 sensor/ myhouse/\n")
-        f.write("topic tst/ba both 2\n")
-        f.write("topic # both 2\n")
-        f.write("keepalive_interval 600\n")
-        f.write("remote_clientid mosquitto\n")
-        f.write("bridge_protocol_version mqttv50\n")
-        f.write("notifications false\n")
+from broker_config import BrokerConfig, ListenerConfig, MQTTBridgeConfig
+from mosquitto_broker import MosquittoBroker
+
+mosq_test.require_features(["INC_BRIDGE_SUPPORT"])
 
 def do_test(proto_ver):
-    (port1, port2) = mosq_test.get_port(2)
-    conf_file = os.path.basename(__file__).replace('.py', '.conf')
-    write_config(conf_file, port1, port2)
-
-    rc = 1
     keepalive = 600
     client_id = "mosquitto"
     properties = mqtt5_props.gen_uint16_prop(mqtt5_props.TOPIC_ALIAS_MAXIMUM, 10)
     properties += mqtt5_props.gen_uint16_prop(mqtt5_props.RECEIVE_MAXIMUM, 20)
-    connect_packet = mosq_test.gen_connect(client_id, keepalive=keepalive, clean_session=False, proto_ver=proto_ver, properties=properties)
-    connack_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
+    connect_packet = mqtt_packets.gen_connect(client_id, keepalive=keepalive, clean_session=False, proto_ver=proto_ver, properties=properties)
+    connack_packet = mqtt_packets.gen_connack(rc=0, proto_ver=proto_ver)
 
     if proto_ver == 5:
         opts = mqtt5_opts.MQTT_SUB_OPT_NO_LOCAL | mqtt5_opts.MQTT_SUB_OPT_RETAIN_AS_PUBLISHED
@@ -37,26 +23,42 @@ def do_test(proto_ver):
         opts = 0
 
     mid = 1
-    subscribe_packet = mosq_test.gen_subscribe(mid, "myhouse/room1/#", 2 | opts, proto_ver=proto_ver)
-    suback_packet = mosq_test.gen_suback(mid, 2, proto_ver=proto_ver)
+    subscribe_packet = mqtt_packets.gen_subscribe(mid, "myhouse/room1/#", 2 | opts, proto_ver=proto_ver)
+    suback_packet = mqtt_packets.gen_suback(mid, 2, proto_ver=proto_ver)
 
     mid = 2
-    subscribe_packet2 = mosq_test.gen_subscribe(mid, "tst/ba", 2 | opts, proto_ver=proto_ver)
-    suback_packet2= mosq_test.gen_suback(mid, 2, proto_ver=proto_ver)
+    subscribe_packet2 = mqtt_packets.gen_subscribe(mid, "tst/ba", 2 | opts, proto_ver=proto_ver)
+    suback_packet2= mqtt_packets.gen_suback(mid, 2, proto_ver=proto_ver)
 
     mid = 3
-    subscribe_packet3 = mosq_test.gen_subscribe(mid, "#", 2 | opts, proto_ver=proto_ver)
-    suback_packet3 = mosq_test.gen_suback(mid, 2, proto_ver=proto_ver)
+    subscribe_packet3 = mqtt_packets.gen_subscribe(mid, "#", 2 | opts, proto_ver=proto_ver)
+    suback_packet3 = mqtt_packets.gen_suback(mid, 2, proto_ver=proto_ver)
 
-    ssock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    ssock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    ssock.settimeout(40)
-    ssock.bind(('', port1))
-    ssock.listen(5)
+    (port1, port2) = mosq_test.get_port(2)
 
-    broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port2, use_conf=True)
+    ssock = mosq_test.listen_sock(port1)
 
-    try:
+    broker_config = BrokerConfig(
+        listeners = [ ListenerConfig(port=port2) ],
+        bridges = [
+            MQTTBridgeConfig(
+                connection="bridge1",
+                address=f"localhost:{port1}",
+                topics=[
+                    "room1/# both 2 sensor/ myhouse/",
+                    "tst/ba both 2",
+                    "# both 2",
+                ],
+                keepalive_interval=600,
+                remote_clientid=client_id,
+                bridge_protocol_version="mqttv50",
+                notifications=False,
+            ),
+        ],
+        allow_anonymous=True,
+    )
+    broker = MosquittoBroker(config=broker_config)
+    with broker:
         (bridge, address) = ssock.accept()
         bridge.settimeout(20)
 
@@ -78,33 +80,12 @@ def do_test(proto_ver):
             #bridge.send(bytes.fromhex("320c00062b2b2b2b2b2b00040033"))
             bridge.send(bytes.fromhex("C000")) # PING
             d = bridge.recv(1)
-            if len(d) == 0:
-                rc = 0
-        except (ConnectionResetError, BrokenPipeError, mosq_test.TestError):
+            if len(d) > 0:
+                raise ValueError(d)
+        except (ConnectionResetError, BrokenPipeError):
             #expected behaviour
-            rc = 0
-
-        bridge.close()
-    except mosq_test.TestError:
-        pass
-    except Exception as e:
-        print(e)
-    finally:
-        os.remove(conf_file)
-        try:
-            bridge.close()
-        except NameError:
             pass
-
-        broker.terminate()
-        broker.wait()
-        (stdo, stde) = broker.communicate()
-        ssock.close()
-        if rc:
-            print(stde.decode('utf-8'))
-            exit(rc)
+        bridge.close()
 
 
 do_test(proto_ver=5)
-
-exit(0)

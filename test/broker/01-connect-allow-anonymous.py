@@ -58,18 +58,18 @@ def do_test(use_conf, write_config, expect_success):
     try:
         for proto_ver in [4, 5]:
             rc = 1
-            connect_packet = mosq_test.gen_connect("connect-anon-test-%d" % (proto_ver), proto_ver=proto_ver)
+            connect_packet = mqtt_packets.gen_connect("connect-anon-test-%d" % (proto_ver), proto_ver=proto_ver)
 
             if proto_ver == 5:
                 if expect_success == True:
-                    connack_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
+                    connack_packet = mqtt_packets.gen_connack(rc=0, proto_ver=proto_ver)
                 else:
-                    connack_packet = mosq_test.gen_connack(rc=mqtt5_rc.NOT_AUTHORIZED, proto_ver=proto_ver, properties=None)
+                    connack_packet = mqtt_packets.gen_connack(rc=mqtt5_rc.NOT_AUTHORIZED, proto_ver=proto_ver, properties=None)
             else:
                 if expect_success == True:
-                    connack_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
+                    connack_packet = mqtt_packets.gen_connack(rc=0, proto_ver=proto_ver)
                 else:
-                    connack_packet = mosq_test.gen_connack(rc=5, proto_ver=proto_ver)
+                    connack_packet = mqtt_packets.gen_connack(rc=5, proto_ver=proto_ver)
 
 
             sock = mosq_test.do_client_connect(connect_packet, connack_packet, port=port)
@@ -81,13 +81,12 @@ def do_test(use_conf, write_config, expect_success):
         if write_config is not None:
             os.remove(conf_file)
             pass
-        broker.terminate()
+        mosq_test.terminate_broker(broker)
         if mosq_test.wait_for_subprocess(broker):
             print("broker not terminated")
             if rc == 0: rc=1
-        (stdo, stde) = broker.communicate()
         if rc:
-            print(stde.decode('utf-8'))
+            print(mosq_test.broker_log(broker))
             print("proto_ver=%d" % (proto_ver))
             exit(rc)
 

@@ -1,6 +1,10 @@
+<!DOCTYPE varlistentry [
+	<!ENTITY from-version21 SYSTEM "version-2.1.xml">
+]>
 <varlistentry>
 	<term><option>--retain-handling</option> always | new | never</term>
 	<listitem>
+		&from-version21;
 		<para>
 			Use this option to control the retain handling option when making a
 			subscription. This controls under what circumstances an existing

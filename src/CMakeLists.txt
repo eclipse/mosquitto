@@ -1,4 +1,4 @@
-add_executable(mosquitto
+custom_add_executable(mosquitto
 	acl_file.c acl_file.h
 	../plugins/acl-file/acl_check.c
 	../plugins/acl-file/acl_parse.c
@@ -84,106 +84,29 @@ add_executable(mosquitto
 	websockets.c
 	will_delay.c
 	../lib/will_mosq.c ../lib/will_mosq.h
+	xtreport.c
 )
 
-CHECK_INCLUDE_FILES(sys/event.h HAVE_SYS_EVENT_H)
-if(HAVE_SYS_EVENT_H)
-	target_compile_definitions(mosquitto PRIVATE "WITH_KQUEUE")
-endif()
+option_env(INC_BRIDGE_SUPPORT "Include bridge support for connecting to other brokers?" ON)
+option_env(STATIC_WEBSOCKETS "Use the static libwebsockets library?" OFF)
+option_env(USE_LIBWRAP "Include tcp-wrappers support?" OFF)
+option_env(WITH_ADNS "Include ADNS support?" OFF)
+option_env(WITH_CONTROL "Include $CONTROL topic support?" ON)
+option_env(WITH_HTTP_API "Include http_api support for listeners?" ON)
+option_env(WITH_OLD_KEEPALIVE "Use legacy keepalive check mechanism?" OFF)
+option_env(WITH_PERSISTENCE "Include legacy persistence support?" ON)
+option_env(WITH_PERSISTENCE "Include persistence support?" ON)
+option_env(WITH_SYS_TREE "Include $SYS tree support?" ON)
+option_env(WITH_XTREPORT "Include xtreport support (debugging only)?" OFF)
 
-find_path(HAVE_SYS_EPOLL_H sys/epoll.h)
-if(HAVE_SYS_EPOLL_H)
-	target_compile_definitions(mosquitto PRIVATE "WITH_EPOLL")
-endif()
-
-option(INC_BRIDGE_SUPPORT
-	"Include bridge support for connecting to other brokers?" ON)
-if(INC_BRIDGE_SUPPORT)
-	target_sources(mosquitto PRIVATE bridge.c)
-	target_compile_definitions(mosquitto PRIVATE "WITH_BRIDGE")
-endif()
-
-option(WITH_HTTP_API
-	"Include http_api support for listeners?" ON)
 set(HTTP_API_DIR "Default http_api directory" CACHE STRING "")
-if(WITH_HTTP_API)
-	if(WIN32)
-		find_library(MICROHTTPD_LIBRARY NAMES microhttpd-dll)
-	else()
-		find_library(MICROHTTPD_LIBRARY NAMES microhttpd)
-	endif()
-	if(MICROHTTPD_LIBRARY)
-		target_sources(mosquitto PRIVATE http_api.c)
-		target_compile_definitions(mosquitto PRIVATE "WITH_HTTP_API")
-		target_link_libraries(mosquitto PRIVATE ${MICROHTTPD_LIBRARY})
-		if(HTTP_API_DIR)
-			target_compile_definitions(mosquitto PRIVATE "HTTP_API_DIR=\"${HTTP_API_DIR}\"")
-		endif()
-	endif()
-endif()
-
-
-option(USE_LIBWRAP "Include tcp-wrappers support?" OFF)
-
-if(USE_LIBWRAP)
-	target_sources(mosquitto wrap)
-	target_compile_definitions(mosquitto PRIVATE "WITH_WRAP")
-endif()
-
-option(INC_DB_UPGRADE "Include database upgrade support? (recommended)" ON)
-
-if(INC_MEMTRACK)
-	target_compile_definitions(mosquitto PUBLIC "WITH_MEMORY_TRACKING")
-endif()
-
-option(WITH_PERSISTENCE "Include persistence support?" ON)
-if(WITH_PERSISTENCE)
-	target_compile_definitions(mosquitto PRIVATE "WITH_PERSISTENCE")
-endif()
-
-option(WITH_SYS_TREE "Include $SYS tree support?" ON)
-if(WITH_SYS_TREE)
-	target_compile_definitions(mosquitto PRIVATE "WITH_SYS_TREE")
-endif()
-
-option(WITH_OLD_KEEPALIVE "Use legacy keepalive check mechanism?" OFF)
-if (WITH_OLD_KEEPALIVE)
-	add_definitions("-DWITH_OLD_KEEPALIVE")
-endif (WITH_OLD_KEEPALIVE)
-
-option(WITH_ADNS "Include ADNS support?" OFF)
-
-if(CMAKE_SYSTEM_NAME STREQUAL Linux)
-	option(WITH_SYSTEMD "Include systemd support?" OFF)
-	if(WITH_SYSTEMD)
-		target_compile_definitions(mosquitto PRIVATE "WITH_SYSTEMD")
-		find_library(SYSTEMD_LIBRARY systemd)
-		target_link_libraries(mosquitto PRIVATE ${SYSTEMD_LIBRARY})
-	endif()
-endif()
-
-option(STATIC_WEBSOCKETS "Use the static libwebsockets library?" OFF)
-
-option(WITH_CONTROL "Include $CONTROL topic support?" ON)
-if(WITH_CONTROL)
-	target_compile_definitions(mosquitto PRIVATE "WITH_CONTROL")
-endif()
-
-if(WIN32 OR CYGWIN)
-	target_sources(mosquitto PRIVATE service.c)
-endif()
-
-target_compile_definitions(mosquitto PRIVATE "WITH_BROKER")
-
-if(WITH_TLS)
-	target_link_libraries(mosquitto PRIVATE OpenSSL::SSL)
-endif()
 
 # Check for getaddrinfo_a
 # Prior to glibc 2.34 this required linking with anl
 if(WITH_ADNS)
 	cmake_push_check_state()
 	set(ANL_CODE "
+		#define _GNU_SOURCE
 		#include <stdlib.h>
 		#include <netdb.h>
 		int main(){
@@ -207,6 +130,129 @@ if(WITH_ADNS)
 	cmake_pop_check_state()
 endif()
 
+if(INC_BRIDGE_SUPPORT)
+	target_sources(mosquitto PRIVATE bridge.c)
+	target_compile_definitions(mosquitto PRIVATE "WITH_BRIDGE")
+endif()
+
+if(WITH_CONTROL)
+	target_compile_definitions(mosquitto PRIVATE "WITH_CONTROL")
+endif()
+
+if(WITH_DLT)
+	message(STATUS "DLT_LIBDIR = ${DLT_LIBDIR}")
+	target_link_directories(mosquitto PRIVATE ${DLT_LIBDIR})
+	target_link_libraries(mosquitto PRIVATE ${DLT_LIBRARIES})
+	target_compile_definitions(mosquitto PRIVATE "WITH_DLT")
+endif()
+
+if(WITH_HTTP_API)
+	if(WIN32)
+		find_library(libmicrohttpd_FOUND NAMES microhttpd-dll)
+		set(LIBMICROHTTPD_LIBRARY "${libmicrohttpd_FOUND}")
+	else()
+		pkg_check_modules(libmicrohttpd IMPORTED_TARGET libmicrohttpd)
+		set(LIBMICROHTTPD_LIBRARY PkgConfig::libmicrohttpd)
+	endif()
+	if(libmicrohttpd_FOUND)
+		target_sources(mosquitto PRIVATE http_api.c)
+		target_compile_definitions(mosquitto PRIVATE "WITH_HTTP_API")
+		target_link_libraries(mosquitto PRIVATE ${LIBMICROHTTPD_LIBRARY})
+		if(HTTP_API_DIR)
+			target_compile_definitions(mosquitto PRIVATE "HTTP_API_DIR=\"${HTTP_API_DIR}\"")
+		endif()
+	else()
+		message(WARNING "microhttpd not found, disabling WITH_HTTP_API")
+	endif()
+endif()
+
+if(USE_LIBWRAP)
+	target_link_libraries(mosquitto PRIVATE wrap)
+	target_compile_definitions(mosquitto PRIVATE "WITH_WRAP")
+endif()
+
+if(INC_MEMTRACK)
+	target_compile_definitions(mosquitto PUBLIC "WITH_MEMORY_TRACKING")
+endif()
+
+if(WITH_OLD_KEEPALIVE)
+	add_definitions("-DWITH_OLD_KEEPALIVE")
+endif(WITH_OLD_KEEPALIVE)
+
+if(WITH_PERSISTENCE)
+	target_compile_definitions(mosquitto PRIVATE "WITH_PERSISTENCE")
+endif()
+
+CHECK_INCLUDE_FILES(sys/event.h HAVE_SYS_EVENT_H)
+if(HAVE_SYS_EVENT_H)
+	target_compile_definitions(mosquitto PRIVATE "WITH_KQUEUE")
+endif()
+
+find_path(HAVE_SYS_EPOLL_H sys/epoll.h)
+if(HAVE_SYS_EPOLL_H)
+	target_compile_definitions(mosquitto PRIVATE "WITH_EPOLL")
+endif()
+
+if(WITH_SYS_TREE)
+	target_compile_definitions(mosquitto PRIVATE "WITH_SYS_TREE")
+endif()
+
+if(WITH_SYS_TREE)
+	target_compile_definitions(mosquitto PRIVATE "WITH_SYS_TREE")
+endif()
+
+if(CMAKE_SYSTEM_NAME STREQUAL Linux)
+	option_env(WITH_SYSTEMD "Include systemd support?" OFF)
+	if(WITH_SYSTEMD)
+		target_compile_definitions(mosquitto PRIVATE "WITH_SYSTEMD")
+		find_library(SYSTEMD_LIBRARY systemd)
+		target_link_libraries(mosquitto PRIVATE ${SYSTEMD_LIBRARY})
+	endif()
+endif()
+
+if (WITH_THREADING AND NOT WIN32)
+	set(THREADS_PREFER_PTHREAD_FLAG ON)
+	find_package(Threads REQUIRED)
+
+	target_link_libraries(mosquitto PRIVATE Threads::Threads)
+endif()
+
+if(WITH_TLS)
+	target_link_libraries(mosquitto PRIVATE OpenSSL::SSL)
+endif()
+
+if(WITH_WEBSOCKETS)
+	if(WITH_WEBSOCKETS_BUILTIN)
+		target_compile_definitions(mosquitto PRIVATE "WITH_WEBSOCKETS=WS_IS_BUILTIN")
+		target_sources(mosquitto PRIVATE ${mosquitto_SOURCE_DIR}/deps/picohttpparser/picohttpparser.c)
+		target_include_directories(mosquitto PRIVATE "${mosquitto_SOURCE_DIR}/deps/picohttpparser")
+	else()
+		find_package(libwebsockets)
+		target_compile_definitions(mosquitto PRIVATE "WITH_WEBSOCKETS=WS_IS_LWS")
+		if(STATIC_WEBSOCKETS)
+			target_link_libraries(mosquitto PRIVATE websockets)
+			if(WIN32)
+				target_link_libraries(mosquitto PRIVATE iphlpapi)
+			endif()
+		else(STATIC_WEBSOCKETS)
+			target_link_libraries(mosquitto PRIVATE websockets_shared)
+		endif()
+	endif()
+endif()
+
+if(WITH_XTREPORT)
+	target_compile_definitions(mosquitto PRIVATE "WITH_XTREPORT")
+endif()
+
+if(WIN32 OR CYGWIN)
+	target_sources(mosquitto PRIVATE service.c)
+endif()
+
+target_compile_definitions(mosquitto PRIVATE "WITH_BROKER")
+
+if (ANDROID)
+	target_link_libraries(mosquitto PRIVATE log)
+endif (ANDROID)
 
 if(UNIX)
 	if(APPLE)
@@ -228,44 +274,7 @@ if(WIN32)
 	target_link_libraries(mosquitto PRIVATE ws2_32)
 endif()
 
-if(WITH_WEBSOCKETS)
-	if(WITH_WEBSOCKETS_BUILTIN)
-		target_compile_definitions(mosquitto PRIVATE "WITH_WEBSOCKETS=WS_IS_BUILTIN")
-		target_sources(mosquitto PRIVATE ${mosquitto_SOURCE_DIR}/deps/picohttpparser/picohttpparser.c)
-	else()
-		find_package(libwebsockets)
-		target_compile_definitions(mosquitto PRIVATE "WITH_WEBSOCKETS=WS_IS_LWS")
-	endif()
-endif()
-
-if (ANDROID)
-	target_link_libraries(mosquitto PRIVATE log)
-endif (ANDROID)
-
-if(WITH_WEBSOCKETS)
-	if(WITH_WEBSOCKETS_BUILTIN)
-		target_include_directories(mosquitto PRIVATE
-			"${mosquitto_SOURCE_DIR}/deps/picohttpparser")
-	else()
-		if(STATIC_WEBSOCKETS)
-			target_link_libraries(mosquitto PRIVATE websockets_static)
-			if(WIN32)
-				target_link_libraries(mosquitto PRIVATE iphlpapi)
-			endif()
-		else(STATIC_WEBSOCKETS)
-			target_link_libraries(mosquitto PRIVATE websockets)
-		endif()
-	endif()
-endif()
-
-if(WITH_DLT)
-	message(STATUS "DLT_LIBDIR = ${DLT_LIBDIR}")
-	target_link_directories(mosquitto PRIVATE ${DLT_LIBDIR})
-	target_link_libraries(mosquitto PRIVATE ${DLT_LIBRARIES})
-	target_compile_definitions(mosquitto PRIVATE "WITH_DLT")
-endif()
-
-target_link_libraries(mosquitto PRIVATE cJSON)
+target_link_libraries(mosquitto PRIVATE cjson)
 
 target_include_directories(mosquitto
 	PUBLIC
@@ -277,27 +286,14 @@ target_include_directories(mosquitto
 		"${mosquitto_SOURCE_DIR}/src"
 		"${CJSON_INCLUDE_DIRS}"
 )
-if(WITH_BUNDLED_DEPS)
-	target_include_directories(mosquitto PRIVATE
-		"${mosquitto_SOURCE_DIR}/deps"
-	)
-endif()
 
 target_link_libraries(mosquitto
 	PUBLIC
-		config-header
 		libmosquitto_common
 	PRIVATE
 		common-options
 		${MOSQ_LIBS}
 )
-
-if (WITH_THREADING AND NOT WIN32)
-	set(THREADS_PREFER_PTHREAD_FLAG ON)
-	find_package(Threads REQUIRED)
-
-	target_link_libraries(mosquitto PRIVATE Threads::Threads)
-endif()
 
 set_target_properties(mosquitto PROPERTIES
 	ENABLE_EXPORTS 1
@@ -309,7 +305,7 @@ if(UNIX)
 		set_target_properties(mosquitto PROPERTIES
 			LINK_FLAGS "-Wl,-exported_symbols_list -Wl,${mosquitto_SOURCE_DIR}/src/linker-macosx.syms"
 		)
-	elseif (${CMAKE_SYSTEM_NAME} MATCHES "AIX")
+	elseif (AIX)
 	else()
 		set_target_properties(mosquitto PROPERTIES
 			LINK_FLAGS "-Wl,-dynamic-list=${mosquitto_SOURCE_DIR}/src/linker.syms"
@@ -317,6 +313,6 @@ if(UNIX)
 	endif()
 endif()
 
-install(TARGETS mosquitto
+custom_install(TARGETS mosquitto
 	RUNTIME DESTINATION "${CMAKE_INSTALL_SBINDIR}"
 )

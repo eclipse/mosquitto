@@ -3,8 +3,8 @@
 # tests that bridge configuration is reloaded on signal
 
 from mosq_test_helper import *
-import signal
 
+mosq_test.require_features(["INC_BRIDGE_SUPPORT"])
 
 def write_config(filename, port1, port2, subtopic, reload_immediate=False):
     with open(filename, 'w') as f:
@@ -12,7 +12,7 @@ def write_config(filename, port1, port2, subtopic, reload_immediate=False):
         f.write("allow_anonymous true\n")
         f.write("\n")
         f.write("connection bridge_sample\n")
-        f.write("address 127.0.0.1:%d\n" % (port1))
+        f.write("address localhost:%d\n" % (port1))
         f.write("topic # in 0 local/topic/ remote/%s/\n" % (subtopic))
         f.write("notifications false\n")
         f.write("restart_timeout 1\n")
@@ -26,9 +26,9 @@ def accept_new_connection(sock):
     conn.settimeout(20)
 
     client_id = socket.gethostname()+".bridge_sample"
-    connect_packet = mosq_test.gen_connect(
+    connect_packet = mqtt_packets.gen_connect(
         client_id, clean_session=False, proto_ver=0x84)
-    connack_packet = mosq_test.gen_connack()
+    connack_packet = mqtt_packets.gen_connack()
 
     mosq_test.expect_packet(conn, "connect", connect_packet)
     conn.send(connack_packet)
@@ -37,20 +37,11 @@ def accept_new_connection(sock):
 
 
 def accept_subscription(socket, topic, mid=1, qos=0):
-    subscribe_packet = mosq_test.gen_subscribe(mid, topic, qos)
-    suback_packet = mosq_test.gen_suback(mid, qos)
+    subscribe_packet = mqtt_packets.gen_subscribe(mid, topic, qos)
+    suback_packet = mqtt_packets.gen_suback(mid, qos)
 
     mosq_test.expect_packet(socket, "subscribe", subscribe_packet)
     socket.send(suback_packet)
-
-
-def start_fake_broker(port):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    sock.settimeout(3)
-    sock.bind(('', port))
-    sock.listen(5)
-    return sock
 
 
 def expect_no_incoming_connection(sock):
@@ -68,7 +59,7 @@ def do_test():
     conf_file = os.path.basename(__file__).replace('.py', '.conf')
 
     try:
-        ssock = start_fake_broker(port1)
+        ssock = mosq_test.listen_sock(port1, timeout=2)
 
         write_config(conf_file, port1, port2, "topic1", True)
 
@@ -79,13 +70,13 @@ def do_test():
         accept_subscription(bridge, "remote/topic1/#")
 
         write_config(conf_file, port1, port2, "topic2", True)
-        broker.send_signal(signal.SIGHUP)
+        mosq_test.reload_broker(broker)
 
         bridge = accept_new_connection(ssock) # immediate reload forces a reconnection
         accept_subscription(bridge, "remote/topic2/#")
 
         write_config(conf_file, port1, port2, "topic3", False)
-        broker.send_signal(signal.SIGHUP)
+        mosq_test.reload_broker(broker)
 
         expect_no_incoming_connection(ssock) # as it was set to lazy reload
 
@@ -100,13 +91,12 @@ def do_test():
         pass
     finally:
         try:
-            broker.terminate()
+            mosq_test.terminate_broker(broker)
             if mosq_test.wait_for_subprocess(broker):
                 print("broker not terminated")
                 if rc == 0: rc=1
-            _, stde = broker.communicate()
             if rc:
-                print(stde.decode('utf-8'))
+                print(mosq_test.broker_log(broker))
         except NameError:
             pass
 
@@ -125,7 +115,7 @@ def do_test():
         except NameError:
             pass
 
-        return rc
+    return rc
 
 
 exit_code = do_test()

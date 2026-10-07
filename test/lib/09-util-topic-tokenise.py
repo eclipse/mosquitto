@@ -8,7 +8,7 @@ def do_test(client):
     rc = 1
 
     client_args = [client, str(port)]
-    client = mosq_test.start_client(filename=client.replace('/', '-'), cmd=client_args)
+    client = mosq_test.start_client(filename=str(client).replace('/', '-'), cmd=client_args)
 
     if mosq_test.wait_for_subprocess(client):
         print("test client not finished")
@@ -19,5 +19,6 @@ def do_test(client):
         print(f"Fail: {client}")
         exit(rc)
 
-do_test("c/09-util-topic-tokenise.test")
-do_test("cpp/09-util-topic-tokenise.test")
+do_test(Path("c", mosq_test.get_build_type(), "09-util-topic-tokenise.exe"))
+if mosq_test.check_features(["WITH_LIB_CPP"]):
+    do_test(Path("cpp", mosq_test.get_build_type(), "09-util-topic-tokenise.exe"))

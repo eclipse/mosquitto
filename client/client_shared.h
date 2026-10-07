@@ -119,7 +119,7 @@ struct mosq_config {
 	bool pretty; /* sub, rr */
 	unsigned int timeout; /* sub */
 	int sub_opts; /* sub */
-	long session_expiry_interval;
+	int64_t session_expiry_interval;
 	int random_filter; /* sub */
 	int transport;
 #ifndef WIN32

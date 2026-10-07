@@ -1,0 +1,13 @@
+<!DOCTYPE varlistentry [
+	<!ENTITY from-version21 SYSTEM "version-2.1.xml">
+]>
+<varlistentry>
+	<term><option>-o</option> <replaceable>config-file</replaceable></term>
+	<listitem>
+		&from-version21;
+		<para>
+			Load options from a config file. See the Default Config File and
+			Config File sections at the start of the Options section.
+		</para>
+	</listitem>
+</varlistentry>

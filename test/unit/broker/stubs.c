@@ -8,11 +8,11 @@
 #include "send_mosq.h"
 
 struct mosquitto_db {
-
+	int dummy;
 };
 
 struct mosquitto__base_msg {
-
+	int dummy;
 };
 
 

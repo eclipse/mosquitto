@@ -10,57 +10,54 @@
 
 from mosq_test_helper import *
 
-def write_config(filename, port):
-    with open(filename, 'w') as f:
-        f.write("listener %d\n" % (port))
-        f.write("auth_plugin c/auth_plugin_extended_single.so\n")
-
-port = mosq_test.get_port()
-conf_file = os.path.basename(__file__).replace('.py', '.conf')
-write_config(conf_file, port)
-
-rc = 1
+from broker_config import BrokerConfig, ListenerConfig, PluginConfig
+from mosquitto_broker import MosquittoBroker
 
 # Single, error in plugin
 props = mqtt5_props.gen_string_prop(mqtt5_props.AUTHENTICATION_METHOD, "error")
-connect1_packet = mosq_test.gen_connect("client-params-test1", proto_ver=5, properties=props)
+connect1_packet = mqtt_packets.gen_connect("client-params-test1", proto_ver=5, properties=props)
 
 # Single, no matching authentication method
 props = mqtt5_props.gen_string_prop(mqtt5_props.AUTHENTICATION_METHOD, "non-matching")
-connect2_packet = mosq_test.gen_connect("client-params-test2", proto_ver=5, properties=props)
-connack2_packet = mosq_test.gen_connack(rc=mqtt5_rc.BAD_AUTHENTICATION_METHOD, proto_ver=5, properties=None)
+connect2_packet = mqtt_packets.gen_connect("client-params-test2", proto_ver=5, properties=props)
+connack2_packet = mqtt_packets.gen_connack(rc=mqtt5_rc.BAD_AUTHENTICATION_METHOD, proto_ver=5, properties=None)
 
 # Single step, matching method, failure
 props = mqtt5_props.gen_string_prop(mqtt5_props.AUTHENTICATION_METHOD, "single")
 props += mqtt5_props.gen_string_prop(mqtt5_props.AUTHENTICATION_DATA, "baddata")
-connect3_packet = mosq_test.gen_connect("client-params-test3", proto_ver=5, properties=props)
-connack3_packet = mosq_test.gen_connack(rc=mqtt5_rc.NOT_AUTHORIZED, proto_ver=5, properties=None)
+connect3_packet = mqtt_packets.gen_connect("client-params-test3", proto_ver=5, properties=props)
+connack3_packet = mqtt_packets.gen_connack(rc=mqtt5_rc.NOT_AUTHORIZED, proto_ver=5, properties=None)
 
 # Single step, matching method, success
 props = mqtt5_props.gen_string_prop(mqtt5_props.AUTHENTICATION_METHOD, "single")
 props += mqtt5_props.gen_string_prop(mqtt5_props.AUTHENTICATION_DATA, "data")
-connect4_packet = mosq_test.gen_connect("client-params-test5", proto_ver=5, properties=props)
+connect4_packet = mqtt_packets.gen_connect("client-params-test5", proto_ver=5, properties=props)
 props = mqtt5_props.gen_string_prop(mqtt5_props.AUTHENTICATION_METHOD, "single")
-connack4_packet = mosq_test.gen_connack(rc=0, proto_ver=5, properties=props)
+connack4_packet = mqtt_packets.gen_connack(rc=0, proto_ver=5, properties=props)
 
 # Single step, matching method, success, auth data back to client
 props = mqtt5_props.gen_string_prop(mqtt5_props.AUTHENTICATION_METHOD, "mirror")
 props += mqtt5_props.gen_string_prop(mqtt5_props.AUTHENTICATION_DATA, "somedata")
-connect5_packet = mosq_test.gen_connect("client-params-test6", proto_ver=5, properties=props)
+connect5_packet = mqtt_packets.gen_connect("client-params-test6", proto_ver=5, properties=props)
 props = mqtt5_props.gen_string_prop(mqtt5_props.AUTHENTICATION_METHOD, "mirror")
 props += mqtt5_props.gen_string_prop(mqtt5_props.AUTHENTICATION_DATA, "atademos")
-connack5_packet = mosq_test.gen_connack(rc=0, proto_ver=5, properties=props)
+connack5_packet = mqtt_packets.gen_connack(rc=0, proto_ver=5, properties=props)
 
 
-broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port)
-
-
-try:
+port = mosq_test.get_port()
+broker_config = BrokerConfig(
+    listeners = [ ListenerConfig(port=port) ],
+    plugins = [
+        PluginConfig(path=mosq_paths.test_plugin('auth_plugin_extended_single'))
+    ],
+)
+broker = MosquittoBroker(config=broker_config)
+with broker:
     sock = None
     try:
         sock = mosq_test.do_client_connect(connect1_packet, b"", timeout=20, port=port)
         sock.close()
-        rc = 2
+        raise RuntimeError("socket connection was not lost")
     except BrokenPipeError:
         pass
 
@@ -75,17 +72,3 @@ try:
 
     sock = mosq_test.do_client_connect(connect5_packet, connack5_packet, timeout=20, port=port)
     sock.close()
-
-    rc = 0
-finally:
-    os.remove(conf_file)
-    broker.terminate()
-    if mosq_test.wait_for_subprocess(broker):
-        print("broker not terminated")
-        if rc == 0: rc=1
-    (stdo, stde) = broker.communicate()
-    if rc:
-        print(stde.decode('utf-8'))
-
-
-sys.exit(rc)

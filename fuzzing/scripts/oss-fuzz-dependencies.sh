@@ -18,6 +18,9 @@
 
 set -e
 
+export CC=clang
+export CXX=clang++
+
 # Note that sqlite3 is required as a build dep of a plugin which is not
 # currently part of fuzz testing. Once it is part of fuzz testing, sqlite will
 # need to be built statically.
@@ -32,8 +35,11 @@ apt-get update && apt-get install -y \
 	libz-dev \
 	make \
 	ninja-build \
-	pkg-config
+	pkg-config \
+	uthash-dev
 git clone https://github.com/ralight/cJSON ${SRC}/cJSON
+git clone https://github.com/ralight/mallocfail ${SRC}/mallocfail
+git clone https://github.com/ianlancetaylor/libbacktrace ${SRC}/libbacktrace
 
 # If building outside of oss-fuzz, we need LPM
 if [ ! -d ${SRC}/LPM ]; then
@@ -41,6 +47,11 @@ if [ ! -d ${SRC}/LPM ]; then
 
 	mkdir ${SRC}/LPM \
 		&& cd ${SRC}/LPM \
-		&& cmake ../libprotobuf-mutator -GNinja -DLIB_PROTO_MUTATOR_DOWNLOAD_PROTOBUF=ON -DLIB_PROTO_MUTATOR_TESTING=OFF -DCMAKE_BUILD_TYPE=Release \
+		&& cmake ../libprotobuf-mutator -GNinja \
+			-DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+			-DLIB_PROTO_MUTATOR_DOWNLOAD_PROTOBUF=ON \
+			-DLIB_PROTO_MUTATOR_TESTING=OFF \
+			-DLIB_PROTO_MUTATOR_EXAMPLES=OFF \
+			-DCMAKE_BUILD_TYPE=Release \
 		&& ninja
 fi

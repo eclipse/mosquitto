@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Migration script to migrate from acl_file and password_file to the Dynamic Security Plugin.
 """

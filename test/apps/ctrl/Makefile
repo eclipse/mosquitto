@@ -137,6 +137,8 @@ ctrl_shell_pre_connect_test : ctrl_shell_pre_connect_test.o ${LIB_OBJS}
 test-compile : $(MOCK_TESTS)
 
 test-mock : $(MOCK_TESTS)
+ifeq ($(WITH_GMOCK),yes)
+ifeq ($(WITH_EDITLINE),yes)
 	./ctrl_shell_broker_test
 	./ctrl_shell_completion_test
 	./ctrl_shell_dynsec_test
@@ -144,6 +146,8 @@ test-mock : $(MOCK_TESTS)
 	./ctrl_shell_options_test
 	./ctrl_shell_pre_connect_test
 	./ctrl_shell_test
+endif
+endif
 
 test : test-mock
 	./ctrl-args.py

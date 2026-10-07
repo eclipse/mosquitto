@@ -198,7 +198,12 @@ struct mosquitto_evt_basic_auth {
 	struct mosquitto *client;
 	char *username;
 	char *password;
-	void *future2[4];
+	union {
+		void *future2[4];
+		struct {
+			uint16_t password_len;
+		};
+	};
 };
 
 /* Data for the MOSQ_EVT_PSK_KEY event */

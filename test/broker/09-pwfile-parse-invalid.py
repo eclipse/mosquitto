@@ -3,7 +3,8 @@
 # Test for CVE-2018-xxxxx.
 
 from mosq_test_helper import *
-import signal
+
+mosq_test.require_features(["WITH_TLS"])
 
 def write_config(filename, port, per_listener):
     with open(filename, 'w') as f:
@@ -25,8 +26,8 @@ def write_pwfile(filename, bad_line1, bad_line2):
 
 def do_test(port, connack_rc, username, password):
     rc = 1
-    connect_packet = mosq_test.gen_connect("username-password-check", username=username, password=password)
-    connack_packet = mosq_test.gen_connack(rc=connack_rc)
+    connect_packet = mqtt_packets.gen_connect("username-password-check", username=username, password=password)
+    connack_packet = mqtt_packets.gen_connack(rc=connack_rc)
 
     try:
         sock = mosq_test.do_client_connect(connect_packet, connack_packet, port=port)
@@ -66,7 +67,7 @@ def username_password_tests(port):
     except ValueError:
         pass
     finally:
-        broker.terminate()
+        mosq_test.terminate_broker(broker)
         if mosq_test.wait_for_subprocess(broker):
             print("broker not terminated")
             if rc == 0: rc=1

@@ -4,12 +4,14 @@
 
 from mosq_test_helper import *
 
+mosq_test.require_features(["WITH_PLUGINS", "WITH_PLUGIN_ACL_FILE"])
+
 def write_config(filename, port, per_listener):
     with open(filename, 'w') as f:
         f.write("per_listener_settings %s\n" % (per_listener))
         f.write("listener %d\n" % (port))
         f.write("allow_anonymous true\n")
-        f.write(f"plugin {mosq_test.get_build_root()}/plugins/acl-file/mosquitto_acl_file.so\n")
+        f.write(f"plugin {mosq_paths.plugin_acl_file}\n")
         f.write("plugin_opt_acl_file %s\n" % (filename.replace('.conf', '.acl')))
 
 def write_acl(filename, global_en, user_en, pattern_en):
@@ -28,19 +30,19 @@ def write_acl(filename, global_en, user_en, pattern_en):
 
 
 def single_test(port, per_listener, username, topic, expect_deny):
-    connect_packet = mosq_test.gen_connect("acl-check", username=username)
-    connack_packet = mosq_test.gen_connack(rc=0)
+    connect_packet = mqtt_packets.gen_connect("acl-check", username=username)
+    connack_packet = mqtt_packets.gen_connack(rc=0)
 
     mid = 1
-    subscribe_packet = mosq_test.gen_subscribe(mid=mid, topic=topic, qos=1)
-    suback_packet = mosq_test.gen_suback(mid=mid, qos=1)
+    subscribe_packet = mqtt_packets.gen_subscribe(mid=mid, topic=topic, qos=1)
+    suback_packet = mqtt_packets.gen_suback(mid=mid, qos=1)
 
     mid = 2
-    publish1s_packet = mosq_test.gen_publish(topic=topic, mid=mid, qos=1, payload="message")
-    puback1s_packet = mosq_test.gen_puback(mid)
+    publish1s_packet = mqtt_packets.gen_publish(topic=topic, mid=mid, qos=1, payload="message")
+    puback1s_packet = mqtt_packets.gen_puback(mid)
 
     mid=1
-    publish1r_packet = mosq_test.gen_publish(topic=topic, mid=mid, qos=1, payload="message")
+    publish1r_packet = mqtt_packets.gen_publish(topic=topic, mid=mid, qos=1, payload="message")
 
     sock = mosq_test.do_client_connect(connect_packet, connack_packet, port=port)
     mosq_test.do_send_receive(sock, subscribe_packet, suback_packet, "suback")
@@ -81,13 +83,12 @@ def acl_test(port, per_listener, global_en, user_en, pattern_en):
     finally:
         os.remove(conf_file)
         os.remove(acl_file)
-        broker.terminate()
+        mosq_test.terminate_broker(broker)
         if mosq_test.wait_for_subprocess(broker):
             print("broker not terminated")
             if rc == 0: rc=1
-        (stdo, stde) = broker.communicate()
         if rc:
-            print(stde.decode('utf-8'))
+            print(mosq_test.broker_log(broker))
             exit(rc)
 
 def do_test(port, per_listener):

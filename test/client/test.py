@@ -32,6 +32,7 @@ tests = [
     (1, './03-publish-qos0-empty.py'),
     (1, './03-publish-qos1-properties.py'),
     (1, './03-publish-qos1.py'),
+    (1, "./03-publish-qos1-unix.py"),
     (2, './03-publish-qos1-ws.py'),
     (2, './03-publish-qos1-ws-large.py'),
     (1, './03-publish-repeat.py'),

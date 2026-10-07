@@ -1,0 +1,73 @@
+name: Linux - Build variants
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+      - fixes
+      - release/*
+  pull_request:
+    branches:
+      - master
+      - develop
+      - fixes
+      - release/*
+  schedule:
+    - cron: "0 2 * * 2"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Install third party dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          ccache \
+          cmake \
+          docbook-xsl \
+          libargon2-dev \
+          libc-ares-dev \
+          libcjson-dev \
+          libcunit1-dev \
+          libedit-dev \
+          libgmock-dev \
+          libmicrohttpd-dev \
+          libssl-dev \
+          libsystemd-dev \
+          libwrap0-dev \
+          pkgconf \
+          python3-all \
+          uthash-dev \
+          xsltproc
+
+    - name: Configure ccache
+      run: |
+        mkdir "$GITHUB_WORKSPACE/ccache"
+        echo "CCACHE_DIR=$GITHUB_WORKSPACE/ccache" >> $GITHUB_ENV
+
+    - name: Restore ccache
+      uses: actions/cache@v5
+      with:
+        path: ccache
+        key: ${{ runner.os }}-build-variants-ccache
+
+    - uses: actions/checkout@v6
+      with:
+        submodules: 'true'
+
+    - name: build on push and pull_request
+      if: ${{ github.event_name != 'schedule' }}
+      run: ./buildtest.py
+
+    - name: build and test on schedule
+      if: ${{ github.event_name == 'schedule' }}
+      run: ./buildtest.py --tests
+
+    - name: Report ccache stats
+      run: ccache -s

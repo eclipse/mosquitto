@@ -104,11 +104,15 @@ void json_add_base_msg(struct P_base_msg *chunk)
 		cJSON_AddStringToObject(j_base_msg, "username", chunk->source.username);
 	}
 	if(chunk->F.payloadlen > 0){
+#ifdef WITH_TLS
 		char *payload;
 		if(mosquitto_base64_encode(chunk->payload, chunk->F.payloadlen, &payload) == MOSQ_ERR_SUCCESS){
 			cJSON_AddStringToObject(j_base_msg, "payload", payload);
 			mosquitto_free(payload);
 		}
+#else
+		fprintf(stderr, "Warning: payload not output due to missing base64 support.\n");
+#endif
 	}
 	if(chunk->properties){
 		cJSON *j_props = mosquitto_properties_to_json(chunk->properties);

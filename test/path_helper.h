@@ -1,7 +1,6 @@
 #ifndef PATH_HELPER_H
 #define PATH_HELPER_H
 
-#include <libgen.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>

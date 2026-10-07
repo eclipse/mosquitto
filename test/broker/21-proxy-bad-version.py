@@ -5,6 +5,8 @@ import json
 import shutil
 import socket
 
+mosq_test.require_features(["WITH_WEBSOCKETS", "WITH_WEBSOCKETS_BUILTIN"])
+
 def write_config(filename, port, ver):
     with open(filename, 'w') as f:
         f.write("log_type all\n")

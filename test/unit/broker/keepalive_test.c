@@ -1,5 +1,7 @@
 /* Tests for keepalive add/remove/update. */
 
+#include <stdio.h>
+
 #include <CUnit/CUnit.h>
 #include <CUnit/Basic.h>
 

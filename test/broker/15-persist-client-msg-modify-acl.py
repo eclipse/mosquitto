@@ -7,7 +7,7 @@ from mosq_test_helper import *
 
 persist_help = persist_module()
 
-port = mosq_test.get_port()
+port, _ = mosq_test.get_port(2)
 
 num_messages = 100
 
@@ -31,20 +31,20 @@ def do_test(test_case_name: str, additional_config_entries: dict):
     source_id = "test-change-acl-publisher"
     proto_ver = 4
 
-    connect_packet = mosq_test.gen_connect(
+    connect_packet = mqtt_packets.gen_connect(
         client_id, username=username, proto_ver=proto_ver, clean_session=False
     )
-    connack_packet1 = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
-    connack_packet2 = mosq_test.gen_connack(rc=0, flags=1, proto_ver=proto_ver)
+    connack_packet1 = mqtt_packets.gen_connack(rc=0, proto_ver=proto_ver)
+    connack_packet2 = mqtt_packets.gen_connack(rc=0, flags=1, proto_ver=proto_ver)
 
     mid = 1
-    subscribe_packet = mosq_test.gen_subscribe(mid, topic, qos, proto_ver=proto_ver)
-    suback_packet = mosq_test.gen_suback(mid, qos=qos, proto_ver=proto_ver)
+    subscribe_packet = mqtt_packets.gen_subscribe(mid, topic, qos, proto_ver=proto_ver)
+    suback_packet = mqtt_packets.gen_suback(mid, qos=qos, proto_ver=proto_ver)
 
-    connect2_packet = mosq_test.gen_connect(
+    connect2_packet = mqtt_packets.gen_connect(
         source_id, proto_ver=proto_ver, username=username
     )
-    connack2_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
+    connack2_packet = mqtt_packets.gen_connack(rc=0, proto_ver=proto_ver)
 
     with open(acl_file, "w") as f:
         f.write(f"user {username}\n")
@@ -69,14 +69,14 @@ def do_test(test_case_name: str, additional_config_entries: dict):
         for i in range(num_messages):
             payload = f"queued message {i:3}"
             mid = 10 + i
-            publish_packet = mosq_test.gen_publish(
+            publish_packet = mqtt_packets.gen_publish(
                 topic,
                 mid=mid,
                 qos=qos,
                 payload=payload.encode("UTF-8"),
                 proto_ver=proto_ver,
             )
-            puback_packet = mosq_test.gen_puback(mid=mid, proto_ver=proto_ver)
+            puback_packet = mqtt_packets.gen_puback(mid=mid, proto_ver=proto_ver)
             mosq_test.do_send_receive(sock, publish_packet, puback_packet, "puback")
         sock.close()
 
@@ -178,18 +178,17 @@ def do_test(test_case_name: str, additional_config_entries: dict):
         rc = broker_terminate_rc
     finally:
         if broker is not None:
-            broker.terminate()
+            mosq_test.terminate_broker(broker)
             if mosq_test.wait_for_subprocess(broker):
                 if rc == 0:
                     rc = 1
-            (_, stde) = broker.communicate()
         os.remove(acl_file)
         os.remove(conf_file)
         rc += persist_help.cleanup(port)
 
         print(f"{test_case_name}")
         if rc:
-            print(stde.decode("utf-8"))
+            print(mosq_test.broker_log(broker))
         assert rc == 0, f"rc: {rc}"
 
 

@@ -37,8 +37,12 @@ int handle__disconnect(struct mosquitto *context)
 		return MOSQ_ERR_INVAL;
 	}
 
-	if(context->in_packet.command != CMD_DISCONNECT){
-		return MOSQ_ERR_MALFORMED_PACKET;
+	if(context->protocol == mosq_p_mqtt311 || context->protocol == mosq_p_mqtt5){
+		if((context->in_packet.command&0x0F) != 0x00){
+			log__printf(NULL, MOSQ_LOG_INFO, "Protocol error from %s: DISCONNECT packet with incorrect flags %02X.",
+					context->id, context->in_packet.command);
+			return MOSQ_ERR_PROTOCOL;
+		}
 	}
 
 	if(context->protocol == mosq_p_mqtt5 && context->in_packet.remaining_length > 0){
@@ -68,14 +72,6 @@ int handle__disconnect(struct mosquitto *context)
 		return MOSQ_ERR_PROTOCOL;
 	}
 	log__printf(NULL, MOSQ_LOG_DEBUG, "Received DISCONNECT from %s", context->id);
-	if(context->protocol == mosq_p_mqtt311 || context->protocol == mosq_p_mqtt5){
-		if((context->in_packet.command&0x0F) != 0x00){
-			log__printf(NULL, MOSQ_LOG_INFO, "Protocol error from %s: DISCONNECT packet with incorrect flags %02X.",
-					context->id, context->in_packet.command);
-			do_disconnect(context, MOSQ_ERR_PROTOCOL);
-			return MOSQ_ERR_PROTOCOL;
-		}
-	}
 	if(reason_code == MQTT_RC_DISCONNECT_WITH_WILL_MSG){
 		mosquitto__set_state(context, mosq_cs_disconnect_with_will);
 	}else{

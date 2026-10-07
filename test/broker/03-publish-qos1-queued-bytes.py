@@ -32,7 +32,7 @@ def registerOfflineSubscriber():
     client.disconnect()
 
 
-broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port)
+broker = MosquittoBroker(port=port)
 
 class BrokerMonitor(threading.Thread):
     def __init__(self, group=None, target=None, name=None, args=(), kwargs=None, verbose=None):
@@ -154,10 +154,9 @@ finally:
     brokerMonitor.join()
     rq.join()
     cq.join()
-    broker.terminate()
-    (stdo, stde) = broker.communicate()
+    mosq_test.terminate_broker(broker)
     if rc:
-        print(stde.decode('utf-8'))
+        print(mosq_test.broker_log(broker))
 
 exit(rc)
 

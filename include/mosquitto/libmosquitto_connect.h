@@ -56,7 +56,7 @@ extern "C" {
  * 	                   * mosq == NULL
  * 	                   * host == NULL
  * 	                   * port < 0
- * 	                   * keepalive < 5 (keepalive == 0 is allowed, for an infinite keepalive)
+ * 	                   * keepalive < 2 (keepalive == 0 is allowed, for an infinite keepalive)
  * 	MOSQ_ERR_ERRNO -   if a system call returned an error. The variable errno
  *                     contains the error code, even on Windows.
  *                     Use strerror_r() where available or FormatMessage() on

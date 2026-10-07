@@ -15,16 +15,16 @@
 from mosq_test_helper import *
 
 def do_test(conn, data):
-    connect_packet = mosq_test.gen_connect("subscribe-qos2-test")
-    connack_packet = mosq_test.gen_connack(rc=0)
+    connect_packet = mqtt_packets.gen_connect("subscribe-qos2-test")
+    connack_packet = mqtt_packets.gen_connack(rc=0)
 
-    disconnect_packet = mosq_test.gen_disconnect()
+    disconnect_packet = mqtt_packets.gen_disconnect()
 
     mid = 1
-    subscribe_packet = mosq_test.gen_subscribe(mid, "qos2/test", 2)
-    suback_packet = mosq_test.gen_suback(mid, 2)
+    subscribe_packet = mqtt_packets.gen_subscribe(mid, "qos2/test", 2)
+    suback_packet = mqtt_packets.gen_suback(mid, 2)
 
-    publish_packet = mosq_test.gen_publish("qos2/test", 0, "message")
+    publish_packet = mqtt_packets.gen_publish("qos2/test", 0, "message")
 
     mosq_test.do_receive_send(conn, connect_packet, connack_packet, "connect")
     mosq_test.do_receive_send(conn, subscribe_packet, suback_packet, "subscribe")
@@ -32,7 +32,8 @@ def do_test(conn, data):
     mosq_test.expect_packet(conn, "disconnect", disconnect_packet)
 
 
-mosq_test.client_test("c/02-subscribe-helper-simple-qos2.test", [], do_test, None)
-mosq_test.client_test("cpp/02-subscribe-helper-simple-qos2.test", [], do_test, None)
-mosq_test.client_test("c/02-subscribe-helper-callback-qos2.test", [], do_test, None)
-mosq_test.client_test("cpp/02-subscribe-helper-callback-qos2.test", [], do_test, None)
+mosq_test.client_test(Path("c", mosq_test.get_build_type(), "02-subscribe-helper-simple-qos2.exe"), [], do_test, None)
+mosq_test.client_test(Path("c", mosq_test.get_build_type(), "02-subscribe-helper-callback-qos2.exe"), [], do_test, None)
+if mosq_test.check_features(["WITH_LIB_CPP"]):
+    mosq_test.client_test(Path("cpp", mosq_test.get_build_type(), "02-subscribe-helper-simple-qos2.exe"), [], do_test, None)
+    mosq_test.client_test(Path("cpp", mosq_test.get_build_type(), "02-subscribe-helper-callback-qos2.exe"), [], do_test, None)

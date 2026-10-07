@@ -1,7 +1,13 @@
 <?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE refentry [
+	<!ENTITY from-version21 SYSTEM "common/version-2.1.xml">
+]>
 <?xml-stylesheet type="text/xsl" href="manpage.xsl"?>
 
-<refentry xml:id="mosquitto" xmlns:xlink="http://www.w3.org/1999/xlink">
+<refentry xml:id="mosquitto"
+		xmlns:xlink="http://www.w3.org/1999/xlink"
+		xmlns:xi="http://www.w3.org/2001/XInclude">
+
 	<refmeta>
 		<refentrytitle>mosquitto</refentrytitle>
 		<manvolnum>8</manvolnum>
@@ -81,6 +87,7 @@
 				<term><option>-q</option></term>
 				<term><option>--quiet</option></term>
 				<listitem>
+					&from-version21;
 					<para>Disable all logging. This is equivalent to setting
 						<option>log_type</option> to <option>none</option> in
 						the configuration file. This overrides any logging
@@ -90,22 +97,21 @@
 				</listitem>
 			</varlistentry>
 			<varlistentry>
-				<term><option>--tls-keylog</option> <replaceable>file</replaceable></term>
+				<term><option>--test-config</option></term>
 				<listitem>
+					&from-version21;
 					<para>
-						Log TLS connection information to <replaceable>file</replaceable>.
-						This option allows tools such as <command>tcpdump</command> and
-						<command>wireshark</command> to decrypt TLS traffic and inspect the
-						MQTT traffic. In Wireshark this can be done by setting the
-						<option>(Pre)-Master-Secret log filename</option> option for the
-						<option>Transport Layer Security</option> protocol.
-					</para>
-					<para>
-						This option should be used for debugging only, it must
-						not be used on production servers.
+						Load the config file specified with <option>-c</option>,
+						and verify that it is valid but do not start the broker.
+						The broker exit code will be 0 if the config was valid,
+						or non-zero if no config file was specified or the
+						config file was invalid.
 					</para>
 				</listitem>
 			</varlistentry>
+
+			<xi:include href="common/option-tls-keylog.xml" />
+
 			<varlistentry>
 				<term><option>-v</option></term>
 				<term><option>--verbose</option></term>
@@ -975,6 +981,13 @@
 	</refsect1>
 
 	<refsect1>
+		<title>Environment Variables</title>
+		<variablelist>
+			<xi:include href="common/env-var-mosquitto-unsafe-allow-symlinks.xml" />
+		</variablelist>
+	</refsect1>
+
+	<refsect1>
 		<title>Files</title>
 		<variablelist>
 			<varlistentry>
@@ -999,7 +1012,7 @@
 		</variablelist>
 	</refsect1>
 
-	<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/section-bugs.xml" />
+	<xi:include href="common/section-bugs.xml" />
 
 	<refsect1>
 		<title>See Also</title>

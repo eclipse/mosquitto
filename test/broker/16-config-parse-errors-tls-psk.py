@@ -5,6 +5,8 @@
 from mosq_test_helper import *
 port = mosq_test.get_port()
 
+mosq_test.require_features(["INC_BRIDGE_SUPPORT", "WITH_TLS", "WITH_TLS_PSK"])
+
 conf_file = os.path.basename(__file__).replace('.py', '.conf')
 
 do_test_broker_failure(conf_file, ["bridge_psk string"], port, 3, "Error: The 'bridge_psk' option requires a bridge to be defined first.")

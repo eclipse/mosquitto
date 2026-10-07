@@ -7,31 +7,27 @@
 from mosq_test_helper import *
 
 
-def do_test(start_broker, proto_ver):
-    rc = 1
-
-    connect1_packet = mosq_test.gen_connect("will-reconnect-helper", proto_ver=proto_ver)
-    connack1_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
+def do_test(proto_ver):
+    connect1_packet = mqtt_packets.gen_connect("will-reconnect-helper", proto_ver=proto_ver)
+    connack1_packet = mqtt_packets.gen_connack(rc=0, proto_ver=proto_ver)
 
     mid = 1
-    subscribe1_packet = mosq_test.gen_subscribe(mid, "will/reconnect/test", 0, proto_ver=proto_ver)
-    suback1_packet = mosq_test.gen_suback(mid, 0, proto_ver=proto_ver)
+    subscribe1_packet = mqtt_packets.gen_subscribe(mid, "will/reconnect/test", 0, proto_ver=proto_ver)
+    suback1_packet = mqtt_packets.gen_suback(mid, 0, proto_ver=proto_ver)
 
-    connect2_packet = mosq_test.gen_connect("will-1273", will_topic="will/reconnect/test", will_payload=b"will msg",clean_session=False, proto_ver=proto_ver, session_expiry=60)
-    connack2a_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
-    connack2b_packet = mosq_test.gen_connack(rc=0, flags=1, proto_ver=proto_ver)
+    connect2_packet = mqtt_packets.gen_connect("will-1273", will_topic="will/reconnect/test", will_payload=b"will msg",clean_session=False, proto_ver=proto_ver, session_expiry=60)
+    connack2a_packet = mqtt_packets.gen_connack(rc=0, proto_ver=proto_ver)
+    connack2b_packet = mqtt_packets.gen_connack(rc=0, flags=1, proto_ver=proto_ver)
 
-    disconnect_packet = mosq_test.gen_disconnect(proto_ver=proto_ver)
+    disconnect_packet = mqtt_packets.gen_disconnect(proto_ver=proto_ver)
 
-    publish_packet = mosq_test.gen_publish("will/reconnect/test", qos=0, payload="alive", proto_ver=proto_ver)
+    publish_packet = mqtt_packets.gen_publish("will/reconnect/test", qos=0, payload="alive", proto_ver=proto_ver)
 
-    connect2_packet_clear = mosq_test.gen_connect("will-1273", proto_ver=proto_ver)
+    connect2_packet_clear = mqtt_packets.gen_connect("will-1273", proto_ver=proto_ver)
 
     port = mosq_test.get_port()
-    if start_broker:
-        broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port)
-
-    try:
+    broker = MosquittoBroker(port=port)
+    with broker:
         # Connect and subscribe will-sub
         sock1 = mosq_test.do_client_connect(connect1_packet, connack1_packet, timeout=30, port=port, connack_error="connack1")
         mosq_test.do_send_receive(sock1, subscribe1_packet, suback1_packet, "suback")
@@ -55,38 +51,13 @@ def do_test(start_broker, proto_ver):
         mosq_test.expect_packet(sock1, "publish2", publish_packet)
         # Do a ping to make sure there are no other packets received.
         mosq_test.do_ping(sock1)
-        rc = 0
-
         sock1.close()
         sock2.close()
 
         sock2 = mosq_test.do_client_connect(connect2_packet_clear, connack1_packet, timeout=30, port=port, connack_error="connack clear")
         sock2.close()
-    except mosq_test.TestError:
-        pass
-    finally:
-        if start_broker:
-            broker.terminate()
-            if mosq_test.wait_for_subprocess(broker):
-                print("broker not terminated")
-                if rc == 0: rc=1
-            (stdo, stde) = broker.communicate()
-            if rc:
-                print(stde.decode('utf-8'))
-                exit(rc)
-        else:
-            return rc
 
-
-
-def all_tests(start_broker=False):
-    rc = do_test(start_broker, proto_ver=4)
-    if rc:
-        return rc;
-    rc = do_test(start_broker, proto_ver=5)
-    if rc:
-        return rc;
-    return 0
 
 if __name__ == '__main__':
-    all_tests(True)
+    do_test(proto_ver=4)
+    do_test(proto_ver=5)

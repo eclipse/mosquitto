@@ -4,10 +4,12 @@
 
 from mosq_test_helper import *
 
+mosq_test.require_features(["WITH_TLS"])
+
 def do_test(args, rc_expected, response=None, input=None):
-    proc = subprocess.run([mosq_test.get_build_root()+"/apps/mosquitto_passwd/mosquitto_passwd"]
+    proc = subprocess.run([mosq_paths.mosquitto_passwd]
                     + args,
-                    capture_output=True, encoding='utf-8', timeout=2, input=input)
+                    capture_output=True, text=True, encoding='utf-8', timeout=2, input=input)
 
     if response is not None:
         if proc.stdout[0:len(response)] != response:

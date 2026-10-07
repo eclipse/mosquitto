@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include <time.h>
 #include <mosquitto.h>
+#ifdef WIN32
+#  include <windows.h>
+#endif
 
 /* mosquitto_connect_async() test, with mosquitto_loop_start() called before mosquitto_connect_async(). */
 
@@ -80,9 +83,13 @@ int main(int argc, char *argv[])
 	}
 
 	/* 50 millis to be system polite */
-	struct timespec tv = { 0, 50e6 };
 	while(should_run){
+#ifdef WIN32
+		Sleep(50);
+#else
+		struct timespec tv = { 0, 50000000 };
 		nanosleep(&tv, NULL);
+#endif
 	}
 
 	mosquitto_disconnect(mosq);

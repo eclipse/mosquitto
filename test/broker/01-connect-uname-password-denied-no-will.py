@@ -5,11 +5,10 @@
 
 from mosq_test_helper import *
 
-def write_config(filename, port, pw_file):
-    with open(filename, 'w') as f:
-        f.write("listener %d\n" % (port))
-        f.write("password_file %s\n" % (pw_file))
-        f.write("allow_anonymous false\n")
+from broker_config import BrokerConfig, ListenerConfig
+from mosquitto_broker import MosquittoBroker
+
+mosq_test.require_features(["WITH_TLS"])
 
 def write_pwfile(filename):
     with open(filename, 'w') as f:
@@ -19,28 +18,29 @@ def write_pwfile(filename):
 
 def do_test(proto_ver):
     pw_file = os.path.basename(__file__).replace('.py', '.pwfile')
-    port = mosq_test.get_port()
-    conf_file = os.path.basename(__file__).replace('.py', '.conf')
-    write_config(conf_file, port, pw_file)
     write_pwfile(pw_file)
-
-    rc = 1
-    connect1_packet = mosq_test.gen_connect("connect-uname-pwd-test", username="user", password="password", will_topic="will/test", will_payload=b"will msg", proto_ver=proto_ver)
-    connack1_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
+    connect1_packet = mqtt_packets.gen_connect("connect-uname-pwd-test", username="user", password="password", will_topic="will/test", will_payload=b"will msg", proto_ver=proto_ver)
+    connack1_packet = mqtt_packets.gen_connack(rc=0, proto_ver=proto_ver)
 
     mid = 1
-    subscribe_packet = mosq_test.gen_subscribe(mid, topic="will/test", qos=0, proto_ver=proto_ver)
-    suback_packet = mosq_test.gen_suback(mid, 0, proto_ver=proto_ver)
+    subscribe_packet = mqtt_packets.gen_subscribe(mid, topic="will/test", qos=0, proto_ver=proto_ver)
+    suback_packet = mqtt_packets.gen_suback(mid, 0, proto_ver=proto_ver)
 
-    connect2_packet = mosq_test.gen_connect("connect-uname-pwd-test", username="user", password="password9", proto_ver=proto_ver)
+    connect2_packet = mqtt_packets.gen_connect("connect-uname-pwd-test", username="user", password="password9", proto_ver=proto_ver)
     if proto_ver == 5:
-        connack2_packet = mosq_test.gen_connack(rc=mqtt5_rc.NOT_AUTHORIZED, proto_ver=proto_ver, properties=None)
+        connack2_packet = mqtt_packets.gen_connack(rc=mqtt5_rc.NOT_AUTHORIZED, proto_ver=proto_ver, properties=None)
     else:
-        connack2_packet = mosq_test.gen_connack(rc=5, proto_ver=proto_ver)
+        connack2_packet = mqtt_packets.gen_connack(rc=5, proto_ver=proto_ver)
 
-    broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port)
-
-    try:
+    port = mosq_test.get_port()
+    broker_config = BrokerConfig(
+        listeners = [ ListenerConfig(port=port) ],
+        allow_anonymous=False,
+        password_file=os.path.basename(__file__).replace('.py', '.pwfile')
+    )
+    broker = MosquittoBroker(config=broker_config)
+    broker.add_extra_file(pw_file)
+    with broker:
         sock1 = mosq_test.do_client_connect(connect1_packet, connack1_packet, port=port)
         mosq_test.do_send_receive(sock1, subscribe_packet, suback_packet)
 
@@ -50,24 +50,7 @@ def do_test(proto_ver):
         # If we receive a will here, this is an error
         mosq_test.do_ping(sock1)
         sock1.close()
-        rc = 0
-
-    except mosq_test.TestError:
-        pass
-    finally:
-        os.remove(conf_file)
-        os.remove(pw_file)
-        broker.terminate()
-        if mosq_test.wait_for_subprocess(broker):
-            print("broker not terminated")
-            if rc == 0: rc=1
-        (stdo, stde) = broker.communicate()
-        if rc:
-            print(stde.decode('utf-8'))
-            print("proto_ver=%d" % (proto_ver))
-            exit(rc)
 
 
 do_test(proto_ver=4)
 do_test(proto_ver=5)
-exit(0)

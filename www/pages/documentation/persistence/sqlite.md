@@ -20,9 +20,17 @@ This plugin should be preferred when you are interested in persistence, because
 it saves changes to disk as they are made, where as the traditional persistence
 only takes periodic snapshots.
 
+Note that it is not possible to run both the traditional persistence and the
+sqlite persistence plugin at the same time.
+
+
 ## Usage
 
 The plugin requires minimal configuration.
+
+The database is stored at the location specified by the `persistence_location`
+option and is named `mosquitto.sqlite3. As an alternative, the file can be
+specified directly using the `plugin_opt_db_file` option.
 
 The `plugin_opt_sync` option can be set to `extra`, `full`, `normal`, or `off`,
 with a default of `normal`. This option controls how hard sqlite works to
@@ -42,12 +50,15 @@ Windows:
 ```
 persistence_location <path to save mosquitto.sqlite3>
 global_plugin C:\Program Files\Mosquitto\mosquitto_persist_sqlite.dll
-plugin_opt_acl_file <my acl file path>
 ```
 
 Other:
 ```
 persistence_location <path to save mosquitto.sqlite3>
 global_plugin /path/to/mosquitto_persist_sqlite.so
-plugin_opt_acl_file <my acl file path>
 ```
+
+# Migration
+
+A [script](https://raw.githubusercontent.com/eclipse-mosquitto/mosquitto/refs/heads/master/plugins/persist-sqlite/migrate_to_persist_sqlite.py)
+is available to help migrate from the traditional persistence.

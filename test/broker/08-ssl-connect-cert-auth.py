@@ -4,32 +4,29 @@
 
 from mosq_test_helper import *
 
-if sys.version < '2.7':
-    print("WARNING: SSL not supported on Python 2.6")
-    exit(0)
+from broker_config import BrokerConfig, ListenerConfig
+from mosquitto_broker import MosquittoBroker
 
-def write_config(filename, port1, port2):
-    with open(filename, 'w') as f:
-        f.write("listener %d\n" % (port2))
-        f.write("allow_anonymous true\n")
-        f.write("listener %d\n" % (port1))
-        f.write("allow_anonymous true\n")
-        f.write(f"cafile {ssl_dir}/all-ca.crt\n")
-        f.write(f"certfile {ssl_dir}/server.crt\n")
-        f.write(f"keyfile {ssl_dir}/server.key\n")
-        f.write("require_certificate true\n")
+mosq_test.require_features(["WITH_TLS"])
 
-(port1, port2) = mosq_test.get_port(2)
-conf_file = os.path.basename(__file__).replace('.py', '.conf')
-write_config(conf_file, port1, port2)
+connect_packet = mqtt_packets.gen_connect("connect-success-test")
+connack_packet = mqtt_packets.gen_connack(rc=0)
 
-rc = 1
-connect_packet = mosq_test.gen_connect("connect-success-test")
-connack_packet = mosq_test.gen_connack(rc=0)
-
-broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port2, use_conf=True)
-
-try:
+port1 = mosq_test.get_port()
+broker_config = BrokerConfig(
+    listeners = [
+        ListenerConfig(
+            port=port1,
+            cafile=ssl_dir/'all-ca.crt',
+            certfile=ssl_dir/'server.crt',
+            keyfile=ssl_dir/'server.key',
+            require_certificate=True,
+        )
+    ],
+    allow_anonymous=True,
+)
+broker = MosquittoBroker(config=broker_config)
+with broker:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH, cafile=f"{ssl_dir}/test-root-ca.crt")
     context.minimum_version = ssl.TLSVersion.TLSv1_2
@@ -39,21 +36,4 @@ try:
     ssock.connect(("localhost", port1))
 
     mosq_test.do_send_receive(ssock, connect_packet, connack_packet, "connack")
-
-    rc = 0
-
     ssock.close()
-except mosq_test.TestError:
-    pass
-finally:
-    os.remove(conf_file)
-    broker.terminate()
-    if mosq_test.wait_for_subprocess(broker):
-        print("broker not terminated")
-        if rc == 0: rc=1
-    (stdo, stde) = broker.communicate()
-    if rc:
-        print(stde.decode('utf-8'))
-
-exit(rc)
-

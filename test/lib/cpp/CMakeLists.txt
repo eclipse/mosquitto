@@ -48,14 +48,6 @@ set(BINARIES
     03-request-response-2
     03-request-response-correlation-1
     04-retain-qos0
-    08-ssl-bad-cacert
-    08-ssl-connect-cert-auth
-    08-ssl-connect-cert-auth-custom-ssl-ctx
-    08-ssl-connect-cert-auth-custom-ssl-ctx-default
-    08-ssl-connect-cert-auth-enc
-    08-ssl-connect-no-auth
-    08-ssl-connect-san
-    08-ssl-fake-cacert
     09-util-topic-tokenise
     11-prop-oversize-packet
     11-prop-recv
@@ -63,12 +55,25 @@ set(BINARIES
     11-prop-send-payload-format
 )
 
+if(WITH_TLS)
+	list(APPEND BINARIES
+		08-ssl-bad-cacert
+		08-ssl-connect-cert-auth
+		08-ssl-connect-cert-auth-custom-ssl-ctx
+		08-ssl-connect-cert-auth-custom-ssl-ctx-default
+		08-ssl-connect-cert-auth-enc
+		08-ssl-connect-no-auth
+		08-ssl-connect-san
+		08-ssl-fake-cacert
+	)
+endif()
+
 foreach(BINARY ${BINARIES})
     set(TARGET "${BINARY}-cpp")
     add_executable(${TARGET} ${BINARY}.cpp)
     target_compile_definitions(${TARGET} PRIVATE TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 	target_include_directories(${TARGET} PRIVATE ${CMAKE_SOURCE_DIR}/test ${CMAKE_SOURCE_DIR}/include)
-    set_property(TARGET ${TARGET} PROPERTY SUFFIX .test)
-    target_link_libraries(${TARGET} PRIVATE common-options mosquittopp OpenSSL::SSL)
+    set_property(TARGET ${TARGET} PROPERTY SUFFIX .exe)
+    target_link_libraries(${TARGET} PRIVATE common-options mosquittopp )
 	set_target_properties(${TARGET} PROPERTIES OUTPUT_NAME ${BINARY})
 endforeach()

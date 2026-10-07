@@ -2,47 +2,30 @@
 
 from mosq_test_helper import *
 
-def write_config(filename, port):
-    with open(filename, 'w') as f:
-        f.write("listener %d\n" % (port))
-        f.write("plugin c/plugin_evt_client_offline.so\n")
-        f.write("allow_anonymous true\n")
-
+from broker_config import BrokerConfig, ListenerConfig, PluginConfig
+from mosquitto_broker import MosquittoBroker
 
 def do_test():
-    rc = 1
-    connect_packet = mosq_test.gen_connect("plugin-evt-subscribe", proto_ver=4, clean_session=False)
-    connack_packet = mosq_test.gen_connack(rc=0, proto_ver=4)
+    connect_packet = mqtt_packets.gen_connect("plugin-evt-subscribe", proto_ver=4, clean_session=False)
+    connack_packet = mqtt_packets.gen_connack(rc=0, proto_ver=4)
 
-    publish_packet = mosq_test.gen_publish("evt/client/offline", qos=0, payload="plugin-evt-subscribe")
+    publish_packet = mqtt_packets.gen_publish("evt/client/offline", qos=0, payload="plugin-evt-subscribe")
 
     port = mosq_test.get_port()
-    conf_file = os.path.basename(__file__).replace('.py', '.conf')
-    write_config(conf_file, port)
-    broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port, use_conf=True)
-
-    try:
+    broker_config = BrokerConfig(
+        listeners = [ ListenerConfig(port=port) ],
+        plugins = [ PluginConfig(path=mosq_paths.test_plugin('plugin_evt_client_offline')) ],
+        allow_anonymous=True,
+    )
+    broker = MosquittoBroker(config=broker_config)
+    with broker:
         sub_sock = mosq_test.sub_helper(port, '#')
 
         sock = mosq_test.do_client_connect(connect_packet, connack_packet, port=port)
         sock.close()
 
         mosq_test.expect_packet(sub_sock, "publish", publish_packet)
-        rc = 0
-
         sub_sock.close()
-    except mosq_test.TestError:
-        pass
-    finally:
-        os.remove(conf_file)
-        broker.terminate()
-        if mosq_test.wait_for_subprocess(broker):
-            print("broker not terminated")
-            if rc == 0: rc=1
-        (stdo, stde) = broker.communicate()
-        if rc:
-            print(stde.decode('utf-8'))
-            exit(rc)
 
 
 do_test()

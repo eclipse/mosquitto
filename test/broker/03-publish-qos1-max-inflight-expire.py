@@ -4,50 +4,42 @@
 # With max_inflight_messages set to 1
 
 from mosq_test_helper import *
+from broker_config import BrokerConfig
 
-def write_config(filename, port):
-    with open(filename, 'w') as f:
-        f.write("listener %d\n" % (port))
-        f.write("allow_anonymous true\n")
-        f.write("max_inflight_messages 1\n")
 
 def do_test(proto_ver):
-    rc = 1
-
     properties = mqtt5_props.gen_uint32_prop(mqtt5_props.SESSION_EXPIRY_INTERVAL, 1000)
-    sub_connect_packet = mosq_test.gen_connect("sub", properties=properties, proto_ver=proto_ver, clean_session=False)
+    sub_connect_packet = mqtt_packets.gen_connect("sub", properties=properties, proto_ver=proto_ver, clean_session=False)
 
     properties = mqtt5_props.gen_uint16_prop(mqtt5_props.TOPIC_ALIAS_MAXIMUM, 10) \
         + mqtt5_props.gen_uint32_prop(mqtt5_props.MAXIMUM_PACKET_SIZE, 2000000) \
         + mqtt5_props.gen_uint16_prop(mqtt5_props.RECEIVE_MAXIMUM, 1)
-    sub_connack_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver, properties=properties, property_helper=False)
-    sub_connack_packet2 = mosq_test.gen_connack(rc=0, flags=1, proto_ver=proto_ver, properties=properties, property_helper=False)
+    sub_connack_packet = mqtt_packets.gen_connack(rc=0, proto_ver=proto_ver, properties=properties, property_helper=False)
+    sub_connack_packet2 = mqtt_packets.gen_connack(rc=0, flags=1, proto_ver=proto_ver, properties=properties, property_helper=False)
 
     mid = 1
-    subscribe_packet = mosq_test.gen_subscribe(mid, "pub/qos1/test", 1, proto_ver=proto_ver)
-    suback_packet = mosq_test.gen_suback(mid, 1, proto_ver=proto_ver)
+    subscribe_packet = mqtt_packets.gen_subscribe(mid, "pub/qos1/test", 1, proto_ver=proto_ver)
+    suback_packet = mqtt_packets.gen_suback(mid, 1, proto_ver=proto_ver)
 
-    connect_packet = mosq_test.gen_connect("pub-qos1-test", proto_ver=proto_ver)
+    connect_packet = mqtt_packets.gen_connect("pub-qos1-test", proto_ver=proto_ver)
     properties = mqtt5_props.gen_uint16_prop(mqtt5_props.TOPIC_ALIAS_MAXIMUM, 10) \
         + mqtt5_props.gen_uint32_prop(mqtt5_props.MAXIMUM_PACKET_SIZE, 2000000) \
         + mqtt5_props.gen_uint16_prop(mqtt5_props.RECEIVE_MAXIMUM, 1)
-    connack_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver, properties=properties, property_helper=False)
+    connack_packet = mqtt_packets.gen_connack(rc=0, proto_ver=proto_ver, properties=properties, property_helper=False)
 
     mid = 311
     properties = mqtt5_props.gen_uint32_prop(mqtt5_props.MESSAGE_EXPIRY_INTERVAL, 1)
-    publish_packet = mosq_test.gen_publish("pub/qos1/test", qos=1, mid=mid, payload="message", proto_ver=proto_ver, properties=properties)
-    puback_packet = mosq_test.gen_puback(mid, proto_ver=proto_ver)
+    publish_packet = mqtt_packets.gen_publish("pub/qos1/test", qos=1, mid=mid, payload="message", proto_ver=proto_ver, properties=properties)
+    puback_packet = mqtt_packets.gen_puback(mid, proto_ver=proto_ver)
 
     mid = 1
-    r_publish_packet = mosq_test.gen_publish("pub/qos1/test", qos=1, mid=mid, payload="message", proto_ver=proto_ver)
-    r_puback_packet = mosq_test.gen_puback(mid, proto_ver=proto_ver)
+    r_publish_packet = mqtt_packets.gen_publish("pub/qos1/test", qos=1, mid=mid, payload="message", proto_ver=proto_ver)
+    r_puback_packet = mqtt_packets.gen_puback(mid, proto_ver=proto_ver)
 
     port = mosq_test.get_port()
-    conf_file = os.path.basename(__file__).replace('.py', '.conf')
-    write_config(conf_file, port)
-    broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port)
-
-    try:
+    broker_config = BrokerConfig(max_inflight_messages=1)
+    broker = MosquittoBroker(port=port, config=broker_config)
+    with broker:
         sub_sock = mosq_test.do_client_connect(sub_connect_packet, sub_connack_packet, port=port, timeout=10)
         mosq_test.do_send_receive(sub_sock, subscribe_packet, suback_packet, "suback")
         sub_sock.close()
@@ -64,33 +56,15 @@ def do_test(proto_ver):
 
         #
         mid = 1
-        s_publish_packet = mosq_test.gen_publish("pub/qos1/test", qos=1, mid=mid, payload="message2", proto_ver=proto_ver)
-        s_puback_packet = mosq_test.gen_puback(mid, proto_ver=proto_ver)
+        s_publish_packet = mqtt_packets.gen_publish("pub/qos1/test", qos=1, mid=mid, payload="message2", proto_ver=proto_ver)
+        s_puback_packet = mqtt_packets.gen_puback(mid, proto_ver=proto_ver)
         mosq_test.do_send_receive(sock, s_publish_packet, s_puback_packet, "puback")
 
         mid = 2
-        r_publish_packet = mosq_test.gen_publish("pub/qos1/test", qos=1, mid=mid, payload="message2", proto_ver=proto_ver)
-        r_puback_packet = mosq_test.gen_puback(mid, proto_ver=proto_ver)
+        r_publish_packet = mqtt_packets.gen_publish("pub/qos1/test", qos=1, mid=mid, payload="message2", proto_ver=proto_ver)
+        r_puback_packet = mqtt_packets.gen_puback(mid, proto_ver=proto_ver)
         mosq_test.expect_packet(sub_sock, "publish 3", r_publish_packet)
         sub_sock.send(r_puback_packet)
 
-        rc = 0
-
-        sock.close()
-    except mosq_test.TestError:
-        pass
-    finally:
-        os.remove(conf_file)
-        broker.terminate()
-        if mosq_test.wait_for_subprocess(broker):
-            print("broker not terminated")
-            if rc == 0: rc=1
-        (stdo, stde) = broker.communicate()
-        if rc:
-            print(stde.decode('utf-8'))
-            print("proto_ver=%d" % (proto_ver))
-            exit(rc)
-
 
 do_test(proto_ver=5)
-exit(0)

@@ -3,32 +3,16 @@
 # Test $CONTROL/broker/v1 listListeners
 
 from mosq_test_helper import *
+
+from broker_config import BrokerConfig, ListenerConfig
+from mosquitto_broker import MosquittoBroker
 import json
 import shutil
 
-def write_config(filename, ports):
-    with open(filename, 'w') as f:
-        f.write("enable_control_api true\n")
-        f.write("allow_anonymous true\n")
-        f.write("listener %d\n" % (ports[0]))
-        f.write("protocol mqtt\n")
-        f.write("listener %d\n" % (ports[1]))
-        f.write("protocol websockets\n")
-        f.write("listener %d\n" % (ports[2]))
-        f.write("protocol mqtt\n")
-        f.write(f"certfile {ssl_dir}/server.crt\n")
-        f.write(f"keyfile {ssl_dir}/server.key\n")
-        f.write("listener %d\n" % (ports[3]))
-        f.write("protocol websockets\n")
-        f.write(f"certfile {ssl_dir}/server.crt\n")
-        f.write(f"keyfile {ssl_dir}/server.key\n")
-        f.write("listener 0 17-list-listeners-mqtt.sock\n")
-        f.write("protocol mqtt\n")
-        f.write("listener 0 17-list-listeners-websockets.sock\n")
-        f.write("protocol websockets\n")
+mosq_test.require_features(["WITH_CONTROL"])
 
 def command_check(sock, command_payload, expected_response):
-    command_packet = mosq_test.gen_publish(topic="$CONTROL/broker/v1", qos=0, payload=json.dumps(command_payload))
+    command_packet = mqtt_packets.gen_publish(topic="$CONTROL/broker/v1", qos=0, payload=json.dumps(command_payload))
     sock.send(command_packet)
     response = json.loads(mosq_test.read_publish(sock))
     if response != expected_response:
@@ -37,7 +21,7 @@ def command_check(sock, command_payload, expected_response):
         raise ValueError(response)
 
 def invalid_command_check(sock, command_payload, cmd_name, error_msg):
-    command_packet = mosq_test.gen_publish(topic="$CONTROL/broker/v1", qos=0, payload=command_payload)
+    command_packet = mqtt_packets.gen_publish(topic="$CONTROL/broker/v1", qos=0, payload=command_payload)
     sock.send(command_packet)
     response = json.loads(mosq_test.read_publish(sock))
     expected_response = {'responses': [{'command': cmd_name, 'error': error_msg}]}
@@ -46,56 +30,112 @@ def invalid_command_check(sock, command_payload, cmd_name, error_msg):
         print(response)
         raise ValueError(response)
 
-
-
 ports = mosq_test.get_port(4)
-conf_file = os.path.basename(__file__).replace('.py', '.conf')
-write_config(conf_file, ports)
+broker_config = BrokerConfig(
+    listeners = [
+        ListenerConfig(
+            port=ports[0],
+            protocol="mqtt"
+        )
+    ],
+    allow_anonymous=True,
+    enable_control_api=True
+)
+if mosq_test.check_features(["WITH_WEBSOCKETS"]):
+    broker_config.listeners.append(ListenerConfig(
+        port=ports[1],
+        protocol="websockets"
+    ))
+if mosq_test.check_features(["WITH_TLS"]):
+    broker_config.listeners.append(ListenerConfig(
+        port=ports[2],
+        protocol="mqtt",
+        certfile=ssl_dir/"server.crt",
+        keyfile=ssl_dir/"server.key",
+    ))
+if mosq_test.check_features(["WITH_TLS", "WITH_WEBSOCKETS", "WITH_WEBSOCKETS_BUILTIN"]):
+    broker_config.listeners.append(ListenerConfig(
+        port=ports[3],
+        protocol="websockets",
+        certfile=ssl_dir/"server.crt",
+        keyfile=ssl_dir/"server.key",
+    ))
+if mosq_test.check_features(["WITH_UNIX_SOCKETS"]):
+    broker_config.listeners.append(ListenerConfig(
+        port=0,
+        address="17-list-listeners-mqtt.sock",
+    ))
+if mosq_test.check_features(["WITH_UNIX_SOCKETS", "WITH_WEBSOCKETS", "WITH_WEBSOCKETS_BUILTIN"]):
+    broker_config.listeners.append(ListenerConfig(
+        port=0,
+        address="17-list-listeners-websockets.sock",
+        protocol="websockets",
+    ))
 
 cmd_success = {"commands":[{"command": "listListeners", "correlationData": "m3CtYVnySLCOwnHzITSeowvgla0InV4G"}]}
 
+listeners = [{
+    'port': ports[0],
+    'protocol': 'mqtt',
+    'tls': False
+}]
+
+if mosq_test.check_features(["WITH_WEBSOCKETS"]):
+    listeners.append({
+        'port': ports[1],
+        'protocol': 'mqtt+websockets',
+        'tls': False
+    })
+
+
+if mosq_test.check_features(["WITH_TLS"]):
+    listeners.append({
+        'port': ports[2],
+        'protocol': 'mqtt',
+        'tls': True
+
+    })
+
+if mosq_test.check_features(["WITH_TLS", "WITH_WEBSOCKETS", "WITH_WEBSOCKETS_BUILTIN"]):
+    listeners.append({
+        'port': ports[3],
+        'protocol': 'mqtt+websockets',
+        'tls': True
+    })
+
+if mosq_test.check_features(["WITH_UNIX_SOCKETS"]):
+    listeners.append({
+        'port': 0,
+        'protocol': 'mqtt',
+        'socket-path': '17-list-listeners-mqtt.sock',
+        'tls': False
+    })
+
+if mosq_test.check_features(["WITH_UNIX_SOCKETS", "WITH_WEBSOCKETS", "WITH_WEBSOCKETS_BUILTIN"]):
+    listeners.append({
+        'port': 0,
+        'protocol': 'mqtt+websockets',
+        'socket-path': '17-list-listeners-websockets.sock',
+        'tls': False
+    })
+
 response_success = {'responses': [{'command': 'listListeners', "correlationData": "m3CtYVnySLCOwnHzITSeowvgla0InV4G", 'data':{
-    'listeners':[
-        {
-            'port': ports[0],
-            'protocol': 'mqtt',
-            'tls': False
-        },{
-            'port': ports[1],
-            'protocol': 'mqtt+websockets',
-            'tls': False
-        },{
-            'port': ports[2],
-            'protocol': 'mqtt',
-            'tls': True
-        },{
-            'port': ports[3],
-            'protocol': 'mqtt+websockets',
-            'tls': True
-        },{
-            'port': 0,
-            'protocol': 'mqtt',
-            'socket-path': '17-list-listeners-mqtt.sock',
-            'tls': False
-        },{
-            'port': 0,
-            'protocol': 'mqtt+websockets',
-            'socket-path': '17-list-listeners-websockets.sock',
-            'tls': False
-        }
-    ]}}]}
+    'listeners':listeners
+    }
+}]}
 
 rc = 1
-connect_packet = mosq_test.gen_connect("17-list-listeners")
-connack_packet = mosq_test.gen_connack(rc=0)
+connect_packet = mqtt_packets.gen_connect("17-list-listeners")
+connack_packet = mqtt_packets.gen_connack(rc=0)
 
 mid = 2
-subscribe_packet = mosq_test.gen_subscribe(mid, "$CONTROL/broker/#", 0)
-suback_packet = mosq_test.gen_suback(mid, 0)
+subscribe_packet = mqtt_packets.gen_subscribe(mid, "$CONTROL/broker/#", 0)
+suback_packet = mqtt_packets.gen_suback(mid, 0)
 
-broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=ports[0])
-
-try:
+broker = MosquittoBroker(config=broker_config)
+for f in ["17-list-listeners-mqtt.sock", "17-list-listeners-websockets.sock"]:
+    broker.add_extra_file(f)
+with broker:
     sock = mosq_test.do_client_connect(connect_packet, connack_packet, port=ports[0])
     mosq_test.do_send_receive(sock, subscribe_packet, suback_packet, "suback")
 
@@ -116,26 +156,3 @@ try:
 
     command_check(sock, cmd_success, response_success)
     mosq_test.do_ping(sock)
-
-    rc = 0
-
-    sock.close()
-except mosq_test.TestError:
-    pass
-finally:
-    os.remove(conf_file)
-    for f in ["17-list-listeners-mqtt.sock", "17-list-listeners-websockets.sock"]:
-        try:
-            os.remove(f)
-        except FileNotFoundError:
-            pass
-    broker.terminate()
-    if mosq_test.wait_for_subprocess(broker):
-        print("broker not terminated")
-        if rc == 0: rc=1
-    (stdo, stde) = broker.communicate()
-    if rc:
-        print(stde.decode('utf-8'))
-
-
-exit(rc)

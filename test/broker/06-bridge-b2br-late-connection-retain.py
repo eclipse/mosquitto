@@ -4,6 +4,8 @@
 
 from mosq_test_helper import *
 
+mosq_test.require_features(["INC_BRIDGE_SUPPORT", "WITH_PERSISTENCE"])
+
 def write_config1(filename, persistence_file, port1, port2):
     with open(filename, 'w') as f:
         f.write("listener %d\n" % (port2))
@@ -18,7 +20,7 @@ def write_config2(filename, persistence_file, port1, port2, protocol_version):
         f.write("allow_anonymous true\n")
         f.write("\n")
         f.write("connection bridge_sample\n")
-        f.write("address 127.0.0.1:%d\n" % (port1))
+        f.write("address localhost:%d\n" % (port1))
         f.write("topic bridge/# out 1\n")
         f.write("notifications false\n")
         f.write("bridge_attempt_unsubscribe false\n")
@@ -41,25 +43,21 @@ def do_test(proto_ver):
 
     rc = 1
     client_id = socket.gethostname()+".bridge_sample"
-    connect_packet = mosq_test.gen_connect(client_id, clean_session=False, proto_ver=proto_ver_connect)
-    connack_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
+    connect_packet = mqtt_packets.gen_connect(client_id, clean_session=False, proto_ver=proto_ver_connect)
+    connack_packet = mqtt_packets.gen_connack(rc=0, proto_ver=proto_ver)
 
-    c_connect_packet = mosq_test.gen_connect("client", proto_ver=proto_ver)
-    c_connack_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
+    c_connect_packet = mqtt_packets.gen_connect("client", proto_ver=proto_ver)
+    c_connack_packet = mqtt_packets.gen_connack(rc=0, proto_ver=proto_ver)
 
     mid = 1
-    publish_packet = mosq_test.gen_publish("bridge/test", qos=1, mid=mid, payload="message", retain=True, proto_ver=proto_ver)
+    publish_packet = mqtt_packets.gen_publish("bridge/test", qos=1, mid=mid, payload="message", retain=True, proto_ver=proto_ver)
 
     if proto_ver == 5:
-        puback_packet = mosq_test.gen_puback(mid, proto_ver=proto_ver, reason_code=16)
+        puback_packet = mqtt_packets.gen_puback(mid, proto_ver=proto_ver, reason_code=16)
     else:
-        puback_packet = mosq_test.gen_puback(mid, proto_ver=proto_ver)
+        puback_packet = mqtt_packets.gen_puback(mid, proto_ver=proto_ver)
 
-    ssock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    ssock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    ssock.settimeout(40)
-    ssock.bind(('', port1))
-    ssock.listen(5)
+    ssock = mosq_test.listen_sock(port1)
 
     write_config1(conf_file, persistence_file, port1, port2)
 
@@ -69,7 +67,7 @@ def do_test(proto_ver):
         mosq_test.do_send_receive(client, publish_packet, puback_packet, "puback")
         client.close()
 
-        broker.terminate()
+        mosq_test.terminate_broker(broker)
         if mosq_test.wait_for_subprocess(broker):
             print("broker not terminated")
             if rc == 0: rc=1
@@ -102,15 +100,14 @@ def do_test(proto_ver):
         except NameError:
             pass
 
-        broker.terminate()
+        mosq_test.terminate_broker(broker)
         if mosq_test.wait_for_subprocess(broker):
             print("broker not terminated")
             if rc == 0: rc=1
-        (stdo, stde) = broker.communicate()
         os.remove(persistence_file)
         ssock.close()
         if rc:
-            print(stde.decode('utf-8'))
+            print(mosq_test.broker_log(broker))
             exit(rc)
 
 

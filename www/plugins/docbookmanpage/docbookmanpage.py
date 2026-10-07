@@ -52,6 +52,11 @@ class CompileDocbookManpage(PageCompiler):
     def compile(self, source, dest, is_two_file=True, post=None, lang=None):
         """Compile the source file into HTML and save as dest."""
         makedirs(os.path.dirname(dest))
+        if "common/" in source and post is not None:
+            post.write_depfile(dest, [], post, lang)
+            with open(dest, "wt") as f:
+                pass
+            return []
         binary = self.site.config.get('XSLTPROC_BINARY', 'xsltproc')
         xslpath = os.path.join(os.path.split(__file__)[0], 'html.xsl')
         try:

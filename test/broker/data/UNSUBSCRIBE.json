@@ -38,6 +38,7 @@
 			{ "name": "A2 topic with U+007F", "msgs": [{"type":"send", "payload":"A2 r9 m1234 s5 746F707F70"}]},
 			{ "name": "A2 topic with U+009F", "msgs": [{"type":"send", "payload":"A2 r9 m1234 s5 746FC29F70"}]},
 			{ "name": "A2 topic with U+FFFF", "msgs": [{"type":"send", "payload":"A2 r9 m1234 s5 746FEDBFBF"}]},
+			{ "name": "A2 invalid topic", "msgs": [{"type":"send", "payload":"A2 r9 m1234 s5 'ab/+e'"}]},
 			{ "name": "A2 zero mid", "msgs": [ {"type":"send", "payload":"A2 r8 0000 s1 'p' s1 'q'"}]}
 		]
 	},
@@ -135,6 +136,10 @@
 			]},
 			{ "name": "A2 topic with U+FFFF", "msgs": [
 				{"type":"send", "payload":"A2 r10 m1234 v0 s5 746FEDBFBF"},
+				{"type":"recv", "payload":"E0 r1 81"}
+			]},
+			{ "name": "A2 invalid topic", "msgs": [
+				{"type":"send", "payload":"A2 r9 m1234 s5 'ab/+e'"},
 				{"type":"recv", "payload":"E0 r1 81"}
 			]},
 			{ "name": "A2 multiple [MQTT-3.10.4-6]", "expect_disconnect":false, "msgs": [

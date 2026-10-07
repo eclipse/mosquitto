@@ -1,7 +1,15 @@
 <?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE refentry [
+	<!ENTITY commandname "mosquitto_sub">
+	<!ENTITY from-version21 SYSTEM "common/version-2.1.xml">
+	<!ENTITY options-intro SYSTEM "common/options-intro.xml">
+]>
 <?xml-stylesheet type="text/xsl" href="manpage.xsl"?>
 
-<refentry xml:id="mosquitto_sub" xmlns:xlink="http://www.w3.org/1999/xlink">
+<refentry xml:id="mosquitto_sub"
+		xmlns:xlink="http://www.w3.org/1999/xlink"
+		xmlns:xi="http://www.w3.org/2001/XInclude">
+
 	<refmeta>
 		<refentrytitle>mosquitto_sub</refentrytitle>
 		<manvolnum>1</manvolnum>
@@ -66,6 +74,7 @@
 			<command>misc-options:</command>
 			<sbr/>
 			<arg><option>-E</option></arg>
+			<arg><option>-o</option> <replaceable>config-file</replaceable></arg>
 			<arg><option>-W</option> <replaceable>message-processing-timeout</replaceable></arg>
 		</cmdsynopsis>
 		<cmdsynopsis>
@@ -82,7 +91,7 @@
 			<arg><option>-V</option> <replaceable>protocol-version</replaceable></arg>
 			<arg><option>-x</option> <replaceable>session-expiry-interval</replaceable></arg>
 			<sbr/>
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/synopsis-will.xml" />
+			<xi:include href="common/synopsis-will.xml" />
 		</cmdsynopsis>
 		<cmdsynopsis>
 			<command>output-options:</command>
@@ -106,8 +115,8 @@
 				<arg choice='plain'><option>--watch</option></arg>
 			</group>
 		</cmdsynopsis>
-		<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/synopsis-tls-certificate-options.xml" />
-		<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/synopsis-tls-psk-options.xml" />
+		<xi:include href="common/synopsis-tls-certificate-options.xml" />
+		<xi:include href="common/synopsis-tls-psk-options.xml" />
 
 		<cmdsynopsis>
 			<command>mosquitto_sub</command>
@@ -134,320 +143,290 @@
 		</para>
 	</refsect1>
 
-	<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/section-encrypted-connections.xml" />
+	<xi:include href="common/section-encrypted-connections.xml" />
 
 	<refsect1>
 		<title>Options</title>
-		<para>
-			There are three ways to provide options to mosquitto_sub: the
-			default config file, a specified config file, or options on
-			the command line.
-		</para>
-		<para>
-			The default config file is located at
-			<option>$XDG_CONFIG_HOME/mosquitto_sub</option> or
-			<option>$HOME/.config/mosquitto_sub</option> on POSIX systems, or
-			<option>%USERPROFILE%\mosquitto_sub</option> on Windows.
-		</para>
-		<para>
-			A config file can be specified on the command line using
-			<option>-o <replaceable>config-file</replaceable></option>.
-			If the <option>-o</option> option is used, the default config
-			file will not be loaded.
-		</para>
-		<para>
-			In both cases, the contents of the config file should consist of
-			options, one per line in the format:
-			<option>-option <replaceable>value</replaceable></option>. If
-			options are also specified on the command line, those
-			options will override the same options set in the config
-			file. The exceptions to this are the message type options, of which
-			only one can be specified. Note also that currently some options
-			cannot be negated, e.g. <option>-S</option>. TLS encryption options
-			can be negated with the <option>--no-tls</option> option.
-		</para>
-		<para>
-			Config file lines that have a <option>#</option> as the first
-			character are treated as comments and not processed any further.
-		</para>
-		<para>
-			It is suggested that config files are primarily used for
-			authentication purposes. Use of a config file allows you to
-			authenticate without the need to show the username and password
-			on the command line.
-		</para>
-		<variablelist>
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-bind.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-clean-session.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-cafile.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-capath.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-cert.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-ciphers.xml" />
-			<varlistentry>
-				<term><option>-C</option></term>
-				<listitem>
-					<para>
-						Disconnect and exit the program immediately after the
-						given count of messages have been received. This may be
-						useful in shell scripts where on a single status value
-						is required, for example.
-					</para>
-					<para>
-						Combine with <option>-R</option> or <option>--retain-handling never</option>
-						to print only the first set of fresh messages (i.e. that
-						does not have the retained flag set), or with
-						<option>-T</option> to filter which topics are processed.
-					</para>
-				</listitem>
-			</varlistentry>
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-debug.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-property.xml" />
-			<varlistentry>
-				<term><option>-E</option></term>
-				<listitem>
-					<para>
-						If this option is given, <command>mosquitto_sub</command>
-						will exit immediately that all of its subscriptions have
-						been acknowledged by the broker. In conjunction with
-						<option>-c</option> this allows a durable client session
-						to be initialised on the broker for future use without
-						requiring any messages to be received.
-					</para>
-				</listitem>
-			</varlistentry>
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-format.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-help.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-host.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-clientid.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-clientid-prefix.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-insecure.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-keepalive.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-key.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-keyform.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-url.xml" />
-			<varlistentry>
-				<term><option>--message-rate</option></term>
-				<listitem>
-					<para>
-						Instead of printing the messages received, print a count
-						of the messages received at one second intervals. Other
-						options related to output formatting are not valid when
-						this option is active.
-					</para>
-				</listitem>
-			</varlistentry>
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-format-no-eol.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-nodelay.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-no-tls.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-port.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-password.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-format-pretty.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-proxy.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-psk.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-psk-identity.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-qos-incoming.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-quiet.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-hide-retain.xml" />
-			<varlistentry>
-				<term><option>--random-filter</option></term>
-				<listitem>
-					<para>
-						This option can be used to reduce the proportion of
-						messages that mosquitto_sub prints. The default
-						behaviour is to print all incoming messages. Setting the
-						<replaceable>chance</replaceable> to a floating point value
-						between 0.1 and 100.0 will ensure that on average that
-						percentage of messages will be printed.
-					</para>
-				</listitem>
-			</varlistentry>
-			<varlistentry>
-				<term><option>--remove-retained</option></term>
-				<listitem>
-					<para>
-						If this argument is given, then when mosquitto_sub
-						receives a message with the retained bit set, it will
-						send a message to the broker to clear that retained
-						message. This applies to all received messages except
-						those that are filtered out by the <option>-T</option>
-						option. This option still takes effect even if
-						<option>-R</option> is used. See also the
-						<option>--retain-as-published</option> and
-						<option>--retained-only</option> options.
-					</para>
+		&options-intro;
 
-					<example title="remove-retained-example-1" label="1">
+		<refsect2>
+			<title>The options</title>
+			<variablelist>
+				<xi:include href="common/option-bind.xml" />
+				<xi:include href="common/option-clean-session.xml" />
+				<xi:include href="common/option-tls-cafile.xml" />
+				<xi:include href="common/option-tls-capath.xml" />
+				<xi:include href="common/option-tls-cert.xml" />
+				<xi:include href="common/option-tls-ciphers.xml" />
+				<varlistentry>
+					<term><option>-C</option></term>
+					<listitem>
 						<para>
-							Remove all retained messages on the server,
-							assuming we have access to do so, and then exit:
+							Disconnect and exit the program immediately after the
+							given count of messages have been received. This may be
+							useful in shell scripts where on a single status value
+							is required, for example.
+						</para>
+						<para>
+							Combine with <option>-R</option> or <option>--retain-handling never</option>
+							to print only the first set of fresh messages (i.e. that
+							does not have the retained flag set), or with
+							<option>-T</option> to filter which topics are processed.
+						</para>
+					</listitem>
+				</varlistentry>
+				<xi:include href="common/option-debug.xml" />
+				<xi:include href="common/option-property.xml" />
+				<varlistentry>
+					<term><option>-E</option></term>
+					<listitem>
+						<para>
+							If this option is given, <command>mosquitto_sub</command>
+							will exit immediately that all of its subscriptions have
+							been acknowledged by the broker. In conjunction with
+							<option>-c</option> this allows a durable client session
+							to be initialised on the broker for future use without
+							requiring any messages to be received.
+						</para>
+					</listitem>
+				</varlistentry>
+				<xi:include href="common/option-format.xml" />
+				<xi:include href="common/option-help.xml" />
+				<xi:include href="common/option-host.xml" />
+				<xi:include href="common/option-clientid.xml" />
+				<xi:include href="common/option-clientid-prefix.xml" />
+				<xi:include href="common/option-tls-insecure.xml" />
+				<xi:include href="common/option-keepalive.xml" />
+				<xi:include href="common/option-tls-key.xml" />
+				<xi:include href="common/option-tls-keyform.xml" />
+				<xi:include href="common/option-url.xml" />
+				<varlistentry>
+					<term><option>--message-rate</option></term>
+					<listitem>
+						&from-version21;
+						<para>
+							Instead of printing the messages received, print a count
+							of the messages received at one second intervals. Other
+							options related to output formatting are not valid when
+							this option is active.
+						</para>
+					</listitem>
+				</varlistentry>
+				<xi:include href="common/option-format-no-eol.xml" />
+				<xi:include href="common/option-nodelay.xml" />
+				<xi:include href="common/option-no-tls.xml" />
+				<xi:include href="common/option-config-file.xml" />
+				<xi:include href="common/option-port.xml" />
+				<xi:include href="common/option-password.xml" />
+				<xi:include href="common/option-format-pretty.xml" />
+				<xi:include href="common/option-proxy.xml" />
+				<xi:include href="common/option-tls-psk.xml" />
+				<xi:include href="common/option-tls-psk-identity.xml" />
+				<xi:include href="common/option-qos-incoming.xml" />
+				<xi:include href="common/option-quiet.xml" />
+				<xi:include href="common/option-hide-retain.xml" />
+				<varlistentry>
+					<term><option>--random-filter</option></term>
+					<listitem>
+						<para>
+							This option can be used to reduce the proportion of
+							messages that mosquitto_sub prints. The default
+							behaviour is to print all incoming messages. Setting the
+							<replaceable>chance</replaceable> to a floating point value
+							between 0.1 and 100.0 will ensure that on average that
+							percentage of messages will be printed.
+						</para>
+					</listitem>
+				</varlistentry>
+				<varlistentry>
+					<term><option>--remove-retained</option></term>
+					<listitem>
+						<para>
+							If this argument is given, then when mosquitto_sub
+							receives a message with the retained bit set, it will
+							send a message to the broker to clear that retained
+							message. This applies to all received messages except
+							those that are filtered out by the <option>-T</option>
+							option. This option still takes effect even if
+							<option>-R</option> is used. See also the
+							<option>--retain-as-published</option> and
+							<option>--retained-only</option> options.
 						</para>
 
-						<programlisting language="config">
-mosquitto_sub -t '#' --remove-retained --retained-only</programlisting>
+						<example title="remove-retained-example-1" label="1">
+							<para>
+								Remove all retained messages on the server,
+								assuming we have access to do so, and then exit:
+							</para>
+
+							<programlisting language="config">
+	mosquitto_sub -t '#' --remove-retained --retained-only</programlisting>
+							</example>
+
+							<example title="remove-retained-example-2" label="2">
+							<para>
+								Remove a whole tree, with the exception of a
+								single topic:
+							</para>
+
+							<programlisting language="config">
+	mosquitto_sub -t 'bbc/#' -T bbc/bbc1 --remove-retained</programlisting>
 						</example>
-
-						<example title="remove-retained-example-2" label="2">
+					</listitem>
+				</varlistentry>
+				<varlistentry>
+					<term><option>--retained-only</option></term>
+					<listitem>
 						<para>
-							Remove a whole tree, with the exception of a
-							single topic:
+							If this argument is given, only messages that are
+							received that have the retain bit set will be printed.
+							Messages with retain set are "stale", in that it is not
+							known when they were originally published. With this
+							argument in use, the receipt of the first non-stale
+							message will cause the client to exit. See also the
+							<option>--retain-as-published</option> option.
+						</para>
+					</listitem>
+				</varlistentry>
+				<varlistentry>
+					<term><option>--retain-as-published</option></term>
+					<listitem>
+						<para>
+							If this argument is given, the subscriptions will
+							have the "retain as published" option set. This means
+							that the retain flag on an incoming message will be
+							exactly as set by the publishing client, rather than
+							indicating whether the message is fresh/stale.
+						</para>
+						<para>
+							This option is not valid for MQTT v3.1/v3.1.1
+							clients.
+						</para>
+					</listitem>
+				</varlistentry>
+				<xi:include href="common/option-retain-handling.xml" />
+				<xi:include href="common/option-srv.xml" />
+				<varlistentry>
+					<term><option>-t</option></term>
+					<term><option>--topic</option></term>
+					<listitem>
+						<para>
+							The MQTT topic to subscribe to. See
+							<citerefentry><refentrytitle><link xlink:href="mqtt-7.html">mqtt</link></refentrytitle><manvolnum>7</manvolnum></citerefentry>
+							for more information on MQTT topics.</para>
+						<para>
+							This option may be repeated to subscribe to multiple topics.
+						</para>
+					</listitem>
+				</varlistentry>
+				<varlistentry>
+					<term><option>-T</option></term>
+					<term><option>--filter-out</option></term>
+					<listitem>
+						<para>
+							Suppress printing of topics that match the filter. This
+							allows subscribing to a wildcard topic and only printing
+							a partial set of the wildcard hierarchy.
+						</para>
+						<para>
+							For example, subscribe to the BBC tree, but suppress
+							output from Radio 3:
+						</para>
+						<itemizedlist mark="circle">
+							<listitem><para>mosquitto_sub <literal>-t</literal>
+									bbc/# <literal>-T</literal>
+									bbc/radio3</para></listitem>
+						</itemizedlist>
+						<para>
+							This option may be repeated to filter out multiple
+							topics or topic trees.
+						</para>
+					</listitem>
+				</varlistentry>
+				<xi:include href="common/option-tls-alpn.xml" />
+				<xi:include href="common/option-tls-engine.xml" />
+				<xi:include href="common/option-tls-engine-kpass-sha1.xml" />
+				<xi:include href="common/option-tls-keylog.xml" />
+				<xi:include href="common/option-tls-use-os-certs.xml" />
+				<xi:include href="common/option-tls-version.xml" />
+				<xi:include href="common/option-username.xml" />
+				<xi:include href="common/option-unix-socket.xml" />
+				<varlistentry>
+					<term><option>-U</option></term>
+					<term><option>--unsubscribe</option></term>
+					<listitem>
+						<para>
+							A topic that will be unsubscribed from. This may be used
+							on its own or in conjunction with the <option>--topic</option>
+							option and only makes sense when used in conjunction with
+							<option>--clean-session</option>.
+						</para>
+						<para>
+							If used with <option>--topic</option> then subscriptions
+							will be processed before unsubscriptions.
+						</para>
+						<para>
+							Note that it is only possible to unsubscribe from
+							subscriptions that have previously been made. It is not
+							possible to punch holes in wildcard subscriptions. For
+							example, subscribing to <option>sensors/#</option> and
+							then unsubscribing from
+							<option>sensors/+/temperature</option> as shown below
+							will still result in messages matching the
+							<option>sensors/+/temperature</option> being delivered
+							to the client.
+						</para>
+						<itemizedlist mark="circle">
+							<listitem><para>mosquitto_sub <literal>-t</literal> sensors/# <literal>-U</literal> sensors/+/temperature <literal>-v</literal></para></listitem>
+						</itemizedlist>
+
+						<para>
+							Note also that because retained messages are published
+							by the broker on receipt of a SUBSCRIBE command,
+							subscribing and unsubscribing to the same topic may
+							result in messages being received at the client.
 						</para>
 
-						<programlisting language="config">
-mosquitto_sub -t 'bbc/#' -T bbc/bbc1 --remove-retained</programlisting>
-					</example>
-				</listitem>
-			</varlistentry>
-			<varlistentry>
-				<term><option>--retained-only</option></term>
-				<listitem>
-					<para>
-						If this argument is given, only messages that are
-						received that have the retain bit set will be printed.
-						Messages with retain set are "stale", in that it is not
-						known when they were originally published. With this
-						argument in use, the receipt of the first non-stale
-						message will cause the client to exit. See also the
-						<option>--retain-as-published</option> option.
-					</para>
-				</listitem>
-			</varlistentry>
-			<varlistentry>
-				<term><option>--retain-as-published</option></term>
-				<listitem>
-					<para>
-						If this argument is given, the subscriptions will
-						have the "retain as published" option set. This means
-						that the retain flag on an incoming message will be
-						exactly as set by the publishing client, rather than
-						indicating whether the message is fresh/stale.
-					</para>
-					<para>
-						This option is not valid for MQTT v3.1/v3.1.1
-						clients.
-					</para>
-				</listitem>
-			</varlistentry>
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-retain-handling.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-srv.xml" />
-			<varlistentry>
-				<term><option>-t</option></term>
-				<term><option>--topic</option></term>
-				<listitem>
-					<para>
-						The MQTT topic to subscribe to. See
-						<citerefentry><refentrytitle><link xlink:href="mqtt-7.html">mqtt</link></refentrytitle><manvolnum>7</manvolnum></citerefentry>
-						for more information on MQTT topics.</para>
-					<para>
-						This option may be repeated to subscribe to multiple topics.
-					</para>
-				</listitem>
-			</varlistentry>
-			<varlistentry>
-				<term><option>-T</option></term>
-				<term><option>--filter-out</option></term>
-				<listitem>
-					<para>
-						Suppress printing of topics that match the filter. This
-						allows subscribing to a wildcard topic and only printing
-						a partial set of the wildcard hierarchy.
-					</para>
-					<para>
-						For example, subscribe to the BBC tree, but suppress
-						output from Radio 3:
-					</para>
-					<itemizedlist mark="circle">
-						<listitem><para>mosquitto_sub <literal>-t</literal>
-								bbc/# <literal>-T</literal>
-								bbc/radio3</para></listitem>
-					</itemizedlist>
-					<para>
-						This option may be repeated to filter out multiple
-						topics or topic trees.
-					</para>
-				</listitem>
-			</varlistentry>
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-alpn.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-engine.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-engine-kpass-sha1.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-keylog.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-use-os-certs.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-version.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-username.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-unix-socket.xml" />
-			<varlistentry>
-				<term><option>-U</option></term>
-				<term><option>--unsubscribe</option></term>
-				<listitem>
-					<para>
-						A topic that will be unsubscribed from. This may be used
-						on its own or in conjunction with the <option>--topic</option>
-						option and only makes sense when used in conjunction with
-						<option>--clean-session</option>.
-					</para>
-					<para>
-						If used with <option>--topic</option> then subscriptions
-						will be processed before unsubscriptions.
-					</para>
-					<para>
-						Note that it is only possible to unsubscribe from
-						subscriptions that have previously been made. It is not
-						possible to punch holes in wildcard subscriptions. For
-						example, subscribing to <option>sensors/#</option> and
-						then unsubscribing from
-						<option>sensors/+/temperature</option> as shown below
-						will still result in messages matching the
-						<option>sensors/+/temperature</option> being delivered
-						to the client.
-					</para>
-					<itemizedlist mark="circle">
-						<listitem><para>mosquitto_sub <literal>-t</literal> sensors/# <literal>-U</literal> sensors/+/temperature <literal>-v</literal></para></listitem>
-					</itemizedlist>
-
-					<para>
-						Note also that because retained messages are published
-						by the broker on receipt of a SUBSCRIBE command,
-						subscribing and unsubscribing to the same topic may
-						result in messages being received at the client.
-					</para>
-
-					<para>
-						This option may be repeated to unsubscribe from multiple topics.
-					</para>
-				</listitem>
-			</varlistentry>
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-format-verbose.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-protocol-version.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-timeout.xml" />
-			<varlistentry>
-				<term><option>-w</option></term>
-				<term><option>--watch</option></term>
-				<listitem>
-					<para>
-						Messages will be printed on a fixed line number based on
-						the topic and order in which topics are received. Useful
-						for monitoring multiple topics that have single line
-						payloads. Unexpected behaviour will occur if there are
-						more topics than lines in the terminal, or if the
-						payload occupies more than a single line.
-						This can be used in conjuction with other output options
-						e.g. <option>-F</option>.
-					</para>
-					<para>
-						Requires ANSI escape code support in the terminal.
-					</para>
-				</listitem>
-			</varlistentry>
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-will-payload.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-will-qos.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-will-retain.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-will-topic.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-websockets.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-session-expiry-interval.xml" />
-		</variablelist>
+						<para>
+							This option may be repeated to unsubscribe from multiple topics.
+						</para>
+					</listitem>
+				</varlistentry>
+				<xi:include href="common/option-format-verbose.xml" />
+				<xi:include href="common/option-protocol-version.xml" />
+				<xi:include href="common/option-timeout.xml" />
+				<varlistentry>
+					<term><option>-w</option></term>
+					<term><option>--watch</option></term>
+					<listitem>
+						&from-version21;
+						<para>
+							Messages will be printed on a fixed line number based on
+							the topic and order in which topics are received. Useful
+							for monitoring multiple topics that have single line
+							payloads. Unexpected behaviour will occur if there are
+							more topics than lines in the terminal, or if the
+							payload occupies more than a single line.
+							This can be used in conjuction with other output options
+							e.g. <option>-F</option>.
+						</para>
+						<para>
+							Requires ANSI escape code support in the terminal.
+						</para>
+					</listitem>
+				</varlistentry>
+				<xi:include href="common/option-will-payload.xml" />
+				<xi:include href="common/option-will-qos.xml" />
+				<xi:include href="common/option-will-retain.xml" />
+				<xi:include href="common/option-will-topic.xml" />
+				<xi:include href="common/option-websockets.xml" />
+				<xi:include href="common/option-session-expiry-interval.xml" />
+			</variablelist>
+		</refsect2>
 	</refsect1>
 
-	<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/section-output-format.xml" />
-	<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/section-wills.xml" />
+	<xi:include href="common/section-output-format.xml" />
+	<xi:include href="common/section-wills.xml" />
 
 	<refsect1 id='properties'>
 		<title>Properties</title>
@@ -457,14 +436,14 @@ mosquitto_sub -t 'bbc/#' -T bbc/bbc1 --remove-retained</programlisting>
 			run. The properties supported for each command are as follows:
 		</para>
 
-		<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/section-properties-connect.xml" />
-		<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/section-properties-subscribe.xml" />
-		<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/section-properties-unsubscribe.xml" />
-		<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/section-properties-disconnect.xml" />
-		<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/section-properties-will.xml" />
+		<xi:include href="common/section-properties-connect.xml" />
+		<xi:include href="common/section-properties-subscribe.xml" />
+		<xi:include href="common/section-properties-unsubscribe.xml" />
+		<xi:include href="common/section-properties-disconnect.xml" />
+		<xi:include href="common/section-properties-will.xml" />
 	</refsect1>
 
-	<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/section-exit-status.xml" />
+	<xi:include href="common/section-exit-status.xml" />
 
 	<refsect1>
 		<title>Examples</title>
@@ -531,7 +510,7 @@ mosquitto_sub -t 'bbc/#' -T bbc/bbc1 --remove-retained</programlisting>
 		</variablelist>
 	</refsect1>
 
-	<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/section-bugs.xml" />
+	<xi:include href="common/section-bugs.xml" />
 
 	<refsect1>
 		<title>See Also</title>

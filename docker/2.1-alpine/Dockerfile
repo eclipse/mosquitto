@@ -1,11 +1,18 @@
-FROM alpine:3.22
+FROM alpine:3.23
 
-LABEL maintainer="Roger Light <roger@atchoo.org>" \
-    description="Eclipse Mosquitto MQTT Broker"
-
-ENV VERSION=2.1.0.1 \
-    DOWNLOAD_SHA256=cd0dd9d2b824746f9bc7dfc0a26a62854f64de72c1838023a12471f66b25dd7c \
+ENV VERSION=2.1.2 \
+    DOWNLOAD_SHA256=fd905380691ac65ea5a93779e8214941829e3d6e038d5edff9eac5fd74cbed02 \
     GPG_KEYS=A0D6EEA1DCAE49A635A3B2F0779B22DFB3E717B7
+
+LABEL \
+    org.opencontainers.image.authors="Roger Light <roger@atchoo.org>" \
+    org.opencontainers.image.title="eclipse-mosquitto" \
+    org.opencontainers.image.description="Eclipse Mosquitto MQTT Broker" \
+    org.opencontainers.image.url="https://mosquitto.org/" \
+    org.opencontainers.image.documentation="https://mosquitto.org/documentation/" \
+    org.opencontainers.image.source="https://github.com/eclipse-mosquitto/mosquitto" \
+    org.opencontainers.image.licenses="EPL-2.0 OR BSD-3-Clause" \
+    org.opencontainers.image.version=${VERSION}
 
 RUN set -x && \
     apk --no-cache add --virtual build-deps \
@@ -13,12 +20,17 @@ RUN set -x && \
         build-base \
         cjson-dev \
         cmake \
+        cunit-dev \
         gnupg \
+        gtest-dev \
         libedit-dev \
         libmicrohttpd-dev \
         linux-headers \
         openssl-dev \
+        pkgconf \
+        samurai \
         sqlite-dev \
+        uthash-dev \
         util-linux-dev && \
     wget https://mosquitto.org/files/source/mosquitto-${VERSION}.tar.gz -O /tmp/mosq.tar.gz && \
     echo "$DOWNLOAD_SHA256  /tmp/mosq.tar.gz" | sha256sum -c - && \
@@ -40,33 +52,31 @@ RUN set -x && \
     mkdir -p /build/mosq && \
     tar --strip=1 -xf /tmp/mosq.tar.gz -C /build/mosq && \
     rm /tmp/mosq.tar.gz && \
-    make -C /build/mosq -j "$(nproc)" \
-        CFLAGS="-Wall -O2 -I/build -DHTTP_API_DIR=\\\"/usr/share/mosquitto/dashboard\\\"" \
-        WITH_ADNS=no \
-        WITH_DOCS=no \
-        WITH_SHARED_LIBRARIES=yes \
-        WITH_SRV=no \
-        WITH_STRIP=yes \
-        WITH_WEBSOCKETS=yes \
-        prefix=/usr \
-        binary && \
+    cmake -G Ninja \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DHTTP_API_DIR='\"/usr/share/mosquitto/dashboard\"' \
+        -DWITH_DOCS=OFF \
+        -S /build/mosq \
+        -B /build/mosq/build && \
+    cmake --build /build/mosq/build && \
     addgroup -S -g 1883 mosquitto 2>/dev/null && \
     adduser -S -u 1883 -D -H -h /var/empty -s /sbin/nologin -G mosquitto -g mosquitto mosquitto 2>/dev/null && \
     mkdir -p /mosquitto/config /mosquitto/data /mosquitto/log && \
     install -d /usr/sbin/ && \
-    install -s -m755 /build/mosq/client/mosquitto_pub /usr/bin/mosquitto_pub && \
-    install -s -m755 /build/mosq/client/mosquitto_rr /usr/bin/mosquitto_rr && \
-    install -s -m755 /build/mosq/client/mosquitto_sub /usr/bin/mosquitto_sub && \
-    install -s -m644 /build/mosq/lib/libmosquitto.so.1 /usr/lib/libmosquitto.so.1 && \
-    install -s -m755 /build/mosq/src/mosquitto /usr/sbin/mosquitto && \
-    install -s -m755 /build/mosq/apps/mosquitto_ctrl/mosquitto_ctrl /usr/bin/mosquitto_ctrl && \
-    install -s -m755 /build/mosq/apps/mosquitto_passwd/mosquitto_passwd /usr/bin/mosquitto_passwd && \
-    install -s -m755 /build/mosq/apps/mosquitto_signal/mosquitto_signal /usr/bin/mosquitto_signal && \
-    install -s -m755 /build/mosq/plugins/acl-file/mosquitto_acl_file.so /usr/lib/mosquitto_acl_file.so && \
-    install -s -m755 /build/mosq/plugins/dynamic-security/mosquitto_dynamic_security.so /usr/lib/mosquitto_dynamic_security.so && \
-    install -s -m755 /build/mosq/plugins/password-file/mosquitto_password_file.so /usr/lib/mosquitto_password_file.so && \
-    install -s -m755 /build/mosq/plugins/persist-sqlite/mosquitto_persist_sqlite.so /usr/lib/mosquitto_persist_sqlite.so && \
-    install -s -m755 /build/mosq/plugins/sparkplug-aware/mosquitto_sparkplug_aware.so /usr/lib/mosquitto_sparkplug_aware.so && \
+    install -s -m755 /build/mosq/build/client/mosquitto_pub /usr/bin/mosquitto_pub && \
+    install -s -m755 /build/mosq/build/client/mosquitto_rr /usr/bin/mosquitto_rr && \
+    install -s -m755 /build/mosq/build/client/mosquitto_sub /usr/bin/mosquitto_sub && \
+    install -s -m644 /build/mosq/build/lib/libmosquitto.so.1 /usr/lib/libmosquitto.so.1 && \
+    install -s -m755 /build/mosq/build/src/mosquitto /usr/sbin/mosquitto && \
+    install -s -m755 /build/mosq/build/apps/mosquitto_ctrl/mosquitto_ctrl /usr/bin/mosquitto_ctrl && \
+    install -s -m755 /build/mosq/build/apps/mosquitto_passwd/mosquitto_passwd /usr/bin/mosquitto_passwd && \
+    install -s -m755 /build/mosq/build/apps/mosquitto_signal/mosquitto_signal /usr/bin/mosquitto_signal && \
+    install -s -m755 /build/mosq/build/plugins/acl-file/mosquitto_acl_file.so /usr/lib/mosquitto_acl_file.so && \
+    install -s -m755 /build/mosq/build/plugins/dynamic-security/mosquitto_dynamic_security.so /usr/lib/mosquitto_dynamic_security.so && \
+    install -s -m755 /build/mosq/build/plugins/password-file/mosquitto_password_file.so /usr/lib/mosquitto_password_file.so && \
+    install -s -m755 /build/mosq/build/plugins/persist-sqlite/mosquitto_persist_sqlite.so /usr/lib/mosquitto_persist_sqlite.so && \
+    install -s -m755 /build/mosq/build/plugins/sparkplug-aware/mosquitto_sparkplug_aware.so /usr/lib/mosquitto_sparkplug_aware.so && \
     install -m644 /build/mosq/docker/2.1-alpine/mosquitto.conf /mosquitto/config/mosquitto.conf && \
     install -m644 /build/mosq/docker/2.1-ubuntu/mosquitto.conf /mosquitto-no-auth.conf && \
     install -d /usr/share/mosquitto && \
@@ -78,6 +88,7 @@ RUN set -x && \
         argon2-libs \
         ca-certificates \
         cjson \
+        libedit \
         libmicrohttpd \
         sqlite-libs \
         tzdata && \

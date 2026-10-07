@@ -4,6 +4,8 @@
 
 from mosq_test_helper import *
 
+mosq_test.require_features(["WITH_BROKER", "WITH_SOCKS"])
+
 def do_test(proto_ver, host):
     rc = 1
 
@@ -40,7 +42,7 @@ def do_test(proto_ver, host):
     }
     env = mosq_test.env_add_ld_library_path(env)
     cmd = [
-            f'{mosq_test.get_build_root()}/client/mosquitto_pub',
+            mosq_paths.mosquitto_pub,
             '-h', host,
             '-p', str(port2),
             '-q', '1',
@@ -51,11 +53,11 @@ def do_test(proto_ver, host):
             ]
 
     mid = 1
-    publish_packet = mosq_test.gen_publish("03/pub/proxy/test", qos=1, mid=mid, payload="message", proto_ver=proto_ver)
+    publish_packet = mqtt_packets.gen_publish("03/pub/proxy/test", qos=1, mid=mid, payload="message", proto_ver=proto_ver)
     if proto_ver == 5:
-        puback_packet = mosq_test.gen_puback(mid, proto_ver=proto_ver, reason_code=mqtt5_rc.NO_MATCHING_SUBSCRIBERS)
+        puback_packet = mqtt_packets.gen_puback(mid, proto_ver=proto_ver, reason_code=mqtt5_rc.NO_MATCHING_SUBSCRIBERS)
     else:
-        puback_packet = mosq_test.gen_puback(mid, proto_ver=proto_ver)
+        puback_packet = mqtt_packets.gen_puback(mid, proto_ver=proto_ver)
 
     broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port2, checkhost=host)
 
@@ -78,7 +80,7 @@ def do_test(proto_ver, host):
         print(e)
     finally:
         proxy.terminate()
-        broker.terminate()
+        mosq_test.terminate_broker(broker)
         if mosq_test.wait_for_subprocess(broker):
             print("broker not terminated")
             if rc == 0: rc=1

@@ -8,7 +8,7 @@ from persist_module_helper import *
 
 persist_help = persist_module()
 
-port = mosq_test.get_port()
+port, _ = mosq_test.get_port(2)
 
 num_messages = 100
 proto_ver = 5
@@ -40,7 +40,7 @@ def do_test(
     )
     persist_help.init(port)
 
-    connect2_packet = mosq_test.gen_connect(
+    connect2_packet = mqtt_packets.gen_connect(
         publisher_id, username=username, proto_ver=proto_ver
     )
 
@@ -186,16 +186,15 @@ def do_test(
         rc = broker_terminate_rc
     finally:
         if broker is not None:
-            broker.terminate()
+            mosq_test.terminate_broker(broker)
             if mosq_test.wait_for_subprocess(broker):
                 if rc == 0:
                     rc = 1
-            (_, stde) = broker.communicate()
         os.remove(conf_file)
         rc += persist_help.cleanup(port)
 
         if rc:
-            print(stde.decode("utf-8"))
+            print(mosq_test.broker_log(broker))
         assert rc == 0, f"rc: {rc}"
 
 

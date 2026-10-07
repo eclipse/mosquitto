@@ -5,8 +5,8 @@ from mosq_test_helper import *
 def do_test(file, stdout):
 
     cmd = [
-        mosq_test.get_build_root() + '/apps/db_dump/mosquitto_db_dump',
-        f'{test_dir}/apps/db_dump/data/{file}'
+        mosq_paths.mosquitto_db_dump,
+        Path(test_dir, "apps", "db_dump", "data", file)
     ]
 
     res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=3, encoding='utf-8')

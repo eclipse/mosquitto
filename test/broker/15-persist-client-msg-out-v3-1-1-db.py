@@ -6,7 +6,7 @@
 from mosq_test_helper import *
 persist_help = persist_module()
 
-port = mosq_test.get_port()
+port, _ = mosq_test.get_port(2)
 conf_file = os.path.basename(__file__).replace('.py', '.conf')
 persist_help.write_config(conf_file, port)
 
@@ -22,19 +22,19 @@ topic = "client-msg/test"
 source_id = "persist-cmsg-v3-1-1-helper"
 proto_ver = 4
 
-connect_packet = mosq_test.gen_connect(client_id, proto_ver=proto_ver, clean_session=False)
-connack_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
+connect_packet = mqtt_packets.gen_connect(client_id, proto_ver=proto_ver, clean_session=False)
+connack_packet = mqtt_packets.gen_connack(rc=0, proto_ver=proto_ver)
 
 mid = 1
-subscribe_packet = mosq_test.gen_subscribe(mid, topic, qos, proto_ver=proto_ver)
-suback_packet = mosq_test.gen_suback(mid, qos=qos, proto_ver=proto_ver)
+subscribe_packet = mqtt_packets.gen_subscribe(mid, topic, qos, proto_ver=proto_ver)
+suback_packet = mqtt_packets.gen_suback(mid, qos=qos, proto_ver=proto_ver)
 
-connect2_packet = mosq_test.gen_connect(source_id, proto_ver=proto_ver)
-connack2_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
+connect2_packet = mqtt_packets.gen_connect(source_id, proto_ver=proto_ver)
+connack2_packet = mqtt_packets.gen_connack(rc=0, proto_ver=proto_ver)
 
 mid = 18
-publish_packet = mosq_test.gen_publish(topic, mid=mid, qos=qos, payload=payload, proto_ver=proto_ver)
-puback_packet = mosq_test.gen_puback(mid=mid, proto_ver=proto_ver)
+publish_packet = mqtt_packets.gen_publish(topic, mid=mid, qos=qos, payload=payload, proto_ver=proto_ver)
+puback_packet = mqtt_packets.gen_puback(mid=mid, proto_ver=proto_ver)
 
 broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port)
 
@@ -68,16 +68,15 @@ try:
     rc = broker_terminate_rc
 finally:
     if broker is not None:
-        broker.terminate()
+        mosq_test.terminate_broker(broker)
         if mosq_test.wait_for_subprocess(broker):
             print("broker not terminated (2)")
             if rc == 0: rc=1
-        (_, stde) = broker.communicate()
     os.remove(conf_file)
     rc += persist_help.cleanup(port)
 
     if rc:
-        print(stde.decode('utf-8'))
+        print(mosq_test.broker_log(broker))
 
 
 exit(rc)

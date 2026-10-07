@@ -3,13 +3,15 @@
 # Test whether non-CONNECT packets as an initial packet can cause excess memory use
 
 from mosq_test_helper import *
-import psutil
 
-def write_config(filename, port):
-    with open(filename, 'w') as f:
-        f.write(f"listener {port}\n")
-        f.write("allow_anonymous true\n")
-        f.write("sys_interval 1\n")
+from broker_config import BrokerConfig, ListenerConfig
+from mosquitto_broker import MosquittoBroker
+try:
+    import psutil
+except ModuleNotFoundError:
+    print("WARNING: Test not running due to missing psutil module")
+    exit(77)
+
 
 def do_send(port, socks, payload):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -20,16 +22,18 @@ def do_send(port, socks, payload):
     except (ConnectionResetError, BrokenPipeError):
         pass
 
-def do_test(port):
-    rc = 1
 
-    conf_file = os.path.basename(__file__).replace('.py', '.conf')
-    write_config(conf_file, port)
-    broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port, use_conf=True)
-
+def do_test():
+    port = mosq_test.get_port()
+    broker_config = BrokerConfig(
+        listeners = [ ListenerConfig(port=port) ],
+        allow_anonymous=True,
+        sys_interval=1,
+    )
+    broker = MosquittoBroker(config=broker_config)
     # Get the base memory useage before any connection attempt has happen
-    base_mem = psutil.Process(broker.pid).memory_info().vms
-    try:
+    with broker:
+        base_mem = psutil.Process(broker.process.pid).memory_info().vms
         socks = []
 
         do_send(port, socks, b"\x20\x80\x80\x80t" + b"\01"*100000000) # CONNACK
@@ -47,7 +51,7 @@ def do_test(port):
         do_send(port, socks, b"\xE0\x80\x80\x80t" + b"\01"*100000000) # DISCONNECT
         do_send(port, socks, b"\xF0\x80\x80\x80t" + b"\01"*100000000) # AUTH
 
-        mem = psutil.Process(broker.pid).memory_info().vms - base_mem
+        mem = psutil.Process(broker.process.pid).memory_info().vms - base_mem
 
         for s in socks:
             s.close()
@@ -56,25 +60,5 @@ def do_test(port):
         if mem > limit:
             raise mosq_test.TestError(f"Process memory {mem} greater than limit of {limit}")
 
-        rc = 0
-    except MemoryError:
-        print("Memory error!")
-    except Exception as e:
-        print(e)
-    except mosq_test.TestError:
-        pass
-    finally:
-        os.remove(conf_file)
-        broker.terminate()
-        broker.wait()
-        (stdo, stde) = broker.communicate()
-        if rc:
-            print(stde.decode('utf-8'))
-            exit(rc)
 
-
-port = mosq_test.get_port()
-
-do_test(port)
-
-exit(0)
+do_test()

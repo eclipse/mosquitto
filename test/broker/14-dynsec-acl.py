@@ -7,12 +7,14 @@ from dynsec_helper import *
 import json
 import shutil
 
+mosq_test.require_features(["WITH_CONTROL", "WITH_PLUGINS", "WITH_PLUGIN_DYNAMIC_SECURITY", "WITH_TLS"])
+
 def write_config(filename, port):
     with open(filename, 'w') as f:
         f.write("listener %d\n" % (port))
         f.write("allow_anonymous false\n")
-        f.write(f"plugin {mosq_test.get_build_root()}/plugins/dynamic-security/mosquitto_dynamic_security.so\n")
-        f.write("plugin_opt_config_file %d/dynamic-security.json\n" % (port))
+        f.write(f"plugin {mosq_paths.plugin_dynamic_security}\n")
+        f.write(f"plugin_opt_config_file {Path(str(port), 'dynamic-security.json')}\n")
 
 
 port = mosq_test.get_port()
@@ -88,121 +90,121 @@ delete_role_command = {"commands":[
 delete_role_response = {'responses': [{'command': 'deleteRole'}]}
 
 rc = 1
-connect_packet_admin = mosq_test.gen_connect("ctrl-test", username="admin", password="admin")
-connack_packet_admin = mosq_test.gen_connack(rc=0)
+connect_packet_admin = mqtt_packets.gen_connect("ctrl-test", username="admin", password="admin")
+connack_packet_admin = mqtt_packets.gen_connack(rc=0)
 
 mid = 2
-subscribe_packet_admin = mosq_test.gen_subscribe(mid, "$CONTROL/dynamic-security/#", 1)
-suback_packet_admin = mosq_test.gen_suback(mid, 1)
+subscribe_packet_admin = mqtt_packets.gen_subscribe(mid, "$CONTROL/dynamic-security/#", 1)
+suback_packet_admin = mqtt_packets.gen_suback(mid, 1)
 
 # Success
-connect_packet_with_id1 = mosq_test.gen_connect("cid", username="user_one", password="password", proto_ver=5)
-connack_packet_with_id1 = mosq_test.gen_connack(rc=0, proto_ver=5)
+connect_packet_with_id1 = mqtt_packets.gen_connect("cid", username="user_one", password="password", proto_ver=5)
+connack_packet_with_id1 = mqtt_packets.gen_connack(rc=0, proto_ver=5)
 
 mid = 4
-subscribe_simple_packet = mosq_test.gen_subscribe(mid, "simple/topic", 0, proto_ver=5)
-suback_simple_packet_success = mosq_test.gen_suback(mid, 0, proto_ver=5)
-suback_simple_packet_fail = mosq_test.gen_suback(mid, mqtt5_rc.NOT_AUTHORIZED, proto_ver=5)
+subscribe_simple_packet = mqtt_packets.gen_subscribe(mid, "simple/topic", 0, proto_ver=5)
+suback_simple_packet_success = mqtt_packets.gen_suback(mid, 0, proto_ver=5)
+suback_simple_packet_fail = mqtt_packets.gen_suback(mid, mqtt5_rc.NOT_AUTHORIZED, proto_ver=5)
 
 mid = 5
-subscribe_single_packet = mosq_test.gen_subscribe(mid, "single-wildcard/bob/topic", 0, proto_ver=5)
-suback_single_packet_success = mosq_test.gen_suback(mid, 0, proto_ver=5)
-suback_single_packet_fail = mosq_test.gen_suback(mid, mqtt5_rc.NOT_AUTHORIZED, proto_ver=5)
+subscribe_single_packet = mqtt_packets.gen_subscribe(mid, "single-wildcard/bob/topic", 0, proto_ver=5)
+suback_single_packet_success = mqtt_packets.gen_suback(mid, 0, proto_ver=5)
+suback_single_packet_fail = mqtt_packets.gen_suback(mid, mqtt5_rc.NOT_AUTHORIZED, proto_ver=5)
 
 mid = 6
-subscribe_multi_packet = mosq_test.gen_subscribe(mid, "multilevel-wildcard/topic/topic/#", 0, proto_ver=5)
-suback_multi_packet_success = mosq_test.gen_suback(mid, 0, proto_ver=5)
-suback_multi_packet_fail = mosq_test.gen_suback(mid, mqtt5_rc.NOT_AUTHORIZED, proto_ver=5)
+subscribe_multi_packet = mqtt_packets.gen_subscribe(mid, "multilevel-wildcard/topic/topic/#", 0, proto_ver=5)
+suback_multi_packet_success = mqtt_packets.gen_suback(mid, 0, proto_ver=5)
+suback_multi_packet_fail = mqtt_packets.gen_suback(mid, mqtt5_rc.NOT_AUTHORIZED, proto_ver=5)
 
 mid = 7
-publish_simple_packet = mosq_test.gen_publish(mid=mid, topic="simple/topic", qos=1, payload="message", proto_ver=5)
-puback_simple_packet_success = mosq_test.gen_puback(mid, proto_ver=5)
-puback_simple_packet_fail = mosq_test.gen_puback(mid, reason_code=mqtt5_rc.NOT_AUTHORIZED, proto_ver=5)
+publish_simple_packet = mqtt_packets.gen_publish(mid=mid, topic="simple/topic", qos=1, payload="message", proto_ver=5)
+puback_simple_packet_success = mqtt_packets.gen_puback(mid, proto_ver=5)
+puback_simple_packet_fail = mqtt_packets.gen_puback(mid, reason_code=mqtt5_rc.NOT_AUTHORIZED, proto_ver=5)
 
-publish_simple_packet_r = mosq_test.gen_publish(topic="simple/topic", qos=0, payload="message", proto_ver=5)
+publish_simple_packet_r = mqtt_packets.gen_publish(topic="simple/topic", qos=0, payload="message", proto_ver=5)
 
 # This message is in single-wildcard/+/+ so could be allowed, but the single-wildcard/deny/deny with higher priority should override
 mid = 9
-publish_single_packet_denied = mosq_test.gen_publish(mid=mid, topic="single-wildcard/deny/deny", qos=1, payload="message", proto_ver=5)
-puback_single_packet_denied_fail = mosq_test.gen_puback(mid, reason_code=mqtt5_rc.NOT_AUTHORIZED, proto_ver=5)
+publish_single_packet_denied = mqtt_packets.gen_publish(mid=mid, topic="single-wildcard/deny/deny", qos=1, payload="message", proto_ver=5)
+puback_single_packet_denied_fail = mqtt_packets.gen_puback(mid, reason_code=mqtt5_rc.NOT_AUTHORIZED, proto_ver=5)
 
 mid = 8
-publish_single_packet = mosq_test.gen_publish(mid=mid, topic="single-wildcard/bob/topic", qos=1, payload="message", proto_ver=5)
-puback_single_packet_success = mosq_test.gen_puback(mid, proto_ver=5)
-puback_single_packet_fail = mosq_test.gen_puback(mid, reason_code=mqtt5_rc.NOT_AUTHORIZED, proto_ver=5)
+publish_single_packet = mqtt_packets.gen_publish(mid=mid, topic="single-wildcard/bob/topic", qos=1, payload="message", proto_ver=5)
+puback_single_packet_success = mqtt_packets.gen_puback(mid, proto_ver=5)
+puback_single_packet_fail = mqtt_packets.gen_puback(mid, reason_code=mqtt5_rc.NOT_AUTHORIZED, proto_ver=5)
 
-publish_single_packet_r = mosq_test.gen_publish(topic="single-wildcard/bob/topic", qos=0, payload="message", proto_ver=5)
+publish_single_packet_r = mqtt_packets.gen_publish(topic="single-wildcard/bob/topic", qos=0, payload="message", proto_ver=5)
 
 mid = 9
-publish_multi_packet = mosq_test.gen_publish(mid=mid, topic="multilevel-wildcard/topic/topic/allowed", qos=1, payload="message", proto_ver=5)
-puback_multi_packet_success = mosq_test.gen_puback(mid, proto_ver=5)
-puback_multi_packet_fail = mosq_test.gen_puback(mid, reason_code=mqtt5_rc.NOT_AUTHORIZED, proto_ver=5)
+publish_multi_packet = mqtt_packets.gen_publish(mid=mid, topic="multilevel-wildcard/topic/topic/allowed", qos=1, payload="message", proto_ver=5)
+puback_multi_packet_success = mqtt_packets.gen_puback(mid, proto_ver=5)
+puback_multi_packet_fail = mqtt_packets.gen_puback(mid, reason_code=mqtt5_rc.NOT_AUTHORIZED, proto_ver=5)
 
 mid = 10
-publish_multi_denied_packet = mosq_test.gen_publish(mid=mid, topic="multilevel-wildcard/topic/topic/denied", qos=1, payload="message", proto_ver=5)
-puback_multi_denied_packet = mosq_test.gen_puback(mid, proto_ver=5)
+publish_multi_denied_packet = mqtt_packets.gen_publish(mid=mid, topic="multilevel-wildcard/topic/topic/denied", qos=1, payload="message", proto_ver=5)
+puback_multi_denied_packet = mqtt_packets.gen_puback(mid, proto_ver=5)
 
-publish_multi_packet_r = mosq_test.gen_publish(topic="multilevel-wildcard/topic/topic/allowed", qos=0, payload="message", proto_ver=5)
+publish_multi_packet_r = mqtt_packets.gen_publish(topic="multilevel-wildcard/topic/topic/allowed", qos=0, payload="message", proto_ver=5)
 
 mid = 11
-unsubscribe_simple_packet = mosq_test.gen_unsubscribe(mid, "simple/topic", proto_ver=5)
-unsuback_simple_packet_fail = mosq_test.gen_unsuback(mid, mqtt5_rc.NOT_AUTHORIZED, proto_ver=5)
+unsubscribe_simple_packet = mqtt_packets.gen_unsubscribe(mid, "simple/topic", proto_ver=5)
+unsuback_simple_packet_fail = mqtt_packets.gen_unsuback(mid, mqtt5_rc.NOT_AUTHORIZED, proto_ver=5)
 
 mid = 12
-unsubscribe_single_packet = mosq_test.gen_unsubscribe(mid, "single-wildcard/bob/topic", proto_ver=5)
-unsuback_single_packet_success = mosq_test.gen_unsuback(mid, 0, proto_ver=5)
+unsubscribe_single_packet = mqtt_packets.gen_unsubscribe(mid, "single-wildcard/bob/topic", proto_ver=5)
+unsuback_single_packet_success = mqtt_packets.gen_unsuback(mid, 0, proto_ver=5)
 
 mid = 13
-unsubscribe_multi_packet = mosq_test.gen_unsubscribe(mid, "multilevel-wildcard/topic/topic/#", proto_ver=5)
-unsuback_multi_packet_success = mosq_test.gen_unsuback(mid, 0, proto_ver=5)
+unsubscribe_multi_packet = mqtt_packets.gen_unsubscribe(mid, "multilevel-wildcard/topic/topic/#", proto_ver=5)
+unsuback_multi_packet_success = mqtt_packets.gen_unsuback(mid, 0, proto_ver=5)
 
 mid = 14
-subscribe_pattern_packet = mosq_test.gen_subscribe(mid, "pattern/#", 0, proto_ver=5)
-suback_pattern_packet = mosq_test.gen_suback(mid, 0, proto_ver=5)
+subscribe_pattern_packet = mqtt_packets.gen_subscribe(mid, "pattern/#", 0, proto_ver=5)
+suback_pattern_packet = mqtt_packets.gen_suback(mid, 0, proto_ver=5)
 
-disconnect_kick_packet = mosq_test.gen_disconnect(reason_code=mqtt5_rc.ADMINISTRATIVE_ACTION, proto_ver=5)
+disconnect_kick_packet = mqtt_packets.gen_disconnect(reason_code=mqtt5_rc.ADMINISTRATIVE_ACTION, proto_ver=5)
 
 mid = 15
-publish_u_pattern_packet = mosq_test.gen_publish(mid=mid, topic="pattern/u/user_one/topic", qos=1, proto_ver=5, payload="test")
-puback_u_packet_success = mosq_test.gen_puback(mid=mid, proto_ver=5)
-publish_u_pattern_packet_r = mosq_test.gen_publish(topic="pattern/u/user_one/topic", qos=0, proto_ver=5, payload="test")
+publish_u_pattern_packet = mqtt_packets.gen_publish(mid=mid, topic="pattern/u/user_one/topic", qos=1, proto_ver=5, payload="test")
+puback_u_packet_success = mqtt_packets.gen_puback(mid=mid, proto_ver=5)
+publish_u_pattern_packet_r = mqtt_packets.gen_publish(topic="pattern/u/user_one/topic", qos=0, proto_ver=5, payload="test")
 
 mid = 16
-publish_u_pattern_packet_denied = mosq_test.gen_publish(mid=mid, topic="pattern/u/user_one/denied", qos=1, proto_ver=5, payload="test")
-puback_u_packet_denied = mosq_test.gen_puback(mid=mid, reason_code=mqtt5_rc.NOT_AUTHORIZED, proto_ver=5)
+publish_u_pattern_packet_denied = mqtt_packets.gen_publish(mid=mid, topic="pattern/u/user_one/denied", qos=1, proto_ver=5, payload="test")
+puback_u_packet_denied = mqtt_packets.gen_puback(mid=mid, reason_code=mqtt5_rc.NOT_AUTHORIZED, proto_ver=5)
 
 mid = 17
-publish_c_pattern_packet = mosq_test.gen_publish(mid=mid, topic="pattern/c/cid/topic", qos=1, proto_ver=5, payload="test")
-puback_c_packet_success = mosq_test.gen_puback(mid=mid, proto_ver=5)
-publish_c_pattern_packet_r = mosq_test.gen_publish(topic="pattern/c/cid/topic", qos=0, proto_ver=5, payload="test")
+publish_c_pattern_packet = mqtt_packets.gen_publish(mid=mid, topic="pattern/c/cid/topic", qos=1, proto_ver=5, payload="test")
+puback_c_packet_success = mqtt_packets.gen_puback(mid=mid, proto_ver=5)
+publish_c_pattern_packet_r = mqtt_packets.gen_publish(topic="pattern/c/cid/topic", qos=0, proto_ver=5, payload="test")
 
 mid = 18
-publish_c_pattern_packet_denied = mosq_test.gen_publish(mid=mid, topic="pattern/c/cid/denied", qos=1, proto_ver=5, payload="test")
-puback_c_packet_denied = mosq_test.gen_puback(mid=mid, reason_code=mqtt5_rc.NOT_AUTHORIZED, proto_ver=5)
+publish_c_pattern_packet_denied = mqtt_packets.gen_publish(mid=mid, topic="pattern/c/cid/denied", qos=1, proto_ver=5, payload="test")
+puback_c_packet_denied = mqtt_packets.gen_puback(mid=mid, reason_code=mqtt5_rc.NOT_AUTHORIZED, proto_ver=5)
 
 mid = 19
-subscribe_u_pattern_packet_allowed_success = mosq_test.gen_subscribe(mid, "subscribe/pattern/u/user_one/allowed", qos=1, proto_ver=5)
-suback_u_pattern_packet_allowed_success = mosq_test.gen_suback(mid, 1, proto_ver=5)
+subscribe_u_pattern_packet_allowed_success = mqtt_packets.gen_subscribe(mid, "subscribe/pattern/u/user_one/allowed", qos=1, proto_ver=5)
+suback_u_pattern_packet_allowed_success = mqtt_packets.gen_suback(mid, 1, proto_ver=5)
 
 mid = 20
-subscribe_u_pattern_packet_allowed_fail = mosq_test.gen_subscribe(mid, "subscribe/pattern/u/bad/allowed", qos=1, proto_ver=5)
-suback_u_pattern_packet_allowed_fail = mosq_test.gen_suback(mid, mqtt5_rc.NOT_AUTHORIZED, proto_ver=5)
+subscribe_u_pattern_packet_allowed_fail = mqtt_packets.gen_subscribe(mid, "subscribe/pattern/u/bad/allowed", qos=1, proto_ver=5)
+suback_u_pattern_packet_allowed_fail = mqtt_packets.gen_suback(mid, mqtt5_rc.NOT_AUTHORIZED, proto_ver=5)
 
 mid = 21
-subscribe_u_pattern_packet_denied_success = mosq_test.gen_subscribe(mid, "subscribe/pattern/u/user_one/denied", qos=1, proto_ver=5)
-suback_u_pattern_packet_denied_success = mosq_test.gen_suback(mid, mqtt5_rc.NOT_AUTHORIZED, proto_ver=5)
+subscribe_u_pattern_packet_denied_success = mqtt_packets.gen_subscribe(mid, "subscribe/pattern/u/user_one/denied", qos=1, proto_ver=5)
+suback_u_pattern_packet_denied_success = mqtt_packets.gen_suback(mid, mqtt5_rc.NOT_AUTHORIZED, proto_ver=5)
 
 mid = 22
-subscribe_c_pattern_packet_allowed_success = mosq_test.gen_subscribe(mid, "subscribe/pattern/c/cid/allowed", qos=1, proto_ver=5)
-suback_c_pattern_packet_allowed_success = mosq_test.gen_suback(mid, 1, proto_ver=5)
+subscribe_c_pattern_packet_allowed_success = mqtt_packets.gen_subscribe(mid, "subscribe/pattern/c/cid/allowed", qos=1, proto_ver=5)
+suback_c_pattern_packet_allowed_success = mqtt_packets.gen_suback(mid, 1, proto_ver=5)
 
 mid = 23
-subscribe_c_pattern_packet_allowed_fail = mosq_test.gen_subscribe(mid, "subscribe/pattern/c/bad/allowed", qos=1, proto_ver=5)
-suback_c_pattern_packet_allowed_fail = mosq_test.gen_suback(mid, mqtt5_rc.NOT_AUTHORIZED, proto_ver=5)
+subscribe_c_pattern_packet_allowed_fail = mqtt_packets.gen_subscribe(mid, "subscribe/pattern/c/bad/allowed", qos=1, proto_ver=5)
+suback_c_pattern_packet_allowed_fail = mqtt_packets.gen_suback(mid, mqtt5_rc.NOT_AUTHORIZED, proto_ver=5)
 
 mid = 24
-subscribe_c_pattern_packet_denied_success = mosq_test.gen_subscribe(mid, "subscribe/pattern/c/cid/denied", qos=1, proto_ver=5)
-suback_c_pattern_packet_denied_success = mosq_test.gen_suback(mid, mqtt5_rc.NOT_AUTHORIZED, proto_ver=5)
+subscribe_c_pattern_packet_denied_success = mqtt_packets.gen_subscribe(mid, "subscribe/pattern/c/cid/denied", qos=1, proto_ver=5)
+suback_c_pattern_packet_denied_success = mqtt_packets.gen_suback(mid, mqtt5_rc.NOT_AUTHORIZED, proto_ver=5)
 
 
 try:
@@ -395,13 +397,12 @@ finally:
     except FileNotFoundError:
         pass
     shutil.rmtree(f"{port}")
-    broker.terminate()
+    mosq_test.terminate_broker(broker)
     if mosq_test.wait_for_subprocess(broker):
         print("broker not terminated")
         if rc == 0: rc=1
-    (stdo, stde) = broker.communicate()
     if rc:
-        print(stde.decode('utf-8'))
+        print(mosq_test.broker_log(broker))
 
 
 exit(rc)

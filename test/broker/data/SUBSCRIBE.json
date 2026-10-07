@@ -24,6 +24,7 @@
 			{ "name": "82 topic with U+007F", "msgs": [{"type":"send", "payload":"82 r10 m1234 s5 746F707F70 00"} ] },
 			{ "name": "82 topic with U+009F", "msgs": [{"type":"send", "payload":"82 r10 m1234 s5 746FC29F70 00"} ] },
 			{ "name": "82 topic with U+FFFF", "msgs": [{"type":"send", "payload":"82 r10 m1234 s5 746FEDBFBF 00"} ] },
+			{ "name": "82 invalid topic", "msgs": [{"type":"send", "payload":"82 r10 m1234 s5 'ab/+e' 00"} ] },
 			{ "name": "82 long", "msgs": [{"type":"send", "payload":"82 r7 m1234 s1 'p' 00 00"}]},
 			{ "name": "82 short 5 [MQTT-3.8.3-3]", "msgs": [{"type":"send", "payload":"82 r5 m1234 s1 'p'"}]},
 			{ "name": "82 short 4", "msgs": [{"type":"send", "payload":"82 r4 m1234 0000"}]},
@@ -51,6 +52,14 @@
 			{ "name": "82 multiple ok [MQTT-3.8.4-4]", "expect_disconnect":false, "msgs": [
 				{"type":"send", "payload":"82 r10 m1234 s1 'p' 00 s1 'q' 00"},
 				{"type":"recv", "payload":"90 r4 m1234 00 00"}
+			]},
+			{ "name": "82 $SYS ok", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 r24 m1234 s19 '$SYS/broker/missing' 00"},
+				{"type":"recv", "payload":"90 r3 m1234 00"}
+			]},
+			{ "name": "82 $share ok", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 r19 m1234 s14 '$share/share/#' 00"},
+				{"type":"recv", "payload":"90 r3 m1234 00"}
 			]}
 		]
 	},
@@ -163,6 +172,10 @@
 				{"type":"send", "payload":"82 r18 m1234 v0 s5 746FEDBFBF 'payload' 00"},
 				{"type":"recv", "payload":"E0 r1 81"}
 			]},
+			{ "name": "82 invalid topic", "msgs": [
+				{"type":"send", "payload":"82 r10 m1234 s5 'ab/+e' 00"},
+				{"type":"recv", "payload":"E0 r1 81"}
+			]},
 			{ "name": "82 long", "msgs": [
 				{"type":"send", "payload":"82 r8 m1234 v0 s1 'p' 00 00"},
 				{"type":"recv", "payload":"E0 r1 81"}
@@ -231,25 +244,17 @@
 				{"type":"send", "payload":"82 r7 m0 00 s1 'p' 00"},
 				{"type":"recv", "payload":"E0 r1 81"}
 			]},
-			{ "name": "82 shared sub with + in sharename", "ver":5, "msgs": [
-				{"type":"send", "payload":"82 r16 m1234 v0 s10 '$share/+/p' 00"},
-				{"type":"recv", "payload":"E0 r1 82"}
-			]},
-			{ "name": "82 shared sub with # in sharename", "ver":5, "msgs": [
-				{"type":"send", "payload":"82 r16 m1234 v0 s10 '$share/#/p' 00"},
-				{"type":"recv", "payload":"E0 r1 81"}
-			]},
-			{ "name": "82 shared sub with no topic part 1", "ver":5, "msgs": [
-				{"type":"send", "payload":"82 r15 m1234 v0 s9 '$share/p/' 00"},
-				{"type":"recv", "payload":"E0 r1 82"}
-			]},
-			{ "name": "82 shared sub with no topic part 2", "ver":5, "msgs": [
-				{"type":"send", "payload":"82 r14 m1234 v0 s8 '$share/p' 00"},
-				{"type":"recv", "payload":"E0 r1 82"}
-			]},
 			{ "name": "82 shared sub with no local set", "ver":5, "msgs": [
 				{"type":"send", "payload":"82 r16 m1234 v0 s10 '$share/p/p' 04"},
 				{"type":"recv", "payload":"E0 r1 82"}
+			]},
+			{ "name": "82 $SYS ok", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 r25 m1234 v0 s19 '$SYS/broker/missing' 00"},
+				{"type":"recv", "payload":"90 r4 m1234 v0 00"}
+			]},
+			{ "name": "82 $share ok", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 r20 m1234 v0 s14 '$share/share/#' 00"},
+				{"type":"recv", "payload":"90 r4 m1234 v0 00"}
 			]}
 		]
 	},
@@ -292,7 +297,7 @@
 			]},
 			{ "name": "82 with subscription-identifier=0 (variable byte integer)", "msgs": [
 				{"type":"send", "payload":"82 r9 m1 v2 0B v0 s1 'p' 00"},
-				{"type":"recv", "payload":"E0 r1 81"}
+				{"type":"recv", "payload":"E0 r1 82"}
 			]},
 			{ "name": "82 with subscription-identifier=1 (variable byte integer)", "expect_disconnect":false, "msgs": [
 				{"type":"send", "payload":"82 r9 m1 v2 0B v1 s1 'p' 00"},

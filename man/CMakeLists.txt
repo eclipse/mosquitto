@@ -28,7 +28,7 @@ if(XSLTPROC AND NOT WIN32)
 	compile_manpage("mosquitto_sub.1")
 	compile_manpage("mqtt.7")
 
-	install(FILES
+	custom_install(FILES
 		mosquitto_ctrl.1
 		mosquitto_ctrl_dynsec.1
 		mosquitto_ctrl_shell.1
@@ -40,15 +40,15 @@ if(XSLTPROC AND NOT WIN32)
 		DESTINATION ${CMAKE_INSTALL_MANDIR}/man1
 		OPTIONAL)
 
-	install(FILES libmosquitto.3 DESTINATION ${CMAKE_INSTALL_MANDIR}/man3 OPTIONAL)
-	install(FILES mosquitto.conf.5 DESTINATION ${CMAKE_INSTALL_MANDIR}/man5 OPTIONAL)
-	install(FILES
+	custom_install(FILES libmosquitto.3 DESTINATION ${CMAKE_INSTALL_MANDIR}/man3 OPTIONAL)
+	custom_install(FILES mosquitto.conf.5 DESTINATION ${CMAKE_INSTALL_MANDIR}/man5 OPTIONAL)
+	custom_install(FILES
 		mosquitto-tls.7
 		mosquitto.7
 		mqtt.7
 		DESTINATION ${CMAKE_INSTALL_MANDIR}/man7 OPTIONAL
 	)
-	install(FILES mosquitto.8 DESTINATION ${CMAKE_INSTALL_MANDIR}/man8 OPTIONAL)
+	custom_install(FILES mosquitto.8 DESTINATION ${CMAKE_INSTALL_MANDIR}/man8 OPTIONAL)
 
 elseif(WIN32)
 	message(WARNING "xsltproc not found: manpages cannot be built")

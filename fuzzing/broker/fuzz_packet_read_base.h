@@ -21,6 +21,7 @@ Contributors:
 extern "C" {
 #endif
 
+#include <mallocfail/wrap.h>
 #include <stdint.h>
 
 #include "mosquitto_broker_internal.h"

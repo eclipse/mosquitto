@@ -216,6 +216,26 @@ BROKER_EXPORT int mosquitto_callback_register(
 		return MOSQ_ERR_INVAL;
 	}
 
+	if(db.config->persistence && (event == MOSQ_EVT_PERSIST_RESTORE
+			|| event == MOSQ_EVT_PERSIST_BASE_MSG_ADD
+			|| event == MOSQ_EVT_PERSIST_BASE_MSG_DELETE
+			|| event == MOSQ_EVT_PERSIST_RETAIN_MSG_SET
+			|| event == MOSQ_EVT_PERSIST_RETAIN_MSG_DELETE
+			|| event == MOSQ_EVT_PERSIST_CLIENT_ADD
+			|| event == MOSQ_EVT_PERSIST_CLIENT_DELETE
+			|| event == MOSQ_EVT_PERSIST_CLIENT_UPDATE
+			|| event == MOSQ_EVT_PERSIST_SUBSCRIPTION_ADD
+			|| event == MOSQ_EVT_PERSIST_SUBSCRIPTION_DELETE
+			|| event == MOSQ_EVT_PERSIST_CLIENT_MSG_ADD
+			|| event == MOSQ_EVT_PERSIST_CLIENT_MSG_DELETE
+			|| event == MOSQ_EVT_PERSIST_CLIENT_MSG_UPDATE
+			|| event == MOSQ_EVT_PERSIST_WILL_ADD
+			|| event == MOSQ_EVT_PERSIST_WILL_DELETE
+			)){
+		log__printf(NULL, MOSQ_LOG_ERR, "Error: `persistence true` cannot be used with a persistence plugin.");
+		return MOSQ_ERR_INVAL;
+	}
+
 	if(event == MOSQ_EVT_CONTROL){
 		return control__register_callback(identifier, cb_func, event_data, userdata);
 	}

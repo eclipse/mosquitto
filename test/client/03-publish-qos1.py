@@ -4,10 +4,10 @@
 
 from mosq_test_helper import *
 
-def do_test(proto_ver):
-    rc = 1
+mosq_test.require_features(["WITH_BROKER"])
 
-    port = mosq_test.get_port()
+def do_test(port, proto_ver):
+    rc = 1
 
     if proto_ver == 5:
         V = 'mqttv5'
@@ -20,7 +20,7 @@ def do_test(proto_ver):
         'XDG_CONFIG_HOME':'/tmp/missing'
     }
     env = mosq_test.env_add_ld_library_path(env)
-    cmd = [f'{mosq_test.get_build_root()}/client/mosquitto_pub',
+    cmd = [mosq_paths.mosquitto_pub,
             '-p', str(port),
             '-q', '1',
             '-t', '03/pub/qos1/test',
@@ -29,43 +29,35 @@ def do_test(proto_ver):
             ]
 
     mid = 1
-    publish_packet = mosq_test.gen_publish("03/pub/qos1/test", qos=1, mid=mid, payload="message", proto_ver=proto_ver)
+    publish_packet = mqtt_packets.gen_publish("03/pub/qos1/test", qos=1, mid=mid, payload="message", proto_ver=proto_ver)
     if proto_ver == 5:
-        puback_packet = mosq_test.gen_puback(mid, proto_ver=proto_ver, reason_code=mqtt5_rc.NO_MATCHING_SUBSCRIBERS)
+        puback_packet = mqtt_packets.gen_puback(mid, proto_ver=proto_ver, reason_code=mqtt5_rc.NO_MATCHING_SUBSCRIBERS)
     else:
-        puback_packet = mosq_test.gen_puback(mid, proto_ver=proto_ver)
+        puback_packet = mqtt_packets.gen_puback(mid, proto_ver=proto_ver)
 
-    broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port)
+    sock = mosq_test.sub_helper(port=port, topic="#", qos=1, proto_ver=proto_ver)
 
-    try:
-        sock = mosq_test.sub_helper(port=port, topic="#", qos=1, proto_ver=proto_ver)
+    pub = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+    pub_terminate_rc = 0
+    if mosq_test.wait_for_subprocess(pub):
+        print("pub not terminated")
+        pub_terminate_rc = 1
+    (stdo, stde) = pub.communicate()
 
-        pub = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
-        pub_terminate_rc = 0
-        if mosq_test.wait_for_subprocess(pub):
-            print("pub not terminated")
-            pub_terminate_rc = 1
-        (stdo, stde) = pub.communicate()
+    mosq_test.expect_packet(sock, "publish", publish_packet)
+    rc = pub_terminate_rc
+    sock.close()
 
-        mosq_test.expect_packet(sock, "publish", publish_packet)
-        rc = pub_terminate_rc
-        sock.close()
-    except mosq_test.TestError:
-        pass
-    except Exception as e:
-        print(e)
-    finally:
-        broker.terminate()
-        if mosq_test.wait_for_subprocess(broker):
-            print("broker not terminated")
-            if rc == 0: rc=1
-        (stdo, stde) = broker.communicate()
-        if rc:
-            print(stde.decode('utf-8'))
-            print("proto_ver=%d" % (proto_ver))
-            exit(rc)
+    if rc:
+        print(stde.decode('utf-8'))
+        print("proto_ver=%d" % (proto_ver))
+        raise ValueError(rc)
 
 
-do_test(proto_ver=3)
-do_test(proto_ver=4)
-do_test(proto_ver=5)
+if __name__ == '__main__':
+    port = mosq_test.get_port()
+    broker = MosquittoBroker(port=port)
+    with broker:
+        do_test(port, proto_ver=3)
+        do_test(port, proto_ver=4)
+        do_test(port, proto_ver=5)

@@ -8,8 +8,8 @@ persist_help = persist_module()
 
 def helper(port, packets):
     helper_id = "persist-subscription-v5-0-helper"
-    connect_packet_helper = mosq_test.gen_connect(helper_id, proto_ver=5, clean_session=True)
-    connack_packet_helper = mosq_test.gen_connack(rc=0, proto_ver=5)
+    connect_packet_helper = mqtt_packets.gen_connect(helper_id, proto_ver=5, clean_session=True)
+    connack_packet_helper = mqtt_packets.gen_connack(rc=0, proto_ver=5)
 
     # Connect helper and publish
     helper = mosq_test.do_client_connect(connect_packet_helper, connack_packet_helper, timeout=5, port=port, connack_error="helper connack")
@@ -19,7 +19,7 @@ def helper(port, packets):
     mosq_test.do_send_receive(helper, packets["pubrel2"], packets["pubcomp2"], "pubcomp helper")
     helper.close()
 
-port = mosq_test.get_port()
+port, _ = mosq_test.get_port(2)
 conf_file = os.path.basename(__file__).replace('.py', '.conf')
 persist_help.write_config(conf_file, port)
 
@@ -36,38 +36,38 @@ topic2 = "subscription/2"
 
 packets = {}
 connect_props = mqtt5_props.gen_uint32_prop(mqtt5_props.SESSION_EXPIRY_INTERVAL, 60)
-packets["connect"] = mosq_test.gen_connect(client_id, proto_ver=proto_ver, clean_session=False, properties=connect_props)
-packets["connack1"] = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
-packets["connack2"] = mosq_test.gen_connack(rc=0, flags=1, proto_ver=proto_ver)
+packets["connect"] = mqtt_packets.gen_connect(client_id, proto_ver=proto_ver, clean_session=False, properties=connect_props)
+packets["connack1"] = mqtt_packets.gen_connack(rc=0, proto_ver=proto_ver)
+packets["connack2"] = mqtt_packets.gen_connack(rc=0, flags=1, proto_ver=proto_ver)
 mid = 1
 
 publish_props0 = mqtt5_props.gen_varint_prop(mqtt5_props.SUBSCRIPTION_IDENTIFIER, 100)
-packets["subscribe0"] = mosq_test.gen_subscribe(mid, topic0, qos=0, proto_ver=proto_ver, properties=publish_props0)
-packets["suback0"] = mosq_test.gen_suback(mid=mid, qos=0, proto_ver=proto_ver)
+packets["subscribe0"] = mqtt_packets.gen_subscribe(mid, topic0, qos=0, proto_ver=proto_ver, properties=publish_props0)
+packets["suback0"] = mqtt_packets.gen_suback(mid=mid, qos=0, proto_ver=proto_ver)
 
 publish_props1 = mqtt5_props.gen_varint_prop(mqtt5_props.SUBSCRIPTION_IDENTIFIER, 101)
-packets["subscribe1"] = mosq_test.gen_subscribe(mid, topic1, qos=1, proto_ver=proto_ver, properties=publish_props1)
-packets["suback1"] = mosq_test.gen_suback(mid=mid, qos=1, proto_ver=proto_ver)
+packets["subscribe1"] = mqtt_packets.gen_subscribe(mid, topic1, qos=1, proto_ver=proto_ver, properties=publish_props1)
+packets["suback1"] = mqtt_packets.gen_suback(mid=mid, qos=1, proto_ver=proto_ver)
 
 publish_props2 = mqtt5_props.gen_varint_prop(mqtt5_props.SUBSCRIPTION_IDENTIFIER, 102)
-packets["subscribe2"] = mosq_test.gen_subscribe(mid, topic2, qos=2, proto_ver=proto_ver, properties=publish_props2)
-packets["suback2"] = mosq_test.gen_suback(mid=mid, qos=2, proto_ver=proto_ver)
+packets["subscribe2"] = mqtt_packets.gen_subscribe(mid, topic2, qos=2, proto_ver=proto_ver, properties=publish_props2)
+packets["suback2"] = mqtt_packets.gen_suback(mid=mid, qos=2, proto_ver=proto_ver)
 
-packets["unsubscribe2"] = mosq_test.gen_unsubscribe(mid, topic2, proto_ver=proto_ver)
-packets["unsuback2"] = mosq_test.gen_unsuback(mid=mid, proto_ver=proto_ver)
+packets["unsubscribe2"] = mqtt_packets.gen_unsubscribe(mid, topic2, proto_ver=proto_ver)
+packets["unsuback2"] = mqtt_packets.gen_unsuback(mid=mid, proto_ver=proto_ver)
 
-packets["publish0-helper"] = mosq_test.gen_publish(topic=topic0, qos=0, payload="message", proto_ver=proto_ver)
-packets["publish0"] = mosq_test.gen_publish(topic=topic0, qos=0, payload="message", proto_ver=proto_ver, properties=publish_props0)
+packets["publish0-helper"] = mqtt_packets.gen_publish(topic=topic0, qos=0, payload="message", proto_ver=proto_ver)
+packets["publish0"] = mqtt_packets.gen_publish(topic=topic0, qos=0, payload="message", proto_ver=proto_ver, properties=publish_props0)
 mid = 1
-packets["publish1-helper"] = mosq_test.gen_publish(topic=topic1, qos=1, payload="message", mid=mid, proto_ver=proto_ver)
-packets["publish1"] = mosq_test.gen_publish(topic=topic1, qos=1, payload="message", mid=mid, proto_ver=proto_ver, properties=publish_props1)
-packets["puback1"] = mosq_test.gen_puback(mid=mid, proto_ver=proto_ver)
+packets["publish1-helper"] = mqtt_packets.gen_publish(topic=topic1, qos=1, payload="message", mid=mid, proto_ver=proto_ver)
+packets["publish1"] = mqtt_packets.gen_publish(topic=topic1, qos=1, payload="message", mid=mid, proto_ver=proto_ver, properties=publish_props1)
+packets["puback1"] = mqtt_packets.gen_puback(mid=mid, proto_ver=proto_ver)
 mid = 2
-packets["publish2-helper"] = mosq_test.gen_publish(topic=topic2, qos=2, payload="message", mid=mid, proto_ver=proto_ver)
-packets["publish2"] = mosq_test.gen_publish(topic=topic2, qos=2, payload="message", mid=mid, proto_ver=proto_ver, properties=publish_props2)
-packets["pubrec2"] = mosq_test.gen_pubrec(mid=mid, proto_ver=proto_ver)
-packets["pubrel2"] = mosq_test.gen_pubrel(mid=mid, proto_ver=proto_ver)
-packets["pubcomp2"] = mosq_test.gen_pubcomp(mid=mid, proto_ver=proto_ver)
+packets["publish2-helper"] = mqtt_packets.gen_publish(topic=topic2, qos=2, payload="message", mid=mid, proto_ver=proto_ver)
+packets["publish2"] = mqtt_packets.gen_publish(topic=topic2, qos=2, payload="message", mid=mid, proto_ver=proto_ver, properties=publish_props2)
+packets["pubrec2"] = mqtt_packets.gen_pubrec(mid=mid, proto_ver=proto_ver)
+packets["pubrel2"] = mqtt_packets.gen_pubrel(mid=mid, proto_ver=proto_ver)
+packets["pubcomp2"] = mqtt_packets.gen_pubcomp(mid=mid, proto_ver=proto_ver)
 
 
 broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port)
@@ -130,16 +130,15 @@ try:
     rc = broker_terminate_rc
 finally:
     if broker is not None:
-        broker.terminate()
+        mosq_test.terminate_broker(broker)
         if mosq_test.wait_for_subprocess(broker):
             print("broker not terminated (3)")
             if rc == 0: rc=1
-        (_, stde) = broker.communicate()
     os.remove(conf_file)
     rc += persist_help.cleanup(port)
 
     if rc:
-        print(stde.decode('utf-8'))
+        print(mosq_test.broker_log(broker))
 
 
 exit(rc)

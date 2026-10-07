@@ -23,19 +23,19 @@
 			{ "name": "E0 valid", "msgs": [{"type":"send", "payload":"E0 r0"}]},
 			{ "name": "E1 [MQTT-3.14.1-1]", "msgs": [
 				{"type":"send", "payload":"E1 r0"},
-				{"type":"recv", "payload":"E0 r1 81"}
+				{"type":"recv", "payload":"E0 r1 82"}
 			]},
 			{ "name": "E2 [MQTT-3.14.1-1]", "msgs": [
 				{"type":"send", "payload":"E2 r0"},
-				{"type":"recv", "payload":"E0 r1 81"}
+				{"type":"recv", "payload":"E0 r1 82"}
 			]},
 			{ "name": "E4 [MQTT-3.14.1-1]", "msgs": [
 				{"type":"send", "payload":"E4 r0"},
-				{"type":"recv", "payload":"E0 r1 81"}
+				{"type":"recv", "payload":"E0 r1 82"}
 			]},
 			{ "name": "E8 [MQTT-3.14.1-1]", "msgs": [
 				{"type":"send", "payload":"E8 r0"},
-				{"type":"recv", "payload":"E0 r1 81"}
+				{"type":"recv", "payload":"E0 r1 82"}
 			]},
 
 			{ "name": "E0 RC=0x00 (normal disconnection)", "msgs": [{"type":"send", "payload":"E0 r1 00"}]},

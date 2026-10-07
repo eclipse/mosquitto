@@ -18,10 +18,16 @@ LOCAL_CXXFLAGS+=-std=c++20 -Wall -ggdb -D TEST_SOURCE_DIR='"$(realpath .)"'
 MOCK_OBJS = \
 	ctrl_shell_mock.o
 
+ifeq ($(WITH_EDITLINE),yes)
 all : test-compile
-
 test-compile: ${MOCK_OBJS}
 check : test
+else
+all :
+test-compile:
+check :
+endif
+
 
 # MOCKS
 

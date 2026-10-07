@@ -32,6 +32,7 @@ Contributors:
 #include <time.h>
 
 #ifndef WIN32
+#  include <netinet/in.h>
 #  include <unistd.h>
 #endif
 
@@ -512,10 +513,6 @@ static void on_connect_reconnect(struct mosquitto *mosq, void *userdata, int rc)
 			mosquitto_subscribe(mosq, NULL, data.subscription_list[i], 1);
 		}
 	}
-
-	char buf[1024];
-	my_get_address(mosquitto_socket(mosq), buf, 1024, NULL);
-	ctrl_shell_printf("%s\n", buf);
 }
 
 

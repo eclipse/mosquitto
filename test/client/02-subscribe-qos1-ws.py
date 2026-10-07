@@ -4,19 +4,12 @@
 
 from mosq_test_helper import *
 
-def write_config(filename, port1, port2):
-    with open(filename, 'w') as f:
-        f.write("allow_anonymous true\n")
-        f.write(f"listener {port1}\n")
-        f.write("protocol websockets\n")
-        f.write(f"listener {port2}\n")
+from broker_config import BrokerConfig, ListenerConfig
+from mosquitto_broker import MosquittoBroker
+
+mosq_test.require_features(["WITH_BROKER", "WITH_WEBSOCKETS", "WITH_WEBSOCKETS_BUILTIN"])
 
 def do_test(proto_ver):
-    rc = 1
-
-    ports = mosq_test.get_port(2)
-    conf_file = os.path.basename(__file__).replace('.py', '.conf')
-
     if proto_ver == 5:
         V = 'mqttv5'
     elif proto_ver == 4:
@@ -28,7 +21,10 @@ def do_test(proto_ver):
         'XDG_CONFIG_HOME':'/tmp/missing'
     }
     env = mosq_test.env_add_ld_library_path(env)
-    cmd = [f'{mosq_test.get_build_root()}/client/mosquitto_sub',
+
+    ports = mosq_test.get_port(2)
+
+    cmd = [mosq_paths.mosquitto_sub,
             '-p', str(ports[0]),
             '-q', '1',
             '-t', '02/sub/qos1/test',
@@ -38,12 +34,21 @@ def do_test(proto_ver):
             ]
 
     payload = "message"
-    publish_packet_s = mosq_test.gen_publish("02/sub/qos1/test", qos=1, mid=1, payload=payload, proto_ver=proto_ver)
-    puback_packet_s = mosq_test.gen_puback(1, proto_ver=proto_ver)
+    publish_packet_s = mqtt_packets.gen_publish("02/sub/qos1/test", qos=1, mid=1, payload=payload, proto_ver=proto_ver)
+    puback_packet_s = mqtt_packets.gen_puback(1, proto_ver=proto_ver)
 
-    write_config(conf_file, ports[0], ports[1])
-
-    try:
+    broker_config = BrokerConfig(
+        listeners = [
+            ListenerConfig(
+                port=ports[0],
+                protocol="websockets",
+            ),
+            ListenerConfig(port=ports[1]),
+        ],
+        allow_anonymous=True,
+    )
+    broker = MosquittoBroker(config=broker_config)
+    with broker:
         broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=ports[1], use_conf=True)
 
         sock = mosq_test.pub_helper(port=ports[1], proto_ver=proto_ver)
@@ -52,29 +57,12 @@ def do_test(proto_ver):
         time.sleep(0.1)
         sock.send(publish_packet_s)
         mosq_test.expect_packet(sock, "puback", puback_packet_s)
-        sub_terminate_rc = 0
         if mosq_test.wait_for_subprocess(sub):
-            print("sub not terminated")
-            sub_terminate_rc = 1
-        (stdo, stde) = sub.communicate()
-        if stdo.decode('utf-8') == payload + '\n':
-            rc = sub_terminate_rc
+            raise RuntimeError("sub not terminated")
         sock.close()
-    except mosq_test.TestError:
-        pass
-    except Exception as e:
-        print(e)
-    finally:
-        broker.terminate()
-        os.remove(conf_file)
-        if mosq_test.wait_for_subprocess(broker):
-            print("broker not terminated")
-            if rc == 0: rc=1
-        (stdo, stde) = broker.communicate()
-        if rc:
-            print(stde.decode('utf-8'))
-            print("proto_ver=%d" % (proto_ver))
-            exit(rc)
+        (stdo, stde) = sub.communicate()
+        if stdo.decode('utf-8') != payload + '\n':
+            raise ValueError(stdo.decode('utf-8'))
 
 
 do_test(proto_ver=3)

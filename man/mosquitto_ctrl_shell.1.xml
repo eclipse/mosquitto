@@ -1,7 +1,10 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <?xml-stylesheet type="text/xsl" href="manpage.xsl"?>
 
-<refentry xml:id="mosquitto_ctrl" xmlns:xlink="http://www.w3.org/1999/xlink">
+<refentry xml:id="mosquitto_ctrl"
+		xmlns:xlink="http://www.w3.org/1999/xlink"
+		xmlns:xi="http://www.w3.org/2001/XInclude">
+
 	<refmeta>
 		<refentrytitle>mosquitto_ctrl</refentrytitle>
 		<manvolnum>1</manvolnum>
@@ -256,16 +259,16 @@ OK</programlisting>
 		<title>Connection Options</title>
 		<para>The options below may be given on the command line</para>
 		<variablelist>
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-cafile.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-capath.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-cert.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-ciphers.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-help.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-host.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-clientid.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-key.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-port.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-username.xml" />
+			<xi:include href="common/option-tls-cafile.xml" />
+			<xi:include href="common/option-tls-capath.xml" />
+			<xi:include href="common/option-tls-cert.xml" />
+			<xi:include href="common/option-tls-ciphers.xml" />
+			<xi:include href="common/option-help.xml" />
+			<xi:include href="common/option-host.xml" />
+			<xi:include href="common/option-clientid.xml" />
+			<xi:include href="common/option-tls-key.xml" />
+			<xi:include href="common/option-port.xml" />
+			<xi:include href="common/option-username.xml" />
 		</variablelist>
 	</refsect1>
 
@@ -276,7 +279,7 @@ OK</programlisting>
 		</para>
 	</refsect1>
 
-	<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/section-bugs.xml" />
+	<xi:include href="common/section-bugs.xml" />
 
 	<refsect1>
 		<title>See Also</title>

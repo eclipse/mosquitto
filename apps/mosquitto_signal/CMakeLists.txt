@@ -8,7 +8,7 @@ else()
 	set(SRC ${SRC} signal_unix.c)
 endif()
 
-add_executable(mosquitto_signal ${SRC})
+custom_add_executable(mosquitto_signal ${SRC})
 
 target_include_directories(mosquitto_signal PRIVATE
 	"${mosquitto_SOURCE_DIR}"
@@ -17,6 +17,6 @@ target_include_directories(mosquitto_signal PRIVATE
 	"${mosquitto_SOURCE_DIR}/src"
 )
 
-install(TARGETS mosquitto_signal
+custom_install(TARGETS mosquitto_signal
 	RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
 )

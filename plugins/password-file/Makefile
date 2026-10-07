@@ -5,7 +5,7 @@ PLUGIN_NAME=mosquitto_password_file
 LOCAL_CFLAGS+=
 LOCAL_CPPFLAGS+=-I${R}/src
 LOCAL_LDFLAGS+=
-LOCAL_LIBADD+=${R}/libcommon/libmosquitto_common.so.${SOVERSION}
+LOCAL_LIBADD+=${LIBMOSQ_COMMON}
 
 # Objects for this plugin only, built from source in this directory
 OBJS = \

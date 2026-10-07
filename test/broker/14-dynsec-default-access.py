@@ -7,12 +7,14 @@ from dynsec_helper import *
 import json
 import shutil
 
+mosq_test.require_features(["WITH_CONTROL", "WITH_PLUGINS", "WITH_PLUGIN_DYNAMIC_SECURITY", "WITH_TLS"])
+
 def write_config(filename, port):
     with open(filename, 'w') as f:
         f.write("listener %d\n" % (port))
         f.write("allow_anonymous false\n")
-        f.write(f"plugin {mosq_test.get_build_root()}/plugins/dynamic-security/mosquitto_dynamic_security.so\n")
-        f.write("plugin_opt_config_file %d/dynamic-security.json\n" % (port))
+        f.write(f"plugin {mosq_paths.plugin_dynamic_security}\n")
+        f.write(f"plugin_opt_config_file {Path(str(port), 'dynamic-security.json')}\n")
 
 
 port = mosq_test.get_port()
@@ -85,32 +87,32 @@ allow_unsubscribe_command = { "commands": [
 allow_unsubscribe_response = {'responses': [{'command': 'setDefaultACLAccess', 'correlationData': '7'}]}
 
 rc = 1
-connect_packet_admin = mosq_test.gen_connect("ctrl-test", username="admin", password="admin")
-connack_packet_admin = mosq_test.gen_connack(rc=0)
+connect_packet_admin = mqtt_packets.gen_connect("ctrl-test", username="admin", password="admin")
+connack_packet_admin = mqtt_packets.gen_connack(rc=0)
 
 mid = 2
-subscribe_packet_admin = mosq_test.gen_subscribe(mid, "$CONTROL/dynamic-security/#", 1)
-suback_packet_admin = mosq_test.gen_suback(mid, 1)
+subscribe_packet_admin = mqtt_packets.gen_subscribe(mid, "$CONTROL/dynamic-security/#", 1)
+suback_packet_admin = mqtt_packets.gen_suback(mid, 1)
 
-connect_packet = mosq_test.gen_connect("cid", username="user_one", password="password", proto_ver=5)
-connack_packet = mosq_test.gen_connack(rc=0, proto_ver=5)
+connect_packet = mqtt_packets.gen_connect("cid", username="user_one", password="password", proto_ver=5)
+connack_packet = mqtt_packets.gen_connack(rc=0, proto_ver=5)
 
 mid = 3
-subscribe_packet = mosq_test.gen_subscribe(mid, "topic", 0, proto_ver=5)
-suback_packet_fail = mosq_test.gen_suback(mid, mqtt5_rc.NOT_AUTHORIZED, proto_ver=5)
-suback_packet_success = mosq_test.gen_suback(mid, 0, proto_ver=5)
+subscribe_packet = mqtt_packets.gen_subscribe(mid, "topic", 0, proto_ver=5)
+suback_packet_fail = mqtt_packets.gen_suback(mid, mqtt5_rc.NOT_AUTHORIZED, proto_ver=5)
+suback_packet_success = mqtt_packets.gen_suback(mid, 0, proto_ver=5)
 
 mid = 4
-unsubscribe_packet = mosq_test.gen_unsubscribe(mid, "topic", proto_ver=5)
-unsuback_packet_fail = mosq_test.gen_unsuback(mid, mqtt5_rc.NOT_AUTHORIZED, proto_ver=5)
-unsuback_packet_success = mosq_test.gen_unsuback(mid, proto_ver=5)
+unsubscribe_packet = mqtt_packets.gen_unsubscribe(mid, "topic", proto_ver=5)
+unsuback_packet_fail = mqtt_packets.gen_unsuback(mid, mqtt5_rc.NOT_AUTHORIZED, proto_ver=5)
+unsuback_packet_success = mqtt_packets.gen_unsuback(mid, proto_ver=5)
 
 mid = 5
-publish_packet = mosq_test.gen_publish(topic="topic", mid=mid, qos=1, payload="message", proto_ver=5)
-puback_packet_fail = mosq_test.gen_puback(mid, proto_ver=5, reason_code=mqtt5_rc.NOT_AUTHORIZED)
-puback_packet_success = mosq_test.gen_puback(mid, proto_ver=5)
+publish_packet = mqtt_packets.gen_publish(topic="topic", mid=mid, qos=1, payload="message", proto_ver=5)
+puback_packet_fail = mqtt_packets.gen_puback(mid, proto_ver=5, reason_code=mqtt5_rc.NOT_AUTHORIZED)
+puback_packet_success = mqtt_packets.gen_puback(mid, proto_ver=5)
 
-publish_packet_recv = mosq_test.gen_publish(topic="topic", qos=0, payload="message", proto_ver=5)
+publish_packet_recv = mqtt_packets.gen_publish(topic="topic", qos=0, payload="message", proto_ver=5)
 
 try:
     os.mkdir(str(port))
@@ -186,13 +188,12 @@ finally:
     except FileNotFoundError:
         pass
     os.rmdir(f"{port}")
-    broker.terminate()
+    mosq_test.terminate_broker(broker)
     if mosq_test.wait_for_subprocess(broker):
         print("broker not terminated")
         if rc == 0: rc=1
-    (stdo, stde) = broker.communicate()
     if rc:
-        print(stde.decode('utf-8'))
+        print(mosq_test.broker_log(broker))
 
 
 exit(rc)

@@ -19,21 +19,22 @@
 from mosq_test_helper import *
 
 def do_test(conn, data):
-    connect_packet = mosq_test.gen_connect("publish-qos2-test")
-    connack_packet = mosq_test.gen_connack(rc=0)
+    connect_packet = mqtt_packets.gen_connect("publish-qos2-test")
+    connack_packet = mqtt_packets.gen_connack(rc=0)
 
-    disconnect_packet = mosq_test.gen_disconnect()
+    disconnect_packet = mqtt_packets.gen_disconnect()
 
     mid = 13423
-    publish_packet = mosq_test.gen_publish("pub/qos2/receive", qos=2, mid=mid, payload="message")
-    pubrec_packet = mosq_test.gen_pubrec(mid)
-    pubrel_packet = mosq_test.gen_pubrel(mid)
-    pubcomp_packet = mosq_test.gen_pubcomp(mid)
+    publish_packet = mqtt_packets.gen_publish("pub/qos2/receive", qos=2, mid=mid, payload="message")
+    pubrec_packet = mqtt_packets.gen_pubrec(mid)
+    pubrel_packet = mqtt_packets.gen_pubrel(mid)
+    pubcomp_packet = mqtt_packets.gen_pubcomp(mid)
 
     mosq_test.do_receive_send(conn, connect_packet, connack_packet, "connect")
     mosq_test.do_send_receive(conn, publish_packet, pubrec_packet, "pubrec")
     mosq_test.do_send_receive(conn, pubrel_packet, pubcomp_packet, "pubcomp")
 
 
-mosq_test.client_test("c/03-publish-b2c-qos2.test", [], do_test, None)
-mosq_test.client_test("cpp/03-publish-b2c-qos2.test", [], do_test, None)
+mosq_test.client_test(Path("c", mosq_test.get_build_type(), "03-publish-b2c-qos2.exe"), [], do_test, None)
+if mosq_test.check_features(["WITH_LIB_CPP"]):
+    mosq_test.client_test(Path("cpp", mosq_test.get_build_type(), "03-publish-b2c-qos2.exe"), [], do_test, None)

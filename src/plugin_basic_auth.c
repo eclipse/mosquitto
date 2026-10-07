@@ -40,6 +40,7 @@ static int plugin__basic_auth(struct mosquitto__security_options *opts, struct m
 		event_data.client = context;
 		event_data.username = context->username;
 		event_data.password = context->password;
+		event_data.password_len = context->password_len;
 		rc = cb_base->cb(MOSQ_EVT_BASIC_AUTH, &event_data, cb_base->userdata);
 		if(rc == MOSQ_ERR_PLUGIN_IGNORE){
 			/* Do nothing, this is as if the plugin doesn't exist */

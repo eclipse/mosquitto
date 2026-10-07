@@ -39,7 +39,7 @@ def write_config_edge(filename, persistence_file, remote_port, listen_port, prot
         f.write("connection bridge_sample\n")
         f.write("local_clientid id_local\n")
         f.write("remote_clientid id_remote\n")
-        f.write("address 127.0.0.1:%d\n" % (remote_port))
+        f.write("address localhost:%d\n" % (remote_port))
         f.write("topic br_out/# out 1\n")
         f.write("topic br_in/# in 1\n")
         # We need to ensure connections break fast enough to keep test times sane
@@ -64,16 +64,15 @@ def write_config_core(filename, listen_port, persistence_file):
 
 
 def wait_for_bridge_to_connect(port, clientid):
-    conn = mosq_test.gen_connect("helper", clean_session=True)
-    connack = mosq_test.gen_connack(rc=0)
+    conn = mqtt_packets.gen_connect("helper", clean_session=True)
+    connack = mqtt_packets.gen_connack(rc=0)
 
     sock = mosq_test.do_client_connect(conn, connack, port=port)
-    sub = mosq_test.gen_subscribe(1, f'$SYS/broker/connection/{clientid}/state', 0)
-    sub = mosq_test.gen_subscribe(1, f'$SYS/broker/connection/#', 0)
-    suback = mosq_test.gen_suback(1, 0)
+    sub = mqtt_packets.gen_subscribe(1, f'$SYS/broker/connection/{clientid}/state', 0)
+    suback = mqtt_packets.gen_suback(1, 0)
     mosq_test.do_send_receive(sock, sub, suback)
-    pub_r = mosq_test.gen_publish(topic=f"$SYS/broker/connection/{clientid}/state", payload="1", qos=0, retain=True)
-    pub_nr = mosq_test.gen_publish(topic=f"$SYS/broker/connection/{clientid}/state", payload="1", qos=0)
+    pub_r = mqtt_packets.gen_publish(topic=f"$SYS/broker/connection/{clientid}/state", payload="1", qos=0, retain=True)
+    pub_nr = mqtt_packets.gen_publish(topic=f"$SYS/broker/connection/{clientid}/state", payload="1", qos=0)
     pub_rec = sock.recv(len(pub_r))
     if pub_rec != pub_r and pub_rec != pub_nr:
         raise ValueError(mosq_test.to_string(pub_rec))
@@ -111,8 +110,8 @@ def do_test(proto_ver, cs, lcs=None):
 
     def make_conn(client_tag, proto, cs, session_present=False):
         client_id = socket.gethostname() + "." + client_tag
-        conn = mosq_test.gen_connect(client_id, clean_session=cs, proto_ver=proto, session_expiry=0 if cs else 5000)
-        connack = mosq_test.gen_connack(rc=0, proto_ver=proto_ver, flags=1 if session_present else 0)
+        conn = mqtt_packets.gen_connect(client_id, clean_session=cs, proto_ver=proto, session_expiry=0 if cs else 5000)
+        connack = mqtt_packets.gen_connack(rc=0, proto_ver=proto_ver, flags=1 if session_present else 0)
         return AckedPair(conn, connack)
 
 
@@ -121,16 +120,16 @@ def do_test(proto_ver, cs, lcs=None):
             opts = mqtt5_opts.MQTT_SUB_OPT_NO_LOCAL | mqtt5_opts.MQTT_SUB_OPT_RETAIN_AS_PUBLISHED
         else:
             opts = 0
-        sub = mosq_test.gen_subscribe(mid, topic, qos | opts, proto_ver=proto)
-        suback = mosq_test.gen_suback(mid, qos, proto_ver=proto)
+        sub = mqtt_packets.gen_subscribe(mid, topic, qos | opts, proto_ver=proto)
+        suback = mqtt_packets.gen_suback(mid, qos, proto_ver=proto)
         return AckedPair(sub, suback)
 
 
     def make_pub(topic, mid, proto, qos=1, payload_tag="message", rc=-1):
         # Using the mid automatically makes it hard to verify messages that might have been retransmitted.
         # encourage users to put sequence numbers in topics instead....
-        pub = mosq_test.gen_publish(topic, mid=mid, qos=qos, retain=False, payload=payload_tag + "-from-" + topic, proto_ver=proto)
-        puback = mosq_test.gen_puback(mid, proto_ver=proto, reason_code=rc)
+        pub = mqtt_packets.gen_publish(topic, mid=mid, qos=qos, retain=False, payload=payload_tag + "-from-" + topic, proto_ver=proto)
+        puback = mqtt_packets.gen_puback(mid, proto_ver=proto, reason_code=rc)
         return AckedPair(pub, puback)
 
     # Clients are testing messages in both directions, they need to be durable
@@ -176,11 +175,11 @@ def do_test(proto_ver, cs, lcs=None):
 
         tprint("Normal bi-dir bridging works. continuing")
 
-        broker_b.terminate()
+        mosq_test.terminate_broker(broker_b)
         if mosq_test.wait_for_subprocess(broker_b):
             print("broker_b not terminated")
             broker_termination_success = False
-        (stdo_b1, stde_b1) = broker_b.communicate()
+        stde_b1 = mosq_test.broker_log(broker_b)
 
         # as we're _terminating_ the connections should close ~straight away
         tprint("terminated B", time.time())
@@ -212,11 +211,11 @@ def do_test(proto_ver, cs, lcs=None):
         tprint("Stage 1 complete, repeating in other direction")
 
         # ok, now repeat in the other direction...
-        broker_a.terminate()
+        mosq_test.terminate_broker(broker_a)
         if mosq_test.wait_for_subprocess(broker_a):
             print("broker_a not terminated")
             broker_termination_success = False
-        (stdo_a1, stde_a1) = broker_a.communicate()
+        stde_a1 = mosq_test.broker_log(broker_a)
         time.sleep(0.5)
 
         mosq_test.do_send_receive(client_b, pub_b2.p, pub_b2.ack, "puback_b2")
@@ -228,7 +227,7 @@ def do_test(proto_ver, cs, lcs=None):
         wait_for_bridge_to_connect(port_a_listen, "id_remote")
 
         # should go through
-        mosq_test.do_send_receive(client_b, pub_b3.p, pub_b3.ack, "puback_b3")
+        client_b.send(pub_b3.p)
 
         if expect_queued_ba:
             tprint("2.expecting b->a queueueing")
@@ -247,16 +246,16 @@ def do_test(proto_ver, cs, lcs=None):
     finally:
         os.remove(conf_file_a)
         os.remove(conf_file_b)
-        broker_a.terminate()
-        broker_b.terminate()
+        mosq_test.terminate_broker(broker_a)
+        mosq_test.terminate_broker(broker_b)
         if mosq_test.wait_for_subprocess(broker_a):
             print("broker_a not terminated")
             success = False
         if mosq_test.wait_for_subprocess(broker_b):
             print("broker_b not terminated")
             success = False
-        (stdo_a, stde_a) = broker_a.communicate()
-        (stdo_b, stde_b) = broker_b.communicate()
+        stde_a = mosq_test.broker_log(broker_a)
+        stde_b = mosq_test.broker_log(broker_b)
         # Must be after terminating!
         try:
             os.remove(persistence_file_a)
@@ -269,12 +268,12 @@ def do_test(proto_ver, cs, lcs=None):
         if not success:
             print("Test failed, dumping broker A logs: ")
             if stde_a1:
-                print(stde_a1.decode('utf-8'))
-            print(stde_a.decode('utf-8'))
+                print(stde_a1)
+            print(stde_a)
             print("Test failed, dumping broker B logs: ")
             if stde_b1:
-                print(stde_b1.decode('utf-8'))
-            print(stde_b.decode('utf-8'))
+                print(stde_b1)
+            print(stde_b)
             exit(1)
 
 if sys.argv[3] == "True":

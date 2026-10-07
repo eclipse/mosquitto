@@ -99,7 +99,7 @@ int handle__accepted_publish(struct mosquitto *context, struct mosquitto__base_m
 			(cmsg_stored->base_msg->data.qos != base_msg->data.qos
 			|| cmsg_stored->base_msg->data.payloadlen != base_msg->data.payloadlen
 			|| strcmp(cmsg_stored->base_msg->data.topic, base_msg->data.topic)
-			|| memcmp(cmsg_stored->base_msg->data.payload, base_msg->data.payload, base_msg->data.payloadlen))){
+			|| (base_msg->data.payloadlen > 0 && memcmp(cmsg_stored->base_msg->data.payload, base_msg->data.payload, base_msg->data.payloadlen)))){
 
 		log__printf(NULL, MOSQ_LOG_WARNING, "Reused message ID %u from %s detected. Clearing from storage.", base_msg->data.source_mid, context->id);
 		db__message_remove_incoming(context, base_msg->data.source_mid);
@@ -108,9 +108,15 @@ int handle__accepted_publish(struct mosquitto *context, struct mosquitto__base_m
 
 	if(!cmsg_stored){
 		if(base_msg->data.qos > 0 && context->msgs_in.inflight_quota == 0){
+			log__printf(NULL, MOSQ_LOG_WARNING, "Client %s has exceeded its receive-maximum quota. This behaviour must be fixed on the client.", context->id);
+#if 0
+			/* Badly behaving clients like on the esp32 fall foul of this
+			 * check, so report it for now but don't disconnect, to give chance
+			 * for the bad behaviour to be fixed. */
 			/* Client isn't allowed any more incoming messages, so fail early */
 			db__msg_store_free(base_msg);
 			return MOSQ_ERR_RECEIVE_MAXIMUM_EXCEEDED;
+#endif
 		}
 
 		if(base_msg->data.qos == 0

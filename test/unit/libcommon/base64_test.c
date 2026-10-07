@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include <CUnit/CUnit.h>
 #include <CUnit/Basic.h>
 
@@ -9,6 +11,9 @@
 
 
 //int mosquitto_base64_decode(const char *in, unsigned char **decoded, unsigned int *decoded_len);
+
+
+#ifdef WITH_TLS
 
 
 static void check_encode(const char *input, size_t in_len, const char *expected_output)
@@ -159,3 +164,4 @@ int init_base64_tests(void)
 
 	return 0;
 }
+#endif

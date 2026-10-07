@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 
 from mosq_test_helper import *
+
+from broker_config import BrokerConfig, PluginConfig
+from mosquitto_broker import MosquittoBroker
 import uuid
+
+mosq_test.require_features(["WITH_PLUGINS", "WITH_PLUGIN_SPARKPLUG_AWARE"])
 
 namespace = "spBv1.0"
 client_id = "test-client"
 username = None
 password = None
 
-def write_config(filename, port):
-    with open(filename, 'w') as f:
-        f.write("listener %d\n" % (port))
-        f.write("allow_anonymous true\n")
-        f.write(f"plugin {mosq_test.get_build_root()}/plugins/sparkplug-aware/mosquitto_sparkplug_aware.so\n")
 
 def proc(port, proto_ver):
     group_id = str(uuid.uuid4())
@@ -30,8 +30,8 @@ def proc(port, proto_ver):
 
     topic = f"{namespace}/{group_id}/NDEATH/#"
     qos = 1
-    subscribe_packet = mosq_test.gen_subscribe(topic=topic, mid=1, qos=qos, proto_ver=proto_ver)
-    suback_packet = mosq_test.gen_suback(mid=1, qos=qos, proto_ver=proto_ver)
+    subscribe_packet = mqtt_packets.gen_subscribe(topic=topic, mid=1, qos=qos, proto_ver=proto_ver)
+    suback_packet = mqtt_packets.gen_suback(mid=1, qos=qos, proto_ver=proto_ver)
     mosq_test.do_send_receive(monitor, subscribe_packet, suback_packet)
 
     # ======================================================================
@@ -81,10 +81,10 @@ def proc(port, proto_ver):
     # • [tck-id-message-flow-edge-node-birth-publish-will-message]
     #   When a Sparkplug Edge Node sends its MQTT CONNECT packet, it MUST
     #   include a Will Message.
-    connect_packet = mosq_test.gen_connect(client_id, clean_session=clean_session, username=username, password=password,
+    connect_packet = mqtt_packets.gen_connect(client_id, clean_session=clean_session, username=username, password=password,
                                            will_topic=NDEATH_topic, will_qos=NDEATH_qos, will_retain=NDEATH_retain,
                                            will_payload=NDEATH_payload, proto_ver=proto_ver, session_expiry=session_expiry_interval)
-    connack_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
+    connack_packet = mqtt_packets.gen_connack(rc=0, proto_ver=proto_ver)
     test_client = mosq_test.do_client_connect(connect_packet, connack_packet, port=port, connack_error=f"client connack")
 
     # • [tck-id-message-flow-edge-node-ncmd-subscribe]
@@ -95,8 +95,8 @@ def proc(port, proto_ver):
     NCMD_topic = f"{namespace}/{group_id}/NCMD/{edge_node_id}"
     qos = 1
 
-    subscribe_packet = mosq_test.gen_subscribe(topic=NCMD_topic, mid=1, qos=qos, proto_ver=proto_ver)
-    suback_packet = mosq_test.gen_suback(mid=1, qos=qos, proto_ver=proto_ver)
+    subscribe_packet = mqtt_packets.gen_subscribe(topic=NCMD_topic, mid=1, qos=qos, proto_ver=proto_ver)
+    suback_packet = mqtt_packets.gen_suback(mid=1, qos=qos, proto_ver=proto_ver)
     mosq_test.do_send_receive(test_client, subscribe_packet, suback_packet)
 
     # ======================================================================
@@ -136,7 +136,7 @@ def proc(port, proto_ver):
     #   The Edge Node’s NBIRTH retained flag MUST be set to false.
     NBIRTH_retain = False
 
-    publish_packet = mosq_test.gen_publish(topic=NBIRTH_topic, qos=NBIRTH_qos, payload=NBIRTH_payload, retain=NBIRTH_retain, proto_ver=proto_ver)
+    publish_packet = mqtt_packets.gen_publish(topic=NBIRTH_topic, qos=NBIRTH_qos, payload=NBIRTH_payload, retain=NBIRTH_retain, proto_ver=proto_ver)
     test_client.send(publish_packet)
 
     # **********************************************************************
@@ -145,7 +145,7 @@ def proc(port, proto_ver):
     # **********************************************************************
 
     NBIRTH_topic_aware = f"$sparkplug/certificates/{namespace}/{group_id}/NBIRTH/{edge_node_id}"
-    publish_packet = mosq_test.gen_publish(NBIRTH_topic_aware, mid=1, qos=0, proto_ver=proto_ver, payload=NBIRTH_payload)
+    publish_packet = mqtt_packets.gen_publish(NBIRTH_topic_aware, mid=1, qos=0, proto_ver=proto_ver, payload=NBIRTH_payload)
     mosq_test.expect_packet(monitor, "error1", publish_packet)
 
     # ======================================================================
@@ -183,7 +183,7 @@ def proc(port, proto_ver):
     # • [tck-id-message-flow-device-birth-publish-nbirth-wait]
     #   The NBIRTH message MUST have been sent within the current MQTT session
     #   prior to a DBIRTH being published.
-    publish_packet = mosq_test.gen_publish(topic=DBIRTH_topic, qos=DBIRTH_qos, payload=DBIRTH_payload, retain=DBIRTH_retain, proto_ver=proto_ver)
+    publish_packet = mqtt_packets.gen_publish(topic=DBIRTH_topic, qos=DBIRTH_qos, payload=DBIRTH_payload, retain=DBIRTH_retain, proto_ver=proto_ver)
     test_client.send(publish_packet)
 
     # **********************************************************************
@@ -192,7 +192,7 @@ def proc(port, proto_ver):
     # **********************************************************************
 
     DBIRTH_topic_aware = f"$sparkplug/certificates/{namespace}/{group_id}/DBIRTH/{edge_node_id}/{device_id}"
-    publish_packet = mosq_test.gen_publish(DBIRTH_topic_aware, mid=1, qos=0, proto_ver=proto_ver, payload=DBIRTH_payload)
+    publish_packet = mqtt_packets.gen_publish(DBIRTH_topic_aware, mid=1, qos=0, proto_ver=proto_ver, payload=DBIRTH_payload)
     mosq_test.expect_packet(monitor, "error0", publish_packet)
 
     # ======================================================================
@@ -212,43 +212,29 @@ def proc(port, proto_ver):
     # Monitor client should receive the NDEATH certificate
     # **********************************************************************
 
-    publish_packet = mosq_test.gen_publish(NDEATH_topic, mid=1, qos=NDEATH_qos, proto_ver=proto_ver, payload=NDEATH_payload)
+    publish_packet = mqtt_packets.gen_publish(NDEATH_topic, mid=1, qos=NDEATH_qos, proto_ver=proto_ver, payload=NDEATH_payload)
     mosq_test.expect_packet(monitor, "error 2", publish_packet)
 
     # **********************************************************************
     # Clear the republished certificates ready for the next test
     # **********************************************************************
-    publish_packet = mosq_test.gen_publish(NBIRTH_topic_aware, qos=0, proto_ver=proto_ver, payload=None, retain=True)
+    publish_packet = mqtt_packets.gen_publish(NBIRTH_topic_aware, qos=0, proto_ver=proto_ver, payload=None, retain=True)
     monitor.send(publish_packet)
-    publish_packet = mosq_test.gen_publish(DBIRTH_topic_aware, qos=0, proto_ver=proto_ver, payload=None, retain=True)
+    publish_packet = mqtt_packets.gen_publish(DBIRTH_topic_aware, qos=0, proto_ver=proto_ver, payload=None, retain=True)
     monitor.send(publish_packet)
     monitor.close()
 
 
 def do_tests():
-    rc = 1
     port = mosq_test.get_port()
-    conf_file = os.path.basename(__file__).replace('.py', '.conf')
-    write_config(conf_file, port)
-    broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port)
-
-    try:
+    broker_config = BrokerConfig(
+        plugins=[PluginConfig(mosq_paths.plugin_sparkplug_aware)],
+        allow_anonymous=True,
+    )
+    broker = MosquittoBroker(port=port, config=broker_config)
+    with broker:
         proc(port, 4)
         proc(port, 5)
-
-        rc = 0
-    except Exception as e:
-        print(e)
-    finally:
-        os.remove(conf_file)
-        broker.terminate()
-        if mosq_test.wait_for_subprocess(broker):
-            print("broker not terminated")
-            if rc == 0: rc=1
-        (stdo, stde) = broker.communicate()
-        if rc:
-            print(stde.decode('utf-8'))
-            exit(rc)
 
 if __name__ == '__main__':
     do_tests()

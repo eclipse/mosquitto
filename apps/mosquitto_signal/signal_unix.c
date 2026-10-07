@@ -29,7 +29,7 @@ Contributors:
 #endif
 
 
-void signal_all(int sig)
+void signal_all(enum mosq_signal sig)
 {
 	DIR *dir;
 	struct dirent *d;

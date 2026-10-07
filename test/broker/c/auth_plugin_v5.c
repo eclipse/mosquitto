@@ -82,6 +82,7 @@ int mosquitto_auth_acl_check_v5(int event, void *event_data, void *user_data)
 int mosquitto_auth_unpwd_check_v5(int event, void *event_data, void *user_data)
 {
 	struct mosquitto_evt_basic_auth *ed = event_data;
+	const char binary_pw[8] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07};
 
 	(void)user_data;
 
@@ -89,7 +90,21 @@ int mosquitto_auth_unpwd_check_v5(int event, void *event_data, void *user_data)
 		abort();
 	}
 
-	if(ed->username && !strcmp(ed->username, "test-username") && ed->password && !strcmp(ed->password, "cnwTICONIURW")){
+	if(ed->username
+			&& !strcmp(ed->username, "test-username")
+			&& ed->password
+			&& !strcmp(ed->password, "cnwTICONIURW")
+			&& strlen("cnwTICONIURW") == ed->password_len
+			){
+
+		return MOSQ_ERR_SUCCESS;
+	}else if(ed->username
+			&& !strcmp(ed->username, "binary-password")
+			&& ed->password
+			&& ed->password_len == sizeof(binary_pw)
+			&& !memcmp(ed->password, binary_pw, ed->password_len)
+			){
+
 		return MOSQ_ERR_SUCCESS;
 	}else if(ed->username && (!strcmp(ed->username, "readonly") || !strcmp(ed->username, "readwrite"))){
 		return MOSQ_ERR_SUCCESS;

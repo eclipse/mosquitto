@@ -9,7 +9,7 @@ enum mosq_signal {
 	MSIG_XTREPORT,
 };
 
-void signal_all(int sig);
+void signal_all(enum mosq_signal sig);
 void send_signal(int pid, enum mosq_signal msig);
 
 #endif

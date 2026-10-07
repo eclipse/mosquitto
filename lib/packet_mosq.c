@@ -238,7 +238,7 @@ int packet__check_oversize(struct mosquitto *mosq, uint32_t remaining_length)
 		return MOSQ_ERR_SUCCESS;
 	}
 
-	len = remaining_length + mosquitto_varint_bytes(remaining_length);
+	len = 1 + remaining_length + mosquitto_varint_bytes(remaining_length);
 	if(len > mosq->maximum_packet_size){
 		return MOSQ_ERR_OVERSIZE_PACKET;
 	}else{
@@ -399,9 +399,11 @@ static int read_header(struct mosquitto *mosq, ssize_t (*func_read)(struct mosqu
 
 static int packet__check_in_packet_oversize(struct mosquitto *mosq)
 {
+	uint32_t packet_length = 1 + mosquitto_varint_bytes(mosq->in_packet.remaining_length) + mosq->in_packet.remaining_length;
+
 	switch(mosq->in_packet.command & 0xF0){
 		case CMD_CONNECT:
-			if(mosq->in_packet.remaining_length > db.config->packet_max_connect){
+			if(packet_length > db.config->packet_max_connect){
 				return MOSQ_ERR_OVERSIZE_PACKET;
 			}
 			break;
@@ -412,7 +414,7 @@ static int packet__check_in_packet_oversize(struct mosquitto *mosq)
 		case CMD_PUBCOMP:
 		case CMD_UNSUBACK:
 			if(mosq->protocol == mosq_p_mqtt5){
-				if(mosq->in_packet.remaining_length > db.config->packet_max_simple){
+				if(packet_length > db.config->packet_max_simple){
 					return MOSQ_ERR_OVERSIZE_PACKET;
 				}
 			}else{
@@ -431,7 +433,7 @@ static int packet__check_in_packet_oversize(struct mosquitto *mosq)
 
 		case CMD_DISCONNECT:
 			if(mosq->protocol == mosq_p_mqtt5){
-				if(mosq->in_packet.remaining_length > db.config->packet_max_simple){
+				if(packet_length > db.config->packet_max_simple){
 					return MOSQ_ERR_OVERSIZE_PACKET;
 				}
 			}else{
@@ -443,20 +445,20 @@ static int packet__check_in_packet_oversize(struct mosquitto *mosq)
 
 		case CMD_SUBSCRIBE:
 		case CMD_UNSUBSCRIBE:
-			if(mosq->protocol == mosq_p_mqtt5 && mosq->in_packet.remaining_length > db.config->packet_max_sub){
+			if(mosq->protocol == mosq_p_mqtt5 && packet_length > db.config->packet_max_sub){
 				return MOSQ_ERR_OVERSIZE_PACKET;
 			}
 			break;
 
 		case CMD_AUTH:
-			if(mosq->in_packet.remaining_length > db.config->packet_max_auth){
+			if(packet_length > db.config->packet_max_auth){
 				return MOSQ_ERR_OVERSIZE_PACKET;
 			}
 			break;
 
 	}
 
-	if(db.config->max_packet_size > 0 && mosq->in_packet.remaining_length+1 > db.config->max_packet_size){
+	if(db.config->max_packet_size > 0 && packet_length > db.config->max_packet_size){
 		if(mosq->protocol == mosq_p_mqtt5){
 			send__disconnect(mosq, MQTT_RC_PACKET_TOO_LARGE, NULL);
 		}

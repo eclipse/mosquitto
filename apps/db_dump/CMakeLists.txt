@@ -1,4 +1,4 @@
-add_executable(mosquitto_db_dump
+custom_add_executable(mosquitto_db_dump
 	db_dump.c db_dump.h
 	json.c
 	print.c
@@ -22,9 +22,7 @@ target_compile_definitions(mosquitto_db_dump PRIVATE
 )
 
 target_include_directories(mosquitto_db_dump PRIVATE
-	"${mosquitto_SOURCE_DIR}"
 	"${mosquitto_SOURCE_DIR}/common"
-	"${mosquitto_SOURCE_DIR}/include"
 	"${mosquitto_SOURCE_DIR}/lib"
 	"${mosquitto_SOURCE_DIR}/libcommon"
 	"${mosquitto_SOURCE_DIR}/src"
@@ -32,22 +30,16 @@ target_include_directories(mosquitto_db_dump PRIVATE
 	"${CJSON_INCLUDE_DIRS}"
 )
 
-if(WITH_BUNDLED_DEPS)
-	target_include_directories(mosquitto_db_dump PRIVATE
-		"${mosquitto_SOURCE_DIR}/deps"
-	)
-endif()
-
 if(WITH_TLS)
-	target_link_libraries(mosquitto_db_dump PRIVATE config-header OpenSSL::SSL)
+	target_link_libraries(mosquitto_db_dump PRIVATE OpenSSL::SSL)
 endif()
 
 if(WIN32)
 	target_link_libraries(mosquitto_db_dump PRIVATE ws2_32)
 endif()
 
-target_link_libraries(mosquitto_db_dump PRIVATE libmosquitto_common)
+target_link_libraries(mosquitto_db_dump PRIVATE common-options libmosquitto_common)
 
-install(TARGETS mosquitto_db_dump
+custom_install(TARGETS mosquitto_db_dump
 	RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
 )

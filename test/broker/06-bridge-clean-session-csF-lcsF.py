@@ -5,5 +5,7 @@ from collections import namedtuple
 
 from mosq_test_helper import *
 
+mosq_test.require_features(["INC_BRIDGE_SUPPORT"])
+
 (port_a_listen, port_b_listen) = mosq_test.get_port(2)
-subprocess.run([f'{Path(__file__).resolve().parent}/06-bridge-clean-session-core.py', str(port_a_listen), str(port_b_listen), "False", "False"])
+subprocess.run(['python3', f'{Path(__file__).resolve().parent}/06-bridge-clean-session-core.py', str(port_a_listen), str(port_b_listen), "False", "False"])

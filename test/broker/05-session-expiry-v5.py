@@ -4,33 +4,30 @@
 
 from mosq_test_helper import *
 
-def do_test(start_broker):
-    rc = 1
-
+def do_test():
     # This client exists to test possible fixed size int overflow and sorting of the session intervals
     # https://github.com/eclipse/mosquitto/issues/1525
     props = mqtt5_props.gen_uint32_prop(mqtt5_props.SESSION_EXPIRY_INTERVAL, 4294967294)
-    connect0_packet = mosq_test.gen_connect("05-session-expiry-overflow", clean_session=False, proto_ver=5, properties=props)
-    connack0_packet = mosq_test.gen_connack(flags=0, rc=0, proto_ver=5)
+    connect0_packet = mqtt_packets.gen_connect("05-session-expiry-overflow", clean_session=False, proto_ver=5, properties=props)
+    connack0_packet = mqtt_packets.gen_connack(flags=0, rc=0, proto_ver=5)
 
 
     props = mqtt5_props.gen_uint32_prop(mqtt5_props.SESSION_EXPIRY_INTERVAL, 1)
-    connect_packet = mosq_test.gen_connect("05-session-expiry", clean_session=False, proto_ver=5, properties=props)
-    connack1_packet = mosq_test.gen_connack(flags=0, rc=0, proto_ver=5)
+    connect_packet = mqtt_packets.gen_connect("05-session-expiry", clean_session=False, proto_ver=5, properties=props)
+    connack1_packet = mqtt_packets.gen_connack(flags=0, rc=0, proto_ver=5)
 
-    connack2_packet = mosq_test.gen_connack(flags=1, rc=0, proto_ver=5)
+    connack2_packet = mqtt_packets.gen_connack(flags=1, rc=0, proto_ver=5)
 
     props = mqtt5_props.gen_uint32_prop(mqtt5_props.SESSION_EXPIRY_INTERVAL, 3)
-    disconnect_packet = mosq_test.gen_disconnect(proto_ver=5, properties=props)
+    disconnect_packet = mqtt_packets.gen_disconnect(proto_ver=5, properties=props)
 
     props = mqtt5_props.gen_uint32_prop(mqtt5_props.SESSION_EXPIRY_INTERVAL, 0)
-    disconnect2_packet = mosq_test.gen_disconnect(proto_ver=5, properties=props)
+    disconnect2_packet = mqtt_packets.gen_disconnect(proto_ver=5, properties=props)
 
     port = mosq_test.get_port()
-    if start_broker:
-        broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port)
+    broker = MosquittoBroker(port=port)
 
-    try:
+    with broker:
         # Connect client with wildly different session expiry, this should impact
         # on the test if all is well
         sock0 = mosq_test.do_client_connect(connect0_packet, connack0_packet, port=port, connack_error="connack 0")
@@ -87,27 +84,7 @@ def do_test(start_broker):
         # Immediate reconnect, session should have been removed.
         sock = mosq_test.do_client_connect(connect_packet, connack1_packet, port=port, connack_error="connack 7")
         sock.close()
-        rc = 0
 
-        sock.close()
-    except mosq_test.TestError:
-        pass
-    finally:
-        if start_broker:
-            broker.terminate()
-            if mosq_test.wait_for_subprocess(broker):
-                print("broker not terminated")
-                if rc == 0: rc=1
-            (stdo, stde) = broker.communicate()
-            if rc:
-                print(stde.decode('utf-8'))
-                exit(rc)
-        else:
-            return rc
-
-
-def all_tests(start_broker=False):
-    return do_test(start_broker)
 
 if __name__ == '__main__':
-    all_tests(True)
+    do_test()

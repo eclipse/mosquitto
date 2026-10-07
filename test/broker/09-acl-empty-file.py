@@ -3,7 +3,6 @@
 # Test for CVE-2018-xxxxx
 
 from mosq_test_helper import *
-import signal
 
 def write_config(filename, port, per_listener):
     with open(filename, 'w') as f:
@@ -26,13 +25,13 @@ def do_test(port, per_listener):
     write_acl(acl_file)
 
     rc = 1
-    connect_packet = mosq_test.gen_connect("acl-check")
-    connack_packet = mosq_test.gen_connack(rc=0)
+    connect_packet = mqtt_packets.gen_connect("acl-check")
+    connack_packet = mqtt_packets.gen_connack(rc=0)
 
     mid = 1
-    publish_packet = mosq_test.gen_publish("test/topic", qos=0, payload="message")
-    subscribe_packet = mosq_test.gen_subscribe(mid, "test/topic", 0)
-    suback_packet = mosq_test.gen_suback(mid, 0)
+    publish_packet = mqtt_packets.gen_publish("test/topic", qos=0, payload="message")
+    subscribe_packet = mqtt_packets.gen_subscribe(mid, "test/topic", 0)
+    suback_packet = mqtt_packets.gen_suback(mid, 0)
 
     broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port)
 
@@ -52,13 +51,12 @@ def do_test(port, per_listener):
     finally:
         os.remove(conf_file)
         os.remove(acl_file)
-        broker.terminate()
+        mosq_test.terminate_broker(broker)
         if mosq_test.wait_for_subprocess(broker):
             print("broker not terminated")
             if rc == 0: rc=1
-        (stdo, stde) = broker.communicate()
         if rc:
-            print(stde.decode('utf-8'))
+            print(mosq_test.broker_log(broker))
             exit(rc)
 
 port = mosq_test.get_port()

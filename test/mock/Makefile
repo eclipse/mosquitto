@@ -15,9 +15,11 @@ LOCAL_CPPFLAGS+= \
 LOCAL_CXXFLAGS+=-std=c++20 -Wall -ggdb -D TEST_SOURCE_DIR='"$(realpath .)"'
 
 MOCKS = \
-	editline_mock.o \
 	pthread_mock.o
 
+ifeq ($(WITH_EDITLINE),yes)
+MOCKS+=editline_mock.o
+endif
 
 all : test-compile
 test-compile : ${MOCKS}

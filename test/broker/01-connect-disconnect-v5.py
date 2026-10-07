@@ -10,15 +10,15 @@ port = mosq_test.get_port()
 def disco_test(test, disconnect_packet):
     global rc
 
-    connect1_packet = mosq_test.gen_connect("sub", proto_ver=5)
-    connack1_packet = mosq_test.gen_connack(rc=0, proto_ver=5)
+    connect1_packet = mqtt_packets.gen_connect("sub", proto_ver=5)
+    connack1_packet = mqtt_packets.gen_connack(rc=0, proto_ver=5)
 
     mid = 1
-    subscribe1_packet = mosq_test.gen_subscribe(mid, "failure", 0, proto_ver=5)
-    suback1_packet = mosq_test.gen_suback(mid, 0, proto_ver=5)
+    subscribe1_packet = mqtt_packets.gen_subscribe(mid, "failure", 0, proto_ver=5)
+    suback1_packet = mqtt_packets.gen_suback(mid, 0, proto_ver=5)
 
-    connect2_packet = mosq_test.gen_connect("connect-disconnect-test", proto_ver=5, will_topic="failure", will_payload=b"failure")
-    connack2_packet = mosq_test.gen_connack(rc=0, proto_ver=5)
+    connect2_packet = mqtt_packets.gen_connect("connect-disconnect-test", proto_ver=5, will_topic="failure", will_payload=b"failure")
+    connack2_packet = mqtt_packets.gen_connack(rc=0, proto_ver=5)
 
     sock1 = mosq_test.do_client_connect(connect1_packet, connack1_packet, port=port)
     mosq_test.do_send_receive(sock1, subscribe1_packet, suback1_packet, "suback1")
@@ -33,50 +33,32 @@ def disco_test(test, disconnect_packet):
 
     rc -= 1
 
-def do_test(start_broker):
+def do_test():
     global rc
 
     rc = 4
 
-    if start_broker:
-        broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port)
-
-
-    try:
+    broker = MosquittoBroker(port=port)
+    with broker:
         # No reason code, no properties, len=0
-        disconnect_packet = mosq_test.gen_disconnect(proto_ver=5)
+        disconnect_packet = mqtt_packets.gen_disconnect(proto_ver=5)
         disco_test("disco len=0", disconnect_packet)
 
         # Reason code, no properties, len=1
-        disconnect_packet = mosq_test.gen_disconnect(proto_ver=5, reason_code=0)
+        disconnect_packet = mqtt_packets.gen_disconnect(proto_ver=5, reason_code=0)
         disco_test("disco len=1", disconnect_packet)
 
         # Reason code, empty properties, len=2
-        disconnect_packet = mosq_test.gen_disconnect(proto_ver=5, reason_code=0, properties="")
+        disconnect_packet = mqtt_packets.gen_disconnect(proto_ver=5, reason_code=0, properties="")
         disco_test("disco len=2", disconnect_packet)
 
         # Reason code, one property, len>2
         props = mqtt5_props.gen_string_pair_prop(mqtt5_props.USER_PROPERTY, "key", "value")
-        disconnect_packet = mosq_test.gen_disconnect(proto_ver=5, reason_code=0, properties=props)
+        disconnect_packet = mqtt_packets.gen_disconnect(proto_ver=5, reason_code=0, properties=props)
         disco_test("disco len>2", disconnect_packet)
-    except mosq_test.TestError:
-        pass
-    finally:
-        if start_broker:
-            broker.terminate()
-            if mosq_test.wait_for_subprocess(broker):
-                print("broker not terminated")
-                if rc == 0: rc=1
-            (stdo, stde) = broker.communicate()
-            if rc:
-                print(stde.decode('utf-8'))
-            exit(rc)
-        else:
-            return rc
 
+        assert rc == 0
 
-def all_tests(start_broker=False):
-    return do_test(start_broker)
 
 if __name__ == '__main__':
-    all_tests(True)
+    do_test()

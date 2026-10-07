@@ -1,57 +1,47 @@
 #!/usr/bin/env python3
 
 from mosq_test_helper import *
+
+from broker_config import BrokerConfig, ListenerConfig
+from matchers import Contains
+from mosquitto_broker import MosquittoBroker
 from proxy_helper import *
 import json
 import shutil
 import socket
 
-def write_config(filename, port):
-    with open(filename, 'w') as f:
-        f.write("log_type all\n")
-        f.write("listener %d\n" % (port))
-        f.write("allow_anonymous true\n")
-        f.write("enable_proxy_protocol 2\n")
-        f.write("require_certificate true\n")
-        f.write("use_identity_as_username true\n")
+mosq_test.require_features(["WITH_TLS", "WITH_WEBSOCKETS", "WITH_WEBSOCKETS_BUILTIN"])
 
 def do_test(data, expect_log):
+    connect_packet = mqtt_packets.gen_connect("proxy-test", keepalive=42, clean_session=False, proto_ver=5)
+    connack_packet = mqtt_packets.gen_connack(rc=134, proto_ver=5)
+
     port = mosq_test.get_port()
-    conf_file = os.path.basename(__file__).replace('.py', '.conf')
-    write_config(conf_file, port)
-
-    connect_packet = mosq_test.gen_connect("proxy-test", keepalive=42, clean_session=False, proto_ver=5)
-    connack_packet = mosq_test.gen_connack(rc=134, proto_ver=5)
-
-    broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port)
-
-    rc = 1
-
-    try:
+    broker_config = BrokerConfig(
+        listeners=[
+            ListenerConfig(
+                port=port,
+                enable_proxy_protocol=2,
+                require_certificate=True,
+                use_identity_as_username=True,
+            )
+        ],
+        allow_anonymous=True,
+        log_type="all",
+    )
+    broker = MosquittoBroker(config=broker_config)
+    with broker:
         sock = do_proxy_v2_connect(port, PROXY_VER, PROXY_CMD_PROXY, PROXY_FAM_IPV4 | PROXY_PROTO_TCP, data)
         sock.send(connect_packet)
         try:
             mosq_test.expect_packet(sock, "connack", connack_packet)
             data = sock.recv(10)
-            if len(data) == 0:
-                rc = 0
+            if len(data) > 0:
+                raise ValueError(data)
         except (BrokenPipeError, ConnectionResetError):
-            rc = 0
+            pass
         sock.close()
-    except mosq_test.TestError:
-        pass
-    finally:
-        os.remove(conf_file)
-        broker.terminate()
-        if mosq_test.wait_for_subprocess(broker):
-            print("broker not terminated")
-            if rc == 0: rc=1
-        (stdo, stde) = broker.communicate()
-        if rc != 0 or expect_log not in stde.decode('utf-8'):
-            print(stde.decode('utf-8'))
-            print(expect_log)
-            rc = 1
-            raise ValueError(rc)
+    broker.check_log(Contains(expect_log))
 
 # No SSL at all
 data = b"\xC0\x00\x02\x05" + b"\x00\x00\x00\x00" + b"\x18\x83" + b"\x00\x00"
@@ -92,5 +82,5 @@ data = b"\xC0\x00\x02\x05" + b"\x00\x00\x00\x00" + b"\x18\x83" + b"\x00\x00" \
     + b"\x21" \
     + b"\x00\x07" \
     + b"\x54\x4C\x53\x76\x31\x2E\x33"
-expect_log = "Client proxy-test disconnected, not authorised."
+expect_log = "Client proxy-test [192.0.2.5:6275] disconnected: not authorised."
 do_test(data, expect_log)

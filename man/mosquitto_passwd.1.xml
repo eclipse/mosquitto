@@ -1,7 +1,10 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <?xml-stylesheet type="text/xsl" href="manpage.xsl"?>
 
-<refentry xml:id="mosquitto_passwd" xmlns:xlink="http://www.w3.org/1999/xlink">
+<refentry xml:id="mosquitto_passwd"
+		xmlns:xlink="http://www.w3.org/1999/xlink"
+		xmlns:xi="http://www.w3.org/2001/XInclude">
+
 	<refmeta>
 		<refentrytitle>mosquitto_passwd</refentrytitle>
 		<manvolnum>1</manvolnum>
@@ -179,7 +182,14 @@
 		</itemizedlist>
 	</refsect1>
 
-	<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/section-bugs.xml" />
+	<refsect1>
+		<title>Environment Variables</title>
+		<variablelist>
+			<xi:include href="common/env-var-mosquitto-unsafe-allow-symlinks.xml" />
+		</variablelist>
+	</refsect1>
+
+	<xi:include href="common/section-bugs.xml" />
 
 	<refsect1>
 		<title>See Also</title>

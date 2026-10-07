@@ -134,6 +134,22 @@ int session_expiry__add_from_persistence(struct mosquitto *context, time_t expir
 }
 
 
+void session_expiry__add_on_shutdown(void)
+{
+	struct mosquitto *ctxt, *ctxt_tmp;
+
+	HASH_ITER(hh_id, db.contexts_by_id, ctxt, ctxt_tmp){
+		if(ctxt->bridge == NULL
+				&& ctxt->is_persisted
+				&& ctxt->session_expiry_interval != MQTT_SESSION_EXPIRY_IMMEDIATE
+				){
+
+			session_expiry__add(ctxt);
+		}
+	}
+}
+
+
 void session_expiry__remove(struct mosquitto *context)
 {
 	if(context->expiry_list_item){

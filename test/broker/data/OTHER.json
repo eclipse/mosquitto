@@ -1,0 +1,192 @@
+[
+	{
+		"group": "v3.1.1 OTHER",
+		"ver":4,
+		"tests": [
+			{ "name": "subpub self publish qos1", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 r16 m1 s11 'subpub/qos1' 01"},
+				{"type":"recv", "payload":"90 r3 m1 01"},
+				{"type":"send", "payload":"32 r22 s11 'subpub/qos1' m2 'message'"},
+				{"type":"recv", "payload":"32 r22 s11 'subpub/qos1' m1 'message'"},
+				{"type":"recv", "payload":"40 r2 m2"}
+			]},
+			{ "name": "subpub self publish qos2", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 r16 m1 s11 'subpub/qos2' 02"},
+				{"type":"recv", "payload":"90 r3 m1 02"},
+				{"type":"send", "payload":"34 r22 s11 'subpub/qos2' m2 'message'"},
+				{"type":"recv", "payload":"50 r2 m2"},
+				{"type":"send", "payload":"62 r2 m2"},
+				{"type":"recv", "payload":"34 r22 s11 'subpub/qos2' m1 'message'"},
+				{"type":"recv", "payload":"70 r2 m2"}
+			]},
+			{ "name": "subpub retain as normal qos0", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 r15 m1 s10 'subpub/nap' 00"},
+				{"type":"recv", "payload":"90 r3 m1 00"},
+				{"type":"send", "payload":"31 r19 s10 'subpub/nap' 'message'"},
+				{"type":"recv", "payload":"30 r19 s10 'subpub/nap' 'message'"},
+				{"type":"send", "payload":"31 r12 s10 'subpub/nap'", "comment":"clear retain"},
+				{"type":"recv", "payload":"30 r12 s10 'subpub/nap'"}
+			]},
+			{ "name": "subpub retain as normal qos1", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 r15 m1 s10 'subpub/nap' 00"},
+				{"type":"recv", "payload":"90 r3 m1 00"},
+				{"type":"send", "payload":"33 r21 s10 'subpub/nap' m1 'message'"},
+				{"type":"recv", "payload":"30 r19 s10 'subpub/nap' 'message'"},
+				{"type":"recv", "payload":"40 r2 m1"},
+				{"type":"send", "payload":"33 r14 s10 'subpub/nap' m2", "comment":"clear retain"},
+				{"type":"recv", "payload":"30 r12 s10 'subpub/nap'"},
+				{"type":"recv", "payload":"40 r2 m2"}
+			]},
+			{ "name": "subpub retain as normal qos2", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 r15 m1 s10 'subpub/nap' 00"},
+				{"type":"recv", "payload":"90 r3 m1 00"},
+				{"type":"send", "payload":"35 r21 s10 'subpub/nap' m1 'message'"},
+				{"type":"recv", "payload":"50 r2 m1"},
+				{"type":"send", "payload":"62 r2 m1"},
+				{"type":"recv", "payload":"30 r19 s10 'subpub/nap' 'message'"},
+				{"type":"recv", "payload":"70 r2 m1"},
+				{"type":"send", "payload":"35 r14 s10 'subpub/nap' m2", "comment":"clear retain"},
+				{"type":"recv", "payload":"50 r2 m2"},
+				{"type":"send", "payload":"62 r2 m2"},
+				{"type":"recv", "payload":"30 r12 s10 'subpub/nap'"},
+				{"type":"recv", "payload":"70 r2 m2"}
+			]}
+		]
+	},
+	{
+		"group": "v5.0   OTHER",
+		"ver":5,
+		"tests": [
+			{ "name": "subpub self publish qos1", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 r17 m1 v0 s11 'subpub/qos1' 01"},
+				{"type":"recv", "payload":"90 r4 m1 v0 01"},
+				{"type":"send", "payload":"32 r23 s11 'subpub/qos1' m2 v0 'message'"},
+				{"type":"recv", "payload":"32 r23 s11 'subpub/qos1' m1 v0 'message'"},
+				{"type":"recv", "payload":"40 r2 m2"}
+			]},
+			{ "name": "subpub self publish qos1 nolocal", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 r23 m1 v0 s17 'subpub/qos1/local' 01"},
+				{"type":"recv", "payload":"90 r4 m1 v0 01"},
+				{"type":"send", "payload":"82 r25 m2 v0 s19 'subpub/qos1/nolocal' 05"},
+				{"type":"recv", "payload":"90 r4 m2 v0 01"},
+				{"type":"send", "payload":"32 r31 s19 'subpub/qos1/nolocal' m3 v0 'message'"},
+				{"type":"recv", "payload":"40 r2 m3"},
+				{"type":"send", "payload":"32 r29 s17 'subpub/qos1/local' m4 v0 'message'"},
+				{"type":"recv", "payload":"32 r29 s17 'subpub/qos1/local' m1 v0 'message'"},
+				{"type":"recv", "payload":"40 r2 m4"},
+				{"type":"send", "payload":"40 r2 m1"}
+			]},
+			{ "name": "subpub self publish qos2", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 r17 m1 v0 s11 'subpub/qos2' 02"},
+				{"type":"recv", "payload":"90 r4 m1 v0 02"},
+				{"type":"send", "payload":"34 r23 s11 'subpub/qos2' m2 v0 'message'"},
+				{"type":"recv", "payload":"50 r2 m2"},
+				{"type":"send", "payload":"62 r2 m2"},
+				{"type":"recv", "payload":"34 r23 s11 'subpub/qos2' m1 v0 'message'"},
+				{"type":"recv", "payload":"70 r2 m2"}
+			]},
+			{ "name": "subpub retain as normal qos0", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 r16 m1 v0 s10 'subpub/nap' 00"},
+				{"type":"recv", "payload":"90 r4 m1 v0 00"},
+				{"type":"send", "payload":"31 r20 s10 'subpub/nap' v0 'message'"},
+				{"type":"recv", "payload":"30 r20 s10 'subpub/nap' v0 'message'"},
+				{"type":"send", "payload":"31 r13 s10 'subpub/nap' v0", "comment":"clear retain"},
+				{"type":"recv", "payload":"30 r13 s10 'subpub/nap' v0"}
+			]},
+			{ "name": "subpub retain as normal qos1", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 r16 m1 v0 s10 'subpub/nap' 00"},
+				{"type":"recv", "payload":"90 r4 m1 v0 00"},
+				{"type":"send", "payload":"33 r22 s10 'subpub/nap' m1 v0 'message'"},
+				{"type":"recv", "payload":"30 r20 s10 'subpub/nap' v0 'message'"},
+				{"type":"recv", "payload":"40 r2 m1"},
+				{"type":"send", "payload":"33 r15 s10 'subpub/nap' m2 v0", "comment":"clear retain"},
+				{"type":"recv", "payload":"30 r13 s10 'subpub/nap' v0"},
+				{"type":"recv", "payload":"40 r2 m2"},
+				{"type":"send", "payload":"82 r16 m1 v0 s10 'subpub/nap' 00", "comment":"Resubscribe to check for retain"},
+				{"type":"recv", "payload":"90 r4 m1 v0 00"}
+			]},
+			{ "name": "subpub retain as normal qos2", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 r16 m1 v0 s10 'subpub/nap' 00"},
+				{"type":"recv", "payload":"90 r4 m1 v0 00"},
+				{"type":"send", "payload":"35 r22 s10 'subpub/nap' m1 v0 'message'"},
+				{"type":"recv", "payload":"50 r2 m1"},
+				{"type":"send", "payload":"62 r2 m1"},
+				{"type":"recv", "payload":"30 r20 s10 'subpub/nap' v0 'message'"},
+				{"type":"recv", "payload":"70 r2 m1"},
+				{"type":"send", "payload":"35 r15 s10 'subpub/nap' m2 v0", "comment":"clear retain"},
+				{"type":"recv", "payload":"50 r2 m2"},
+				{"type":"send", "payload":"62 r2 m2"},
+				{"type":"recv", "payload":"30 r13 s10 'subpub/nap' v0"},
+				{"type":"recv", "payload":"70 r2 m2"}
+			]},
+			{ "name": "subpub retain as publish qos0", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 r16 m1 v0 s10 'subpub/rap' 08"},
+				{"type":"recv", "payload":"90 r4 m1 v0 00"},
+				{"type":"send", "payload":"31 r20 s10 'subpub/rap' v0 'message'"},
+				{"type":"recv", "payload":"31 r20 s10 'subpub/rap' v0 'message'"},
+				{"type":"send", "payload":"31 r13 s10 'subpub/rap' v0", "comment":"clear retain"},
+				{"type":"recv", "payload":"31 r13 s10 'subpub/rap' v0"}
+			]},
+			{ "name": "subpub qos2 pubrec error", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 r19 m1 v0 s13 'qos2/pubrec/+' 02"},
+				{"type":"recv", "payload":"90 r4 m1 v0 02"},
+				{"type":"external_publish", "topic":"qos2/pubrec/rejected", "qos":2, "payload":"rejected-message"},
+				{"type":"external_publish", "topic":"qos2/pubrec/accepted", "qos":2, "payload":"accepted-message"},
+				{"type":"recv", "payload":"34 r41 s20 'qos2/pubrec/rejected' m1 v0 'rejected-message'"},
+				{"type":"send", "payload":"50 r3 m1 80"},
+				{"type":"recv", "payload":"34 r41 s20 'qos2/pubrec/accepted' m2 v0 'accepted-message'"},
+				{"type":"send", "payload":"50 r2 m2"},
+				{"type":"recv", "payload":"62 r2 m2"},
+				{"type":"send", "payload":"70 r2 m2"}
+			]}
+		]
+	},
+	{
+		"group": "v5.0   OTHER PROPERTIES",
+		"ver":5,
+		"tests": [
+			{ "name": "publish property propagation - Payload-Format-Indicator 0", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 r14 m1 v0 s8 'property' 00"},
+				{"type":"recv", "payload":"90 r4 m1 v0 00"},
+				{"type":"send", "payload":"30 r20 s8 'property' v2 01 00 'message'"},
+				{"type":"recv", "payload":"30 r20 s8 'property' v2 01 00 'message'"}
+			]},
+			{ "name": "publish property propagation - Payload-Format-Indicator 1", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 r14 m1 v0 s8 'property' 00"},
+				{"type":"recv", "payload":"90 r4 m1 v0 00"},
+				{"type":"send", "payload":"30 r20 s8 'property' v2 01 01 'message'"},
+				{"type":"recv", "payload":"30 r20 s8 'property' v2 01 01 'message'"}
+			]},
+			{ "name": "publish property propagation - Response-Topic", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 r14 m1 v0 s8 'property' 00"},
+				{"type":"recv", "payload":"90 r4 m1 v0 00"},
+				{"type":"send", "payload":"30 r35 s8 'property' v17 08 s14 'response-topic' 'message'"},
+				{"type":"recv", "payload":"30 r35 s8 'property' v17 08 s14 'response-topic' 'message'"}
+			]},
+			{ "name": "publish property propagation - Correlation-Data", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 r14 m1 v0 s8 'property' 00"},
+				{"type":"recv", "payload":"90 r4 m1 v0 00"},
+				{"type":"send", "payload":"30 r37 s8 'property' v19 09 s16 'correlation-data' 'message'"},
+				{"type":"recv", "payload":"30 r37 s8 'property' v19 09 s16 'correlation-data' 'message'"}
+			]},
+			{ "name": "publish property propagation - User-Property", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 r14 m1 v0 s8 'property' 00"},
+				{"type":"recv", "payload":"90 r4 m1 v0 00"},
+				{"type":"send", "payload":"30 r31 s8 'property' v13 26 s3 'key' s5 'value' 'message'"},
+				{"type":"recv", "payload":"30 r31 s8 'property' v13 26 s3 'key' s5 'value' 'message'"}
+			]},
+			{ "name": "publish property propagation - Content-Type", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 r14 m1 v0 s8 'property' 00"},
+				{"type":"recv", "payload":"90 r4 m1 v0 00"},
+				{"type":"send", "payload":"30 r25 s8 'property' v7 03 s4 'text' 'message'"},
+				{"type":"recv", "payload":"30 r25 s8 'property' v7 03 s4 'text' 'message'"}
+			]},
+			{ "name": "publish property propagation - Subscription-Identifier", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 r19 m1 v5 0B v268435455 s8 'property' 00"},
+				{"type":"recv", "payload":"90 r4 m1 v0 00"},
+				{"type":"send", "payload":"30 r18 s8 'property' v0 'message'"},
+				{"type":"recv", "payload":"30 r23 s8 'property' v5 0B v268435455 'message'"}
+			]}
+		]
+	}
+]

@@ -23,6 +23,9 @@ extern "C" int fuzz_acl_check(int event, void *event_data, void *userdata)
 {
 	struct mosquitto_evt_acl_check *ed = (struct mosquitto_evt_acl_check *)event_data;
 
+	UNUSED(event);
+	UNUSED(userdata);
+
 	/* This is a check that is ultimately determined by the fuzz input data, so
 	 * the fuzzer can discover how to access both the fail/success cases.
 	 */

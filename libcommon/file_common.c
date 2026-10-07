@@ -36,7 +36,6 @@ Contributors:
 #  include <io.h>
 #  include <lmcons.h>
 #  include <fcntl.h>
-#  define PATH_MAX MAX_PATH
 #else
 #  include <sys/stat.h>
 #  include <pwd.h>
@@ -46,6 +45,10 @@ Contributors:
 #endif
 
 #include "mosquitto.h"
+
+#ifndef PATH_MAX
+#  define PATH_MAX MAX_PATH
+#endif
 
 void (*libcommon_vprintf)(const char *fmt, va_list va) = NULL;
 
@@ -166,7 +169,10 @@ FILE *mosquitto_fopen(const char *path, const char *mode, bool restrict_read)
 
 		old_mask = umask(0077);
 
-		int open_flags = O_NOFOLLOW;
+		int open_flags = 0;
+		if(!getenv("MOSQUITTO_UNSAFE_ALLOW_SYMLINKS")){
+			open_flags |= O_NOFOLLOW;
+		}
 		for(size_t i = 0; i<strlen(mode); i++){
 			if(mode[i] == 'r'){
 				open_flags |= O_RDONLY;
@@ -232,7 +238,7 @@ FILE *mosquitto_fopen(const char *path, const char *mode, bool restrict_read)
 			char buf[4096];
 			struct group grp, *result;
 
-			if(getgrgid_r(getgid(), &grp, buf, sizeof(buf), &result) == 0){
+			if(getgrgid_r(getgid(), &grp, buf, sizeof(buf), &result) == 0 && result){
 				libcommon_printf(
 						"Warning: File %s group is not %s. Future versions will refuse to load this file.\n",
 						path, result->gr_name);
@@ -454,7 +460,7 @@ int mosquitto_read_file(const char *file, bool restrict_read, char **buf, size_t
 	if(buflen){
 		*buflen = 0;
 	}
-	fptr = mosquitto_fopen(file, "rt", restrict_read);
+	fptr = mosquitto_fopen(file, "rb", restrict_read);
 	if(fptr == NULL){
 		return MOSQ_ERR_ERRNO;
 	}

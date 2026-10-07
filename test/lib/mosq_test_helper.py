@@ -7,6 +7,7 @@ if cmd_subfolder not in sys.path:
 
 import mosq_test
 import mqtt5_props
+import mqtt_packets
 
 import socket
 import ssl

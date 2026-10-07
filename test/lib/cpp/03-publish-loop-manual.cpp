@@ -1,7 +1,11 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <sys/select.h>
+#ifdef WIN32
+#  include <winsock2.h>
+#else
+#  include <sys/select.h>
+#endif
 #include <sys/types.h>
 
 #include <mosquitto/libmosquittopp.h>

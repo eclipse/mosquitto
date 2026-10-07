@@ -4,23 +4,10 @@
 
 from mosq_test_helper import *
 
-def write_config(filename, port1, port2, protocol_version):
-    with open(filename, 'w') as f:
-        f.write("listener %d\n" % (port2))
-        f.write("\n")
-        f.write("connection bridge-u-test\n")
-        f.write("remote_clientid bridge-u-test\n")
-        f.write("address 127.0.0.1:%d\n" % (port1))
-        f.write("topic bridge/# out\n")
-        f.write("\n")
-        f.write("cleansession true\n")
-        f.write("notifications false\n")
-        f.write("restart_timeout 5\n")
-        f.write("try_private false\n")
-        f.write("bridge_protocol_version %s\n" % (protocol_version))
-        f.write("bridge_max_topic_alias 0\n")
+from broker_config import BrokerConfig, ListenerConfig, MQTTBridgeConfig
+from mosquitto_broker import MosquittoBroker
 
-
+mosq_test.require_features(["INC_BRIDGE_SUPPORT"])
 
 def do_test(proto_ver):
     if proto_ver == 4:
@@ -30,42 +17,42 @@ def do_test(proto_ver):
         bridge_protocol = "mqttv50"
         proto_ver_connect = 5
 
-    (port1, port2) = mosq_test.get_port(2)
-    conf_file = os.path.basename(__file__).replace('.py', '.conf')
-    write_config(conf_file, port1, port2, bridge_protocol)
-
-    rc = 1
-    connect_packet = mosq_test.gen_connect("bridge-u-test", proto_ver=proto_ver)
-    connack_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
+    connect_packet = mqtt_packets.gen_connect("bridge-u-test", proto_ver=proto_ver)
+    connack_packet = mqtt_packets.gen_connack(rc=0, proto_ver=proto_ver)
 
     mid = 180
     mid_unknown = 2000
 
-    publish_packet = mosq_test.gen_publish("bridge/unknown/qos1", qos=1, payload="bridge-message", mid=mid, proto_ver=proto_ver)
-    puback_packet = mosq_test.gen_puback(mid, proto_ver=proto_ver)
-    puback_packet_unknown = mosq_test.gen_puback(mid_unknown, proto_ver=proto_ver)
+    publish_packet = mqtt_packets.gen_publish("bridge/unknown/qos1", qos=1, payload="bridge-message", mid=mid, proto_ver=proto_ver)
+    puback_packet = mqtt_packets.gen_puback(mid, proto_ver=proto_ver)
+    puback_packet_unknown = mqtt_packets.gen_puback(mid_unknown, proto_ver=proto_ver)
 
+    unsubscribe_packet = mqtt_packets.gen_unsubscribe(1, "bridge/#", proto_ver=proto_ver)
+    unsuback_packet = mqtt_packets.gen_unsuback(1, proto_ver=proto_ver)
 
-    unsubscribe_packet = mosq_test.gen_unsubscribe(1, "bridge/#", proto_ver=proto_ver)
-    unsuback_packet = mosq_test.gen_unsuback(1, proto_ver=proto_ver)
+    (port1, port2) = mosq_test.get_port(2)
 
+    sock = mosq_test.listen_sock(port1)
 
-    if os.environ.get('MOSQ_USE_VALGRIND') is not None:
-        sleep_time = 5
-    else:
-        sleep_time = 0.5
-
-
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    sock.settimeout(10)
-    sock.bind(('', port1))
-    sock.listen(5)
-
-    broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port2, use_conf=True)
-    time.sleep(sleep_time)
-
-    try:
+    broker_config = BrokerConfig(
+        listeners = [ ListenerConfig(port=port2) ],
+        bridges = [
+            MQTTBridgeConfig(
+                connection="bridge-u-test",
+                remote_clientid="bridge-u-test",
+                address=f"localhost:{port1}",
+                topics=["bridge/# out"],
+                cleansession=True,
+                notifications=False,
+                restart_timeout=5,
+                try_private=False,
+                bridge_protocol_version=bridge_protocol,
+                bridge_max_topic_alias=0,
+            ),
+        ]
+    )
+    broker = MosquittoBroker(config=broker_config)
+    with broker:
         (conn, address) = sock.accept()
         conn.settimeout(20)
 
@@ -82,24 +69,6 @@ def do_test(proto_ver):
         conn.send(publish_packet)
 
         mosq_test.expect_packet(conn, "puback", puback_packet)
-        rc = 0
-
-    except mosq_test.TestError:
-        pass
-    finally:
-        os.remove(conf_file)
-        broker.terminate()
-        if mosq_test.wait_for_subprocess(broker):
-            print("broker not terminated")
-            if rc == 0: rc=1
-        (stdo, stde) = broker.communicate()
-        sock.close()
-        if rc:
-            print(stde.decode('utf-8'))
-            exit(rc)
 
 do_test(proto_ver=4)
 do_test(proto_ver=5)
-
-exit(0)
-

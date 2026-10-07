@@ -19,6 +19,13 @@ Contributors:
 
 #define MOSQ_AUTH_PLUGIN_VERSION 2
 
+#ifdef WIN32
+#  define mosq_plugin_EXPORT __declspec(dllexport)
+#else
+#  define mosq_plugin_EXPORT
+#endif
+
+
 #define MOSQ_ACL_NONE 0x00
 #define MOSQ_ACL_READ 0x01
 #define MOSQ_ACL_WRITE 0x02
@@ -90,7 +97,7 @@ void mosquitto_log_printf(int level, const char *fmt, ...);
  * check it is a supported plugin version. Your code must simply return
  * MOSQ_AUTH_PLUGIN_VERSION.
  */
-int mosquitto_auth_plugin_version(void);
+mosq_plugin_EXPORT int mosquitto_auth_plugin_version(void);
 
 /*
  * Function: mosquitto_auth_plugin_init
@@ -111,7 +118,7 @@ int mosquitto_auth_plugin_version(void);
  *	Return 0 on success
  *	Return >0 on failure.
  */
-int mosquitto_auth_plugin_init(void **user_data, struct mosquitto_auth_opt *auth_opts, int auth_opt_count);
+mosq_plugin_EXPORT int mosquitto_auth_plugin_init(void **user_data, struct mosquitto_auth_opt *auth_opts, int auth_opt_count);
 
 /*
  * Function: mosquitto_auth_plugin_cleanup
@@ -131,7 +138,7 @@ int mosquitto_auth_plugin_init(void **user_data, struct mosquitto_auth_opt *auth
  *	Return 0 on success
  *	Return >0 on failure.
  */
-int mosquitto_auth_plugin_cleanup(void *user_data, struct mosquitto_auth_opt *auth_opts, int auth_opt_count);
+mosq_plugin_EXPORT int mosquitto_auth_plugin_cleanup(void *user_data, struct mosquitto_auth_opt *auth_opts, int auth_opt_count);
 
 /*
  * Function: mosquitto_auth_security_init
@@ -155,7 +162,7 @@ int mosquitto_auth_plugin_cleanup(void *user_data, struct mosquitto_auth_opt *au
  *	Return 0 on success
  *	Return >0 on failure.
  */
-int mosquitto_auth_security_init(void *user_data, struct mosquitto_auth_opt *auth_opts, int auth_opt_count, bool reload);
+mosq_plugin_EXPORT int mosquitto_auth_security_init(void *user_data, struct mosquitto_auth_opt *auth_opts, int auth_opt_count, bool reload);
 
 /*
  * Function: mosquitto_auth_security_cleanup
@@ -179,7 +186,7 @@ int mosquitto_auth_security_init(void *user_data, struct mosquitto_auth_opt *aut
  *	Return 0 on success
  *	Return >0 on failure.
  */
-int mosquitto_auth_security_cleanup(void *user_data, struct mosquitto_auth_opt *auth_opts, int auth_opt_count, bool reload);
+mosq_plugin_EXPORT int mosquitto_auth_security_cleanup(void *user_data, struct mosquitto_auth_opt *auth_opts, int auth_opt_count, bool reload);
 
 /*
  * Function: mosquitto_auth_acl_check
@@ -189,7 +196,7 @@ int mosquitto_auth_security_cleanup(void *user_data, struct mosquitto_auth_opt *
  * MOSQ_ERR_SUCCESS if access was granted, MOSQ_ERR_ACL_DENIED if access was
  * not granted, or MOSQ_ERR_UNKNOWN for an application specific error.
  */
-int mosquitto_auth_acl_check(void *user_data, const char *clientid, const char *username, const char *topic, int access);
+mosq_plugin_EXPORT int mosquitto_auth_acl_check(void *user_data, const char *clientid, const char *username, const char *topic, int access);
 
 /*
  * Function: mosquitto_auth_unpwd_check
@@ -199,7 +206,7 @@ int mosquitto_auth_acl_check(void *user_data, const char *clientid, const char *
  * authentication failed, or MOSQ_ERR_UNKNOWN for an application specific
  * error.
  */
-int mosquitto_auth_unpwd_check(void *user_data, const char *username, const char *password);
+mosq_plugin_EXPORT int mosquitto_auth_unpwd_check(void *user_data, const char *username, const char *password);
 
 /*
  * Function: mosquitto_psk_key_get
@@ -223,6 +230,6 @@ int mosquitto_auth_unpwd_check(void *user_data, const char *username, const char
  *	Return >0 on failure.
  *	Return >0 if this function is not required.
  */
-int mosquitto_auth_psk_key_get(void *user_data, const char *hint, const char *identity, char *key, int max_key_len);
+mosq_plugin_EXPORT int mosquitto_auth_psk_key_get(void *user_data, const char *hint, const char *identity, char *key, int max_key_len);
 
 #endif

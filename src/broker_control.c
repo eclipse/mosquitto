@@ -150,13 +150,16 @@ static int add_listener(cJSON *j_listeners, struct mosquitto__listener *listener
 		return MOSQ_ERR_NOMEM;
 	}
 
+	if(
 #ifdef WITH_TLS
-	if(cJSON_AddBoolToObject(j_listener, "tls", listener->ssl_ctx != NULL) == NULL
+			cJSON_AddBoolToObject(j_listener, "tls", listener->ssl_ctx != NULL) == NULL
+#else
+			cJSON_AddBoolToObject(j_listener, "tls", false) == NULL
+#endif
 			){
 
 		return MOSQ_ERR_NOMEM;
 	}
-#endif
 
 	return MOSQ_ERR_SUCCESS;
 }

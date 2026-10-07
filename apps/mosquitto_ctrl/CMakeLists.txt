@@ -51,10 +51,9 @@ if(WITH_TLS)
 			OpenSSL::SSL
 		)
 	endif()
-	add_executable(mosquitto_ctrl ${SRC})
+	custom_add_executable(mosquitto_ctrl ${SRC})
 
 	target_include_directories(mosquitto_ctrl PRIVATE
-		"${mosquitto_SOURCE_DIR}"
 		"${mosquitto_SOURCE_DIR}/apps/mosquitto_passwd"
 		"${mosquitto_SOURCE_DIR}/common"
 		"${mosquitto_SOURCE_DIR}/plugins/common"
@@ -62,11 +61,6 @@ if(WITH_TLS)
 		"${ARGON2_INCLUDE_DIRS}"
 		"${CJSON_INCLUDE_DIRS}"
 	)
-	if(WITH_BUNDLED_DEPS)
-		target_include_directories(mosquitto_ctrl PRIVATE
-			"${mosquitto_SOURCE_DIR}/deps"
-		)
-	endif()
 
 	if(WITH_CTRL_SHELL AND LINEEDITING_FOUND)
 		target_compile_definitions(mosquitto_ctrl PRIVATE WITH_CTRL_SHELL)
@@ -102,7 +96,7 @@ if(WITH_TLS)
 	  	common-options
 		libmosquitto_common
 		OpenSSL::SSL
-		cJSON
+		cjson
 	)
 
 	if(WITH_THREADING)
@@ -116,7 +110,7 @@ if(WITH_TLS)
 	endif()
 
 
-	install(TARGETS mosquitto_ctrl
+	custom_install(TARGETS mosquitto_ctrl
 		RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
 	)
 endif()

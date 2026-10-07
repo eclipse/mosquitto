@@ -4,13 +4,15 @@
 
 from mosq_test_helper import *
 
+mosq_test.require_features(["INC_BRIDGE_SUPPORT"])
+
 def write_config(filename, port1, port2, protocol_version):
     with open(filename, 'w') as f:
         f.write("listener %d\n" % (port2))
         f.write("allow_anonymous true\n")
         f.write("\n")
         f.write("connection bridge_sample\n")
-        f.write("address 127.0.0.1:%d\n" % (port1))
+        f.write("address localhost:%d\n" % (port1))
         f.write("bridge_attempt_unsubscribe false\n")
         f.write("topic # out 0 local/topic/ remote/topic/\n")
         f.write("topic prefix/# out 0 local2/topic/ remote2/topic/\n")
@@ -46,12 +48,12 @@ def inner_test(bridge, sock, proto_ver):
     mid = 3
     for (local_topic, remote_topic) in cases:
         mid += 1
-        local_publish_packet = mosq_test.gen_publish(
+        local_publish_packet = mqtt_packets.gen_publish(
             local_topic, qos=0, mid=mid, payload='', proto_ver=proto_ver
         )
         sock.send(local_publish_packet)
         if remote_topic:
-            remote_publish_packet = mosq_test.gen_publish(
+            remote_publish_packet = mqtt_packets.gen_publish(
                 remote_topic, qos=0, mid=mid, payload='', proto_ver=proto_ver
             )
             match = mosq_test.expect_packet(bridge, "publish", remote_publish_packet)
@@ -85,17 +87,13 @@ def do_test(proto_ver):
 
     rc = 1
     client_id = socket.gethostname()+".bridge_sample"
-    connect_packet = mosq_test.gen_connect(client_id, clean_session=False, proto_ver=proto_ver_connect)
-    connack_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
+    connect_packet = mqtt_packets.gen_connect(client_id, clean_session=False, proto_ver=proto_ver_connect)
+    connack_packet = mqtt_packets.gen_connack(rc=0, proto_ver=proto_ver)
 
-    client_connect_packet = mosq_test.gen_connect("pub-test", proto_ver=proto_ver)
-    client_connack_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
+    client_connect_packet = mqtt_packets.gen_connect("pub-test", proto_ver=proto_ver)
+    client_connack_packet = mqtt_packets.gen_connack(rc=0, proto_ver=proto_ver)
 
-    ssock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    ssock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    ssock.settimeout(4)
-    ssock.bind(('', port1))
-    ssock.listen(5)
+    ssock = mosq_test.listen_sock(port1)
 
     broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port2, use_conf=True)
 
@@ -121,14 +119,13 @@ def do_test(proto_ver):
         except NameError:
             pass
 
-        broker.terminate()
+        mosq_test.terminate_broker(broker)
         if mosq_test.wait_for_subprocess(broker):
             print("broker not terminated")
             if rc == 0: rc=1
-        (stdo, stde) = broker.communicate()
         ssock.close()
         if rc:
-            print(stde.decode('utf-8'))
+            print(mosq_test.broker_log(broker))
             exit(rc)
 
 

@@ -3,10 +3,16 @@
 #include "libcommon_fuzz_property.pb.h"
 #include "mosquitto.h"
 
+extern int32_t fuzz_memory_check_limit;
+extern int32_t fuzz_memory_check_count;
+
 DEFINE_PROTO_FUZZER(const fuzz_property::FuzzerInput& fuzzer_input)
 {
 	mosquitto_property *prop_list = nullptr;
 	mosquitto_property *prop_copy = nullptr;
+
+	fuzz_memory_check_count = 0;
+	fuzz_memory_check_limit = fuzzer_input.memory_check_limit();
 
 	for(const fuzz_property::Property& property : fuzzer_input.properties()){
 		int identifier = property.identifier();

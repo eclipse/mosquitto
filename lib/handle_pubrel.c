@@ -56,9 +56,6 @@ int handle__pubrel(struct mosquitto *mosq)
 #endif
 		return MOSQ_ERR_PROTOCOL;
 	}
-	if(mosq->protocol != mosq_p_mqtt31 && mosq->in_packet.command != (CMD_PUBREL|2)){
-		return MOSQ_ERR_MALFORMED_PACKET;
-	}
 
 	if(mosq->protocol != mosq_p_mqtt31){
 		if((mosq->in_packet.command&0x0F) != 0x02){

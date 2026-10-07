@@ -1,4 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE refentry [
+	<!ENTITY from-version21 SYSTEM "common/version-2.1.xml">
+]>
 <?xml-stylesheet type="text/xsl" href="manpage.xsl"?>
 
 <refentry xml:id="mosquitto" xmlns:xlink="http://www.w3.org/1999/xlink">
@@ -45,7 +48,6 @@
 		</para>
 	</refsect1>
 
-				<!--<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/all-man-pages.xml" />-->
 	<refsect1>
 		<title>Mosquitto Broker</title>
 		<para>
@@ -67,8 +69,8 @@
 			<para>
 				This can be used to interact with the broker MQTT APIs when the
 				broker is running. It can run in batch mode, where all arguments
-				are provided on the command line, or in an interactive shell
-				mode.
+				are provided on the command line, or from version 2.1 onwards,
+				in an interactive shell mode.
 			</para>
 
 			<para>
@@ -97,7 +99,7 @@
 
 		<refsect2>
 			<title>mosquitto_signal</title>
-
+			&from-version21;
 			<para>
 				This tool is used to send signals to the broker. On POSIX systems it
 				performs the same task as the <command>kill</command> command, but

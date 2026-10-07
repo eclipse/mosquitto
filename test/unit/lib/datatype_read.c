@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include <CUnit/CUnit.h>
 #include <CUnit/Basic.h>
 
@@ -148,10 +150,15 @@ static void bytes_read_helper(
 		int count)
 {
 	struct mosquitto__packet_in packet;
-	uint8_t value[count];
+	uint8_t* value;
 	int rc;
 	int i;
 
+	value = malloc((size_t)count);
+	CU_ASSERT_PTR_NOT_NULL(value);
+	if(!value){
+		return;
+	}
 	memset(&packet, 0, sizeof(struct mosquitto__packet_in));
 	packet.payload = payload;
 	packet.remaining_length = remaining_length;
@@ -165,6 +172,7 @@ static void bytes_read_helper(
 			CU_ASSERT_EQUAL(value[i], value_expected[i]);
 		}
 	}
+	free(value);
 }
 
 

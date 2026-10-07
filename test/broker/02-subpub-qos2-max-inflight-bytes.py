@@ -7,28 +7,31 @@
 
 from mosq_test_helper import *
 
+from broker_config import BrokerConfig, ListenerConfig
+from mosquitto_broker import MosquittoBroker
+
 def helper(port):
     rc = 1
-    connect_packet = mosq_test.gen_connect("subpub-qos2-recv-max1-helper", proto_ver=5)
-    connack_packet = mosq_test.gen_connack(rc=0, proto_ver=5)
+    connect_packet = mqtt_packets.gen_connect("subpub-qos2-recv-max1-helper", proto_ver=5)
+    connack_packet = mqtt_packets.gen_connack(rc=0, proto_ver=5)
 
     mid = 1
-    publish_packet = mosq_test.gen_publish("subpub/qos2", qos=2, mid=mid, payload="message1", proto_ver=5)
-    pubrec_packet = mosq_test.gen_pubrec(mid, proto_ver=5)
-    pubrel_packet = mosq_test.gen_pubrel(mid, proto_ver=5)
-    pubcomp_packet = mosq_test.gen_pubcomp(mid, proto_ver=5)
+    publish_packet = mqtt_packets.gen_publish("subpub/qos2", qos=2, mid=mid, payload="message1", proto_ver=5)
+    pubrec_packet = mqtt_packets.gen_pubrec(mid, proto_ver=5)
+    pubrel_packet = mqtt_packets.gen_pubrel(mid, proto_ver=5)
+    pubcomp_packet = mqtt_packets.gen_pubcomp(mid, proto_ver=5)
 
     mid = 2
-    publish_packet2 = mosq_test.gen_publish("subpub/qos2", qos=2, mid=mid, payload="message2", proto_ver=5)
-    pubrec_packet2 = mosq_test.gen_pubrec(mid, proto_ver=5)
-    pubrel_packet2 = mosq_test.gen_pubrel(mid, proto_ver=5)
-    pubcomp_packet2 = mosq_test.gen_pubcomp(mid, proto_ver=5)
+    publish_packet2 = mqtt_packets.gen_publish("subpub/qos2", qos=2, mid=mid, payload="message2", proto_ver=5)
+    pubrec_packet2 = mqtt_packets.gen_pubrec(mid, proto_ver=5)
+    pubrel_packet2 = mqtt_packets.gen_pubrel(mid, proto_ver=5)
+    pubcomp_packet2 = mqtt_packets.gen_pubcomp(mid, proto_ver=5)
 
     mid = 3
-    publish_packet3 = mosq_test.gen_publish("subpub/qos2", qos=2, mid=mid, payload="message3", proto_ver=5)
-    pubrec_packet3 = mosq_test.gen_pubrec(mid, proto_ver=5)
-    pubrel_packet3 = mosq_test.gen_pubrel(mid, proto_ver=5)
-    pubcomp_packet3 = mosq_test.gen_pubcomp(mid, proto_ver=5)
+    publish_packet3 = mqtt_packets.gen_publish("subpub/qos2", qos=2, mid=mid, payload="message3", proto_ver=5)
+    pubrec_packet3 = mqtt_packets.gen_pubrec(mid, proto_ver=5)
+    pubrel_packet3 = mqtt_packets.gen_pubrel(mid, proto_ver=5)
+    pubcomp_packet3 = mqtt_packets.gen_pubcomp(mid, proto_ver=5)
 
 
     sock = mosq_test.do_client_connect(connect_packet, connack_packet, timeout=20, port=port)
@@ -44,26 +47,20 @@ def helper(port):
     sock.close()
 
 
-def write_config(filename, port):
-    with open(filename, 'w') as f:
-        f.write("listener %d\n" % (port))
-        f.write("allow_anonymous true\n")
-        f.write("max_inflight_bytes 16\n")
 
 
 def send_small(port):
-    rc = 1
-    connect_packet = mosq_test.gen_connect("subpub-qos2-test-helper")
-    connack_packet = mosq_test.gen_connack(rc=0)
+    connect_packet = mqtt_packets.gen_connect("subpub-qos2-test-helper")
+    connack_packet = mqtt_packets.gen_connack(rc=0)
 
     sock = mosq_test.do_client_connect(connect_packet, connack_packet, port=port)
 
     for i in range(0, 10):
         mid = 1+i
-        publish_packet = mosq_test.gen_publish("subpub/qos2", qos=2, mid=mid, payload=str(i+1))
-        pubrec_packet = mosq_test.gen_pubrec(mid)
-        pubrel_packet = mosq_test.gen_pubrel(mid)
-        pubcomp_packet = mosq_test.gen_pubcomp(mid)
+        publish_packet = mqtt_packets.gen_publish("subpub/qos2", qos=2, mid=mid, payload=str(i+1))
+        pubrec_packet = mqtt_packets.gen_pubrec(mid)
+        pubrel_packet = mqtt_packets.gen_pubrel(mid)
+        pubcomp_packet = mqtt_packets.gen_pubcomp(mid)
 
         mosq_test.do_send_receive(sock, publish_packet, pubrec_packet, "pubrec")
         mosq_test.do_send_receive(sock, pubrel_packet, pubcomp_packet, "pubcomp")
@@ -73,21 +70,20 @@ def do_test(proto_ver):
     if proto_ver == 4:
         exit(0)
 
-    rc = 1
     props = mqtt5_props.gen_uint16_prop(mqtt5_props.RECEIVE_MAXIMUM, 5)
-    connect_packet = mosq_test.gen_connect("subpub-qos2-test", proto_ver=5, properties=props)
-    connack_packet = mosq_test.gen_connack(rc=0, proto_ver=5)
+    connect_packet = mqtt_packets.gen_connect("subpub-qos2-test", proto_ver=5, properties=props)
+    connack_packet = mqtt_packets.gen_connack(rc=0, proto_ver=5)
 
     mid = 1
-    subscribe_packet = mosq_test.gen_subscribe(mid, "subpub/qos2", 2, proto_ver=5)
-    suback_packet = mosq_test.gen_suback(mid, 2, proto_ver=5)
+    subscribe_packet = mqtt_packets.gen_subscribe(mid, "subpub/qos2", 2, proto_ver=5)
+    suback_packet = mqtt_packets.gen_suback(mid, 2, proto_ver=5)
 
     port = mosq_test.get_port()
-    conf_file = os.path.basename(__file__).replace('.py', '.conf')
-    write_config(conf_file, port)
-    broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port, use_conf=True)
-
-    try:
+    broker_config = BrokerConfig(
+        max_inflight_bytes=16,
+    )
+    broker = MosquittoBroker(port=port, config=broker_config)
+    with broker:
         sock = mosq_test.do_client_connect(connect_packet, connack_packet, timeout=20, port=port)
 
         mosq_test.do_send_receive(sock, subscribe_packet, suback_packet, "suback")
@@ -103,22 +99,22 @@ def do_test(proto_ver):
             #(stdo, stde) = pub.communicate()
 
             mid += 1
-            publish_packet1 = mosq_test.gen_publish("subpub/qos2", qos=2, mid=mid, payload="message1", proto_ver=5)
-            pubrec_packet1 = mosq_test.gen_pubrec(mid, proto_ver=5)
-            pubrel_packet1 = mosq_test.gen_pubrel(mid, proto_ver=5)
-            pubcomp_packet1 = mosq_test.gen_pubcomp(mid, proto_ver=5)
+            publish_packet1 = mqtt_packets.gen_publish("subpub/qos2", qos=2, mid=mid, payload="message1", proto_ver=5)
+            pubrec_packet1 = mqtt_packets.gen_pubrec(mid, proto_ver=5)
+            pubrel_packet1 = mqtt_packets.gen_pubrel(mid, proto_ver=5)
+            pubcomp_packet1 = mqtt_packets.gen_pubcomp(mid, proto_ver=5)
 
             mid += 1
-            publish_packet2 = mosq_test.gen_publish("subpub/qos2", qos=2, mid=mid, payload="message2", proto_ver=5)
-            pubrec_packet2 = mosq_test.gen_pubrec(mid, proto_ver=5)
-            pubrel_packet2 = mosq_test.gen_pubrel(mid, proto_ver=5)
-            pubcomp_packet2 = mosq_test.gen_pubcomp(mid, proto_ver=5)
+            publish_packet2 = mqtt_packets.gen_publish("subpub/qos2", qos=2, mid=mid, payload="message2", proto_ver=5)
+            pubrec_packet2 = mqtt_packets.gen_pubrec(mid, proto_ver=5)
+            pubrel_packet2 = mqtt_packets.gen_pubrel(mid, proto_ver=5)
+            pubcomp_packet2 = mqtt_packets.gen_pubcomp(mid, proto_ver=5)
 
             mid += 1
-            publish_packet3 = mosq_test.gen_publish("subpub/qos2", qos=2, mid=mid, payload="message3", proto_ver=5)
-            pubrec_packet3 = mosq_test.gen_pubrec(mid, proto_ver=5)
-            pubrel_packet3 = mosq_test.gen_pubrel(mid, proto_ver=5)
-            pubcomp_packet3 = mosq_test.gen_pubcomp(mid, proto_ver=5)
+            publish_packet3 = mqtt_packets.gen_publish("subpub/qos2", qos=2, mid=mid, payload="message3", proto_ver=5)
+            pubrec_packet3 = mqtt_packets.gen_pubrec(mid, proto_ver=5)
+            pubrel_packet3 = mqtt_packets.gen_pubrel(mid, proto_ver=5)
+            pubcomp_packet3 = mqtt_packets.gen_pubcomp(mid, proto_ver=5)
 
 
             mosq_test.expect_packet(sock, "publish1", publish_packet1)
@@ -138,66 +134,47 @@ def do_test(proto_ver):
         send_small(port)
 
         mid += 1
-        publish_packet1 = mosq_test.gen_publish("subpub/qos2", qos=2, mid=mid, payload="1", proto_ver=5)
-        pubrec_packet1 = mosq_test.gen_pubrec(mid, proto_ver=5)
-        pubrel_packet1 = mosq_test.gen_pubrel(mid, proto_ver=5)
-        pubcomp_packet1 = mosq_test.gen_pubcomp(mid, proto_ver=5)
+        publish_packet1 = mqtt_packets.gen_publish("subpub/qos2", qos=2, mid=mid, payload="1", proto_ver=5)
+        pubrec_packet1 = mqtt_packets.gen_pubrec(mid, proto_ver=5)
+        pubrel_packet1 = mqtt_packets.gen_pubrel(mid, proto_ver=5)
+        pubcomp_packet1 = mqtt_packets.gen_pubcomp(mid, proto_ver=5)
 
         mid += 1
-        publish_packet2 = mosq_test.gen_publish("subpub/qos2", qos=2, mid=mid, payload="2", proto_ver=5)
-        pubrec_packet2 = mosq_test.gen_pubrec(mid, proto_ver=5)
-        pubrel_packet2 = mosq_test.gen_pubrel(mid, proto_ver=5)
-        pubcomp_packet2 = mosq_test.gen_pubcomp(mid, proto_ver=5)
+        publish_packet2 = mqtt_packets.gen_publish("subpub/qos2", qos=2, mid=mid, payload="2", proto_ver=5)
+        pubrec_packet2 = mqtt_packets.gen_pubrec(mid, proto_ver=5)
+        pubrel_packet2 = mqtt_packets.gen_pubrel(mid, proto_ver=5)
+        pubcomp_packet2 = mqtt_packets.gen_pubcomp(mid, proto_ver=5)
 
         mid += 1
-        publish_packet3 = mosq_test.gen_publish("subpub/qos2", qos=2, mid=mid, payload="3", proto_ver=5)
-        pubrec_packet3 = mosq_test.gen_pubrec(mid, proto_ver=5)
-        pubrel_packet3 = mosq_test.gen_pubrel(mid, proto_ver=5)
-        pubcomp_packet3 = mosq_test.gen_pubcomp(mid, proto_ver=5)
+        publish_packet3 = mqtt_packets.gen_publish("subpub/qos2", qos=2, mid=mid, payload="3", proto_ver=5)
+        pubrec_packet3 = mqtt_packets.gen_pubrec(mid, proto_ver=5)
+        pubrel_packet3 = mqtt_packets.gen_pubrel(mid, proto_ver=5)
+        pubcomp_packet3 = mqtt_packets.gen_pubcomp(mid, proto_ver=5)
 
         mid += 1
-        publish_packet4 = mosq_test.gen_publish("subpub/qos2", qos=2, mid=mid, payload="4", proto_ver=5)
-        pubrec_packet4 = mosq_test.gen_pubrec(mid, proto_ver=5)
-        pubrel_packet4 = mosq_test.gen_pubrel(mid, proto_ver=5)
-        pubcomp_packet4 = mosq_test.gen_pubcomp(mid, proto_ver=5)
+        publish_packet4 = mqtt_packets.gen_publish("subpub/qos2", qos=2, mid=mid, payload="4", proto_ver=5)
+        pubrec_packet4 = mqtt_packets.gen_pubrec(mid, proto_ver=5)
+        pubrel_packet4 = mqtt_packets.gen_pubrel(mid, proto_ver=5)
+        pubcomp_packet4 = mqtt_packets.gen_pubcomp(mid, proto_ver=5)
 
         mid += 1
-        publish_packet5 = mosq_test.gen_publish("subpub/qos2", qos=2, mid=mid, payload="5", proto_ver=5)
-        pubrec_packet5 = mosq_test.gen_pubrec(mid, proto_ver=5)
-        pubrel_packet5 = mosq_test.gen_pubrel(mid, proto_ver=5)
-        pubcomp_packet5 = mosq_test.gen_pubcomp(mid, proto_ver=5)
+        publish_packet5 = mqtt_packets.gen_publish("subpub/qos2", qos=2, mid=mid, payload="5", proto_ver=5)
+        pubrec_packet5 = mqtt_packets.gen_pubrec(mid, proto_ver=5)
+        pubrel_packet5 = mqtt_packets.gen_pubrel(mid, proto_ver=5)
+        pubcomp_packet5 = mqtt_packets.gen_pubcomp(mid, proto_ver=5)
 
         mosq_test.expect_packet(sock, "publish1s", publish_packet1)
         mosq_test.expect_packet(sock, "publish2s", publish_packet2)
         mosq_test.expect_packet(sock, "publish3s", publish_packet3)
         mosq_test.expect_packet(sock, "publish4s", publish_packet4)
         mosq_test.expect_packet(sock, "publish5s", publish_packet5)
-        
+
         mosq_test.do_send_receive(sock, pubrec_packet1, pubrel_packet1, "pubrel1s")
         mosq_test.do_send_receive(sock, pubrec_packet2, pubrel_packet2, "pubrel2s")
         mosq_test.do_send_receive(sock, pubrec_packet3, pubrel_packet3, "pubrel3s")
         mosq_test.do_send_receive(sock, pubrec_packet4, pubrel_packet4, "pubrel4s")
         mosq_test.do_send_receive(sock, pubrec_packet5, pubrel_packet5, "pubrel5s")
-
-        rc = 0
-
         sock.close()
-    except mosq_test.TestError:
-        pass
-    except Exception as e:
-        print(e)
-    finally:
-        os.remove(conf_file)
-        broker.terminate()
-        if mosq_test.wait_for_subprocess(broker):
-            print("broker not terminated")
-            if rc == 0: rc=1
-        (stdo, stde) = broker.communicate()
-        if rc:
-            #print(stde.decode('utf-8'))
-            print("proto_ver=%d" % (proto_ver))
-            exit(rc)
 
 
 do_test(proto_ver=5)
-exit(0)

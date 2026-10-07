@@ -6,59 +6,35 @@
 from mosq_test_helper import *
 
 
-def do_test(start_broker, clean_start):
-    rc = 1
-    connect_packet = mosq_test.gen_connect(None, proto_ver=5, clean_session=clean_start)
+def do_test(clean_start):
+    connect_packet = mqtt_packets.gen_connect(None, proto_ver=5, clean_session=clean_start)
 
     props = mqtt5_props.gen_string_prop(mqtt5_props.ASSIGNED_CLIENT_IDENTIFIER, "auto-00000000-0000-0000-0000-000000000000")
-    connack_packet = mosq_test.gen_connack(rc=0, proto_ver=5, properties=props)
+    connack_packet = mqtt_packets.gen_connack(rc=0, proto_ver=5, properties=props)
 
     props = mqtt5_props.gen_uint32_prop(mqtt5_props.SESSION_EXPIRY_INTERVAL, 1)
-    disconnect_client_packet = mosq_test.gen_disconnect(proto_ver=5, properties=props)
+    disconnect_client_packet = mqtt_packets.gen_disconnect(proto_ver=5, properties=props)
 
-    disconnect_server_packet = mosq_test.gen_disconnect(proto_ver=5, reason_code=130)
+    disconnect_server_packet = mqtt_packets.gen_disconnect(proto_ver=5, reason_code=130)
 
     port = mosq_test.get_port()
-    if start_broker:
-        broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port)
-
-    try:
+    broker = MosquittoBroker(port=port)
+    with broker:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(10)
         sock.connect(("localhost", port))
 
         sock.send(connect_packet)
         connack_recvd = sock.recv(len(connack_packet))
+        sock.close()
 
         if connack_recvd[0:12] == connack_packet[0:12]:
             # FIXME - this test could be tightened up a lot
-            rc = 0
-
-        sock.close()
-    except mosq_test.TestError:
-        pass
-    finally:
-        if start_broker:
-            broker.terminate()
-            if mosq_test.wait_for_subprocess(broker):
-                print("broker not terminated")
-                if rc == 0: rc=1
-            (stdo, stde) = broker.communicate()
-            if rc:
-                print(stde.decode('utf-8'))
-                exit(rc)
+            pass
         else:
-            return rc
+            raise ValueError(connack_recvd)
 
-
-def all_tests(start_broker=False):
-    rc = do_test(start_broker, True)
-    if rc:
-        return rc;
-    rc = do_test(start_broker, False)
-    if rc:
-        return rc;
-    return 0
 
 if __name__ == '__main__':
-    all_tests(True)
+    do_test(True)
+    do_test(False)

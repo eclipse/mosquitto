@@ -4,6 +4,8 @@
 
 from mosq_test_helper import *
 
+mosq_test.require_features(["WITH_PERSISTENCE"])
+
 def write_config(filename, port):
     with open(filename, 'w') as f:
         f.write("listener %d\n" % (port))
@@ -17,28 +19,28 @@ write_config(conf_file, port)
 
 rc = 1
 
-connect_packet = mosq_test.gen_connect(
+connect_packet = mqtt_packets.gen_connect(
     "persistent-subscription-test", clean_session=False, proto_ver=5, session_expiry=60
 )
-connack_packet = mosq_test.gen_connack(rc=0, proto_ver=5)
-connack_packet2 = mosq_test.gen_connack(rc=0, flags=1, proto_ver=5)  # session present
+connack_packet = mqtt_packets.gen_connack(rc=0, proto_ver=5)
+connack_packet2 = mqtt_packets.gen_connack(rc=0, flags=1, proto_ver=5)  # session present
 
 mid = 1
 props = mqtt5_props.gen_varint_prop(mqtt5_props.SUBSCRIPTION_IDENTIFIER, 53)
-subscribe_packet = mosq_test.gen_subscribe(mid, "subpub/qos1", 1, proto_ver=5, properties=props)
-suback_packet = mosq_test.gen_suback(mid, 1, proto_ver=5)
+subscribe_packet = mqtt_packets.gen_subscribe(mid, "subpub/qos1", 1, proto_ver=5, properties=props)
+suback_packet = mqtt_packets.gen_suback(mid, 1, proto_ver=5)
 
 mid = 1
 props = mqtt5_props.gen_varint_prop(mqtt5_props.SUBSCRIPTION_IDENTIFIER, 53)
-publish_packet2 = mosq_test.gen_publish("subpub/qos1", qos=1, mid=mid, payload="message", proto_ver=5, properties=props)
+publish_packet2 = mqtt_packets.gen_publish("subpub/qos1", qos=1, mid=mid, payload="message", proto_ver=5, properties=props)
 
 
-helper_connect_packet = mosq_test.gen_connect("helper", clean_session=True, proto_ver=5)
-helper_connack_packet = mosq_test.gen_connack(rc=0, proto_ver=5)
+helper_connect_packet = mqtt_packets.gen_connect("helper", clean_session=True, proto_ver=5)
+helper_connack_packet = mqtt_packets.gen_connack(rc=0, proto_ver=5)
 
 mid = 1
-helper_publish_packet = mosq_test.gen_publish("subpub/qos1", qos=1, mid=mid, payload="message", proto_ver=5)
-helper_puback_packet = mosq_test.gen_puback(mid, proto_ver=5)
+helper_publish_packet = mqtt_packets.gen_publish("subpub/qos1", qos=1, mid=mid, payload="message", proto_ver=5)
+helper_puback_packet = mqtt_packets.gen_puback(mid, proto_ver=5)
 
 
 if os.path.exists('mosquitto-%d.db' % (port)):
@@ -56,7 +58,7 @@ try:
     mosq_test.do_send_receive(sock, helper_publish_packet, helper_puback_packet, "helper puback")
     sock.close()
 
-    broker.terminate()
+    mosq_test.terminate_broker(broker)
     if mosq_test.wait_for_subprocess(broker):
         print("broker not terminated")
         if rc == 0: rc=1
@@ -73,13 +75,12 @@ except mosq_test.TestError:
     pass
 finally:
     os.remove(conf_file)
-    broker.terminate()
+    mosq_test.terminate_broker(broker)
     if mosq_test.wait_for_subprocess(broker):
         print("broker not terminated")
         if rc == 0: rc=1
-    (stdo, stde) = broker.communicate()
     if rc:
-        print(stde.decode('utf-8'))
+        print(mosq_test.broker_log(broker))
     if os.path.exists('mosquitto-%d.db' % (port)):
         os.unlink('mosquitto-%d.db' % (port))
         pass

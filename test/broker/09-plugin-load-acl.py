@@ -3,12 +3,11 @@
 # Test whether a plugin can subscribe to the tick event
 
 from mosq_test_helper import *
-import signal
 
 def write_config(filename, ports, per_listener_settings):
     with open(filename, 'w') as f:
         f.write("per_listener_settings %s\n" % (per_listener_settings))
-        f.write("plugin_load acl c/plugin_load_acl.so\n")
+        f.write(f"plugin_load acl {mosq_paths.test_plugin('plugin_load_acl')}\n")
 
         f.write("listener %d\n" % (ports[0]))
         f.write("listener_allow_anonymous true\n")
@@ -18,12 +17,12 @@ def write_config(filename, ports, per_listener_settings):
         f.write("listener_allow_anonymous true\n")
 
 def client_check(topic, rc, port):
-    connect_packet = mosq_test.gen_connect(client_id="id", proto_ver=5)
-    connack_packet = mosq_test.gen_connack(rc=0, proto_ver=5)
+    connect_packet = mqtt_packets.gen_connect(client_id="id", proto_ver=5)
+    connack_packet = mqtt_packets.gen_connack(rc=0, proto_ver=5)
     sock = mosq_test.do_client_connect(connect_packet, connack_packet, port=port)
 
-    publish_packet = mosq_test.gen_publish(topic=topic, qos=1, mid=1, payload="message", proto_ver=5)
-    puback_packet = mosq_test.gen_puback(mid=1, reason_code=rc, proto_ver=5)
+    publish_packet = mqtt_packets.gen_publish(topic=topic, qos=1, mid=1, payload="message", proto_ver=5)
+    puback_packet = mqtt_packets.gen_puback(mid=1, reason_code=rc, proto_ver=5)
 
     mosq_test.do_send_receive(sock, publish_packet, puback_packet, f"puback {topic}")
 
@@ -52,12 +51,11 @@ def do_test(per_listener_settings):
         print(err)
     finally:
         os.remove(conf_file)
-        broker.terminate()
+        mosq_test.terminate_broker(broker)
         broker.wait()
         if rc:
             print(f"per_listener_settings:{per_listener_settings}")
-            (stdo, stde) = broker.communicate()
-            print(stde.decode('utf-8'))
+            print(mosq_test.broker_log(broker))
             exit(rc)
 
 do_test("false")

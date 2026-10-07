@@ -3,7 +3,7 @@ include ${R}/config.mk
 
 LOCAL_CFLAGS+=-fPIC
 LOCAL_CPPFLAGS+=
-LOCAL_LDFLAGS+=-fPIC
+LOCAL_LDFLAGS+=-Wl,--version-script=linker.version -Wl,-soname,libmosquitto_common.so.$(SOVERSION) -fPIC
 LOCAL_LIBADD+=-lcjson
 
 ifeq ($(WITH_MEMORY_TRACKING),yes)

@@ -1,6 +1,10 @@
+<!DOCTYPE varlistentry [
+	<!ENTITY from-version21 SYSTEM "version-2.1.xml">
+]>
 <varlistentry>
 	<term><option>--tls-keylog</option> <replaceable>file</replaceable></term>
 	<listitem>
+		&from-version21;
 		<para>
 			Log TLS connection information to <replaceable>file</replaceable>.
 			This option allows tools such as <command>tcpdump</command>,
@@ -11,7 +15,8 @@
 			<option>Transport Layer Security</option> protocol.
 		</para>
 		<para>
-			This option should be used for debugging only.
+			This option should be used for debugging only, it must not be used
+			in production.
 		</para>
 	</listitem>
 </varlistentry>

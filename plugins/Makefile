@@ -1,10 +1,16 @@
+R=..
+include ${R}/config.mk
+
 DIRS= \
 		acl-file \
 		dynamic-security \
 		examples \
 		password-file \
-		persist-sqlite \
 		sparkplug-aware
+
+ifeq ($(WITH_SQLITE),yes)
+DIRS+=persist-sqlite
+endif
 
 .PHONY : all binary check clean reallyclean test test-compile install uninstall
 

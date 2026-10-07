@@ -22,4 +22,5 @@ message Property {
 
 message FuzzerInput {
 	repeated Property properties = 1;
+	required int32 memory_check_limit = 2;
 }

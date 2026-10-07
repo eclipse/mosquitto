@@ -25,6 +25,7 @@ Contributors:
 #  include <ws2tcpip.h>
 #else
 #  include <arpa/inet.h>
+#  include <netinet/in.h>
 #endif
 
 #include "callbacks.h"
@@ -57,7 +58,7 @@ static int mosquitto__connect_init(struct mosquitto *mosq, const char *host, int
 	if(!host || port < 0 || port > UINT16_MAX){
 		return MOSQ_ERR_INVAL;
 	}
-	if(keepalive != 0 && (keepalive < 5 || keepalive > UINT16_MAX)){
+	if(keepalive != 0 && (keepalive < 2 || keepalive > UINT16_MAX)){
 		return MOSQ_ERR_INVAL;
 	}
 
@@ -186,7 +187,7 @@ int mosquitto_reconnect(struct mosquitto *mosq)
 }
 
 
-int get_address(int sock, char *buf, size_t len, uint16_t *remote_port)
+int get_address(mosq_sock_t sock, char *buf, size_t len, uint16_t *remote_port)
 {
 	struct sockaddr_storage addr;
 	socklen_t addrlen;

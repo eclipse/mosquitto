@@ -4,10 +4,12 @@
 
 from mosq_test_helper import *
 
+mosq_test.require_features(["WITH_BROKER"])
+
 def write_file(filename):
-    with open(filename, 'w') as f:
-        f.write("line1\n")
-        f.write("line2\n")
+    with open(filename, 'wb') as f:
+        f.write("line1\n".encode('utf-8'))
+        f.write("line2\n".encode('utf-8'))
 
 
 def do_test(proto_ver):
@@ -28,7 +30,7 @@ def do_test(proto_ver):
     }
     env = mosq_test.env_add_ld_library_path(env)
 
-    cmd = [f'{mosq_test.get_build_root()}/client/mosquitto_pub',
+    cmd = [mosq_paths.mosquitto_pub,
             '-p', str(port),
             '-q', '1',
             '-t', '03/pub/file/test',
@@ -36,7 +38,7 @@ def do_test(proto_ver):
             '-V', V
             ]
 
-    publish_packet = mosq_test.gen_publish("03/pub/file/test", qos=0, payload="line1\nline2\n", proto_ver=proto_ver)
+    publish_packet = mqtt_packets.gen_publish("03/pub/file/test", qos=0, payload="line1\nline2\n", proto_ver=proto_ver)
 
     broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port)
 
@@ -45,14 +47,9 @@ def do_test(proto_ver):
     try:
         sock = mosq_test.sub_helper(port=port, topic="#", qos=0, proto_ver=proto_ver)
 
-        pub = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=env)
-        pub_terminate_rc = 0
-        if mosq_test.wait_for_subprocess(pub):
-            print("pub not terminated")
-            pub_terminate_rc = 1
-
+        pub = subprocess.run(cmd, env=env)
         mosq_test.expect_packet(sock, "publish", publish_packet)
-        rc = pub_terminate_rc
+        rc = pub.returncode
         sock.close()
     except mosq_test.TestError:
         pass
@@ -60,13 +57,12 @@ def do_test(proto_ver):
         print(e)
     finally:
         os.remove(data_file)
-        broker.terminate()
+        mosq_test.terminate_broker(broker)
         if mosq_test.wait_for_subprocess(broker):
             print("broker not terminated")
             if rc == 0: rc=1
-        (stdo, stde) = broker.communicate()
         if rc:
-            print(stde.decode('utf-8'))
+            print(mosq_test.broker_log(broker))
             print("proto_ver=%d" % (proto_ver))
             exit(rc)
 

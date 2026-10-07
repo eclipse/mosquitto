@@ -14,40 +14,39 @@
 from mosq_test_helper import *
 
 def do_test(proto_ver):
-    rc = 1
     keepalive = 60
-    connect_packet = mosq_test.gen_connect("subpub", keepalive=keepalive, proto_ver=proto_ver)
-    connack_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
+    connect_packet = mqtt_packets.gen_connect("subpub", keepalive=keepalive, proto_ver=proto_ver)
+    connack_packet = mqtt_packets.gen_connack(rc=0, proto_ver=proto_ver)
 
     mid = 1
-    subscribe1_packet = mosq_test.gen_subscribe(mid, "subpub/expired", 1, proto_ver=proto_ver)
-    suback1_packet = mosq_test.gen_suback(mid, 1, proto_ver=proto_ver)
+    subscribe1_packet = mqtt_packets.gen_subscribe(mid, "subpub/expired", 1, proto_ver=proto_ver)
+    suback1_packet = mqtt_packets.gen_suback(mid, 1, proto_ver=proto_ver)
 
     mid = 2
-    subscribe2_packet = mosq_test.gen_subscribe(mid, "subpub/kept", 1, proto_ver=proto_ver)
-    suback2_packet = mosq_test.gen_suback(mid, 1, proto_ver=proto_ver)
+    subscribe2_packet = mqtt_packets.gen_subscribe(mid, "subpub/kept", 1, proto_ver=proto_ver)
+    suback2_packet = mqtt_packets.gen_suback(mid, 1, proto_ver=proto_ver)
 
-    helper_connect = mosq_test.gen_connect("helper", proto_ver=proto_ver)
-    helper_connack = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
+    helper_connect = mqtt_packets.gen_connect("helper", proto_ver=proto_ver)
+    helper_connack = mqtt_packets.gen_connack(rc=0, proto_ver=proto_ver)
 
     mid=1
     props = mqtt5_props.gen_uint32_prop(mqtt5_props.MESSAGE_EXPIRY_INTERVAL, 2)
-    publish1_packet = mosq_test.gen_publish("subpub/expired", mid=mid, qos=1, retain=True, payload="message1", proto_ver=proto_ver, properties=props)
-    puback1_packet = mosq_test.gen_puback(mid, proto_ver=proto_ver, reason_code=mqtt5_rc.NO_MATCHING_SUBSCRIBERS)
+    publish1_packet = mqtt_packets.gen_publish("subpub/expired", mid=mid, qos=1, retain=True, payload="message1", proto_ver=proto_ver, properties=props)
+    puback1_packet = mqtt_packets.gen_puback(mid, proto_ver=proto_ver, reason_code=mqtt5_rc.NO_MATCHING_SUBSCRIBERS)
 
     mid=2
-    publish2s_packet = mosq_test.gen_publish("subpub/kept", mid=mid, qos=1, retain=True, payload="message2", proto_ver=proto_ver)
-    puback2s_packet = mosq_test.gen_puback(mid, proto_ver=proto_ver, reason_code=mqtt5_rc.NO_MATCHING_SUBSCRIBERS)
+    publish2s_packet = mqtt_packets.gen_publish("subpub/kept", mid=mid, qos=1, retain=True, payload="message2", proto_ver=proto_ver)
+    puback2s_packet = mqtt_packets.gen_puback(mid, proto_ver=proto_ver, reason_code=mqtt5_rc.NO_MATCHING_SUBSCRIBERS)
 
     mid=1
-    publish2r_packet = mosq_test.gen_publish("subpub/kept", mid=mid, qos=1, retain=True, payload="message2", proto_ver=proto_ver)
-    puback2r_packet = mosq_test.gen_puback(mid, proto_ver=proto_ver, reason_code=mqtt5_rc.NO_MATCHING_SUBSCRIBERS)
+    publish2r_packet = mqtt_packets.gen_publish("subpub/kept", mid=mid, qos=1, retain=True, payload="message2", proto_ver=proto_ver)
+    puback2r_packet = mqtt_packets.gen_puback(mid, proto_ver=proto_ver, reason_code=mqtt5_rc.NO_MATCHING_SUBSCRIBERS)
 
 
     port = mosq_test.get_port()
-    broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port)
+    broker = MosquittoBroker(port=port)
 
-    try:
+    with broker:
         helper = mosq_test.do_client_connect(helper_connect, helper_connack, timeout=20, port=port)
         mosq_test.do_send_receive(helper, publish1_packet, puback1_packet, "puback 1")
         mosq_test.do_send_receive(helper, publish2s_packet, puback2s_packet, "puback 2")
@@ -73,20 +72,6 @@ def do_test(proto_ver):
         mosq_test.expect_packet(sock, "publish 2", publish2r_packet)
         sock.send(puback2r_packet)
         sock.close()
-        rc = 0
-
-    except mosq_test.TestError:
-        pass
-    finally:
-        broker.terminate()
-        if mosq_test.wait_for_subprocess(broker):
-            print("broker not terminated")
-            if rc == 0: rc=1
-        (stdo, stde) = broker.communicate()
-        if rc:
-            print(stde.decode('utf-8'))
-            print("proto_ver=%d" % (proto_ver))
-            exit(rc)
 
 
 do_test(proto_ver=5)

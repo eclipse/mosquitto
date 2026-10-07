@@ -1,0 +1,90 @@
+name: Linux - ASAN
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+      - develop
+      - fixes
+      - release/*
+    tags:
+      - 'v[0-9]+.*'
+  pull_request:
+    branches:
+      - master
+      - develop
+      - fixes
+      - release/*
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Install third party dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          ccache \
+          clang \
+          docbook-xsl \
+          lcov \
+          libargon2-dev \
+          libc-ares-dev \
+          libcjson-dev \
+          libcjson1 \
+          libcunit1-dev \
+          libedit-dev \
+          libgmock-dev \
+          libmicrohttpd-dev \
+          libssl-dev \
+          libwrap0-dev \
+          microsocks \
+          ninja-build \
+          pkgconf \
+          python3-all \
+          python3-paho-mqtt \
+          python3-psutil \
+          uthash-dev \
+          xsltproc
+
+    - uses: actions/checkout@v6
+
+    - name: Configure ccache
+      run: |
+        mkdir "$GITHUB_WORKSPACE/ccache"
+        echo "CCACHE_DIR=$GITHUB_WORKSPACE/ccache" >> $GITHUB_ENV
+
+    - name: Restore ccache
+      uses: actions/cache@v5
+      with:
+        path: ccache
+        key: ${{ runner.os }}-asan-ccache
+
+    - run: cmake -E make_directory build
+
+    - run: |
+        cmake \
+          -G Ninja \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DWITH_SHARED_LIBCOMMON=ON \
+          -S . \
+          -B build
+      env:
+        CC: "ccache clang"
+        CXX: "ccache clang++"
+        CFLAGS: "-fsanitize=address -fno-omit-frame-pointer"
+        CXXFLAGS: "-fsanitize=address -fno-omit-frame-pointer"
+        LDFLAGS: "-fsanitize=address -fno-omit-frame-pointer -static-libsan"
+
+    - run: cmake --build build --parallel $(nproc)
+
+    - name: Report ccache stats
+      run: ccache -s
+
+    - working-directory: build/
+      run: ctest -j20 --resource-spec-file ../test/resource.json --output-on-failure --repeat until-pass:5

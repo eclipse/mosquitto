@@ -7,29 +7,25 @@
 
 from mosq_test_helper import *
 
-def do_test(start_broker):
-    rc = 1
-
+def do_test():
     mid = 1
-    connect1_packet = mosq_test.gen_connect("will-session-exp", proto_ver=5)
-    connack1_packet = mosq_test.gen_connack(rc=0, proto_ver=5)
+    connect1_packet = mqtt_packets.gen_connect("will-session-exp", proto_ver=5)
+    connack1_packet = mqtt_packets.gen_connack(rc=0, proto_ver=5)
 
     will_props = mqtt5_props.gen_uint32_prop(mqtt5_props.WILL_DELAY_INTERVAL, 4)
     connect_props = mqtt5_props.gen_uint32_prop(mqtt5_props.SESSION_EXPIRY_INTERVAL, 2)
 
-    connect2_packet = mosq_test.gen_connect("will-session-exp-helper", proto_ver=5, properties=connect_props, will_topic="will/session-expiry/test", will_payload=b"will delay", will_qos=2, will_properties=will_props)
-    connack2_packet = mosq_test.gen_connack(rc=0, proto_ver=5)
+    connect2_packet = mqtt_packets.gen_connect("will-session-exp-helper", proto_ver=5, properties=connect_props, will_topic="will/session-expiry/test", will_payload=b"will delay", will_qos=2, will_properties=will_props)
+    connack2_packet = mqtt_packets.gen_connack(rc=0, proto_ver=5)
 
-    subscribe_packet = mosq_test.gen_subscribe(mid, "will/session-expiry/test", 0, proto_ver=5)
-    suback_packet = mosq_test.gen_suback(mid, 0, proto_ver=5)
+    subscribe_packet = mqtt_packets.gen_subscribe(mid, "will/session-expiry/test", 0, proto_ver=5)
+    suback_packet = mqtt_packets.gen_suback(mid, 0, proto_ver=5)
 
-    publish_packet = mosq_test.gen_publish("will/session-expiry/test", qos=0, payload="will delay", proto_ver=5)
+    publish_packet = mqtt_packets.gen_publish("will/session-expiry/test", qos=0, payload="will delay", proto_ver=5)
 
     port = mosq_test.get_port()
-    if start_broker:
-        broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port)
-
-    try:
+    broker = MosquittoBroker(port=port)
+    with broker:
         sock1 = mosq_test.do_client_connect(connect1_packet, connack1_packet, timeout=30, port=port, connack_error="connack1")
         mosq_test.do_send_receive(sock1, subscribe_packet, suback_packet, "suback")
 
@@ -40,27 +36,8 @@ def do_test(start_broker):
         # Wait for session to expire
         time.sleep(3)
         mosq_test.expect_packet(sock1, "publish", publish_packet)
-        rc = 0
-
         sock1.close()
-    except mosq_test.TestError:
-        pass
-    finally:
-        if start_broker:
-            broker.terminate()
-            if mosq_test.wait_for_subprocess(broker):
-                print("broker not terminated")
-                if rc == 0: rc=1
-            (stdo, stde) = broker.communicate()
-            if rc:
-                print(stde.decode('utf-8'))
-                exit(rc)
-        else:
-            return rc
 
-
-def all_tests(start_broker=False):
-    return do_test(start_broker)
 
 if __name__ == '__main__':
-    all_tests(True)
+    do_test()

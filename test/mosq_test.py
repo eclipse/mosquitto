@@ -3,16 +3,24 @@ import base64
 import errno
 import hashlib
 import os
+import platform
+import signal
 import socket
+import ssl
 import subprocess
 import struct
 import sys
+import tempfile
 import time
 import uuid
-
 import traceback
+from functools import wraps
 
+import mqtt_packets
 import mqtt5_props
+
+if platform.system() == "Windows":
+    import win32event
 
 import __main__
 
@@ -24,49 +32,99 @@ class TestError(Exception):
     def __init__(self, message="Mismatched packets"):
         self.message = message
 
+
+def retry(retries=5, delay=1):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            last_exception = None
+            for attempt in range(retries):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    print(f"Retrying {func.__name__} {attempt+1}/{retries}")
+                    last_exception = e
+                    if attempt < retries - 1:
+                        time.sleep(delay)
+            raise last_exception
+        return wrapper
+    return decorator
+
+
 def get_build_root():
     result = os.getenv("BUILD_ROOT")
     if result is None:
         result = str(Path(__file__).resolve().parents[1])
     return result
 
-def env_add_ld_library_path(env=None):
-    p = ":".join([
-        get_build_root() + '/libcommon',
-        get_build_root() + '/lib',
-        get_build_root() + '/lib/cpp',
-        os.getenv("LD_LIBRARY_PATH", "")
+def get_build_type():
+    if platform.system() == 'Windows':
+        buildtype = os.environ.get('CMAKE_CONFIG_TYPE')
+        if buildtype is None:
+            buildtype = 'RelWithDebInfo'
+    else:
+        buildtype = ''
+    return buildtype
+
+def env_add_ld_library_path(env=None, extra_path=""):
+    if platform.system() == 'Windows':
+        pathsep = ';'
+        pathvar = 'PATH'
+    elif platform.system() == 'Darwin':
+        pathsep = ':'
+        pathvar = 'DYLIB_LIBRARY_PATH'
+    else:
+        pathsep = ':'
+        pathvar = 'LD_LIBRARY_PATH'
+
+    p = pathsep.join([
+        str(Path(get_build_root(), 'libcommon', get_build_type())),
+        str(Path(get_build_root(), 'lib', get_build_type())),
+        str(Path(get_build_root(), 'lib', 'cpp', get_build_type())),
+        extra_path,
+        os.getenv(pathvar, "")
     ])
 
-    if env is None:
-        env = {
-            'LD_LIBRARY_PATH': p,
-            'DYLIB_LIBRARY_PATH': p,
-        }
-    else:
-        for v in ['LD_LIBRARY_PATH', 'DYLIB_LIBRARY_PATH']:
-            try:
-                val = env[v]
-                env[v] = ":".join([val, p])
-            except KeyError:
-                env[v] = p
+    newenv = os.environ.copy()
+    if env is not None:
+        for key, value in env.items():
+            newenv[key] = value
 
-    return env
+    newenv[pathvar] = p
 
-def listen_sock(port):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    return newenv
+
+def listen_sock(port, cafile=None, certfile=None, keyfile=None, cert_required=False, timeout=5):
+    sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    sock.settimeout(10)
+    sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+    if cafile is not None:
+        context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH, cafile=cafile)
+        context.minimum_version = ssl.TLSVersion.TLSv1_2
+        context.load_cert_chain(certfile=certfile, keyfile=keyfile)
+        if cert_required:
+            context.verify_mode = ssl.CERT_REQUIRED
+        sock = context.wrap_socket(sock, server_side=True)
+    sock.settimeout(timeout)
     sock.bind(('', port))
     sock.listen(5)
     return sock
+
+def broker_log(broker):
+    try:
+        broker.mosq_log.seek(0)
+        return broker.mosq_log.read().decode('utf-8')
+    except AttributeError:
+        return None
 
 def start_broker(filename, cmd=None, port=0, use_conf=False, expect_fail=False, expect_fail_log=None, nolog=False, checkhost="localhost", env=None, check_port=True, cmd_args=None, timeout=0.1):
     global vg_index
     global vg_logfiles
 
+    broker_path = Path(get_build_root(), 'src', get_build_type(), 'mosquitto')
+
     if use_conf == True:
-        cmd = [get_build_root() + '/src/mosquitto', '-v', '-c', filename.replace('.py', '.conf')]
+        cmd = [broker_path, '-v', '-c', filename.replace('.py', '.conf')]
 
         if port == 0:
             port = 1888
@@ -74,9 +132,9 @@ def start_broker(filename, cmd=None, port=0, use_conf=False, expect_fail=False, 
             cmd += ['-p', str(port)]
     else:
         if cmd is None and port != 0:
-            cmd = [get_build_root() + '/src/mosquitto', '-v', '-p', str(port)]
+            cmd = [broker_path, '-v', '-p', str(port)]
         elif cmd is None and port == 0:
-            cmd = [get_build_root() + '/src/mosquitto', '-v', '-c', filename.replace('.py', '.conf')]
+            cmd = [broker_path, '-v', '-c', filename.replace('.py', '.conf')]
 
     if os.environ.get('MOSQ_USE_VALGRIND') is not None:
         logfile = filename+'.'+str(vg_index)+'.vglog'
@@ -95,27 +153,24 @@ def start_broker(filename, cmd=None, port=0, use_conf=False, expect_fail=False, 
     if cmd_args:
         cmd.extend(cmd_args)
 
-    #print(port)
-    #print(cmd)
-    if nolog:
-        stderr = subprocess.DEVNULL
-    else:
-        stderr = subprocess.PIPE
+    stderr = tempfile.TemporaryFile(prefix=str(port), suffix=".log")
 
+    env = env_add_ld_library_path(env)
     broker = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=stderr, env=env)
+    broker.mosq_log = stderr
 
     if expect_fail:
         try:
             broker.wait(timeout*10)
             if expect_fail_log is not None:
-                (_, stde) = broker.communicate()
-                if expect_fail_log not in stde.decode('utf-8'):
+                stde = broker_log(broker)
+                if expect_fail_log not in stde:
                     print(f"{expect_fail_log} not found in log.")
                     print(stde.decode('utf-8'))
                     raise ValueError()
         except subprocess.TimeoutExpired:
             _, errs = terminate_broker(broker)
-            print(f"Broker did not fail to start:\n{errs.decode('utf-8')}")
+            print(f"Broker did not fail to start:\n{errs}")
             raise
         return broker
 
@@ -138,8 +193,8 @@ def start_broker(filename, cmd=None, port=0, use_conf=False, expect_fail=False, 
             return broker
 
     if expect_fail == False:
-        outs, errs = broker.communicate(timeout=timeout)
-        print("FAIL: unable to start broker: %s" % errs)
+        stde = broker_log(broker)
+        print(f"FAIL: unable to start broker: {stde}")
         raise IOError
     else:
         return broker
@@ -173,31 +228,57 @@ def wait_for_subprocess(client,timeout=10,terminate_timeout=2):
     return rc
 
 
-def terminate_broker(broker):
-    broker.terminate()
-    (_, stde) = broker.communicate()
+def terminate_broker(broker, force=False):
+    if platform.system() == 'Windows' and force == False:
+        evt_sent = False
+        for i in range(5):
+            try:
+                evt = win32event.OpenEvent(win32event.EVENT_ALL_ACCESS, False, f"mosq{broker.pid}_shutdown")
+                win32event.PulseEvent(evt)
+                evt_sent = True
+                break
+            except Exception:
+                time.sleep(0.5)
+        if evt_sent == False:
+            broker.terminate()
+    else:
+        broker.terminate()
+    stde = broker_log(broker)
     if wait_for_subprocess(broker):
         print("broker not terminated")
         return (1, stde)
     else:
         return (0, stde)
 
+def reload_broker(broker):
+    if platform.system() == 'Windows':
+        for i in range(10):
+            try:
+                evt = win32event.OpenEvent(win32event.EVENT_ALL_ACCESS, False, f"mosq{broker.pid}_reload")
+                win32event.SetEvent(evt)
+                return
+            except Exception as e:
+                time.sleep(0.5)
+                print(e)
+                pass
+    else:
+        broker.send_signal(signal.SIGHUP)
 
 def pub_helper(port, proto_ver=4):
-    connect_packet = gen_connect("pub-helper", proto_ver=proto_ver)
-    connack_packet = gen_connack(rc=0, proto_ver=proto_ver)
+    connect_packet = mqtt_packets.gen_connect("pub-helper", proto_ver=proto_ver)
+    connack_packet = mqtt_packets.gen_connack(rc=0, proto_ver=proto_ver)
 
     sock = do_client_connect(connect_packet, connack_packet, port=port, connack_error="pub helper connack")
     return sock
 
 
 def sub_helper(port, topic='#', qos=0, proto_ver=4):
-    connect_packet = gen_connect("sub-helper", proto_ver=proto_ver)
-    connack_packet = gen_connack(rc=0, proto_ver=proto_ver)
+    connect_packet = mqtt_packets.gen_connect("sub-helper", proto_ver=proto_ver)
+    connack_packet = mqtt_packets.gen_connack(rc=0, proto_ver=proto_ver)
 
     mid = 1
-    subscribe_packet = gen_subscribe(mid=mid, topic=topic, qos=qos, proto_ver=proto_ver)
-    suback_packet = gen_suback(mid=mid, qos=qos, proto_ver=proto_ver)
+    subscribe_packet = mqtt_packets.gen_subscribe(mid=mid, topic=topic, qos=qos, proto_ver=proto_ver)
+    suback_packet = mqtt_packets.gen_suback(mid=mid, qos=qos, proto_ver=proto_ver)
     sock = do_client_connect(connect_packet, connack_packet, port=port)
     do_send_receive(sock, subscribe_packet, suback_packet, "sub helper suback")
     return sock
@@ -394,7 +475,7 @@ def to_string(packet):
             (slen, packet) = struct.unpack(pack_format, packet)
             pack_format = "!" + str(slen)+'s' + str(len(packet)-slen) + 's'
             (will_message, packet) = struct.unpack(pack_format, packet)
-            s = s+", will-message="+will_message
+            s = s+", will-message="+str(will_message)
 
             s = s+", will-qos="+str((flags&24)>>3)
             s = s+", will-retain="+str((flags&32)>>5)
@@ -581,322 +662,36 @@ def read_publish(sock, proto_ver=4):
     return payload
 
 
-def gen_fixed_hdr(command, remaining_length):
-    return struct.pack("B", command) + pack_remaining_length(remaining_length)
-
-def gen_variable_hdr(mid=None):
-    if mid is not None:
-        return struct.pack("!H", mid)
-    else:
-        return b""
-
-
-def gen_connect(client_id, clean_session=True, keepalive=60, username=None, password=None, will_topic=None, will_qos=0, will_retain=False, will_payload=b"", proto_ver=4, connect_reserved=False, properties=b"", will_properties=b"", session_expiry=-1):
-    if (proto_ver&0x7F) == 3 or proto_ver == 0:
-        remaining_length = 12
-    elif (proto_ver&0x7F) == 4 or proto_ver == 5:
-        remaining_length = 10
-    else:
-        raise ValueError
-
-    if client_id != None:
-        client_id = client_id.encode("utf-8")
-        remaining_length = remaining_length + 2+len(client_id)
-    else:
-        remaining_length = remaining_length + 2
-
-    connect_flags = 0
-
-    if connect_reserved:
-        connect_flags = connect_flags | 0x01
-
-    if clean_session:
-        connect_flags = connect_flags | 0x02
-
-    if proto_ver == 5:
-        if properties == b"":
-            properties += mqtt5_props.gen_uint16_prop(mqtt5_props.RECEIVE_MAXIMUM, 20)
-
-        if session_expiry != -1:
-            properties += mqtt5_props.gen_uint32_prop(mqtt5_props.SESSION_EXPIRY_INTERVAL, session_expiry)
-
-        properties = mqtt5_props.prop_finalise(properties)
-        remaining_length += len(properties)
-
-    if will_topic != None:
-        will_topic = will_topic.encode("utf-8")
-        remaining_length = remaining_length + 2+len(will_topic) + 2+len(will_payload)
-        connect_flags = connect_flags | 0x04 | ((will_qos&0x03) << 3)
-        if will_retain:
-            connect_flags = connect_flags | 32
-        if proto_ver == 5:
-            will_properties = mqtt5_props.prop_finalise(will_properties)
-            remaining_length += len(will_properties)
-
-    if username != None:
-        username = username.encode("utf-8")
-        remaining_length = remaining_length + 2+len(username)
-        connect_flags = connect_flags | 0x80
-        if password != None:
-            password = password.encode("utf-8")
-            connect_flags = connect_flags | 0x40
-            remaining_length = remaining_length + 2+len(password)
-
-    rl = pack_remaining_length(remaining_length)
-    packet = struct.pack("!B"+str(len(rl))+"s", 0x10, rl)
-    if (proto_ver&0x7F) == 3 or proto_ver == 0:
-        packet = packet + struct.pack("!H6sBBH", len(b"MQIsdp"), b"MQIsdp", proto_ver, connect_flags, keepalive)
-    elif (proto_ver&0x7F) == 4 or proto_ver == 5:
-        packet = packet + struct.pack("!H4sBBH", len(b"MQTT"), b"MQTT", proto_ver, connect_flags, keepalive)
-
-    if proto_ver == 5:
-        packet += properties
-
-    if client_id != None:
-        packet = packet + struct.pack("!H"+str(len(client_id))+"s", len(client_id), bytes(client_id))
-    else:
-        packet = packet + struct.pack("!H", 0)
-
-    if will_topic != None:
-        packet += will_properties
-        packet = packet + struct.pack("!H"+str(len(will_topic))+"s", len(will_topic), will_topic)
-        if len(will_payload) > 0:
-            packet = packet + struct.pack("!H"+str(len(will_payload))+"s", len(will_payload), will_payload)
-        else:
-            packet = packet + struct.pack("!H", 0)
-
-    if username != None:
-        packet = packet + struct.pack("!H"+str(len(username))+"s", len(username), username)
-        if password != None:
-            packet = packet + struct.pack("!H"+str(len(password))+"s", len(password), password)
-    return packet
-
-def gen_connack(flags=0, rc=0, proto_ver=4, properties=b"", property_helper=True):
-    if proto_ver == 5:
-        if property_helper == True:
-            if properties is not None:
-                properties = mqtt5_props.gen_uint16_prop(mqtt5_props.TOPIC_ALIAS_MAXIMUM, 10) \
-                    + properties \
-                    + mqtt5_props.gen_uint32_prop(mqtt5_props.MAXIMUM_PACKET_SIZE, 2000000) \
-                    + mqtt5_props.gen_uint16_prop(mqtt5_props.RECEIVE_MAXIMUM, 20)
-            else:
-                properties = b""
-        properties = mqtt5_props.prop_finalise(properties)
-
-        packet = struct.pack('!BBBB', 32, 2+len(properties), flags, rc) + properties
-    else:
-        packet = struct.pack('!BBBB', 32, 2, flags, rc);
-
-    return packet
-
-def gen_publish(topic, qos, payload=None, retain=False, dup=False, mid=0, proto_ver=4, properties=b""):
-    topic = topic.encode("utf-8")
-    rl = 2+len(topic)
-    pack_format = "H"+str(len(topic))+"s"
-    if qos > 0:
-        rl = rl + 2
-        pack_format = pack_format + "H"
-
-    if proto_ver == 5:
-        properties = mqtt5_props.prop_finalise(properties)
-        rl += len(properties)
-        # This will break if len(properties) > 127
-        pack_format = pack_format + "%ds"%(len(properties))
-
-    if payload != None:
-        if isinstance(payload, bytes) == False:
-            payload = payload.encode("utf-8")
-        rl = rl + len(payload)
-        pack_format = pack_format + str(len(payload))+"s"
-    else:
-        payload = b""
-        pack_format = pack_format + "0s"
-
-    rlpacked = pack_remaining_length(rl)
-    cmd = 48 | (qos<<1)
-    if retain:
-        cmd = cmd + 1
-    if dup:
-        cmd = cmd + 8
-
-    if proto_ver == 5:
-        if qos > 0:
-            return struct.pack("!B" + str(len(rlpacked))+"s" + pack_format, cmd, rlpacked, len(topic), topic, mid, properties, payload)
-        else:
-            return struct.pack("!B" + str(len(rlpacked))+"s" + pack_format, cmd, rlpacked, len(topic), topic, properties, payload)
-    else:
-        if qos > 0:
-            return struct.pack("!B" + str(len(rlpacked))+"s" + pack_format, cmd, rlpacked, len(topic), topic, mid, payload)
-        else:
-            return struct.pack("!B" + str(len(rlpacked))+"s" + pack_format, cmd, rlpacked, len(topic), topic, payload)
-
-def _gen_command_with_mid(cmd, mid, proto_ver=4, reason_code=-1, properties=None):
-    if proto_ver == 5 and (reason_code != -1 or properties is not None):
-        if reason_code == -1:
-            reason_code = 0
-
-        if properties is None:
-            return struct.pack('!BBHB', cmd, 3, mid, reason_code)
-        elif properties == "":
-            return struct.pack('!BBHBB', cmd, 4, mid, reason_code, 0)
-        else:
-            properties = mqtt5_props.prop_finalise(properties)
-            pack_format = "!BBHB"+str(len(properties))+"s"
-            return struct.pack(pack_format, cmd, 2+1+len(properties), mid, reason_code, properties)
-    else:
-        return struct.pack('!BBH', cmd, 2, mid)
-
-def gen_puback(mid, proto_ver=4, reason_code=-1, properties=None):
-    return _gen_command_with_mid(64, mid, proto_ver, reason_code, properties)
-
-def gen_pubrec(mid, proto_ver=4, reason_code=-1, properties=None):
-    return _gen_command_with_mid(80, mid, proto_ver, reason_code, properties)
-
-def gen_pubrel(mid, dup=False, proto_ver=4, reason_code=-1, properties=None):
-    if dup:
-        cmd = 96+8+2
-    else:
-        cmd = 96+2
-    return _gen_command_with_mid(cmd, mid, proto_ver, reason_code, properties)
-
-def gen_pubcomp(mid, proto_ver=4, reason_code=-1, properties=None):
-    return _gen_command_with_mid(112, mid, proto_ver, reason_code, properties)
-
-
-def gen_subscribe(mid, topic, qos, cmd=130, proto_ver=4, properties=b""):
-    topic = topic.encode("utf-8")
-    packet = struct.pack("!B", cmd)
-    if proto_ver == 5:
-        if properties == b"":
-            packet += pack_remaining_length(2+1+2+len(topic)+1)
-            pack_format = "!HBH"+str(len(topic))+"sB"
-            return packet + struct.pack(pack_format, mid, 0, len(topic), topic, qos)
-        else:
-            properties = mqtt5_props.prop_finalise(properties)
-            packet += pack_remaining_length(2+1+2+len(topic)+len(properties))
-            pack_format = "!H"+str(len(properties))+"s"+"H"+str(len(topic))+"sB"
-            return packet + struct.pack(pack_format, mid, properties, len(topic), topic, qos)
-    else:
-        packet += pack_remaining_length(2+2+len(topic)+1)
-        pack_format = "!HH"+str(len(topic))+"sB"
-        return packet + struct.pack(pack_format, mid, len(topic), topic, qos)
-
-
-def gen_suback(mid, qos, proto_ver=4):
-    if proto_ver == 5:
-        return struct.pack('!BBHBB', 144, 2+1+1, mid, 0, qos)
-    else:
-        return struct.pack('!BBHB', 144, 2+1, mid, qos)
-
-def gen_unsubscribe(mid, topic, cmd=162, proto_ver=4, properties=b""):
-    topic = topic.encode("utf-8")
-    if proto_ver == 5:
-        if properties == b"":
-            pack_format = "!BBHBH"+str(len(topic))+"s"
-            return struct.pack(pack_format, cmd, 2+2+len(topic)+1, mid, 0, len(topic), topic)
-        else:
-            properties = mqtt5_props.prop_finalise(properties)
-            packet = struct.pack("!B", cmd)
-            l = 2+2+len(topic)+len(properties)
-            packet += pack_remaining_length(l)
-            pack_format = "!H"+str(len(properties))+"sH"+str(len(topic))+"s"
-            packet += struct.pack(pack_format, mid, properties, len(topic), topic)
-            return packet
-    else:
-        pack_format = "!BBHH"+str(len(topic))+"s"
-        return struct.pack(pack_format, cmd, 2+2+len(topic), mid, len(topic), topic)
-
-def gen_unsubscribe_multiple(mid, topics, proto_ver=4):
-    packet = b""
-    remaining_length = 0
-    for t in topics:
-        t = t.encode("utf-8")
-        remaining_length += 2+len(t)
-        packet += struct.pack("!H"+str(len(t))+"s", len(t), t)
-
-    if proto_ver == 5:
-        remaining_length += 2+1
-
-        return struct.pack("!BBHB", 162, remaining_length, mid, 0) + packet
-    else:
-        remaining_length += 2
-
-        return struct.pack("!BBH", 162, remaining_length, mid) + packet
-
-def gen_unsuback(mid, reason_code=0, proto_ver=4):
-    if proto_ver == 5:
-        if isinstance(reason_code, list):
-            reason_code_count = len(reason_code)
-            p = struct.pack('!BBHB', 176, 3+reason_code_count, mid, 0)
-            for r in reason_code:
-                p += struct.pack('B', r)
-            return p
-        else:
-            return struct.pack('!BBHBB', 176, 4, mid, 0, reason_code)
-    else:
-        return struct.pack('!BBH', 176, 2, mid)
-
-def gen_pingreq():
-    return struct.pack('!BB', 192, 0)
-
-def gen_pingresp():
-    return struct.pack('!BB', 208, 0)
-
-
-def _gen_short(cmd, reason_code=-1, proto_ver=5, properties=None):
-    if proto_ver == 5 and (reason_code != -1 or properties is not None):
-        if reason_code == -1:
-             reason_code = 0
-
-        if properties is None:
-            return struct.pack('!BBB', cmd, 1, reason_code)
-        elif properties == "":
-            return struct.pack('!BBBB', cmd, 2, reason_code, 0)
-        else:
-            properties = mqtt5_props.prop_finalise(properties)
-            return struct.pack("!BBB", cmd, 1+len(properties), reason_code) + properties
-    else:
-        return struct.pack('!BB', cmd, 0)
-
-def gen_disconnect(reason_code=-1, proto_ver=4, properties=None):
-    return _gen_short(0xE0, reason_code, proto_ver, properties)
-
-def gen_auth(reason_code=-1, properties=None):
-    return _gen_short(0xF0, reason_code, 5, properties)
-
-
-def pack_remaining_length(remaining_length):
-    s = b""
-    while True:
-        byte = remaining_length % 128
-        remaining_length = remaining_length // 128
-        # If there are more digits to encode, set the top bit of this digit
-        if remaining_length > 0:
-            byte = byte | 0x80
-
-        s = s + struct.pack("!B", byte)
-        if remaining_length == 0:
-            return s
-
-
 def get_port(count=1):
-    if count == 1:
-        if len(sys.argv) == 2:
-            return int(sys.argv[1])
+    ports_def = os.environ.get('CTEST_RESOURCE_GROUP_0_PORTS')
+    if ports_def is not None:
+        ports = ports_def.split(";")
+        p = ()
+        for port in ports:
+            (pid, slots) = port.split(",")
+            p = p + (int(pid.split(":")[1]),)
+        if len(p) == 1:
+            return p[0]
         else:
-            return 1888
-    else:
-        if len(sys.argv) >= 1+count:
-            p = ()
-            for i in range(0, count):
-                p = p + (int(sys.argv[1+i]),)
             return p
+    else:
+        if count == 1:
+            if len(sys.argv) == 2:
+                return int(sys.argv[1])
+            else:
+                return 1888
         else:
-            return tuple(range(1888, 1888+count))
+            if len(sys.argv) >= 1+count:
+                p = ()
+                for i in range(0, count):
+                    p = p + (int(sys.argv[1+i]),)
+                return p
+            else:
+                return tuple(range(1888, 1888+count))
 
 
 def do_ping(sock, error_string="pingresp"):
-     do_send_receive(sock, gen_pingreq(), gen_pingresp(), error_string)
+     do_send_receive(sock, mqtt_packets.gen_pingreq(), mqtt_packets.gen_pingresp(), error_string)
 
 def client_test(client_cmd, client_args, callback, cb_data):
     port = get_port()
@@ -905,11 +700,11 @@ def client_test(client_cmd, client_args, callback, cb_data):
 
     sock = listen_sock(port)
 
-    args = [get_build_root() + "/test/lib/" + client_cmd, str(port)]
+    args = [Path(get_build_root(), "test", "lib") / client_cmd, str(port)]
     if client_args is not None:
         args = args + client_args
 
-    client = start_client(filename=client_cmd.replace('/', '-'), cmd=args)
+    client = start_client(filename=str(client_cmd).replace('/', '-'), cmd=args)
 
     try:
         (conn, address) = sock.accept()
@@ -1266,6 +1061,22 @@ class WebsocketWrapper(object):
     def setblocking(self, flag):
         self._socket.setblocking(flag)
 
+
+def check_features(features):
+    for feature in features:
+        requirement = "ON"
+        if feature[0] == "!":
+            feature = feature[1:]
+            requirement = "OFF"
+
+        env = os.environ.get(feature)
+        if env is not None and env != requirement:
+            return False
+    return True
+
+def require_features(features):
+    if not check_features(features):
+        exit(77)
 
 @atexit.register
 def test_cleanup():

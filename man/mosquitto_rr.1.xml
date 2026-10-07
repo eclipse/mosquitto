@@ -1,7 +1,15 @@
 <?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE refentry [
+	<!ENTITY commandname "mosquitto_rr">
+	<!ENTITY from-version21 SYSTEM "common/version-2.1.xml">
+	<!ENTITY options-intro SYSTEM "common/options-intro.xml">
+]>
 <?xml-stylesheet type="text/xsl" href="manpage.xsl"?>
 
-<refentry xml:id="mosquitto_rr" xmlns:xlink="http://www.w3.org/1999/xlink">
+<refentry xml:id="mosquitto_rr"
+		xmlns:xlink="http://www.w3.org/1999/xlink"
+		xmlns:xi="http://www.w3.org/2001/XInclude">
+
 	<refmeta>
 		<refentrytitle>mosquitto_rr</refentrytitle>
 		<manvolnum>1</manvolnum>
@@ -65,6 +73,7 @@
 			<command>misc-options:</command>
 			<sbr/>
 			<arg><option>--latency</option></arg>
+			<arg><option>-o</option> <replaceable>config-file</replaceable></arg>
 			<arg><option>-W</option> <replaceable>message-processing-timeout</replaceable></arg>
 		</cmdsynopsis>
 		<cmdsynopsis>
@@ -80,7 +89,7 @@
 			<arg><option>-V</option> <replaceable>protocol-version</replaceable></arg>
 			<arg><option>-x</option> <replaceable>session-expiry-interval</replaceable></arg>
 			<sbr/>
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/synopsis-will.xml" />
+			<xi:include href="common/synopsis-will.xml" />
 		</cmdsynopsis>
 		<cmdsynopsis>
 			<command>output-options:</command>
@@ -102,8 +111,8 @@
 				<arg choice='plain'><option>-s</option></arg>
 			</group>
 		</cmdsynopsis>
-		<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/synopsis-tls-certificate-options.xml" />
-		<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/synopsis-tls-psk-options.xml" />
+		<xi:include href="common/synopsis-tls-certificate-options.xml" />
+		<xi:include href="common/synopsis-tls-psk-options.xml" />
 
 		<cmdsynopsis>
 			<command>mosquitto_rr</command>
@@ -131,146 +140,115 @@
 		</para>
 	</refsect1>
 
-	<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/section-encrypted-connections.xml" />
+	<xi:include href="common/section-encrypted-connections.xml" />
 
 	<refsect1>
 		<title>Options</title>
-		<para>
-			There are three ways to provide options to mosquitto_rr: the
-			default config file, a specified config file, or options on
-			the command line.
-		</para>
-		<para>
-			The default config file is located at
-			<option>$XDG_CONFIG_HOME/mosquitto_rr</option> or
-			<option>$HOME/.config/mosquitto_rr</option> on POSIX systems, or
-			<option>%USERPROFILE%\mosquitto_rr</option> on Windows.
-		</para>
-		<para>
-			A config file can be specified on the command line using
-			<option>-o <replaceable>config-file</replaceable></option>.
-			If the <option>-o</option> option is used, the default config
-			file will not be loaded.
-		</para>
-		<para>
-			In both cases, the contents of the config file should consist of
-			options, one per line in the format:
-			<option>-option <replaceable>value</replaceable></option>. If
-			options are also specified on the command line, those
-			options will override the same options set in the config
-			file. The exceptions to this are the message type options, of which
-			only one can be specified. Note also that currently some options
-			cannot be negated, e.g. <option>-S</option>. TLS encryption options
-			can be negated with the <option>--no-tls</option> option.
-		</para>
-		<para>
-			Config file lines that have a <option>#</option> as the first
-			character are treated as comments and not processed any further.
-		</para>
-		<para>
-			It is suggested that config files are primarily used for
-			authentication purposes. Use of a config file allows you to
-			authenticate without the need to show the username and password
-			on the command line.
-		</para>
-		<variablelist>
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-bind.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-clean-session.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-cafile.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-capath.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-cert.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-ciphers.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-debug.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-property.xml" />
-			<varlistentry>
-				<term><option>-e</option></term>
-				<listitem>
-					<para>
-						Response topic. The client will subscribe to this topic to wait for a response.
-					</para>
-				</listitem>
-			</varlistentry>
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-payload-file.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-format.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-help.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-host.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-clientid.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-clientid-prefix.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-insecure.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-keepalive.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-key.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-keyform.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-url.xml" />
-			<varlistentry>
-				<term><option>--latency</option></term>
-				<listitem>
-					<para>
-						If this option is specified, mosquitto_rr will print out
-						the latency between it starting to publish a request and
-						the response arriving. This number includes both the
-						broker and client processing times, as well as any
-						inherent network latency.
-					</para>
+		&options-intro;
 
-					<para>
-						This can be used to measure message delivery latency
-						very simply by specifying an identical request and
-						response topic.
-					</para>
-					<para>
-						The <option>--nodelay</option> option will be automatically
-						used when <option>--latency</option> is in use.
-					</para>
-				</listitem>
-			</varlistentry>
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-payload-message.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-format-no-eol.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-payload-null.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-nodelay.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-no-tls.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-port.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-password.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-format-pretty.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-proxy.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-psk.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-psk-identity.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-qos-incoming.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-quiet.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-hide-retain.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-retain-handling.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-srv.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-payload-stdin-file.xml" />
-			<varlistentry>
-				<term><option>-t</option></term>
-				<term><option>--topic</option></term>
-				<listitem>
-					<para>
-						The MQTT topic where the request message will be sent.
-					</para>
-				</listitem>
-			</varlistentry>
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-alpn.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-engine.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-engine-kpass-sha1.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-keylog.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-use-os-certs.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-version.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-username.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-unix-socket.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-format-verbose.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-protocol-version.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-timeout.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-will-payload.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-will-qos.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-will-retain.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-will-topic.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-websockets.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-session-expiry-interval.xml" />
-		</variablelist>
+		<refsect2>
+			<title>The options</title>
+			<variablelist>
+				<xi:include href="common/option-bind.xml" />
+				<xi:include href="common/option-clean-session.xml" />
+				<xi:include href="common/option-tls-cafile.xml" />
+				<xi:include href="common/option-tls-capath.xml" />
+				<xi:include href="common/option-tls-cert.xml" />
+				<xi:include href="common/option-tls-ciphers.xml" />
+				<xi:include href="common/option-debug.xml" />
+				<xi:include href="common/option-property.xml" />
+				<varlistentry>
+					<term><option>-e</option></term>
+					<listitem>
+						<para>
+							Response topic. The client will subscribe to this topic to wait for a response.
+						</para>
+					</listitem>
+				</varlistentry>
+				<xi:include href="common/option-payload-file.xml" />
+				<xi:include href="common/option-format.xml" />
+				<xi:include href="common/option-help.xml" />
+				<xi:include href="common/option-host.xml" />
+				<xi:include href="common/option-clientid.xml" />
+				<xi:include href="common/option-clientid-prefix.xml" />
+				<xi:include href="common/option-tls-insecure.xml" />
+				<xi:include href="common/option-keepalive.xml" />
+				<xi:include href="common/option-tls-key.xml" />
+				<xi:include href="common/option-tls-keyform.xml" />
+				<xi:include href="common/option-url.xml" />
+				<varlistentry>
+					<term><option>--latency</option></term>
+					<listitem>
+						&from-version21;
+						<para>
+							If this option is specified, mosquitto_rr will print out
+							the latency between it starting to publish a request and
+							the response arriving. This number includes both the
+							broker and client processing times, as well as any
+							inherent network latency.
+						</para>
+
+						<para>
+							This can be used to measure message delivery latency
+							very simply by specifying an identical request and
+							response topic.
+						</para>
+						<para>
+							The <option>--nodelay</option> option will be automatically
+							used when <option>--latency</option> is in use.
+						</para>
+					</listitem>
+				</varlistentry>
+				<xi:include href="common/option-payload-message.xml" />
+				<xi:include href="common/option-format-no-eol.xml" />
+				<xi:include href="common/option-payload-null.xml" />
+				<xi:include href="common/option-nodelay.xml" />
+				<xi:include href="common/option-no-tls.xml" />
+				<xi:include href="common/option-config-file.xml" />
+				<xi:include href="common/option-port.xml" />
+				<xi:include href="common/option-password.xml" />
+				<xi:include href="common/option-format-pretty.xml" />
+				<xi:include href="common/option-proxy.xml" />
+				<xi:include href="common/option-tls-psk.xml" />
+				<xi:include href="common/option-tls-psk-identity.xml" />
+				<xi:include href="common/option-qos-incoming.xml" />
+				<xi:include href="common/option-quiet.xml" />
+				<xi:include href="common/option-hide-retain.xml" />
+				<xi:include href="common/option-retain-handling.xml" />
+				<xi:include href="common/option-srv.xml" />
+				<xi:include href="common/option-payload-stdin-file.xml" />
+				<varlistentry>
+					<term><option>-t</option></term>
+					<term><option>--topic</option></term>
+					<listitem>
+						<para>
+							The MQTT topic where the request message will be sent.
+						</para>
+					</listitem>
+				</varlistentry>
+				<xi:include href="common/option-tls-alpn.xml" />
+				<xi:include href="common/option-tls-engine.xml" />
+				<xi:include href="common/option-tls-engine-kpass-sha1.xml" />
+				<xi:include href="common/option-tls-keylog.xml" />
+				<xi:include href="common/option-tls-use-os-certs.xml" />
+				<xi:include href="common/option-tls-version.xml" />
+				<xi:include href="common/option-username.xml" />
+				<xi:include href="common/option-unix-socket.xml" />
+				<xi:include href="common/option-format-verbose.xml" />
+				<xi:include href="common/option-protocol-version.xml" />
+				<xi:include href="common/option-timeout.xml" />
+				<xi:include href="common/option-will-payload.xml" />
+				<xi:include href="common/option-will-qos.xml" />
+				<xi:include href="common/option-will-retain.xml" />
+				<xi:include href="common/option-will-topic.xml" />
+				<xi:include href="common/option-websockets.xml" />
+				<xi:include href="common/option-session-expiry-interval.xml" />
+			</variablelist>
+		</refsect2>
 	</refsect1>
 
-	<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/section-output-format.xml" />
-	<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/section-wills.xml" />
+	<xi:include href="common/section-output-format.xml" />
+	<xi:include href="common/section-wills.xml" />
 
 	<refsect1 id='properties'>
 		<title>Properties</title>
@@ -281,15 +259,15 @@
 			follows:
 		</para>
 
-		<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/section-properties-connect.xml" />
-		<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/section-properties-publish.xml" />
-		<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/section-properties-subscribe.xml" />
-		<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/section-properties-unsubscribe.xml" />
-		<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/section-properties-disconnect.xml" />
-		<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/section-properties-will.xml" />
+		<xi:include href="common/section-properties-connect.xml" />
+		<xi:include href="common/section-properties-publish.xml" />
+		<xi:include href="common/section-properties-subscribe.xml" />
+		<xi:include href="common/section-properties-unsubscribe.xml" />
+		<xi:include href="common/section-properties-disconnect.xml" />
+		<xi:include href="common/section-properties-will.xml" />
 	</refsect1>
 
-	<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/section-exit-status.xml" />
+	<xi:include href="common/section-exit-status.xml" />
 
 	<refsect1>
 		<title>Files</title>
@@ -307,7 +285,7 @@
 		</variablelist>
 	</refsect1>
 
-	<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/section-bugs.xml" />
+	<xi:include href="common/section-bugs.xml" />
 
 	<refsect1>
 		<title>See Also</title>

@@ -322,6 +322,7 @@ struct mosquitto {
 	unsigned id_hashv;
 	uint16_t keepalive;
 	uint16_t last_mid;
+	uint16_t password_len;
 	enum mosquitto_client_state state;
 	uint8_t transport;
 	time_t last_msg_in;

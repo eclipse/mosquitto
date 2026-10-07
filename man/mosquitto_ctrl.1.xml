@@ -1,7 +1,10 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <?xml-stylesheet type="text/xsl" href="manpage.xsl"?>
 
-<refentry xml:id="mosquitto_ctrl" xmlns:xlink="http://www.w3.org/1999/xlink">
+<refentry xml:id="mosquitto_ctrl"
+		xmlns:xlink="http://www.w3.org/1999/xlink"
+		xmlns:xi="http://www.w3.org/2001/XInclude">
+
 	<refmeta>
 		<refentrytitle>mosquitto_ctrl</refentrytitle>
 		<manvolnum>1</manvolnum>
@@ -69,8 +72,8 @@
 			<arg><option>-d</option></arg>
 			<arg><option>--quiet</option></arg>
 		</cmdsynopsis>
-		<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/synopsis-tls-certificate-options.xml" />
-		<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/synopsis-tls-psk-options.xml" />
+		<xi:include href="common/synopsis-tls-certificate-options.xml" />
+		<xi:include href="common/synopsis-tls-psk-options.xml" />
 
 		<cmdsynopsis>
 			<command>mosquitto_ctrl</command>
@@ -176,21 +179,21 @@
 			and not processed any further.
 		</para>
 		<variablelist>
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-bind.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-cafile.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-capath.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-cert.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-ciphers.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-debug.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-property.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-help.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-host.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-clientid.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-insecure.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-key.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-keyform.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-url.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-nodelay.xml" />
+			<xi:include href="common/option-bind.xml" />
+			<xi:include href="common/option-tls-cafile.xml" />
+			<xi:include href="common/option-tls-capath.xml" />
+			<xi:include href="common/option-tls-cert.xml" />
+			<xi:include href="common/option-tls-ciphers.xml" />
+			<xi:include href="common/option-debug.xml" />
+			<xi:include href="common/option-property.xml" />
+			<xi:include href="common/option-help.xml" />
+			<xi:include href="common/option-host.xml" />
+			<xi:include href="common/option-clientid.xml" />
+			<xi:include href="common/option-tls-insecure.xml" />
+			<xi:include href="common/option-tls-key.xml" />
+			<xi:include href="common/option-tls-keyform.xml" />
+			<xi:include href="common/option-url.xml" />
+			<xi:include href="common/option-nodelay.xml" />
 			<varlistentry>
 				<term><option>-o</option> <replaceable>config-file</replaceable></term>
 				<listitem>
@@ -208,11 +211,11 @@
 					</para>
 				</listitem>
 			</varlistentry>
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-port.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-password.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-proxy.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-psk.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-psk-identity.xml" />
+			<xi:include href="common/option-port.xml" />
+			<xi:include href="common/option-password.xml" />
+			<xi:include href="common/option-proxy.xml" />
+			<xi:include href="common/option-tls-psk.xml" />
+			<xi:include href="common/option-tls-psk-identity.xml" />
 			<varlistentry>
 				<term><option>-q</option></term>
 				<term><option>--qos</option></term>
@@ -222,13 +225,13 @@
 					</para>
 				</listitem>
 			</varlistentry>
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-quiet.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-alpn.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-engine.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-engine-kpass-sha1.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-use-os-certs.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-tls-version.xml" />
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-username.xml" />
+			<xi:include href="common/option-quiet.xml" />
+			<xi:include href="common/option-tls-alpn.xml" />
+			<xi:include href="common/option-tls-engine.xml" />
+			<xi:include href="common/option-tls-engine-kpass-sha1.xml" />
+			<xi:include href="common/option-tls-use-os-certs.xml" />
+			<xi:include href="common/option-tls-version.xml" />
+			<xi:include href="common/option-username.xml" />
 			<varlistentry>
 				<term><option>--unix</option></term>
 				<listitem>
@@ -247,7 +250,7 @@
 					</para>
 				</listitem>
 			</varlistentry>
-			<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/option-protocol-version.xml" />
+			<xi:include href="common/option-protocol-version.xml" />
 		</variablelist>
 	</refsect1>
 
@@ -260,14 +263,22 @@
 			follows:
 		</para>
 
-		<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/section-properties-connect.xml" />
-		<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/section-properties-publish.xml" />
-		<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/section-properties-disconnect.xml" />
-		<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/section-properties-will.xml" />
+		<xi:include href="common/section-properties-connect.xml" />
+		<xi:include href="common/section-properties-publish.xml" />
+		<xi:include href="common/section-properties-disconnect.xml" />
+		<xi:include href="common/section-properties-will.xml" />
 	</refsect1>
 
-	<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/section-exit-status.xml" />
-	<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="common/section-bugs.xml" />
+	<xi:include href="common/section-exit-status.xml" />
+
+	<refsect1>
+		<title>Environment Variables</title>
+		<variablelist>
+			<xi:include href="common/env-var-mosquitto-unsafe-allow-symlinks.xml" />
+		</variablelist>
+	</refsect1>
+
+	<xi:include href="common/section-bugs.xml" />
 
 	<refsect1>
 		<title>See Also</title>

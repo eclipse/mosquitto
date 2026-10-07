@@ -1,8 +1,74 @@
-2.1.1 - xxxx-xx-xx
+2.1.3 - 2026-02-xx
 ==================
 
 # Broker
+- Fix MOSQ_EVT_DISCONNECT being called before MOSQ_EVT_ACL_CHECK for the will
+  of that client. Closes #3487.
+- Fix password length not being passed to MOSQ_EVT_BASIC_AUTH events.
+  Closes #3490.
+- Fix incorrect maximum-packet-size restriction for outgoing packets.
+  Closes #3503.
+- Fix incorrect maximum-packet-size restriction for incoming packets.
+  Closes #3515.
+- Fix will messages being incorrectly delayed if a client set
+  session-expiry-interval=0 when using will-delay-interval>0. Closes #3505.
+
+# Common lib:
+- Fix potential crash if reading a file in restricted mode and the group id
+  does not have an entry in /etc/groups. Closes #3498.
+- Fix missing SONAME. Closes #3483.
+
+# Lib
+- Fix mosquitto_loop_start() leaving the mosq struct in an invalid state if
+  thread creation fails. Closes #3496.
+
+# Plugins
+- Fix migrate_to_persist_sqlite.py not base64 decoding message payloads when
+  migrating. Closes #3492.
+
+# Build:
+- Fix test when nbuilding with WITH_EDITLINE=no. Closes #3484.
+- Fix tests when building with WITH_WEBSOCKETS=no. Closes #3502.
+- Fix libmosquitto_static cmake build.
+- Enable WITH_UNIX_SOCKETS on Windows.
+
+
+2.1.2 - 2026-02-09
+==================
+
+# Broker
+- Forbid running with `persistence true` and with a persistence plugin at the
+  same time.
+
+# Build
+- Build fixes for OpenBSD. Closes #3474.
+- Add missing libedit to docker builds. Closes #3476.
+- Fix static/shared linking of libwebsockets under cmake.
+
+
+2.1.1 - 2026-02-04
+==================
+
+# Broker
+
 - Fix PUID/PGID checking for docker
+- Add MOSQUITTO_UNSAFE_ALLOW_SYMLINKS environment variable to allow the
+  restrictions on reading files through symlinks to be lifted in safe
+  environments like kubernetes. Closes #3461.
+- Fix inconsistent disconnect log message format, and add address:port.
+- Fix `plugin`/`global_plugin` option not allowing space characters.
+- Fix $SYS load values not being published initially. Closes #3459.
+- Fix max_connections not being honoured on libwebsockets listeners. This does
+  not affect the built-in websockets support. Closes #3455.
+- Don't enforce receive-maximum, just log a warning. This allows badly
+  behaving clients to be fixed. Closes #3471.
+
+# Plugins
+- Fix incorrect linking of libmosquitto_common.so for the acl and password
+  file plugins. Closes #3460.
+
+# Build
+- Fix building with WITH_TLS=no
 
 
 2.1.0 - 2026-01-29
@@ -233,6 +299,11 @@
 - Add `--tls-keylog` option which can be used to generate a file that can be
   used by wireshark to decrypt TLS traffic for debugging purposes.
 - Remove support for TLS v1.1.
+- Add `-o` option for all clients loading options from a specific file.
+- Add `--no-tls` option for all clients which disables all TLS options for
+  that instance. This is useful for negating TLS options provided in a config
+  file, or to disable the automatic use of TLS when using port 8883.
+  Closes #2180.
 
 ## mosquitto_rr
 - Fix `-f` and `-s` options in mosquitto_rr.
@@ -248,6 +319,11 @@
 - Add `--message-rate` option to mosquitto_sub, for printing the count of
   messages received each second.
 - Add `--retain-handling` option.
+- Add `-w`/`--watch` to mosquitto_sub which means messages will be printed on a
+  fixed line number based on the topic and order in which messages were
+  received. Requires ANSI escape code support in the terminal.
+- mosquitto_sub now only needs `-t` or `-U` to run - this means that `-t` is
+  not required in all situations.
 
 # Apps
 
@@ -679,16 +755,6 @@ Broker:
 - Fix `mosquitto_ctrl dynsec setDefaultACLAccess` command not working.
 
 # Clients
-- Add `-o` option for all clients loading options from a specific file.
-- Add `--no-tls` option for all clients which disables all TLS options for
-  that instance. This is useful for negating TLS options provided in a config
-  file, or to disable the automatic use of TLS when using port 8883.
-  Closes #2180.
-- Add `-w`/`--watch` to mosquitto_sub which means messages will be printed on a
-  fixed line number based on the topic and order in which messages were
-  received. Requires ANSI escape code support in the terminal.
-- mosquitto_sub now only needs `-t` or `-U` to run - this means that `-t` is
-  not required in all situations.
 - mosquitto_sub and mosquitto_rr now open stdout in binary mode on Windows
   so binary payloads are not modified when printing.
 - Document TLS certificate behaviour when using `-p 8883`.

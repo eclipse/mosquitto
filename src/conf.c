@@ -917,6 +917,11 @@ static mosquitto_plugin_id_t *config__plugin_load(const char *name, const char *
 		return NULL;
 	}
 
+	if(!path || !strcmp(path, "")){
+		log__printf(NULL, MOSQ_LOG_ERR, "Error: Missing plugin path for plugin name '%s'.", name);
+		return NULL;
+	}
+
 	plugin = mosquitto_calloc(1, sizeof(mosquitto_plugin_id_t));
 	if(!plugin){
 		goto error;
@@ -1187,10 +1192,7 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 						conf__set_cur_security_options(config, &cur_listener, &cur_security_options, token);
 					}
 
-					char *plugin_path = strtok_r(NULL, " ", &saveptr);
-					REQUIRE_NON_EMPTY_OPTION(plugin_path, token);
-
-					cur_plugin = config__plugin_load(NULL, plugin_path);
+					cur_plugin = config__plugin_load(NULL, saveptr);
 					if(cur_plugin == NULL){
 						return MOSQ_ERR_INVAL;
 					}
@@ -1348,7 +1350,7 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Bridge and/or TLS support not available.");
 #endif
 				}else if(!strcmp(token, "bridge_bind_address")){
-#if defined(WITH_BRIDGE) && defined(WITH_TLS)
+#if defined(WITH_BRIDGE)
 					REQUIRE_BRIDGE(token);
 					if(conf__parse_string(&token, "bridge_bind_address", &cur_bridge->bind_address, &saveptr)){
 						return MOSQ_ERR_INVAL;
@@ -2976,6 +2978,7 @@ static int config__check_proxy(struct mosquitto__config *config)
 		struct mosquitto__listener *l = &config->listeners[i];
 
 		if(l->enable_proxy_protocol == 2){
+#ifdef WITH_TLS
 			if(l->use_subject_as_username){
 				log__printf(NULL, MOSQ_LOG_ERR, "Error: use_subject_as_username cannot be used with `enable_proxy_protocol 2`.");
 				return MOSQ_ERR_INVAL;
@@ -2985,6 +2988,7 @@ static int config__check_proxy(struct mosquitto__config *config)
 				log__printf(NULL, MOSQ_LOG_ERR, "Error: certfile and keyfile cannot be used with `enable_proxy_protocol 2`.");
 				return MOSQ_ERR_INVAL;
 			}
+#endif
 		}
 	}
 

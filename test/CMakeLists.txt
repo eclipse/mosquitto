@@ -1,8 +1,16 @@
 add_subdirectory(mock)
 
-add_subdirectory(apps)
-add_subdirectory(broker)
-add_subdirectory(client)
+if(WITH_APPS)
+	add_subdirectory(apps)
+endif()
+
+if(WITH_BROKER)
+	add_subdirectory(broker)
+endif()
+
+if(WITH_CLIENTS)
+	add_subdirectory(client)
+endif()
 add_subdirectory(lib)
 add_subdirectory(unit)
 

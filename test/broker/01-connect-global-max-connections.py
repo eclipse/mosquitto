@@ -4,31 +4,30 @@
 
 from mosq_test_helper import *
 
-def write_config(filename, port):
-    with open(filename, 'w') as f:
-        f.write("listener %d\n" % (port))
-        f.write("allow_anonymous true\n")
-        f.write("global_max_connections 10\n")
+from broker_config import BrokerConfig, ListenerConfig
+from mosquitto_broker import MosquittoBroker
+
 
 def do_test():
-    rc = 1
-
     connect_packets_ok = []
     connack_packets_ok = []
     for i in range(0, 10):
-        connect_packets_ok.append(mosq_test.gen_connect("max-conn-%d"%i, proto_ver=5))
-        connack_packets_ok.append(mosq_test.gen_connack(rc=0, proto_ver=5))
+        connect_packets_ok.append(mqtt_packets.gen_connect("max-conn-%d"%i, proto_ver=5))
+        connack_packets_ok.append(mqtt_packets.gen_connack(rc=0, proto_ver=5))
 
-    connect_packet_bad = mosq_test.gen_connect("max-conn-bad", proto_ver=5)
+    connect_packet_bad = mqtt_packets.gen_connect("max-conn-bad", proto_ver=5)
     connack_packet_bad = b""
 
-    port = mosq_test.get_port()
-    conf_file = os.path.basename(__file__).replace('.py', '.conf')
-    write_config(conf_file, port)
-    broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port)
-
     socks = []
-    try:
+
+    port = mosq_test.get_port()
+    broker_config = BrokerConfig(
+        listeners = [ ListenerConfig(port=port) ],
+        allow_anonymous=True,
+        global_max_connections=10,
+    )
+    broker = MosquittoBroker(config=broker_config)
+    with broker:
         # Open all allowed connections, a limit of 10
         for i in range(0, 10):
             socks.append(mosq_test.do_client_connect(connect_packets_ok[i], connack_packets_ok[i], port=port))
@@ -38,7 +37,7 @@ def do_test():
             mosq_test.do_client_connect(connect_packet_bad, connack_packet_bad, port=port)
             print("did not throw when trying to open 11th connection (first time)")
             return rc
-        except (ConnectionResetError, BrokenPipeError, OSError):
+        except (ConnectionAbortedError, ConnectionResetError, BrokenPipeError, OSError):
             # Expected behaviour
             pass
         finally:
@@ -61,7 +60,7 @@ def do_test():
             mosq_test.do_client_connect(connect_packet_bad, connack_packet_bad, port=port)
             print("did not throw when trying to open 11th connection (second time)")
             return rc
-        except (ConnectionResetError, BrokenPipeError, OSError):
+        except (ConnectionAbortedError, ConnectionResetError, BrokenPipeError, OSError):
             # Expected behaviour
             pass
         finally:
@@ -70,18 +69,4 @@ def do_test():
                 sock.close()
             socks.clear()
 
-        rc = 0
-    except Exception as err:
-        raise err
-    finally:
-        os.remove(conf_file)
-        broker.terminate()
-        if mosq_test.wait_for_subprocess(broker):
-            print("broker not terminated")
-            if rc == 0: rc=1
-        (_, stde) = broker.communicate()
-        if rc:
-            print(stde.decode('utf-8'))
-    return rc
-
-sys.exit(do_test())
+do_test()

@@ -5,6 +5,9 @@ on:
   schedule:
     - cron: "7 3 * * 0"
 
+permissions:
+  contents: read
+
 jobs:
   coverity:
     runs-on: ubuntu-latest
@@ -17,7 +20,10 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y \
+            cmake \
             docbook-xsl \
+            g++ \
+            gcc \
             google-mock \
             googletest \
             lcov \
@@ -26,16 +32,27 @@ jobs:
             libcjson1 \
             libcunit1-dev \
             libedit-dev \
+            libeditreadline-dev \
             libgmock-dev \
+            libgtest-dev \
             libmicrohttpd-dev \
+            libsqlite3-dev \
             libssl-dev \
             libwrap0-dev \
             microsocks \
+            pkgconf \
             python3-all \
             python3-paho-mqtt \
             python3-psutil \
             uthash-dev \
             xsltproc
+
+    - run: cmake -E make_directory build
+    - run: |
+        cmake \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -S . \
+          -B build
 
     - uses: vapier/coverity-scan-action@v1
       with:
@@ -43,4 +60,4 @@ jobs:
         project: "eclipse/mosquitto"
         token: ${{ secrets.COVERITY_SCAN_TOKEN }}
         email: ${{ secrets.COVERITY_SCAN_EMAIL }}
-        command: "make binary-all"
+        command: "make -C ${{ github.workspace }}/build -j$(nproc)"

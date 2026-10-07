@@ -104,9 +104,10 @@ static int pw__create_argon2id(struct mosquitto_pw *pw, const char *password)
 #ifdef WITH_ARGON2
 	pw->hashtype = MOSQ_PW_ARGON2ID;
 	pw->params.argon2id.salt_len = HASH_LEN;
-	int rc = RAND_bytes(pw->params.argon2id.salt, (int)pw->params.argon2id.salt_len);
-	if(!rc){
-		return MOSQ_ERR_UNKNOWN;
+
+	int rc = mosquitto_getrandom(pw->params.argon2id.salt, (int)pw->params.argon2id.salt_len);
+	if(rc){
+		return rc;
 	}
 
 	size_t encoded_len = argon2_encodedlen(MOSQ_ARGON2_T, MOSQ_ARGON2_M, MOSQ_ARGON2_P,
@@ -220,6 +221,8 @@ static int pw__create_sha512_pbkdf2(struct mosquitto_pw *pw, const char *passwor
 	pw->valid = (rc == MOSQ_ERR_SUCCESS);
 	return rc;
 #else
+	UNUSED(pw);
+	UNUSED(password);
 	return MOSQ_ERR_NOT_SUPPORTED;
 #endif
 }
@@ -245,6 +248,8 @@ static int pw__verify_sha512_pbkdf2(struct mosquitto_pw *pw, const char *passwor
 		return MOSQ_ERR_AUTH;
 	}
 #else
+	UNUSED(pw);
+	UNUSED(password);
 	return MOSQ_ERR_NOT_SUPPORTED;
 #endif
 }
@@ -281,6 +286,7 @@ static int pw__encode_sha512_pbkdf2(struct mosquitto_pw *pw)
 
 	return MOSQ_ERR_SUCCESS;
 #else
+	UNUSED(pw);
 	return MOSQ_ERR_NOT_SUPPORTED;
 #endif
 }
@@ -347,6 +353,8 @@ static int pw__decode_sha512_pbkdf2(struct mosquitto_pw *pw, const char *salt_pa
 	pw->valid = true;
 	return MOSQ_ERR_SUCCESS;
 #else
+	UNUSED(pw);
+	UNUSED(salt_password);
 	return MOSQ_ERR_NOT_SUPPORTED;
 #endif
 }
@@ -407,6 +415,8 @@ static int pw__create_sha512(struct mosquitto_pw *pw, const char *password)
 	pw->valid = (rc == MOSQ_ERR_SUCCESS);
 	return rc;
 #else
+	UNUSED(pw);
+	UNUSED(password);
 	return MOSQ_ERR_NOT_SUPPORTED;
 #endif
 }
@@ -429,6 +439,8 @@ static int pw__verify_sha512(struct mosquitto_pw *pw, const char *password)
 		return MOSQ_ERR_AUTH;
 	}
 #else
+	UNUSED(pw);
+	UNUSED(password);
 	return MOSQ_ERR_NOT_SUPPORTED;
 #endif
 }
@@ -464,6 +476,7 @@ static int pw__encode_sha512(struct mosquitto_pw *pw)
 
 	return MOSQ_ERR_SUCCESS;
 #else
+	UNUSED(pw);
 	return MOSQ_ERR_NOT_SUPPORTED;
 #endif
 }
@@ -518,6 +531,8 @@ static int pw__decode_sha512(struct mosquitto_pw *pw, const char *salt_password)
 	pw->valid = true;
 	return MOSQ_ERR_SUCCESS;
 #else
+	UNUSED(pw);
+	UNUSED(salt_password);
 	return MOSQ_ERR_NOT_SUPPORTED;
 #endif
 }

@@ -1,31 +1,37 @@
 #!/usr/bin/env python3
 
 from mosq_test_helper import *
+
+from broker_config import BrokerConfig, ListenerConfig
+from mosquitto_broker import MosquittoBroker
 import http.client
 import json
 
-def write_config(filename, mqtt_port, http_port):
-    with open(filename, 'w') as f:
-        f.write("allow_anonymous true\n")
-        f.write(f"listener {mqtt_port}\n")
-        f.write(f"listener {http_port} 127.0.0.1\n")
-        f.write("protocol http_api\n")
-        f.write(f"http_dir ./\n")
+mosq_test.require_features(["WITH_HTTP_API"])
 
-def write_index():
+def write_index(port):
     with open("index.html", 'w') as f:
         f.write("<html></html>")
 
 mqtt_port, http_port = mosq_test.get_port(2)
-conf_file = os.path.basename(__file__).replace('.py', '.conf')
-write_config(conf_file, mqtt_port, http_port)
-write_index()
 
-broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=mqtt_port)
+broker_config = BrokerConfig(
+    listeners=[
+        ListenerConfig(port=mqtt_port),
+        ListenerConfig(
+            port=http_port,
+            address="127.0.0.1",
+            protocol="http_api",
+            http_dir=Path("."),
+        )
+    ],
+    allow_anonymous=True
+)
+write_index(mqtt_port)
 
-rc = 1
-
-try:
+broker = MosquittoBroker(config=broker_config)
+broker.add_extra_file("index.html")
+with broker:
     http_conn = http.client.HTTPConnection(f"localhost:{http_port}")
 
     # Bad request
@@ -66,24 +72,3 @@ try:
     payload = response.read().decode('utf-8')
     if payload != "<html></html>":
         raise ValueError(f"Error: / {payload}")
-
-
-    rc = 0
-except mosq_test.TestError:
-    pass
-except Exception as e:
-    print(e)
-finally:
-    os.remove(conf_file)
-    os.remove("index.html")
-    broker.terminate()
-    if mosq_test.wait_for_subprocess(broker):
-        print("broker not terminated")
-        if rc == 0: rc=1
-    (stdo, stde) = broker.communicate()
-    if rc != 0:
-        print(stde.decode('utf-8'))
-        rc = 1
-
-
-exit(rc)

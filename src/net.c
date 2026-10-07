@@ -50,7 +50,11 @@ Contributors:
 #endif
 
 #ifdef WITH_UNIX_SOCKETS
-#  include "sys/un.h"
+#  ifdef WIN32
+#    include <afunix.h>
+#  else
+#    include <sys/un.h>
+#  endif
 #endif
 
 #ifdef __QNX__
@@ -175,11 +179,7 @@ struct mosquitto *net__socket_accept(struct mosquitto__listener_sock *listensock
 
 	if(db.config->set_tcp_nodelay && listensock->listener->port){
 		int flag = 1;
-#ifdef WIN32
-		if(setsockopt(new_sock, IPPROTO_TCP, TCP_NODELAY, (char *)&flag, sizeof(int)) != 0){
-#else
-		if(setsockopt(new_sock, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(int)) != 0){
-#endif
+		if(setsockopt(new_sock, IPPROTO_TCP, TCP_NODELAY, (const void *)&flag, sizeof(int)) != 0){
 			log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Unable to set TCP_NODELAY.");
 		}
 	}
@@ -861,11 +861,11 @@ static int net__socket_listen_tcp(struct mosquitto__listener *listener)
 #ifndef WIN32
 		ss_opt = 1;
 		/* Unimportant if this fails */
-		(void)setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &ss_opt, sizeof(ss_opt));
+		(void)setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const void *)&ss_opt, sizeof(ss_opt));
 #endif
 #ifdef IPV6_V6ONLY
 		ss_opt = 1;
-		(void)setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, &ss_opt, sizeof(ss_opt));
+		(void)setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (const void *)&ss_opt, sizeof(ss_opt));
 #endif
 
 		if(net__socket_nonblock(&sock)){
@@ -934,9 +934,11 @@ static int net__socket_listen_tcp(struct mosquitto__listener *listener)
 static int net__socket_listen_unix(struct mosquitto__listener *listener)
 {
 	struct sockaddr_un addr;
-	int sock;
+	mosq_sock_t sock = INVALID_SOCKET;
 	int rc;
+#ifndef WIN32
 	mode_t old_mask;
+#endif
 
 	if(listener->unix_socket_path == NULL){
 		return MOSQ_ERR_INVAL;
@@ -946,7 +948,11 @@ static int net__socket_listen_unix(struct mosquitto__listener *listener)
 		return MOSQ_ERR_INVAL;
 	}
 
+#ifdef WIN32
+	DeleteFile(listener->unix_socket_path);
+#else
 	unlink(listener->unix_socket_path);
+#endif
 	log__printf(NULL, MOSQ_LOG_INFO, "Opening unix listen socket on path %s.", listener->unix_socket_path);
 	memset(&addr, 0, sizeof(struct sockaddr_un));
 	addr.sun_family = AF_UNIX;
@@ -967,9 +973,13 @@ static int net__socket_listen_unix(struct mosquitto__listener *listener)
 	listener->socks[listener->sock_count-1] = sock;
 
 
+#ifndef WIN32
 	old_mask = umask(0007);
+#endif
 	rc = bind(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr_un));
+#ifndef WIN32
 	umask(old_mask);
+#endif
 
 	if(rc == -1){
 		net__print_error(MOSQ_LOG_ERR, "Error binding unix socket: %s");

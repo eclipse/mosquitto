@@ -1,60 +1,57 @@
 #!/usr/bin/env python3
 
 from mosq_test_helper import *
-import signal
 
-def write_config_default(filename, port):
-    with open(filename, 'w') as f:
-        f.write("listener %d\n" % (port))
-        f.write(f"acl_file {port}.acl\n")
-        f.write("allow_anonymous true\n")
+from broker_config import BrokerConfig, ListenerConfig, PluginConfig
+from mosquitto_broker import MosquittoBroker
+
+mosq_test.require_features(["WITH_PLUGINS", "WITH_PLUGIN_ACL_FILE"])
+
+def broker_config_default(port):
+    return BrokerConfig(
+        listeners=[ListenerConfig(port=port)],
+        acl_file=f"{port}.acl",
+        allow_anonymous=True
+    )
+
+def broker_config_plugin(port):
+    return BrokerConfig(
+        listeners=[ListenerConfig(port=port)],
+        plugins=[PluginConfig(
+            path=mosq_paths.plugin_acl_file,
+            options={
+                "plugin_opt_acl_file": f"{port}.acl"
+            }
+        )],
+        acl_file=f"{port}.acl",
+        allow_anonymous=True,
+    )
 
 
-def write_config_plugin(filename, port):
-    with open(filename, 'w') as f:
-        f.write("listener %d\n" % (port))
-        f.write(f"plugin {mosq_test.get_build_root()}/plugins/acl-file/mosquitto_acl_file.so\n")
-        f.write(f"plugin_opt_acl_file {port}.acl\n")
-        f.write("allow_anonymous true\n")
+def do_test(broker_config_func):
+    connect_packet = mqtt_packets.gen_connect("acl-change-test")
+    connack_packet = mqtt_packets.gen_connack(rc=0)
 
-
-def do_test(write_config_func):
     port = mosq_test.get_port()
-    conf_file = os.path.basename(__file__).replace('.py', '.conf')
-    write_config_func(conf_file, port)
-
-    rc = 1
-    connect_packet = mosq_test.gen_connect("acl-change-test")
-    connack_packet = mosq_test.gen_connack(rc=0)
-
     with open(f"{port}.acl", "wt") as f:
         f.write("topic readwrite a/#")
 
-    broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port)
-
-    try:
+    broker_config = broker_config_func(port)
+    broker = MosquittoBroker(config=broker_config, expect_fail=True)
+    broker.add_extra_file(f"{port}.acl")
+    with broker:
         sock = mosq_test.do_client_connect(connect_packet, connack_packet, port=port)
         sock.close()
 
         with open(f"{port}.acl", "wt") as f:
             f.write("topic readwrite a#")
 
-        broker.send_signal(signal.SIGHUP)
+        broker.reload()
         # Broker should terminate
-        if mosq_test.wait_for_subprocess(broker) == 0 and broker.returncode == 3:
-            rc = 0
-    except mosq_test.TestError:
-        pass
-    except Exception as err:
-        print(err)
-    finally:
-        os.remove(conf_file)
-        os.remove(f"{port}.acl")
-        broker.terminate()
-        (stdo, stde) = broker.communicate()
-        if rc:
-            print(stde.decode('utf-8'))
-            exit(rc)
+        if mosq_test.wait_for_subprocess(broker.process) == 0 and broker.process.returncode == 3:
+            pass
+        else:
+            raise RuntimeError("broker not terminated")
 
-do_test(write_config_default)
-do_test(write_config_plugin)
+do_test(broker_config_default)
+do_test(broker_config_plugin)

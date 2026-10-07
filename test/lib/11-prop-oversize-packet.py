@@ -7,16 +7,16 @@
 from mosq_test_helper import *
 
 def do_test(conn, data):
-    connect_packet = mosq_test.gen_connect("publish-qos0-test", proto_ver=5)
+    connect_packet = mqtt_packets.gen_connect("publish-qos0-test", proto_ver=5)
     props = mqtt5_props.gen_uint16_prop(mqtt5_props.TOPIC_ALIAS_MAXIMUM, 10)
     props += mqtt5_props.gen_uint32_prop(mqtt5_props.MAXIMUM_PACKET_SIZE, 30)
     props += mqtt5_props.gen_uint16_prop(mqtt5_props.RECEIVE_MAXIMUM, 20)
-    connack_packet = mosq_test.gen_connack(rc=0, proto_ver=5, properties=props, property_helper=False)
+    connack_packet = mqtt_packets.gen_connack(rc=0, proto_ver=5, properties=props, property_helper=False)
 
-    bad_publish_packet = mosq_test.gen_publish("pub/test", qos=0, payload="0123456789012345678", proto_ver=5)
-    publish_packet = mosq_test.gen_publish("pub/test", qos=0, payload="012345678901234567", proto_ver=5)
+    bad_publish_packet = mqtt_packets.gen_publish("pub/test", qos=0, payload="123456789012345678", proto_ver=5)
+    publish_packet = mqtt_packets.gen_publish("pub/test", qos=0, payload="12345678901234567", proto_ver=5)
 
-    disconnect_packet = mosq_test.gen_disconnect()
+    disconnect_packet = mqtt_packets.gen_disconnect()
 
     mosq_test.do_receive_send(conn, connect_packet, connack_packet, "connect")
 
@@ -26,5 +26,6 @@ def do_test(conn, data):
     conn.close()
 
 
-mosq_test.client_test("c/11-prop-oversize-packet.test", [], do_test, None)
-mosq_test.client_test("cpp/11-prop-oversize-packet.test", [], do_test, None)
+mosq_test.client_test(Path("c", mosq_test.get_build_type(), "11-prop-oversize-packet.exe"), [], do_test, None)
+if mosq_test.check_features(["WITH_LIB_CPP"]):
+    mosq_test.client_test(Path("cpp", mosq_test.get_build_type(), "11-prop-oversize-packet.exe"), [], do_test, None)

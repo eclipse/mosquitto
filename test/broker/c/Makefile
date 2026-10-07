@@ -68,7 +68,7 @@ SRC = \
 	08-tls-psk-pub.c \
 	08-tls-psk-bridge.c
 
-TESTS = ${SRC:.c=.test}
+TESTS = ${SRC:.c=.exe}
 
 
 all : ${PLUGINS} ${TESTS}
@@ -77,7 +77,7 @@ ${PLUGINS} : %.so: %.c
 	$(CC) $(LOCAL_CPPFLAGS) ${LOCAL_CFLAGS} ${LOCAL_LDFLAGS} $< -o $@
 
 
-${TESTS} : %.test: %.c
+${TESTS} : %.exe: %.c
 	$(CC) $(LOCAL_CPPFLAGS) ${LOCAL_CFLAGS} $< -o $@ ${LIBMOSQ}
 
 

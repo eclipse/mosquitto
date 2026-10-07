@@ -1,0 +1,14 @@
+<varlistentry>
+	<term><envar>MOSQUITTO_UNSAFE_ALLOW_SYMLINKS</envar></term>
+	<listitem>
+		<para>
+			By default, sensitive file with a path including a
+			symbolic link will be refused to be loaded. Set this
+			environment variable to any value to allow load files
+			through symbolic links. Note that making use of this
+			variable could expose you to symlink attacks and so it
+			should only be used in cases where you are absolutely
+			sure this is not a risk.
+		</para>
+	</listitem>
+</varlistentry>

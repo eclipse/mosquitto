@@ -3,6 +3,8 @@
  * FIXME - these need to be aggressive about finding failures, at the moment
  * they are just confirming that good behaviour works. */
 
+#include <stdio.h>
+
 #include <CUnit/CUnit.h>
 #include <CUnit/Basic.h>
 

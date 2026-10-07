@@ -72,19 +72,19 @@
 			]},
 			{ "name": "63 unsolicited", "msgs": [
 				{"type":"send", "payload":"63 r3 m1 00"},
-				{"type":"recv", "payload":"E0 r1 81"}
+				{"type":"recv", "payload":"E0 r1 82"}
 			]},
 			{ "name": "64 unsolicited", "msgs": [
 				{"type":"send", "payload":"64 r3 m1 00"},
-				{"type":"recv", "payload":"E0 r1 81"}
+				{"type":"recv", "payload":"E0 r1 82"}
 			]},
 			{ "name": "66 unsolicited", "msgs": [
 				{"type":"send", "payload":"66 r3 m1 00"},
-				{"type":"recv", "payload":"E0 r1 81"}
+				{"type":"recv", "payload":"E0 r1 82"}
 			]},
 			{ "name": "6A unsolicited", "msgs": [
 				{"type":"send", "payload":"6A r3 m1 00"},
-				{"type":"recv", "payload":"E0 r1 81"}
+				{"type":"recv", "payload":"E0 r1 82"}
 			]}
 		]
 	},

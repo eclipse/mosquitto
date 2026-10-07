@@ -21,7 +21,10 @@ Contributors:
 #ifdef __APPLE__
 #include <mach/mach.h>
 #include <mach/mach_time.h>
-#include <sys/time.h>
+#endif
+
+#if defined(__APPLE__) || defined(__OpenBSD__)
+#  include <sys/time.h>
 #endif
 
 #ifdef WIN32

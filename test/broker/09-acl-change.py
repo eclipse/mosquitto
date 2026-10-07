@@ -3,7 +3,6 @@
 # Check whether messages deliver or not after some access is revoked.
 
 from mosq_test_helper import *
-import signal
 
 def write_config(filename, port, per_listener):
     with open(filename, 'w') as f:
@@ -21,46 +20,46 @@ def write_acl(filename, en):
 
 username = "username"
 
-connect1_packet = mosq_test.gen_connect("acl-check", username=username, clean_session=False)
-connack1a_packet = mosq_test.gen_connack(rc=0)
-connack1b_packet = mosq_test.gen_connack(rc=0, flags=1)
+connect1_packet = mqtt_packets.gen_connect("acl-check", username=username, clean_session=False)
+connack1a_packet = mqtt_packets.gen_connack(rc=0)
+connack1b_packet = mqtt_packets.gen_connack(rc=0, flags=1)
 
 mid = 1
-subscribe1_packet = mosq_test.gen_subscribe(mid=mid, topic="topic/one", qos=1)
-suback1_packet = mosq_test.gen_suback(mid=mid, qos=1)
+subscribe1_packet = mqtt_packets.gen_subscribe(mid=mid, topic="topic/one", qos=1)
+suback1_packet = mqtt_packets.gen_suback(mid=mid, qos=1)
 
 mid = 2
-subscribe2_packet = mosq_test.gen_subscribe(mid=mid, topic="topic/two", qos=1)
-suback2_packet = mosq_test.gen_suback(mid=mid, qos=1)
+subscribe2_packet = mqtt_packets.gen_subscribe(mid=mid, topic="topic/two", qos=1)
+suback2_packet = mqtt_packets.gen_suback(mid=mid, qos=1)
 
-disconnect_packet = mosq_test.gen_disconnect()
+disconnect_packet = mqtt_packets.gen_disconnect()
 
-connect2_packet = mosq_test.gen_connect("helper", username=username)
-connack2_packet = mosq_test.gen_connack(rc=0)
+connect2_packet = mqtt_packets.gen_connect("helper", username=username)
+connack2_packet = mqtt_packets.gen_connack(rc=0)
 
 mid = 1
-publish1s_packet = mosq_test.gen_publish(topic="topic/one", mid=mid, qos=1, payload="message1")
-puback1s_packet = mosq_test.gen_puback(mid)
+publish1s_packet = mqtt_packets.gen_publish(topic="topic/one", mid=mid, qos=1, payload="message1")
+puback1s_packet = mqtt_packets.gen_puback(mid)
 
 mid = 2
-publish2s_packet = mosq_test.gen_publish(topic="topic/two", mid=mid, qos=1, payload="message2")
-puback2s_packet = mosq_test.gen_puback(mid)
+publish2s_packet = mqtt_packets.gen_publish(topic="topic/two", mid=mid, qos=1, payload="message2")
+puback2s_packet = mqtt_packets.gen_puback(mid)
 
 mid = 1
-publish1r_packet = mosq_test.gen_publish(topic="topic/one", mid=mid, qos=1, payload="message1")
-puback1r_packet = mosq_test.gen_puback(mid)
+publish1r_packet = mqtt_packets.gen_publish(topic="topic/one", mid=mid, qos=1, payload="message1")
+puback1r_packet = mqtt_packets.gen_puback(mid)
 
 mid = 2
-publish3s_packet = mosq_test.gen_publish(topic="topic/one", mid=mid, qos=1, payload="message3")
-puback3s_packet = mosq_test.gen_puback(mid)
+publish3s_packet = mqtt_packets.gen_publish(topic="topic/one", mid=mid, qos=1, payload="message3")
+puback3s_packet = mqtt_packets.gen_puback(mid)
 
 mid = 3
-publish3r_packet = mosq_test.gen_publish(topic="topic/one", mid=mid, qos=1, payload="message3")
-puback3r_packet = mosq_test.gen_puback(mid)
+publish3r_packet = mqtt_packets.gen_publish(topic="topic/one", mid=mid, qos=1, payload="message3")
+puback3r_packet = mqtt_packets.gen_puback(mid)
 
 mid = 3
-publish4s_packet = mosq_test.gen_publish(topic="topic/two", mid=mid, qos=1, payload="message4")
-puback4s_packet = mosq_test.gen_puback(mid)
+publish4s_packet = mqtt_packets.gen_publish(topic="topic/two", mid=mid, qos=1, payload="message4")
+puback4s_packet = mqtt_packets.gen_puback(mid)
 
 rc = 1
 
@@ -90,7 +89,7 @@ try:
 
     # Reload ACLs with topic/two now disabled
     write_acl(acl_file, False)
-    broker.send_signal(signal.SIGHUP)
+    mosq_test.reload_broker(broker)
 
     sock = mosq_test.do_client_connect(connect1_packet, connack1b_packet, port=port)
     sock.settimeout(10)
@@ -113,13 +112,12 @@ except mosq_test.TestError:
 finally:
     os.remove(conf_file)
     os.remove(acl_file)
-    broker.terminate()
+    mosq_test.terminate_broker(broker)
     if mosq_test.wait_for_subprocess(broker):
         print("broker not terminated")
         if rc == 0: rc=1
-    (stdo, stde) = broker.communicate()
     if rc:
-        print(stde.decode('utf-8'))
+        print(mosq_test.broker_log(broker))
         exit(rc)
 
 port = mosq_test.get_port()

@@ -3,77 +3,87 @@
 # Test parsing of command line args and errors. Does not test arg functionality.
 
 from mosq_test_helper import *
+import platform
+
+mosq_test.require_features(["WITH_TLS"])
 
 def do_test(args, rc_expected, response=None):
-    proc = subprocess.run([mosq_test.get_build_root()+"/apps/mosquitto_ctrl/mosquitto_ctrl"]
+    proc = subprocess.run([mosq_paths.mosquitto_ctrl]
                     + args,
                     env=env, capture_output=True, encoding='utf-8', timeout=2)
 
     if response is not None:
-        if proc.stderr != response:
+        if response not in proc.stderr:
             print(len(proc.stderr))
             print(len(response))
-            raise ValueError(proc.stderr)
+            raise ValueError(f"'{response}' not in '{proc.stderr}'")
 
     if proc.returncode != rc_expected:
         raise ValueError(f"return code {proc.returncode} != expected {rc_expected} while testing args: {args}")
 
 env = mosq_test.env_add_ld_library_path()
 
-do_test(["-A"], 1, response="Error: -A argument given but no address specified.\n\n")
-do_test(["--cafile"], 1, response="Error: --cafile argument given but no file specified.\n\n")
-do_test(["--cafile", "missing", "broker", "listListeners"], 1, "Error: Problem setting TLS options: File not found.\n")
-do_test(["--capath"], 1, response="Error: --capath argument given but no directory specified.\n\n")
-do_test(["--cert"], 1, response="Error: --cert argument given but no file specified.\n\n")
-do_test(["--cert", ssl_dir / "client.crt"], 1, response="Error: Both certfile and keyfile must be provided if one of them is set.\n")
+do_test(["-A"], 1, response="Error: -A argument given but no address specified.")
+do_test(["--cafile"], 1, response="Error: --cafile argument given but no file specified.")
+do_test(["--cafile", "missing", "broker", "listListeners"], 1, "Error: Problem setting TLS options: File not found.")
+do_test(["--capath"], 1, response="Error: --capath argument given but no directory specified.")
+do_test(["--cert"], 1, response="Error: --cert argument given but no file specified.")
+do_test(["--cert", ssl_dir / "client.crt"], 1, response="Error: Both certfile and keyfile must be provided if one of them is set.")
 do_test(["--help"], 1) # Gives generic help
-do_test(["--key"], 1, response="Error: --key argument given but no file specified.\n\n")
-do_test(["--key", ssl_dir / "client.key"], 1, response="Error: Both certfile and keyfile must be provided if one of them is set.\n")
-do_test(["--ciphers"], 1, response="Error: --ciphers argument given but no ciphers specified.\n\n")
-do_test(["-f"], 1, response="Error: -f argument given but no data file specified.\n\n")
-do_test(["--host"], 1, response="Error: -h argument given but no host specified.\n\n")
-do_test(["-i"], 1, response="Error: -i argument given but no id specified.\n\n")
-do_test(["--keyform"], 1, response="Error: --keyform argument given but no keyform specified.\n\n")
-do_test(["--keyform", "key"], 1, response="Error: If keyform is set, keyfile must be also specified.\n")
+do_test(["--key"], 1, response="Error: --key argument given but no file specified.")
+do_test(["--key", ssl_dir / "client.key"], 1, response="Error: Both certfile and keyfile must be provided if one of them is set.")
+do_test(["--ciphers"], 1, response="Error: --ciphers argument given but no ciphers specified.")
+do_test(["-f"], 1, response="Error: -f argument given but no data file specified.")
+do_test(["--host"], 1, response="Error: -h argument given but no host specified.")
+do_test(["-i"], 1, response="Error: -i argument given but no id specified.")
+do_test(["--keyform"], 1, response="Error: --keyform argument given but no keyform specified.")
+do_test(["--keyform", "key"], 1, response="Error: If keyform is set, keyfile must be also specified.")
 do_test(["--keyform", "key", "--cafile", "file", "--cert", "file", "--key", "file", "broker", "listListeners"], 1,
-        response="Error: Problem setting key form, it must be one of 'pem' or 'engine'.\n")
-do_test(['-L'], 1, response="Error: -L argument given but no URL specified.\n\n")
-do_test(['-L', 'invalid://'], 1, response="Error: Unsupported URL scheme.\n\n")
-do_test(['-L', 'mqtt://localhost'], 1, response="Error: Invalid URL for -L argument specified - topic missing.\n")
-do_test(['-L', 'mqtts://localhost'], 1, response="Error: Invalid URL for -L argument specified - topic missing.\n")
-do_test(['-L', 'mqtts://:@localhost/topic'], 1, response="Error: Empty username in URL.\n")
-do_test(['-L', 'mqtts://localhost:/topic'], 1, response="Error: Empty port in URL.\n")
-do_test(["-o"], 1, response="Error: -o argument given but no options file specified.\n\n")
-do_test(["-p"], 1, response="Error: -p argument given but no port specified.\n\n")
-do_test(["-p", "-1"], 1, response="Error: Invalid port given: -1\n")
-do_test(["-p", "65536"], 1, response="Error: Invalid port given: 65536\n")
-do_test(["-P"], 1, response="Error: -P argument given but no password specified.\n\n")
-do_test(["--proxy"], 1, response="Error: --proxy argument given but no proxy url specified.\n\n")
-do_test(["--proxy", "mqtt://localhost"], 1, response="Error: Unsupported proxy protocol: mqtt://localhost\n")
-do_test(["--proxy", "socks5h://"], 1, response="Error: Invalid proxy.\n")
-do_test(["--proxy", "socks5h://localhost:0"], 1, response="Error: Invalid proxy port 0\n")
-do_test(["--proxy", "socks5h://localhost:65536"], 1, response="Error: Invalid proxy port 65536\n")
-do_test(["--proxy", "socks5h://username%@localhost"], 1, response="Error: Invalid URL encoding in username.\n")
-do_test(["--proxy", "socks5h://username%41@localhost"], 1, response="Error: Invalid URL encoding in username.\n")
-do_test(["--proxy", "socks5h://username:password%@localhost"], 1, response="Error: Invalid URL encoding in password.\n")
-do_test(["--proxy", "socks5h://username:password%41@localhost"], 1, response="Error: Invalid URL encoding in password.\n")
-do_test(["--psk"], 1, response="Error: --psk argument given but no key specified.\n\n")
-do_test(["--psk", "missing.psk"], 1, response="Error: --psk-identity required if --psk used.\n")
-do_test(["--psk-identity"], 1, response="Error: --psk-identity argument given but no identity specified.\n\n")
-do_test(["--cafile", ssl_dir / "all-ca.crt", "--psk", "missing.psk", "--psk-identity", "identity"], 1, response="Error: Only one of --psk or --cafile/--capath may be used at once.\n")
-do_test(["-q"], 1, response="Error: -q argument given but no QoS specified.\n\n")
-do_test(["-q", "-1"], 1, response="Error: Invalid QoS given: -1\n")
-do_test(["-q", "3"], 1, response="Error: Invalid QoS given: 3\n")
-do_test(["--tls-alpn"], 1, response="Error: --tls-alpn argument given but no protocol specified.\n\n")
-do_test(["--tls-engine"], 1, response="Error: --tls-engine argument given but no engine_id specified.\n\n")
-do_test(["--tls-engine-kpass-sha1"], 1, response="Error: --tls-engine-kpass-sha1 argument given but no kpass sha1 specified.\n\n")
-do_test(["--tls-version"], 1, response="Error: --tls-version argument given but no version specified.\n\n")
-do_test(["--username"], 1, response="Error: -u argument given but no username specified.\n\n")
-do_test(["--unix"], 1, response="Error: --unix argument given but no socket path specified.\n\n")
-do_test(["-V"], 1, response="Error: --protocol-version argument given but no version specified.\n\n")
-do_test(["-V", "2"], 1, response="Error: Invalid protocol version argument given.\n\n")
-do_test(["-V", "6"], 1, response="Error: Invalid protocol version argument given.\n\n")
-do_test(["--unknown"], 1, response="Error: Unknown option '--unknown'.\n")
+        response="Error: Problem setting key form, it must be one of 'pem' or 'engine'.")
+do_test(['-L'], 1, response="Error: -L argument given but no URL specified.")
+do_test(['-L', 'invalid://'], 1, response="Error: Unsupported URL scheme.")
+do_test(['-L', 'mqtt://localhost'], 1, response="Error: Invalid URL for -L argument specified - topic missing.")
+do_test(['-L', 'mqtts://localhost'], 1, response="Error: Invalid URL for -L argument specified - topic missing.")
+do_test(['-L', 'mqtts://:@localhost/topic'], 1, response="Error: Empty username in URL.")
+do_test(['-L', 'mqtts://localhost:/topic'], 1, response="Error: Empty port in URL.")
+do_test(["-o"], 1, response="Error: -o argument given but no options file specified.")
+do_test(["-p"], 1, response="Error: -p argument given but no port specified.")
+do_test(["-p", "-1"], 1, response="Error: Invalid port given: -1")
+do_test(["-p", "65536"], 1, response="Error: Invalid port given: 65536")
+do_test(["-P"], 1, response="Error: -P argument given but no password specified.")
+
+if mosq_test.check_features(["WITH_SOCKS"]):
+    do_test(["--proxy"], 1, response="Error: --proxy argument given but no proxy url specified.")
+    do_test(["--proxy", "mqtt://localhost"], 1, response="Error: Unsupported proxy protocol: mqtt://localhost")
+    do_test(["--proxy", "socks5h://"], 1, response="Error: Invalid proxy.")
+    do_test(["--proxy", "socks5h://localhost:0"], 1, response="Error: Invalid proxy port 0")
+    do_test(["--proxy", "socks5h://localhost:65536"], 1, response="Error: Invalid proxy port 65536")
+    do_test(["--proxy", "socks5h://username%@localhost"], 1, response="Error: Invalid URL encoding in username.")
+    do_test(["--proxy", "socks5h://username%41@localhost"], 1, response="Error: Invalid URL encoding in username.")
+    do_test(["--proxy", "socks5h://username:password%@localhost"], 1, response="Error: Invalid URL encoding in password.")
+    do_test(["--proxy", "socks5h://username:password%41@localhost"], 1, response="Error: Invalid URL encoding in password.")
+else:
+    do_test(["--proxy", "socks5h://username:password%41@localhost"], 1, response="Error: Unknown option '--proxy'.")
+
+if mosq_test.check_features(["WITH_TLS_PSK"]):
+    do_test(["--psk"], 1, response="Error: --psk argument given but no key specified.")
+    do_test(["--psk", "missing.psk"], 1, response="Error: --psk-identity required if --psk used.")
+    do_test(["--psk-identity"], 1, response="Error: --psk-identity argument given but no identity specified.")
+    do_test(["--cafile", ssl_dir / "all-ca.crt", "--psk", "missing.psk", "--psk-identity", "identity"], 1, response="Error: Only one of --psk or --cafile/--capath may be used at once.")
+
+do_test(["-q"], 1, response="Error: -q argument given but no QoS specified.")
+do_test(["-q", "-1"], 1, response="Error: Invalid QoS given: -1")
+do_test(["-q", "3"], 1, response="Error: Invalid QoS given: 3")
+do_test(["--tls-alpn"], 1, response="Error: --tls-alpn argument given but no protocol specified.")
+do_test(["--tls-engine"], 1, response="Error: --tls-engine argument given but no engine_id specified.")
+do_test(["--tls-engine-kpass-sha1"], 1, response="Error: --tls-engine-kpass-sha1 argument given but no kpass sha1 specified.")
+do_test(["--tls-version"], 1, response="Error: --tls-version argument given but no version specified.")
+do_test(["--username"], 1, response="Error: -u argument given but no username specified.")
+do_test(["--unix"], 1, response="Error: --unix argument given but no socket path specified.")
+do_test(["-V"], 1, response="Error: --protocol-version argument given but no version specified.")
+do_test(["-V", "2"], 1, response="Error: Invalid protocol version argument given.")
+do_test(["-V", "6"], 1, response="Error: Invalid protocol version argument given.")
+do_test(["--unknown"], 1, response="Error: Unknown option '--unknown'.")
 do_test(["--version"], 1) # Gives generic help
 
 # Behaviour with incomplete args is now to run the shell, so these tests don't work
@@ -124,33 +134,53 @@ do_test(["--version"], 1) # Gives generic help
 #do_test(["--verbose"], 1) # Gives generic help
 
 # Broker
-do_test(["broker", "unknown"], 13, response="Command 'unknown' not recognised.\n")
+do_test(["broker", "unknown"], 13, response="Command 'unknown' not recognised.")
 
-# Dynsec
-do_test(["dynsec", "unknown"], 13, response="Command 'unknown' not recognised.\n")
-do_test(["-f", "file", "dynsec", "setClientPassword", "admin", "admin", "-i"], 3, response="Error: -i argument given, but no iterations provided.\nError: Invalid input.\n")
-do_test(["-f", "file", "dynsec", "setClientPassword", "admin", "admin", "-c"], 3, response="Error: Unknown argument: -c\nError: Invalid input.\n")
-do_test(["dynsec", "createClient", "client", "-i"], 3, response="Error: -i argument given, but no clientid provided.\nError: Invalid input.\n")
-do_test(["dynsec", "createClient", "client", "-p"], 3, response="Error: -p argument given, but no password provided.\nError: Invalid input.\n")
+if mosq_test.check_features(["WITH_PLUGINS", "WITH_PLUGIN_DYNAMIC_SECURITY"]):
+    # Dynsec
+    do_test(["dynsec", "unknown"], 13, response="Command 'unknown' not recognised.")
+    do_test(["-f", "file", "dynsec", "setClientPassword", "admin", "admin", "-i"], 3, response="Error: -i argument given, but no iterations provided.\nError: Invalid input.")
+    do_test(["-f", "file", "dynsec", "setClientPassword", "admin", "admin", "-c"], 3, response="Error: Unknown argument: -c\nError: Invalid input.")
+    do_test(["dynsec", "createClient", "client", "-i"], 3, response="Error: -i argument given, but no clientid provided.\nError: Invalid input.")
+    do_test(["dynsec", "createClient", "client", "-p"], 3, response="Error: -p argument given, but no password provided.\nError: Invalid input.")
 
 # Env modification
 
-# Missing file
-env["HOME"] = "/tmp"
-do_test(["--cert", ssl_dir / "client.crt"], 1, response="Error: Both certfile and keyfile must be provided if one of them is set.\n")
+if platform.system() == 'Windows':
+    # Missing file
+    env["USERPROFILE"] = "/tmp"
+    do_test(["--cert", ssl_dir / "client.crt"], 1, response="Error: Both certfile and keyfile must be provided if one of them is set.")
 
-# Invalid file
-env["XDG_CONFIG_HOME"] = "."
-with open("mosquitto_ctrl", "w") as f:
-    f.write(f"--cert {ssl_dir}/client.crt\n")
-    f.write(f"--key\n")
-do_test(["broker"], 1, response="Error: --key argument given but no file specified.\n\n")
+    # Invalid file
+    env["USERPROFILE"] = "."
+    with open("mosquitto_ctrl.conf", "wt") as f:
+        f.write(f"--cert {ssl_dir / 'client.crt'}\n")
+        f.write(f"--key\n")
+    do_test(["broker"], 1, response="Error: --key argument given but no file specified.")
 
-# Empty file
-env["XDG_CONFIG_HOME"] = "."
-with open("mosquitto_ctrl", "w") as f:
-    pass
-do_test(["--cert", ssl_dir / "client.crt"], 1, response="Error: Both certfile and keyfile must be provided if one of them is set.\n")
-os.remove("mosquitto_ctrl")
+    # Empty file
+    env["USERPROFILE"] = "."
+    with open("mosquitto_ctrl.conf", "w") as f:
+        pass
+    do_test(["--cert", ssl_dir / "client.crt"], 1, response="Error: Both certfile and keyfile must be provided if one of them is set.")
+    os.remove("mosquitto_ctrl.conf")
+else:
+    # Missing file
+    env["HOME"] = "/tmp"
+    do_test(["--cert", ssl_dir / "client.crt"], 1, response="Error: Both certfile and keyfile must be provided if one of them is set.")
+
+    # Invalid file
+    env["XDG_CONFIG_HOME"] = "."
+    with open("mosquitto_ctrl", "w") as f:
+        f.write(f"--cert {ssl_dir / 'client.crt'}\n")
+        f.write(f"--key\n")
+    do_test(["broker"], 1, response="Error: --key argument given but no file specified.")
+
+    # Empty file
+    env["XDG_CONFIG_HOME"] = "."
+    with open("mosquitto_ctrl", "w") as f:
+        pass
+    do_test(["--cert", ssl_dir / "client.crt"], 1, response="Error: Both certfile and keyfile must be provided if one of them is set.")
+    os.remove("mosquitto_ctrl")
 
 exit(0)

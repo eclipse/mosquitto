@@ -7,61 +7,47 @@
 
 from mosq_test_helper import *
 
-def write_config(filename, port1, port2, per_listener, allow_zero):
-    with open(filename, 'w') as f:
-        f.write("per_listener_settings %s\n" % (per_listener))
-        f.write("listener %d\n" % (port2))
-        f.write("allow_anonymous true\n")
-        if allow_zero != "":
-            f.write("allow_zero_length_clientid %s\n" % (allow_zero))
-        f.write("listener %d\n" % (port1))
-        f.write("allow_anonymous true\n")
-        if allow_zero != "":
-            f.write("allow_zero_length_clientid %s\n" % (allow_zero))
-
+from broker_config import BrokerConfig, ListenerConfig
+from mosquitto_broker import MosquittoBroker
 
 def do_test(per_listener, proto_ver, clean_start, allow_zero, client_port, expect_fail):
-    conf_file = os.path.basename(__file__).replace('.py', '.conf')
-    write_config(conf_file, port1, port2, per_listener, allow_zero)
-
-    rc = 1
-    connect_packet = mosq_test.gen_connect("", proto_ver=proto_ver, clean_session=clean_start)
+    connect_packet = mqtt_packets.gen_connect("", proto_ver=proto_ver, clean_session=clean_start)
     if proto_ver == 4:
         if expect_fail == True:
-            connack_packet = mosq_test.gen_connack(rc=2, proto_ver=proto_ver)
+            connack_packet = mqtt_packets.gen_connack(rc=2, proto_ver=proto_ver)
         else:
-            connack_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver)
+            connack_packet = mqtt_packets.gen_connack(rc=0, proto_ver=proto_ver)
     else:
         if expect_fail == True:
-            connack_packet = mosq_test.gen_connack(rc=128, proto_ver=proto_ver, properties=None)
+            connack_packet = mqtt_packets.gen_connack(rc=128, proto_ver=proto_ver, properties=None)
         else:
             props = mqtt5_props.gen_string_prop(mqtt5_props.ASSIGNED_CLIENT_IDENTIFIER, "auto-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx")
-            connack_packet = mosq_test.gen_connack(rc=0, proto_ver=proto_ver, properties=props)
+            connack_packet = mqtt_packets.gen_connack(rc=0, proto_ver=proto_ver, properties=props)
             # Remove the "xxxx" part - this means the front part of the packet
             # is correct (so remaining length etc. is correct), but we don't
             # need to match against the random id.
             connack_packet = connack_packet[:-44]
 
-    broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port1, use_conf=True)
-
-    try:
+    broker_config = BrokerConfig(
+        listeners=[
+            ListenerConfig(
+                port=port2,
+                allow_anonymous=True,
+                allow_zero_length_clientid=allow_zero
+            ),
+            ListenerConfig(
+                port=port1,
+                allow_anonymous=True,
+                allow_zero_length_clientid=allow_zero
+            ),
+        ],
+        allow_anonymous=True,
+        per_listener_settings=per_listener,
+    )
+    broker = MosquittoBroker(config=broker_config)
+    with broker:
         sock = mosq_test.do_client_connect(connect_packet, connack_packet, port=client_port)
         sock.close()
-        rc = 0
-    except mosq_test.TestError:
-        pass
-    finally:
-        broker.terminate()
-        if mosq_test.wait_for_subprocess(broker):
-            print("broker not terminated")
-            if rc == 0: rc=1
-        (stdo, stde) = broker.communicate()
-        os.remove(conf_file)
-        if rc:
-            print(stde.decode('utf-8'))
-            print("per_listener:%s proto_ver:%d client_port:%d clean_start:%d allow_zero:%s" % (per_listener, proto_ver, client_port, clean_start, allow_zero))
-            print("port1:%d port2:%d" % (port1, port2))
-            exit(rc)
 
 
 (port1, port2) = mosq_test.get_port(2)
@@ -70,61 +56,59 @@ test_v4 = True
 test_v5 = True
 
 if test_v4 == True:
-    do_test(per_listener="false", proto_ver=4, client_port=port1, clean_start=True, allow_zero="true", expect_fail=False)
-    do_test(per_listener="false", proto_ver=4, client_port=port1, clean_start=True, allow_zero="false", expect_fail=True)
-    do_test(per_listener="false", proto_ver=4, client_port=port1, clean_start=False, allow_zero="true", expect_fail=True)
-    do_test(per_listener="false", proto_ver=4, client_port=port1, clean_start=False, allow_zero="false", expect_fail=True)
-    do_test(per_listener="true", proto_ver=4, client_port=port1, clean_start=True, allow_zero="true", expect_fail=False)
-    do_test(per_listener="true", proto_ver=4, client_port=port1, clean_start=True, allow_zero="false", expect_fail=True)
-    do_test(per_listener="true", proto_ver=4, client_port=port1, clean_start=False, allow_zero="true", expect_fail=True)
-    do_test(per_listener="true", proto_ver=4, client_port=port1, clean_start=False, allow_zero="false", expect_fail=True)
+    do_test(per_listener=False, proto_ver=4, client_port=port1, clean_start=True, allow_zero=True, expect_fail=False)
+    do_test(per_listener=False, proto_ver=4, client_port=port1, clean_start=True, allow_zero=False, expect_fail=True)
+    do_test(per_listener=False, proto_ver=4, client_port=port1, clean_start=False, allow_zero=True, expect_fail=True)
+    do_test(per_listener=False, proto_ver=4, client_port=port1, clean_start=False, allow_zero=False, expect_fail=True)
+    do_test(per_listener=True, proto_ver=4, client_port=port1, clean_start=True, allow_zero=True, expect_fail=False)
+    do_test(per_listener=True, proto_ver=4, client_port=port1, clean_start=True, allow_zero=False, expect_fail=True)
+    do_test(per_listener=True, proto_ver=4, client_port=port1, clean_start=False, allow_zero=True, expect_fail=True)
+    do_test(per_listener=True, proto_ver=4, client_port=port1, clean_start=False, allow_zero=False, expect_fail=True)
 
-    do_test(per_listener="false", proto_ver=4, client_port=port2, clean_start=True, allow_zero="true", expect_fail=False)
-    do_test(per_listener="false", proto_ver=4, client_port=port2, clean_start=True, allow_zero="false", expect_fail=True)
-    do_test(per_listener="false", proto_ver=4, client_port=port2, clean_start=False, allow_zero="true", expect_fail=True)
-    do_test(per_listener="false", proto_ver=4, client_port=port2, clean_start=False, allow_zero="false", expect_fail=True)
-    do_test(per_listener="true", proto_ver=4, client_port=port2, clean_start=True, allow_zero="true", expect_fail=False)
-    do_test(per_listener="true", proto_ver=4, client_port=port2, clean_start=True, allow_zero="false", expect_fail=True)
-    do_test(per_listener="true", proto_ver=4, client_port=port2, clean_start=False, allow_zero="true", expect_fail=True)
-    do_test(per_listener="true", proto_ver=4, client_port=port2, clean_start=False, allow_zero="false", expect_fail=True)
+    do_test(per_listener=False, proto_ver=4, client_port=port2, clean_start=True, allow_zero=True, expect_fail=False)
+    do_test(per_listener=False, proto_ver=4, client_port=port2, clean_start=True, allow_zero=False, expect_fail=True)
+    do_test(per_listener=False, proto_ver=4, client_port=port2, clean_start=False, allow_zero=True, expect_fail=True)
+    do_test(per_listener=False, proto_ver=4, client_port=port2, clean_start=False, allow_zero=False, expect_fail=True)
+    do_test(per_listener=True, proto_ver=4, client_port=port2, clean_start=True, allow_zero=True, expect_fail=False)
+    do_test(per_listener=True, proto_ver=4, client_port=port2, clean_start=True, allow_zero=False, expect_fail=True)
+    do_test(per_listener=True, proto_ver=4, client_port=port2, clean_start=False, allow_zero=True, expect_fail=True)
+    do_test(per_listener=True, proto_ver=4, client_port=port2, clean_start=False, allow_zero=False, expect_fail=True)
 
-    do_test(per_listener="false", proto_ver=4, client_port=port1, clean_start=True, allow_zero="", expect_fail=False)
-    do_test(per_listener="false", proto_ver=4, client_port=port1, clean_start=False, allow_zero="", expect_fail=True)
-    do_test(per_listener="true", proto_ver=4, client_port=port1, clean_start=True, allow_zero="", expect_fail=False)
-    do_test(per_listener="true", proto_ver=4, client_port=port1, clean_start=False, allow_zero="", expect_fail=True)
+    do_test(per_listener=False, proto_ver=4, client_port=port1, clean_start=True, allow_zero=None, expect_fail=False)
+    do_test(per_listener=False, proto_ver=4, client_port=port1, clean_start=False, allow_zero=None, expect_fail=True)
+    do_test(per_listener=True, proto_ver=4, client_port=port1, clean_start=True, allow_zero=None, expect_fail=False)
+    do_test(per_listener=True, proto_ver=4, client_port=port1, clean_start=False, allow_zero=None, expect_fail=True)
 
-    do_test(per_listener="false", proto_ver=4, client_port=port2, clean_start=True, allow_zero="", expect_fail=False)
-    do_test(per_listener="false", proto_ver=4, client_port=port2, clean_start=False, allow_zero="", expect_fail=True)
-    do_test(per_listener="true", proto_ver=4, client_port=port2, clean_start=True, allow_zero="", expect_fail=False)
-    do_test(per_listener="true", proto_ver=4, client_port=port2, clean_start=False, allow_zero="", expect_fail=True)
+    do_test(per_listener=False, proto_ver=4, client_port=port2, clean_start=True, allow_zero=None, expect_fail=False)
+    do_test(per_listener=False, proto_ver=4, client_port=port2, clean_start=False, allow_zero=None, expect_fail=True)
+    do_test(per_listener=True, proto_ver=4, client_port=port2, clean_start=True, allow_zero=None, expect_fail=False)
+    do_test(per_listener=True, proto_ver=4, client_port=port2, clean_start=False, allow_zero=None, expect_fail=True)
 
 if test_v5 == True:
-    do_test(per_listener="false", proto_ver=5, client_port=port1, clean_start=True, allow_zero="true", expect_fail=False)
-    do_test(per_listener="false", proto_ver=5, client_port=port1, clean_start=True, allow_zero="false", expect_fail=True)
-    do_test(per_listener="false", proto_ver=5, client_port=port1, clean_start=False, allow_zero="true", expect_fail=False)
-    do_test(per_listener="false", proto_ver=5, client_port=port1, clean_start=False, allow_zero="false", expect_fail=True)
-    do_test(per_listener="true", proto_ver=5, client_port=port1, clean_start=True, allow_zero="true", expect_fail=False)
-    do_test(per_listener="true", proto_ver=5, client_port=port1, clean_start=True, allow_zero="false", expect_fail=True)
-    do_test(per_listener="true", proto_ver=5, client_port=port1, clean_start=False, allow_zero="true", expect_fail=False)
-    do_test(per_listener="true", proto_ver=5, client_port=port1, clean_start=False, allow_zero="false", expect_fail=True)
+    do_test(per_listener=False, proto_ver=5, client_port=port1, clean_start=True, allow_zero=True, expect_fail=False)
+    do_test(per_listener=False, proto_ver=5, client_port=port1, clean_start=True, allow_zero=False, expect_fail=True)
+    do_test(per_listener=False, proto_ver=5, client_port=port1, clean_start=False, allow_zero=True, expect_fail=False)
+    do_test(per_listener=False, proto_ver=5, client_port=port1, clean_start=False, allow_zero=False, expect_fail=True)
+    do_test(per_listener=True, proto_ver=5, client_port=port1, clean_start=True, allow_zero=True, expect_fail=False)
+    do_test(per_listener=True, proto_ver=5, client_port=port1, clean_start=True, allow_zero=False, expect_fail=True)
+    do_test(per_listener=True, proto_ver=5, client_port=port1, clean_start=False, allow_zero=True, expect_fail=False)
+    do_test(per_listener=True, proto_ver=5, client_port=port1, clean_start=False, allow_zero=False, expect_fail=True)
 
-    do_test(per_listener="false", proto_ver=5, client_port=port2, clean_start=True, allow_zero="true", expect_fail=False)
-    do_test(per_listener="false", proto_ver=5, client_port=port2, clean_start=True, allow_zero="false", expect_fail=True)
-    do_test(per_listener="false", proto_ver=5, client_port=port2, clean_start=False, allow_zero="true", expect_fail=False)
-    do_test(per_listener="false", proto_ver=5, client_port=port2, clean_start=False, allow_zero="false", expect_fail=True)
-    do_test(per_listener="true", proto_ver=5, client_port=port2, clean_start=True, allow_zero="true", expect_fail=False)
-    do_test(per_listener="true", proto_ver=5, client_port=port2, clean_start=True, allow_zero="false", expect_fail=True)
-    do_test(per_listener="true", proto_ver=5, client_port=port2, clean_start=False, allow_zero="true", expect_fail=False)
-    do_test(per_listener="true", proto_ver=5, client_port=port2, clean_start=False, allow_zero="false", expect_fail=True)
+    do_test(per_listener=False, proto_ver=5, client_port=port2, clean_start=True, allow_zero=True, expect_fail=False)
+    do_test(per_listener=False, proto_ver=5, client_port=port2, clean_start=True, allow_zero=False, expect_fail=True)
+    do_test(per_listener=False, proto_ver=5, client_port=port2, clean_start=False, allow_zero=True, expect_fail=False)
+    do_test(per_listener=False, proto_ver=5, client_port=port2, clean_start=False, allow_zero=False, expect_fail=True)
+    do_test(per_listener=True, proto_ver=5, client_port=port2, clean_start=True, allow_zero=True, expect_fail=False)
+    do_test(per_listener=True, proto_ver=5, client_port=port2, clean_start=True, allow_zero=False, expect_fail=True)
+    do_test(per_listener=True, proto_ver=5, client_port=port2, clean_start=False, allow_zero=True, expect_fail=False)
+    do_test(per_listener=True, proto_ver=5, client_port=port2, clean_start=False, allow_zero=False, expect_fail=True)
 
-    do_test(per_listener="false", proto_ver=5, client_port=port1, clean_start=True, allow_zero="", expect_fail=False)
-    do_test(per_listener="false", proto_ver=5, client_port=port1, clean_start=False, allow_zero="", expect_fail=False)
-    do_test(per_listener="true", proto_ver=5, client_port=port1, clean_start=True, allow_zero="", expect_fail=False)
-    do_test(per_listener="true", proto_ver=5, client_port=port1, clean_start=False, allow_zero="", expect_fail=False)
+    do_test(per_listener=False, proto_ver=5, client_port=port1, clean_start=True, allow_zero=None, expect_fail=False)
+    do_test(per_listener=False, proto_ver=5, client_port=port1, clean_start=False, allow_zero=None, expect_fail=False)
+    do_test(per_listener=True, proto_ver=5, client_port=port1, clean_start=True, allow_zero=None, expect_fail=False)
+    do_test(per_listener=True, proto_ver=5, client_port=port1, clean_start=False, allow_zero=None, expect_fail=False)
 
-    do_test(per_listener="false", proto_ver=5, client_port=port2, clean_start=True, allow_zero="", expect_fail=False)
-    do_test(per_listener="false", proto_ver=5, client_port=port2, clean_start=False, allow_zero="", expect_fail=False)
-    do_test(per_listener="true", proto_ver=5, client_port=port2, clean_start=True, allow_zero="", expect_fail=False)
-    do_test(per_listener="true", proto_ver=5, client_port=port2, clean_start=False, allow_zero="", expect_fail=False)
-
-exit(0)
+    do_test(per_listener=False, proto_ver=5, client_port=port2, clean_start=True, allow_zero=None, expect_fail=False)
+    do_test(per_listener=False, proto_ver=5, client_port=port2, clean_start=False, allow_zero=None, expect_fail=False)
+    do_test(per_listener=True, proto_ver=5, client_port=port2, clean_start=True, allow_zero=None, expect_fail=False)
+    do_test(per_listener=True, proto_ver=5, client_port=port2, clean_start=False, allow_zero=None, expect_fail=False)
