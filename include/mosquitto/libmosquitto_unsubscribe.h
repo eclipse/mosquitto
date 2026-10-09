@@ -62,7 +62,7 @@ libmosq_EXPORT int mosquitto_unsubscribe(struct mosquitto *mosq, int *mid, const
  * <mosquitto_unsubscribe_v5> instead.
  *
  * Use e.g. <mosquitto_property_add_string> and similar to create a list of
- * properties, then attach them to this publish. Properties need freeing with
+ * properties, then attach them to this unsubscribe. Properties need freeing with
  * <mosquitto_property_free_all>.
  *
  * If the mosquitto instance `mosq` is using MQTT v5, the `properties` argument

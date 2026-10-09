@@ -107,7 +107,7 @@ libmosq_EXPORT int mosquitto_connect_bind(struct mosquitto *mosq, const char *ho
  * over a particular interface.
  *
  * Use e.g. <mosquitto_property_add_string> and similar to create a list of
- * properties, then attach them to this publish. Properties need freeing with
+ * properties, then attach them to this connect. Properties need freeing with
  * <mosquitto_property_free_all>.
  *
  * If the mosquitto instance `mosq` is using MQTT v5, the `properties` argument
@@ -145,9 +145,69 @@ libmosq_EXPORT int mosquitto_connect_bind(struct mosquitto *mosq, const char *ho
  *	MOSQ_ERR_PROTOCOL - if any property is invalid for use with CONNECT.
  *
  * See Also:
- * 	<mosquitto_connect>, <mosquitto_connect_async>, <mosquitto_connect_bind_async>
+ * 	<mosquitto_connect>, <mosquitto_connect_async>, <mosquitto_connect_bind_async>,
+ * 	<mosquitto_connect_bind_v5_async>
  */
 libmosq_EXPORT int mosquitto_connect_bind_v5(struct mosquitto *mosq, const char *host, int port, int keepalive, const char *bind_address, const mosquitto_property *properties);
+
+/*
+ * Function: mosquitto_connect_bind_v5_async
+ *
+ * Connect to an MQTT broker. This is a non-blocking call. If you use
+ * <mosquitto_connect_async> your client must use the threaded interface
+ * <mosquitto_loop_start>. If you need to use <mosquitto_loop>, you must use
+ * <mosquitto_connect> to connect the client.
+ *
+ * May be called before or after <mosquitto_loop_start>.
+ *
+ * This extends the functionality of
+ * <mosquitto_connect_async> by adding the bind_address parameter and MQTT v5
+ * properties. Use this function if you need to restrict network communication
+ * over a particular interface.
+ *
+ * Use e.g. <mosquitto_property_add_string> and similar to create a list of
+ * properties, then attach them to this connect. Properties need freeing with
+ * <mosquitto_property_free_all>.
+ *
+ * If the mosquitto instance `mosq` is using MQTT v5, the `properties` argument
+ * will be applied to the CONNECT message. For MQTT v3.1.1 and below, the
+ * `properties` argument will be ignored.
+ *
+ * Set your client to use MQTT v5 immediately after it is created:
+ *
+ * mosquitto_int_option(mosq, MOSQ_OPT_PROTOCOL_VERSION, MQTT_PROTOCOL_V5);
+ *
+ * Parameters:
+ * 	mosq -         a valid mosquitto instance.
+ * 	host -         the hostname or ip address of the broker to connect to.
+ * 	port -         the network port to connect to. Usually 1883.
+ * 	keepalive -    the number of seconds after which the client should send a PING
+ *                 message to the broker if no other messages have been exchanged
+ *                 in that time.
+ *  bind_address - the hostname or ip address of the local network interface to
+ *                 bind to. If you do not want to bind to a specific interface,
+ *                 set this to NULL.
+ *  properties - the MQTT 5 properties for the connect (not for the Will).
+ *
+ * Returns:
+ * 	MOSQ_ERR_SUCCESS - on success.
+ * 	MOSQ_ERR_INVAL -   if the input parameters were invalid, which could be any of:
+ * 	                   * mosq == NULL
+ * 	                   * host == NULL
+ * 	                   * port < 0
+ * 	                   * keepalive < 5 (keepalive == 0 is allowed, for an infinite keepalive)
+ * 	MOSQ_ERR_ERRNO -   if a system call returned an error. The variable errno
+ *                     contains the error code, even on Windows.
+ *                     Use strerror_r() where available or FormatMessage() on
+ *                     Windows.
+ *	MOSQ_ERR_DUPLICATE_PROPERTY - if a property is duplicated where it is forbidden.
+ *	MOSQ_ERR_PROTOCOL - if any property is invalid for use with CONNECT.
+ *
+ * See Also:
+ * 	<mosquitto_connect>, <mosquitto_connect_async>, <mosquitto_connect_bind_async>,
+ * 	<mosquitto_connect_bind_v5>
+ */
+libmosq_EXPORT int mosquitto_connect_bind_v5_async(struct mosquitto *mosq, const char *host, int port, int keepalive, const char *bind_address, const mosquitto_property *properties);
 
 /*
  * Function: mosquitto_connect_async
@@ -340,7 +400,7 @@ libmosq_EXPORT int mosquitto_disconnect(struct mosquitto *mosq);
  * Disconnect from the broker, with attached MQTT properties.
  *
  * Use e.g. <mosquitto_property_add_string> and similar to create a list of
- * properties, then attach them to this publish. Properties need freeing with
+ * properties, then attach them to this disconnect. Properties need freeing with
  * <mosquitto_property_free_all>.
  *
  * If the mosquitto instance `mosq` is using MQTT v5, the `properties` argument

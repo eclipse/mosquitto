@@ -144,6 +144,7 @@ MOSQ_1.7 {
 
 MOSQ_2.1 {
 	global:
+		mosquitto_connect_bind_v5_async;
 		mosquitto_ext_auth_callback_set;
 		mosquitto_ext_auth_continue;
 		mosquitto_pre_connect_callback_set;
