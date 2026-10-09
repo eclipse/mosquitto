@@ -106,6 +106,13 @@ remove_client_from_group_response = {'responses':[{'command': 'removeGroupClient
 delete_group_command = {"commands": [{"command":"deleteGroup", "groupname":"group_two", "correlationData":"5678"}]}
 delete_group_response = {'responses':[{"command":"deleteGroup", "correlationData":"5678"}]}
 
+delete_client_command = {"commands": [{"command": "deleteClient", "username": "user_one"}]}
+delete_client_response = {'responses': [{'command': 'deleteClient'}]}
+
+get_group_after_delete_client_command = {"commands": [{"command": "getGroup", "groupname": "group_one"}]}
+get_group_after_delete_client_response = {"responses": [{"command": "getGroup", "data": {"group": {
+    "groupname": "group_one", "textname": "Name", "textdescription": "description",
+    "clients": [{"username": "user_two"}], "roles": [{"rolename": "basic"}]}}}]}
 
 rc = 1
 connect_packet = mqtt_packets.gen_connect("ctrl-test", username="admin", password="admin")
@@ -179,10 +186,14 @@ try:
     # Add client back to group
     command_check(sock, add_client_to_group_command, add_client_to_group_response)
 
-    # Delete group entirely
+    # Delete group_two entirely
     command_check(sock, delete_group_command, delete_group_response)
 
-    check_details(sock, 3, 1, 2, 12)
+    # Delete client and verify it is removed from group_one
+    command_check(sock, delete_client_command, delete_client_response)
+    command_check(sock, get_group_after_delete_client_command, get_group_after_delete_client_response)
+
+    check_details(sock, 2, 1, 2, 13)
 
     rc = broker_terminate_rc
 

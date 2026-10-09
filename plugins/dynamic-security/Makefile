@@ -29,7 +29,8 @@ OBJS = \
 	plugin.o \
 	roles.o \
 	rolelist.o \
-	tick.o
+	tick.o \
+	utils.o
 
 OBJS_EXTERNAL = \
 	json_help.o

@@ -23,6 +23,7 @@ Contributors:
 #include "mosquitto.h"
 
 #define PRIORITY_MAX 100000
+#define PRIORITY_MIN -100000
 
 /* ################################################################
  * #
@@ -316,5 +317,13 @@ void dynsec_kicklist__cleanup(struct dynsec__data *data);
  * ################################################################ */
 
 int dynsec_details__process_get(struct dynsec__data *data, struct mosquitto_control_cmd *cmd);
+
+/* ################################################################
+ * #
+ * # Utility Functions
+ * #
+ * ################################################################ */
+
+void enforce_priority_limits(int *priority);
 
 #endif

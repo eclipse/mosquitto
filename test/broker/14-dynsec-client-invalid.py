@@ -73,6 +73,16 @@ create_client11_response = {'responses': [{'command': 'createClient', 'error': '
 create_client12_command = { 'commands': [{'command': 'createClient', 'username': 'user', 'password':'5', 'groups':[{'groupname':'notfound'}]}] }
 create_client12_response = {'responses': [{'command': 'createClient', 'error': 'Group not found'}]}
 
+# Valid role followed by a nonexistent role
+create_client13_command = {'commands': [{'command':'createClient', 'username':'rl-test1',
+    'roles': [{'rolename': 'admin'}, {'rolename': 'nonexistent'}]}]}
+create_client13_response = {'responses': [{'command': 'createClient', 'error': 'Role not found'}]}
+
+# Valid role followed by an entry missing rolename
+create_client14_command = {'commands': [{'command':'createClient', 'username':'rl-test2',
+    'roles': [{'rolename': 'admin'}, {}]}]}
+create_client14_response = {'responses': [{'command': 'createClient', 'error': "'roles' not an array or missing/invalid rolename"}]}
+
 
 # ==========================================================================
 # Delete client
@@ -337,6 +347,16 @@ modify_client7_response = {'responses': [{'command': 'modifyClient', 'error': 'C
 modify_client8_command = { 'commands': [{'command': 'modifyClient', 'username':'user', 'roles':[{'rolename':'notfound'}]}]}
 modify_client8_response = {'responses': [{'command': 'modifyClient', 'error': 'Role not found'}]}
 
+# Valid role followed by a nonexistent role
+modify_client9_command = {'commands': [{'command':'modifyClient', 'username':'admin',
+    'roles': [{'rolename': 'admin'}, {'rolename': 'nonexistent'}]}]}
+modify_client9_response = {'responses': [{'command': 'modifyClient', 'error': 'Role not found'}]}
+
+# Valid role followed by an entry missing rolename
+modify_client10_command = {'commands': [{'command':'modifyClient', 'username':'admin',
+    'roles': [{'rolename': 'admin'}, {}]}]}
+modify_client10_response = {'responses': [{'command': 'modifyClient', 'error': "'roles' not an array or missing/invalid rolename"}]}
+
 
 rc = 1
 connect_packet = mqtt_packets.gen_connect("ctrl-test", username="admin", password="admin")
@@ -370,6 +390,8 @@ try:
     command_check(sock, create_client10_command, create_client10_response, "10")
     command_check(sock, create_client11_command, create_client11_response, "11")
     command_check(sock, create_client12_command, create_client12_response, "12")
+    command_check(sock, create_client13_command, create_client13_response, "13")
+    command_check(sock, create_client14_command, create_client14_response, "14")
 
     command_check(sock, delete_client1_command, delete_client1_response, "1")
     command_check(sock, delete_client2_command, delete_client2_response, "2")
@@ -434,6 +456,8 @@ try:
     #command_check(sock, modify_client6_command, modify_client6_response, "6")
     command_check(sock, modify_client7_command, modify_client7_response, "7")
     command_check(sock, modify_client8_command, modify_client8_response, "8")
+    command_check(sock, modify_client9_command, modify_client9_response, "9")
+    command_check(sock, modify_client10_command, modify_client10_response, "10")
 
     check_details(sock, 2, 0, 1, 1)
 

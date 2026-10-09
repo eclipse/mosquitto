@@ -20,3 +20,4 @@ target_link_libraries(common-unit-test-header
 add_subdirectory(libcommon)
 add_subdirectory(broker)
 add_subdirectory(lib)
+add_subdirectory(dynsec)

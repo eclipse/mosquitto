@@ -80,12 +80,14 @@ static void client__free_item(struct dynsec__data *data, struct dynsec__client *
 		return;
 	}
 
+	// We must remove the client from all groups before removing it from the client hashmap,
+	// because dynsec__remove_client_from_all_groups looks up the client hashmap.
+	dynsec__remove_client_from_all_groups(data, client->username);
 	client_found = dynsec_clients__find(data, client->username);
 	if(client_found){
 		HASH_DEL(data->clients, client_found);
 	}
 	dynsec_rolelist__cleanup(&client->rolelist);
-	dynsec__remove_client_from_all_groups(data, client->username);
 	mosquitto_pw_cleanup(client->pw);
 	mosquitto_free(client->text_name);
 	mosquitto_free(client->text_description);
@@ -155,9 +157,11 @@ int dynsec_clients__config_load(struct dynsec__data *data, cJSON *tree)
 			const char *password;
 			if(json_get_string(j_client, "encoded_password", &password, false) == MOSQ_ERR_SUCCESS){
 				if(!client->pw && mosquitto_pw_new(&client->pw, MOSQ_PW_DEFAULT)){
+					mosquitto_free(client);
 					return MOSQ_ERR_NOMEM;
 				}
 				if(mosquitto_pw_decode(client->pw, password) == MOSQ_ERR_NOMEM){
+					mosquitto_free(client);
 					return MOSQ_ERR_NOMEM;
 				}
 			}else{
@@ -171,6 +175,7 @@ int dynsec_clients__config_load(struct dynsec__data *data, cJSON *tree)
 
 					char buf[1024];
 					if(!client->pw && mosquitto_pw_new(&client->pw, MOSQ_PW_SHA512_PBKDF2)){
+						mosquitto_free(client);
 						return MOSQ_ERR_NOMEM;
 					}
 					snprintf(buf, sizeof(buf), "$7$%d$%s$%s", iterations, salt, password);
@@ -185,7 +190,7 @@ int dynsec_clients__config_load(struct dynsec__data *data, cJSON *tree)
 			if(json_get_string(j_client, "clientid", &clientid, false) == MOSQ_ERR_SUCCESS){
 				client->clientid = mosquitto_strdup(clientid);
 				if(client->clientid == NULL){
-					mosquitto_free(client);
+					client__free_item(data, client);
 					continue;
 				}
 			}
@@ -195,8 +200,7 @@ int dynsec_clients__config_load(struct dynsec__data *data, cJSON *tree)
 			if(json_get_string(j_client, "textname", &textname, false) == MOSQ_ERR_SUCCESS){
 				client->text_name = mosquitto_strdup(textname);
 				if(client->text_name == NULL){
-					mosquitto_free(client->clientid);
-					mosquitto_free(client);
+					client__free_item(data, client);
 					continue;
 				}
 			}
@@ -206,9 +210,7 @@ int dynsec_clients__config_load(struct dynsec__data *data, cJSON *tree)
 			if(json_get_string(j_client, "textdescription", &textdescription, false) == MOSQ_ERR_SUCCESS){
 				client->text_description = mosquitto_strdup(textdescription);
 				if(client->text_description == NULL){
-					mosquitto_free(client->text_name);
-					mosquitto_free(client->clientid);
-					mosquitto_free(client);
+					client__free_item(data, client);
 					continue;
 				}
 			}
@@ -221,12 +223,7 @@ int dynsec_clients__config_load(struct dynsec__data *data, cJSON *tree)
 						const char *rolename;
 						if(json_get_string(j_role, "rolename", &rolename, false) == MOSQ_ERR_SUCCESS){
 							json_get_int(j_role, "priority", &priority, true, -1);
-							if(priority > PRIORITY_MAX){
-								priority = PRIORITY_MAX;
-							}
-							if(priority < -PRIORITY_MAX){
-								priority = -PRIORITY_MAX;
-							}
+							enforce_priority_limits(&priority);
 							role = dynsec_roles__find(data, rolename);
 							dynsec_rolelist__client_add(client, role, priority);
 						}
@@ -422,9 +419,7 @@ int dynsec_clients__process_create(struct dynsec__data *data, struct mosquitto_c
 				const char *groupname;
 				if(json_get_string(j_group, "groupname", &groupname, false) == MOSQ_ERR_SUCCESS){
 					json_get_int(j_group, "priority", &priority, true, -1);
-					if(priority > PRIORITY_MAX){
-						priority = PRIORITY_MAX;
-					}
+					enforce_priority_limits(&priority);
 					rc = dynsec_groups__add_client(data, username, groupname, priority, false);
 					if(rc == ERR_GROUP_NOT_FOUND){
 						mosquitto_control_command_reply(cmd, "Group not found");
@@ -466,7 +461,6 @@ int dynsec_clients__process_delete(struct dynsec__data *data, struct mosquitto_c
 
 	client = dynsec_clients__find(data, username);
 	if(client){
-		dynsec__remove_client_from_all_groups(data, username);
 		client__remove_all_roles(client);
 		client__free_item(data, client);
 		dynsec__config_batch_save(data);
@@ -820,9 +814,7 @@ int dynsec_clients__process_modify(struct dynsec__data *data, struct mosquitto_c
 				const char *groupname;
 				if(json_get_string(j_group, "groupname", &groupname, false) == MOSQ_ERR_SUCCESS){
 					json_get_int(j_group, "priority", &priority, true, -1);
-					if(priority > PRIORITY_MAX){
-						priority = PRIORITY_MAX;
-					}
+					enforce_priority_limits(&priority);
 					dynsec_groups__add_client(data, username, groupname, priority, false);
 				}
 			}
@@ -1146,9 +1138,7 @@ int dynsec_clients__process_add_role(struct dynsec__data *data, struct mosquitto
 		return MOSQ_ERR_INVAL;
 	}
 	json_get_int(cmd->j_command, "priority", &priority, true, -1);
-	if(priority > PRIORITY_MAX){
-		priority = PRIORITY_MAX;
-	}
+	enforce_priority_limits(&priority);
 
 	client = dynsec_clients__find(data, username);
 	if(client == NULL){

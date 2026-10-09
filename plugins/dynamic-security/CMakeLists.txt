@@ -20,6 +20,7 @@ if(WITH_TLS)
 		roles.c
 		rolelist.c
 		tick.c
+		utils.c
 	)
 
 	set(INCLIST

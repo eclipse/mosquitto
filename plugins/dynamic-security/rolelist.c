@@ -195,9 +195,7 @@ int dynsec_rolelist__load_from_json(struct dynsec__data *data, cJSON *command, s
 			cJSON_ArrayForEach(j_role, j_roles){
 				if(json_get_string(j_role, "rolename", &rolename, false) == MOSQ_ERR_SUCCESS){
 					json_get_int(j_role, "priority", &priority, true, -1);
-					if(priority > PRIORITY_MAX){
-						priority = PRIORITY_MAX;
-					}
+					enforce_priority_limits(&priority);
 					role = dynsec_roles__find(data, rolename);
 					if(role){
 						dynsec_rolelist__add(rolelist, role, priority);
@@ -206,6 +204,7 @@ int dynsec_rolelist__load_from_json(struct dynsec__data *data, cJSON *command, s
 						return MOSQ_ERR_NOT_FOUND;
 					}
 				}else{
+					dynsec_rolelist__cleanup(rolelist);
 					return MOSQ_ERR_INVAL;
 				}
 			}
