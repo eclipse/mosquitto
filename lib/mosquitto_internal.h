@@ -277,6 +277,7 @@ struct ws_data {
 	uint8_t mask_bytes;
 	uint8_t payloadlen_bytes;
 	bool is_client;
+	bool hdr_complete;
 };
 #endif
 

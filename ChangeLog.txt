@@ -2,6 +2,10 @@
 ==================
 
 # Broker
+- Fix builtin websockets desynchronising and rejecting valid frames when a
+  frame header (extended payload length or masking key) was split across
+  multiple reads, e.g. due to TCP/TLS segmentation. Header parsing was
+  incorrectly gated on the payload length being zero.
 - Fix MOSQ_EVT_DISCONNECT being called before MOSQ_EVT_ACL_CHECK for the will
   of that client. Closes #3487.
 - Fix password length not being passed to MOSQ_EVT_BASIC_AUTH events.
