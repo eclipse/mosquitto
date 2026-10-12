@@ -744,6 +744,7 @@ static int dynsec_init(int argc, char *argv[])
 		fclose(fptr);
 	}else{
 		free(json_str);
+		fclose(fptr);
 		fprintf(stderr, "dynsec init: Unable to open '%s' for writing.\n", filename);
 		return -1;
 	}
