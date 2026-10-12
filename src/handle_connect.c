@@ -809,6 +809,9 @@ static int read_and_verify_client_credentials_from_packet(struct mosquitto *cont
 	if(username_flag){
 		rc = set_username_from_packet(context, username, clientid);
 		if(rc != MOSQ_ERR_SUCCESS){
+			if(context->protocol == mosq_p_mqtt5){
+				send__connack(context, 0, MQTT_RC_MALFORMED_PACKET, NULL);
+			}
 			return rc;
 		}
 	}else{
