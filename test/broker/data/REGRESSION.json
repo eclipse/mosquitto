@@ -12,7 +12,7 @@
 			{ "name": "subscribe-unsubscribe-crash part 2", "ver":4, "expect_disconnect":false, "msgs": [
 				{"type":"send", "payload":"82 r14 m1234 s9 'crash/3/#' 00"},
 				{"type":"recv", "payload":"90 r3 m1234 00"}
-			], "comment": "https://github.com/eclipse/mosquitto/issues/2885"}
+			], "comment": "https://github.com/eclipse-mosquitto/mosquitto/issues/2885"}
 		]
 	},
 	{

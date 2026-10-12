@@ -18,6 +18,6 @@ Broker:
 Clients:
 - Fix mosquitto_rr not honouring `-R`. Closes [#2893].
 
-[#2881]: https://github.com/eclipse/mosquitto/issues/2881
-[#2885]: https://github.com/eclipse/mosquitto/issues/2885
-[#2893]: https://github.com/eclipse/mosquitto/issues/2893
+[#2881]: https://github.com/eclipse-mosquitto/mosquitto/issues/2881
+[#2885]: https://github.com/eclipse-mosquitto/mosquitto/issues/2885
+[#2893]: https://github.com/eclipse-mosquitto/mosquitto/issues/2893

@@ -36,7 +36,7 @@ Version 2.0.8 of Mosquitto has been released. This is a bugfix release.
   authentication, without having to provide their own configuration file.
   Closes [#2040].
 
-[#2040]: https://github.com/eclipse/mosquitto/issues/2040
-[#2060]: https://github.com/eclipse/mosquitto/issues/2060
-[#2078]: https://github.com/eclipse/mosquitto/issues/2078
-[#2096]: https://github.com/eclipse/mosquitto/issues/2096
+[#2040]: https://github.com/eclipse-mosquitto/mosquitto/issues/2040
+[#2060]: https://github.com/eclipse-mosquitto/mosquitto/issues/2060
+[#2078]: https://github.com/eclipse-mosquitto/mosquitto/issues/2078
+[#2096]: https://github.com/eclipse-mosquitto/mosquitto/issues/2096

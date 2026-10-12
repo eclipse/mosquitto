@@ -25,7 +25,7 @@ Version 2.0.4 of Mosquitto has been released. This is a bugfix release.
 # Build
 - Fix man pages not being built when using CMake. Closes [#1969].
 
-[#1934]: https://github.com/eclipse/mosquitto/issues/1934
-[#1962]: https://github.com/eclipse/mosquitto/issues/1962
-[#1968]: https://github.com/eclipse/mosquitto/issues/1968
-[#1969]: https://github.com/eclipse/mosquitto/issues/1969
+[#1934]: https://github.com/eclipse-mosquitto/mosquitto/issues/1934
+[#1962]: https://github.com/eclipse-mosquitto/mosquitto/issues/1962
+[#1968]: https://github.com/eclipse-mosquitto/mosquitto/issues/1968
+[#1969]: https://github.com/eclipse-mosquitto/mosquitto/issues/1969

@@ -27,8 +27,8 @@ Mosquitto.
 - Don't call ldconfig in CMake scripts. Closes [#1048].
 - Use `CMAKE_INSTALL_*` variables when installing in CMake. Closes [#1049].
 
-[#1048]: https://github.com/eclipse/mosquitto/issues/1048
-[#1049]: https://github.com/eclipse/mosquitto/issues/1049
-[#1230]: https://github.com/eclipse/mosquitto/issues/1230
-[#1231]: https://github.com/eclipse/mosquitto/issues/1231
-[#1232]: https://github.com/eclipse/mosquitto/issues/1232
+[#1048]: https://github.com/eclipse-mosquitto/mosquitto/issues/1048
+[#1049]: https://github.com/eclipse-mosquitto/mosquitto/issues/1049
+[#1230]: https://github.com/eclipse-mosquitto/mosquitto/issues/1230
+[#1231]: https://github.com/eclipse-mosquitto/mosquitto/issues/1231
+[#1232]: https://github.com/eclipse-mosquitto/mosquitto/issues/1232

@@ -32,9 +32,9 @@ This is a bugfix release.
 - Make it easier to build without bundled uthash.h using `WITH_BUNDLED_DEPS=no`.
 - Fix build with OPENSSL_NO_ENGINE. Closes [#932].
 
-[#481]: https://github.com/eclipse/mosquitto/issues/481
-[#927]: https://github.com/eclipse/mosquitto/issues/927
-[#932]: https://github.com/eclipse/mosquitto/issues/932
-[#941]: https://github.com/eclipse/mosquitto/issues/941
-[#948]: https://github.com/eclipse/mosquitto/issues/948
-[#965]: https://github.com/eclipse/mosquitto/issues/965
+[#481]: https://github.com/eclipse-mosquitto/mosquitto/issues/481
+[#927]: https://github.com/eclipse-mosquitto/mosquitto/issues/927
+[#932]: https://github.com/eclipse-mosquitto/mosquitto/issues/932
+[#941]: https://github.com/eclipse-mosquitto/mosquitto/issues/941
+[#948]: https://github.com/eclipse-mosquitto/mosquitto/issues/948
+[#965]: https://github.com/eclipse-mosquitto/mosquitto/issues/965

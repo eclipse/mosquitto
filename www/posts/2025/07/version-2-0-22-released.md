@@ -51,19 +51,19 @@ Tests:
 - Fix 08-ssl-connect-cert-auth-expired and 08-ssl-connect-cert-auth-revoked
   tests when running on a single CPU system. Closes [#3230].
 
-[#1211]: https://github.com/eclipse/mosquitto/issues/1211
-[#3167]: https://github.com/eclipse/mosquitto/issues/3167
-[#3226]: https://github.com/eclipse/mosquitto/issues/3226
-[#3230]: https://github.com/eclipse/mosquitto/issues/3230
-[#3238]: https://github.com/eclipse/mosquitto/issues/3238
-[#3244]: https://github.com/eclipse/mosquitto/issues/3244
-[#3250]: https://github.com/eclipse/mosquitto/issues/3250
-[#3253]: https://github.com/eclipse/mosquitto/issues/3253
-[#3258]: https://github.com/eclipse/mosquitto/issues/3258
-[#3259]: https://github.com/eclipse/mosquitto/issues/3259
-[#3261]: https://github.com/eclipse/mosquitto/issues/3261
-[#3267]: https://github.com/eclipse/mosquitto/issues/3267
-[#3269]: https://github.com/eclipse/mosquitto/issues/3269
-[#3272]: https://github.com/eclipse/mosquitto/issues/3272
-[#3286]: https://github.com/eclipse/mosquitto/issues/3286
-[#3302]: https://github.com/eclipse/mosquitto/issues/3302
+[#1211]: https://github.com/eclipse-mosquitto/mosquitto/issues/1211
+[#3167]: https://github.com/eclipse-mosquitto/mosquitto/issues/3167
+[#3226]: https://github.com/eclipse-mosquitto/mosquitto/issues/3226
+[#3230]: https://github.com/eclipse-mosquitto/mosquitto/issues/3230
+[#3238]: https://github.com/eclipse-mosquitto/mosquitto/issues/3238
+[#3244]: https://github.com/eclipse-mosquitto/mosquitto/issues/3244
+[#3250]: https://github.com/eclipse-mosquitto/mosquitto/issues/3250
+[#3253]: https://github.com/eclipse-mosquitto/mosquitto/issues/3253
+[#3258]: https://github.com/eclipse-mosquitto/mosquitto/issues/3258
+[#3259]: https://github.com/eclipse-mosquitto/mosquitto/issues/3259
+[#3261]: https://github.com/eclipse-mosquitto/mosquitto/issues/3261
+[#3267]: https://github.com/eclipse-mosquitto/mosquitto/issues/3267
+[#3269]: https://github.com/eclipse-mosquitto/mosquitto/issues/3269
+[#3272]: https://github.com/eclipse-mosquitto/mosquitto/issues/3272
+[#3286]: https://github.com/eclipse-mosquitto/mosquitto/issues/3286
+[#3302]: https://github.com/eclipse-mosquitto/mosquitto/issues/3302

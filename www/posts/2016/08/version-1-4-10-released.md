@@ -36,12 +36,12 @@ This is a bugfix release.
 
  * Don't attempt to install docs when `WITH_DOCS=no`. Closes [#184].
 
-[#7]: https://github.com/eclipse/mosquitto/issues/7
-[#184]: https://github.com/eclipse/mosquitto/issues/184
-[#186]: https://github.com/eclipse/mosquitto/issues/186
-[#189]: https://github.com/eclipse/mosquitto/issues/189
-[#191]: https://github.com/eclipse/mosquitto/issues/191
-[#198]: https://github.com/eclipse/mosquitto/issues/198
-[#222]: https://github.com/eclipse/mosquitto/issues/222
-[#234]: https://github.com/eclipse/mosquitto/issues/234
-[#237]: https://github.com/eclipse/mosquitto/issues/237
+[#7]: https://github.com/eclipse-mosquitto/mosquitto/issues/7
+[#184]: https://github.com/eclipse-mosquitto/mosquitto/issues/184
+[#186]: https://github.com/eclipse-mosquitto/mosquitto/issues/186
+[#189]: https://github.com/eclipse-mosquitto/mosquitto/issues/189
+[#191]: https://github.com/eclipse-mosquitto/mosquitto/issues/191
+[#198]: https://github.com/eclipse-mosquitto/mosquitto/issues/198
+[#222]: https://github.com/eclipse-mosquitto/mosquitto/issues/222
+[#234]: https://github.com/eclipse-mosquitto/mosquitto/issues/234
+[#237]: https://github.com/eclipse-mosquitto/mosquitto/issues/237

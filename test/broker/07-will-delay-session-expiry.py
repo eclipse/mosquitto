@@ -3,7 +3,7 @@
 # Test whether a client that connects with a will delay that is longer than
 # their session expiry interval has their will published.
 # MQTT 5
-# https://github.com/eclipse/mosquitto/issues/1401
+# https://github.com/eclipse-mosquitto/mosquitto/issues/1401
 
 from mosq_test_helper import *
 

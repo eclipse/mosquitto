@@ -30,5 +30,5 @@ The following fixes apply to 1.6.12 only.
 - All clients exit with an error exit code on CONNACK failure. Closes [#1778].
 - Don't busy loop with `mosquitto_pub -l` on a slow connection.
 
-[#1778]: https://github.com/eclipse/mosquitto/issues/1778
-[#1793]: https://github.com/eclipse/mosquitto/issues/1793
+[#1778]: https://github.com/eclipse-mosquitto/mosquitto/issues/1778
+[#1793]: https://github.com/eclipse-mosquitto/mosquitto/issues/1793

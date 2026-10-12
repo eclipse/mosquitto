@@ -35,11 +35,11 @@ This is a bugfix release.
  * Fix potential socket leakage when reconnecting. Closes [#304].
  * Fix potential negative timeout being passed to pselect. Closes [#329].
 
-[#259]: https://github.com/eclipse/mosquitto/issues/259
-[#271]: https://github.com/eclipse/mosquitto/issues/271
-[#304]: https://github.com/eclipse/mosquitto/issues/304
-[#316]: https://github.com/eclipse/mosquitto/issues/316
-[#329]: https://github.com/eclipse/mosquitto/issues/329
-[#354]: https://github.com/eclipse/mosquitto/issues/354
-[#379]: https://github.com/eclipse/mosquitto/issues/379
-[#380]: https://github.com/eclipse/mosquitto/issues/380
+[#259]: https://github.com/eclipse-mosquitto/mosquitto/issues/259
+[#271]: https://github.com/eclipse-mosquitto/mosquitto/issues/271
+[#304]: https://github.com/eclipse-mosquitto/mosquitto/issues/304
+[#316]: https://github.com/eclipse-mosquitto/mosquitto/issues/316
+[#329]: https://github.com/eclipse-mosquitto/mosquitto/issues/329
+[#354]: https://github.com/eclipse-mosquitto/mosquitto/issues/354
+[#379]: https://github.com/eclipse-mosquitto/mosquitto/issues/379
+[#380]: https://github.com/eclipse-mosquitto/mosquitto/issues/380

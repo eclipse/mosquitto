@@ -28,7 +28,7 @@ This is a bugfix release.
 - Fix some Coverity Scan reported errors that could occur when the library was
   already quitting.
 
-[#1032]: https://github.com/eclipse/mosquitto/issues/1032
-[#1162]: https://github.com/eclipse/mosquitto/issues/1162
-[#1174]: https://github.com/eclipse/mosquitto/issues/1174
-[#1177]: https://github.com/eclipse/mosquitto/issues/1177
+[#1032]: https://github.com/eclipse-mosquitto/mosquitto/issues/1032
+[#1162]: https://github.com/eclipse-mosquitto/mosquitto/issues/1162
+[#1174]: https://github.com/eclipse-mosquitto/mosquitto/issues/1174
+[#1177]: https://github.com/eclipse-mosquitto/mosquitto/issues/1177

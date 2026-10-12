@@ -27,9 +27,9 @@ Mosquitto 1.6.7 has been released, this is a bugfix release.
   specified. [Closes #1418].
 - Updated documentation around automatic client ids.
 
-[#1415]: https://github.com/eclipse/mosquitto/issues/1415
-[#1417]: https://github.com/eclipse/mosquitto/issues/1417
-[#1418]: https://github.com/eclipse/mosquitto/issues/1418
-[#1422]: https://github.com/eclipse/mosquitto/issues/1422
-[#1424]: https://github.com/eclipse/mosquitto/issues/1424
-[#1425]: https://github.com/eclipse/mosquitto/issues/1425
+[#1415]: https://github.com/eclipse-mosquitto/mosquitto/issues/1415
+[#1417]: https://github.com/eclipse-mosquitto/mosquitto/issues/1417
+[#1418]: https://github.com/eclipse-mosquitto/mosquitto/issues/1418
+[#1422]: https://github.com/eclipse-mosquitto/mosquitto/issues/1422
+[#1424]: https://github.com/eclipse-mosquitto/mosquitto/issues/1424
+[#1425]: https://github.com/eclipse-mosquitto/mosquitto/issues/1425

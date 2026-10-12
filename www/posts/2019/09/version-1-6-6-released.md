@@ -59,5 +59,5 @@ The complete list of fixes addressed in version 1.6.6 is:
 
 [CVE-2019-11778]: http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-11778
 [CVE-2019-11779]: http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-11779
-[#1412]: https://github.com/eclipse/mosquitto/issues/1412
-[#1414]: https://github.com/eclipse/mosquitto/issues/1414
+[#1412]: https://github.com/eclipse-mosquitto/mosquitto/issues/1412
+[#1414]: https://github.com/eclipse-mosquitto/mosquitto/issues/1414

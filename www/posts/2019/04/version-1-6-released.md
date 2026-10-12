@@ -148,7 +148,7 @@ fixes and improvements that have been made:
   output format. Closes [#1220].
 
 
-[#924]: https://github.com/eclipse/mosquitto/issues/924
-[#1208]: https://github.com/eclipse/mosquitto/issues/1208
-[#1212]: https://github.com/eclipse/mosquitto/issues/1212
-[#1220]: https://github.com/eclipse/mosquitto/issues/1220
+[#924]: https://github.com/eclipse-mosquitto/mosquitto/issues/924
+[#1208]: https://github.com/eclipse-mosquitto/mosquitto/issues/1208
+[#1212]: https://github.com/eclipse-mosquitto/mosquitto/issues/1212
+[#1220]: https://github.com/eclipse-mosquitto/mosquitto/issues/1220

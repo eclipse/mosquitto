@@ -2,7 +2,7 @@
 
 # Test whether a PUBLISH to a topic with 65535 hierarchy characters fails
 # This needs checking with MOSQ_USE_VALGRIND=1 to detect memory failures
-# https://github.com/eclipse/mosquitto/issues/1412
+# https://github.com/eclipse-mosquitto/mosquitto/issues/1412
 
 
 from mosq_test_helper import *

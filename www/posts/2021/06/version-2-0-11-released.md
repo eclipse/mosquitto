@@ -45,10 +45,10 @@ and bugfix releases.
   message to the broker a memory leak would occur.
   Affects versions 1.6 to 2.0.10 inclusive.
 
-[#2164]: https://github.com/eclipse/mosquitto/issues/2164
-[#2167]: https://github.com/eclipse/mosquitto/issues/2167
-[#2172]: https://github.com/eclipse/mosquitto/issues/2172
-[#2173]: https://github.com/eclipse/mosquitto/issues/2173
-[#2187]: https://github.com/eclipse/mosquitto/issues/2187
-[#2207]: https://github.com/eclipse/mosquitto/issues/2207
-[#2224]: https://github.com/eclipse/mosquitto/issues/2224
+[#2164]: https://github.com/eclipse-mosquitto/mosquitto/issues/2164
+[#2167]: https://github.com/eclipse-mosquitto/mosquitto/issues/2167
+[#2172]: https://github.com/eclipse-mosquitto/mosquitto/issues/2172
+[#2173]: https://github.com/eclipse-mosquitto/mosquitto/issues/2173
+[#2187]: https://github.com/eclipse-mosquitto/mosquitto/issues/2187
+[#2207]: https://github.com/eclipse-mosquitto/mosquitto/issues/2207
+[#2224]: https://github.com/eclipse-mosquitto/mosquitto/issues/2224

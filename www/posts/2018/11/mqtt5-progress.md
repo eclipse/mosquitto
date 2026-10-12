@@ -55,5 +55,5 @@ mosquitto_pub -t topic -m '{"key":"value"}' -D publish content-type "application
 
 Further updates will be posted when more features are available.
 
-[repository]: https://github.com/eclipse/mosquitto/tree/mqtt5
+[repository]: https://github.com/eclipse-mosquitto/mosquitto/tree/mqtt5
 [roadmap]: https://mosquitto.org/roadmap/

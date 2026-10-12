@@ -40,12 +40,12 @@ Version 2.0.3 of Mosquitto has been released. This is a bugfix release.
 - Fix `install` target when using WITH_CJSON=no. Closes [#1938].
 - Fix `generic` docker build. Closes [#1945].
 
-[#1938]: https://github.com/eclipse/mosquitto/issues/1938
-[#1942]: https://github.com/eclipse/mosquitto/issues/1942
-[#1945]: https://github.com/eclipse/mosquitto/issues/1945
-[#1946]: https://github.com/eclipse/mosquitto/issues/1946
-[#1947]: https://github.com/eclipse/mosquitto/issues/1947
-[#1949]: https://github.com/eclipse/mosquitto/issues/1949
-[#1956]: https://github.com/eclipse/mosquitto/issues/1956
-[#1957]: https://github.com/eclipse/mosquitto/issues/1957
-[#1960]: https://github.com/eclipse/mosquitto/issues/1960
+[#1938]: https://github.com/eclipse-mosquitto/mosquitto/issues/1938
+[#1942]: https://github.com/eclipse-mosquitto/mosquitto/issues/1942
+[#1945]: https://github.com/eclipse-mosquitto/mosquitto/issues/1945
+[#1946]: https://github.com/eclipse-mosquitto/mosquitto/issues/1946
+[#1947]: https://github.com/eclipse-mosquitto/mosquitto/issues/1947
+[#1949]: https://github.com/eclipse-mosquitto/mosquitto/issues/1949
+[#1956]: https://github.com/eclipse-mosquitto/mosquitto/issues/1956
+[#1957]: https://github.com/eclipse-mosquitto/mosquitto/issues/1957
+[#1960]: https://github.com/eclipse-mosquitto/mosquitto/issues/1960

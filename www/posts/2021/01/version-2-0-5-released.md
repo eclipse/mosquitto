@@ -43,14 +43,14 @@ Version 2.0.5 of Mosquitto has been released. This is a bugfix release.
 - Fix `mosquitto_ctrl dynsec getGroup` not showing roles. Closes [#1997].
 
 
-[#1975]: https://github.com/eclipse/mosquitto/issues/1975
-[#1977]: https://github.com/eclipse/mosquitto/issues/1977
-[#1978]: https://github.com/eclipse/mosquitto/issues/1978
-[#1979]: https://github.com/eclipse/mosquitto/issues/1979
-[#1989]: https://github.com/eclipse/mosquitto/issues/1989
-[#1995]: https://github.com/eclipse/mosquitto/issues/1995
-[#1997]: https://github.com/eclipse/mosquitto/issues/1997
-[#1998]: https://github.com/eclipse/mosquitto/issues/1998
-[#1999]: https://github.com/eclipse/mosquitto/issues/1999
-[#2005]: https://github.com/eclipse/mosquitto/issues/2005
-[#2008]: https://github.com/eclipse/mosquitto/issues/2008
+[#1975]: https://github.com/eclipse-mosquitto/mosquitto/issues/1975
+[#1977]: https://github.com/eclipse-mosquitto/mosquitto/issues/1977
+[#1978]: https://github.com/eclipse-mosquitto/mosquitto/issues/1978
+[#1979]: https://github.com/eclipse-mosquitto/mosquitto/issues/1979
+[#1989]: https://github.com/eclipse-mosquitto/mosquitto/issues/1989
+[#1995]: https://github.com/eclipse-mosquitto/mosquitto/issues/1995
+[#1997]: https://github.com/eclipse-mosquitto/mosquitto/issues/1997
+[#1998]: https://github.com/eclipse-mosquitto/mosquitto/issues/1998
+[#1999]: https://github.com/eclipse-mosquitto/mosquitto/issues/1999
+[#2005]: https://github.com/eclipse-mosquitto/mosquitto/issues/2005
+[#2008]: https://github.com/eclipse-mosquitto/mosquitto/issues/2008

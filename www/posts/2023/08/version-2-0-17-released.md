@@ -19,6 +19,6 @@ Broker:
 Apps:
 - Fix `mosquitto_passwd -U` backup file creation. Closes [#2873].
 
-[#2873]: https://github.com/eclipse/mosquitto/issues/2873
-[#2876]: https://github.com/eclipse/mosquitto/issues/2876
-[#2879]: https://github.com/eclipse/mosquitto/issues/2879
+[#2873]: https://github.com/eclipse-mosquitto/mosquitto/issues/2873
+[#2876]: https://github.com/eclipse-mosquitto/mosquitto/issues/2876
+[#2879]: https://github.com/eclipse-mosquitto/mosquitto/issues/2879

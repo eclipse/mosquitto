@@ -70,15 +70,15 @@ and bugfix release.
 [CVE-2023-0809]: https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-0809
 [CVE-2023-28366]: https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-27366
 [CVE-2023-3592]: https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-3592
-[#2354]: https://github.com/eclipse/mosquitto/issues/2354
-[#2634]: https://github.com/eclipse/mosquitto/issues/2634
-[#2708]: https://github.com/eclipse/mosquitto/issues/2708
-[#2722]: https://github.com/eclipse/mosquitto/issues/2722
-[#2722]: https://github.com/eclipse/mosquitto/issues/2722
-[#2732]: https://github.com/eclipse/mosquitto/issues/2732
-[#2746]: https://github.com/eclipse/mosquitto/issues/2746
-[#2749]: https://github.com/eclipse/mosquitto/issues/2749
-[#2760]: https://github.com/eclipse/mosquitto/issues/2760
-[#2794]: https://github.com/eclipse/mosquitto/issues/2794
-[#1488]: https://github.com/eclipse/mosquitto/issues/1488
+[#2354]: https://github.com/eclipse-mosquitto/mosquitto/issues/2354
+[#2634]: https://github.com/eclipse-mosquitto/mosquitto/issues/2634
+[#2708]: https://github.com/eclipse-mosquitto/mosquitto/issues/2708
+[#2722]: https://github.com/eclipse-mosquitto/mosquitto/issues/2722
+[#2722]: https://github.com/eclipse-mosquitto/mosquitto/issues/2722
+[#2732]: https://github.com/eclipse-mosquitto/mosquitto/issues/2732
+[#2746]: https://github.com/eclipse-mosquitto/mosquitto/issues/2746
+[#2749]: https://github.com/eclipse-mosquitto/mosquitto/issues/2749
+[#2760]: https://github.com/eclipse-mosquitto/mosquitto/issues/2760
+[#2794]: https://github.com/eclipse-mosquitto/mosquitto/issues/2794
+[#1488]: https://github.com/eclipse-mosquitto/mosquitto/issues/1488
 

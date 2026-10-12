@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Test related to https://github.com/eclipse/mosquitto/issues/505
+# Test related to https://github.com/eclipse-mosquitto/mosquitto/issues/505
 
 from mosq_test_helper import *
 

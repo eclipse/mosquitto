@@ -6,7 +6,7 @@ from mosq_test_helper import *
 
 def do_test():
     # This client exists to test possible fixed size int overflow and sorting of the session intervals
-    # https://github.com/eclipse/mosquitto/issues/1525
+    # https://github.com/eclipse-mosquitto/mosquitto/issues/1525
     props = mqtt5_props.gen_uint32_prop(mqtt5_props.SESSION_EXPIRY_INTERVAL, 4294967294)
     connect0_packet = mqtt_packets.gen_connect("05-session-expiry-overflow", clean_session=False, proto_ver=5, properties=props)
     connack0_packet = mqtt_packets.gen_connack(flags=0, rc=0, proto_ver=5)

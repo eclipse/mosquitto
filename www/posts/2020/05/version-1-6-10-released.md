@@ -42,14 +42,14 @@ Mosquitto 1.6.10 has been released, this is a bugfix release.
 - Various fixes for building with below C99 support. Closes [#1622].
 - Fix use of sed on BSD. Closes [#1614].
 
-[#1521]: https://github.com/eclipse/mosquitto/issues/1521
-[#1614]: https://github.com/eclipse/mosquitto/issues/1614
-[#1622]: https://github.com/eclipse/mosquitto/issues/1622
-[#1629]: https://github.com/eclipse/mosquitto/issues/1629
-[#1635]: https://github.com/eclipse/mosquitto/issues/1635
-[#1664]: https://github.com/eclipse/mosquitto/issues/1664
-[#1674]: https://github.com/eclipse/mosquitto/issues/1674
-[#1684]: https://github.com/eclipse/mosquitto/issues/1684
-[#1690]: https://github.com/eclipse/mosquitto/issues/1690
-[#1691]: https://github.com/eclipse/mosquitto/issues/1691
-[#1700]: https://github.com/eclipse/mosquitto/issues/1700
+[#1521]: https://github.com/eclipse-mosquitto/mosquitto/issues/1521
+[#1614]: https://github.com/eclipse-mosquitto/mosquitto/issues/1614
+[#1622]: https://github.com/eclipse-mosquitto/mosquitto/issues/1622
+[#1629]: https://github.com/eclipse-mosquitto/mosquitto/issues/1629
+[#1635]: https://github.com/eclipse-mosquitto/mosquitto/issues/1635
+[#1664]: https://github.com/eclipse-mosquitto/mosquitto/issues/1664
+[#1674]: https://github.com/eclipse-mosquitto/mosquitto/issues/1674
+[#1684]: https://github.com/eclipse-mosquitto/mosquitto/issues/1684
+[#1690]: https://github.com/eclipse-mosquitto/mosquitto/issues/1690
+[#1691]: https://github.com/eclipse-mosquitto/mosquitto/issues/1691
+[#1700]: https://github.com/eclipse-mosquitto/mosquitto/issues/1700

@@ -70,18 +70,18 @@ This is a bugfix release.
 - Add support for compiling with static libwebsockets library.
 
 
-[#209]: https://github.com/eclipse/mosquitto/issues/209
-[#240]: https://github.com/eclipse/mosquitto/issues/240
-[#258]: https://github.com/eclipse/mosquitto/issues/258
-[#813]: https://github.com/eclipse/mosquitto/issues/813
-[#833]: https://github.com/eclipse/mosquitto/issues/833
-[#848]: https://github.com/eclipse/mosquitto/issues/848
-[#849]: https://github.com/eclipse/mosquitto/issues/849
-[#851]: https://github.com/eclipse/mosquitto/issues/851
-[#860]: https://github.com/eclipse/mosquitto/issues/860
-[#863]: https://github.com/eclipse/mosquitto/issues/863
-[#869]: https://github.com/eclipse/mosquitto/issues/869
-[#886]: https://github.com/eclipse/mosquitto/issues/886
-[#900]: https://github.com/eclipse/mosquitto/issues/900
-[#901]: https://github.com/eclipse/mosquitto/issues/901
-[#903]: https://github.com/eclipse/mosquitto/issues/903
+[#209]: https://github.com/eclipse-mosquitto/mosquitto/issues/209
+[#240]: https://github.com/eclipse-mosquitto/mosquitto/issues/240
+[#258]: https://github.com/eclipse-mosquitto/mosquitto/issues/258
+[#813]: https://github.com/eclipse-mosquitto/mosquitto/issues/813
+[#833]: https://github.com/eclipse-mosquitto/mosquitto/issues/833
+[#848]: https://github.com/eclipse-mosquitto/mosquitto/issues/848
+[#849]: https://github.com/eclipse-mosquitto/mosquitto/issues/849
+[#851]: https://github.com/eclipse-mosquitto/mosquitto/issues/851
+[#860]: https://github.com/eclipse-mosquitto/mosquitto/issues/860
+[#863]: https://github.com/eclipse-mosquitto/mosquitto/issues/863
+[#869]: https://github.com/eclipse-mosquitto/mosquitto/issues/869
+[#886]: https://github.com/eclipse-mosquitto/mosquitto/issues/886
+[#900]: https://github.com/eclipse-mosquitto/mosquitto/issues/900
+[#901]: https://github.com/eclipse-mosquitto/mosquitto/issues/901
+[#903]: https://github.com/eclipse-mosquitto/mosquitto/issues/903

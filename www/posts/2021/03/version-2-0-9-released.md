@@ -91,11 +91,11 @@ bugfix releases and include a minor security fix.
 - Fix encrypted connections incorrectly connecting when the CA file passed to
   `mosquitto_tls_set()` is empty or invalid. Closes [#2130].
 
-[#2040]: https://github.com/eclipse/mosquitto/issues/2040
-[#2078]: https://github.com/eclipse/mosquitto/issues/2078
-[#2081]: https://github.com/eclipse/mosquitto/issues/2081
-[#2110]: https://github.com/eclipse/mosquitto/issues/2110
-[#2111]: https://github.com/eclipse/mosquitto/issues/2111
-[#2117]: https://github.com/eclipse/mosquitto/issues/2117
-[#2123]: https://github.com/eclipse/mosquitto/issues/2123
-[#2130]: https://github.com/eclipse/mosquitto/issues/2130
+[#2040]: https://github.com/eclipse-mosquitto/mosquitto/issues/2040
+[#2078]: https://github.com/eclipse-mosquitto/mosquitto/issues/2078
+[#2081]: https://github.com/eclipse-mosquitto/mosquitto/issues/2081
+[#2110]: https://github.com/eclipse-mosquitto/mosquitto/issues/2110
+[#2111]: https://github.com/eclipse-mosquitto/mosquitto/issues/2111
+[#2117]: https://github.com/eclipse-mosquitto/mosquitto/issues/2117
+[#2123]: https://github.com/eclipse-mosquitto/mosquitto/issues/2123
+[#2130]: https://github.com/eclipse-mosquitto/mosquitto/issues/2130

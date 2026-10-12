@@ -78,12 +78,12 @@ The list of other fixes addressed in version 1.5.6 is:
   Closes [#1094].
 - Man pages can now be built on any system. Closes [#1139].
 
-[#1080]: https://github.com/eclipse/mosquitto/issues/1080
-[#1081]: https://github.com/eclipse/mosquitto/issues/1081
-[#1094]: https://github.com/eclipse/mosquitto/issues/1094
-[#1101]: https://github.com/eclipse/mosquitto/issues/1101
-[#1131]: https://github.com/eclipse/mosquitto/issues/1131
-[#1137]: https://github.com/eclipse/mosquitto/issues/1137
-[#1139]: https://github.com/eclipse/mosquitto/issues/1139
-[#1143]: https://github.com/eclipse/mosquitto/issues/1143
-[#1144]: https://github.com/eclipse/mosquitto/issues/1144
+[#1080]: https://github.com/eclipse-mosquitto/mosquitto/issues/1080
+[#1081]: https://github.com/eclipse-mosquitto/mosquitto/issues/1081
+[#1094]: https://github.com/eclipse-mosquitto/mosquitto/issues/1094
+[#1101]: https://github.com/eclipse-mosquitto/mosquitto/issues/1101
+[#1131]: https://github.com/eclipse-mosquitto/mosquitto/issues/1131
+[#1137]: https://github.com/eclipse-mosquitto/mosquitto/issues/1137
+[#1139]: https://github.com/eclipse-mosquitto/mosquitto/issues/1139
+[#1143]: https://github.com/eclipse-mosquitto/mosquitto/issues/1143
+[#1144]: https://github.com/eclipse-mosquitto/mosquitto/issues/1144

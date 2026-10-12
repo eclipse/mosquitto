@@ -48,15 +48,15 @@ This is a bugfix and security release.
 
 
 [CVE-2018-20145]: https://nvd.nist.gov/vuln/detail/CVE-2018-20145
-[#68]: https://github.com/eclipse/mosquitto/issues/68
-[#537]: https://github.com/eclipse/mosquitto/issues/537
-[#613]: https://github.com/eclipse/mosquitto/issues/613
-[#772]: https://github.com/eclipse/mosquitto/issues/772
-[#1004]: https://github.com/eclipse/mosquitto/issues/1004
-[#1027]: https://github.com/eclipse/mosquitto/issues/1027
-[#1040]: https://github.com/eclipse/mosquitto/issues/1040
-[#1062]: https://github.com/eclipse/mosquitto/issues/1062
-[#1066]: https://github.com/eclipse/mosquitto/issues/1066
-[#1067]: https://github.com/eclipse/mosquitto/issues/1067
-[#1068]: https://github.com/eclipse/mosquitto/issues/1068
-[#1073]: https://github.com/eclipse/mosquitto/issues/1073
+[#68]: https://github.com/eclipse-mosquitto/mosquitto/issues/68
+[#537]: https://github.com/eclipse-mosquitto/mosquitto/issues/537
+[#613]: https://github.com/eclipse-mosquitto/mosquitto/issues/613
+[#772]: https://github.com/eclipse-mosquitto/mosquitto/issues/772
+[#1004]: https://github.com/eclipse-mosquitto/mosquitto/issues/1004
+[#1027]: https://github.com/eclipse-mosquitto/mosquitto/issues/1027
+[#1040]: https://github.com/eclipse-mosquitto/mosquitto/issues/1040
+[#1062]: https://github.com/eclipse-mosquitto/mosquitto/issues/1062
+[#1066]: https://github.com/eclipse-mosquitto/mosquitto/issues/1066
+[#1067]: https://github.com/eclipse-mosquitto/mosquitto/issues/1067
+[#1068]: https://github.com/eclipse-mosquitto/mosquitto/issues/1068
+[#1073]: https://github.com/eclipse-mosquitto/mosquitto/issues/1073

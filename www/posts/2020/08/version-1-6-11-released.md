@@ -50,23 +50,23 @@ Mosquitto 1.6.11 has been released, this is a bugfix release.
 - Fix `mosquitto_loop_stop()` not stopping on Windows. Closes [#1748]. Closes [#117].
 
 
-[#117]: https://github.com/eclipse/mosquitto/issues/117
-[#821]: https://github.com/eclipse/mosquitto/issues/821
-[#1547]: https://github.com/eclipse/mosquitto/issues/1547
-[#1689]: https://github.com/eclipse/mosquitto/issues/1689
-[#1713]: https://github.com/eclipse/mosquitto/issues/1713
-[#1718]: https://github.com/eclipse/mosquitto/issues/1718
-[#1725]: https://github.com/eclipse/mosquitto/issues/1725
-[#1726]: https://github.com/eclipse/mosquitto/issues/1726
-[#1729]: https://github.com/eclipse/mosquitto/issues/1729
-[#1730]: https://github.com/eclipse/mosquitto/issues/1730
-[#1735]: https://github.com/eclipse/mosquitto/issues/1735
-[#1740]: https://github.com/eclipse/mosquitto/issues/1740
-[#1741]: https://github.com/eclipse/mosquitto/issues/1741
-[#1748]: https://github.com/eclipse/mosquitto/issues/1748
-[#1749]: https://github.com/eclipse/mosquitto/issues/1749
-[#1752]: https://github.com/eclipse/mosquitto/issues/1752
-[#1773]: https://github.com/eclipse/mosquitto/issues/1773
-[#1774]: https://github.com/eclipse/mosquitto/issues/1774
-[#1777]: https://github.com/eclipse/mosquitto/issues/1777
+[#117]: https://github.com/eclipse-mosquitto/mosquitto/issues/117
+[#821]: https://github.com/eclipse-mosquitto/mosquitto/issues/821
+[#1547]: https://github.com/eclipse-mosquitto/mosquitto/issues/1547
+[#1689]: https://github.com/eclipse-mosquitto/mosquitto/issues/1689
+[#1713]: https://github.com/eclipse-mosquitto/mosquitto/issues/1713
+[#1718]: https://github.com/eclipse-mosquitto/mosquitto/issues/1718
+[#1725]: https://github.com/eclipse-mosquitto/mosquitto/issues/1725
+[#1726]: https://github.com/eclipse-mosquitto/mosquitto/issues/1726
+[#1729]: https://github.com/eclipse-mosquitto/mosquitto/issues/1729
+[#1730]: https://github.com/eclipse-mosquitto/mosquitto/issues/1730
+[#1735]: https://github.com/eclipse-mosquitto/mosquitto/issues/1735
+[#1740]: https://github.com/eclipse-mosquitto/mosquitto/issues/1740
+[#1741]: https://github.com/eclipse-mosquitto/mosquitto/issues/1741
+[#1748]: https://github.com/eclipse-mosquitto/mosquitto/issues/1748
+[#1749]: https://github.com/eclipse-mosquitto/mosquitto/issues/1749
+[#1752]: https://github.com/eclipse-mosquitto/mosquitto/issues/1752
+[#1773]: https://github.com/eclipse-mosquitto/mosquitto/issues/1773
+[#1774]: https://github.com/eclipse-mosquitto/mosquitto/issues/1774
+[#1777]: https://github.com/eclipse-mosquitto/mosquitto/issues/1777
 [#565671]: https://bugs.eclipse.org/bugs/show_bug.cgi?id=565671

@@ -40,17 +40,17 @@ Mosquitto 1.6.9 has been released, this is a bugfix release.
 - Default behaviour for v5 clients using `-c` is now to use infinite length
   sessions, as with v3 clients. Closes [#1546].
 
-[#1525]: https://github.com/eclipse/mosquitto/issues/1525
-[#1533]: https://github.com/eclipse/mosquitto/issues/1533
-[#1539]: https://github.com/eclipse/mosquitto/issues/1539
-[#1539]: https://github.com/eclipse/mosquitto/issues/1539
-[#1545]: https://github.com/eclipse/mosquitto/issues/1545
-[#1546]: https://github.com/eclipse/mosquitto/issues/1546
-[#1550]: https://github.com/eclipse/mosquitto/issues/1550
-[#1552]: https://github.com/eclipse/mosquitto/issues/1552
-[#1564]: https://github.com/eclipse/mosquitto/issues/1564
-[#1565]: https://github.com/eclipse/mosquitto/issues/1565
-[#1566]: https://github.com/eclipse/mosquitto/issues/1566
-[#1584]: https://github.com/eclipse/mosquitto/issues/1584
-[#1585]: https://github.com/eclipse/mosquitto/issues/1585
-[#1589]: https://github.com/eclipse/mosquitto/issues/1589
+[#1525]: https://github.com/eclipse-mosquitto/mosquitto/issues/1525
+[#1533]: https://github.com/eclipse-mosquitto/mosquitto/issues/1533
+[#1539]: https://github.com/eclipse-mosquitto/mosquitto/issues/1539
+[#1539]: https://github.com/eclipse-mosquitto/mosquitto/issues/1539
+[#1545]: https://github.com/eclipse-mosquitto/mosquitto/issues/1545
+[#1546]: https://github.com/eclipse-mosquitto/mosquitto/issues/1546
+[#1550]: https://github.com/eclipse-mosquitto/mosquitto/issues/1550
+[#1552]: https://github.com/eclipse-mosquitto/mosquitto/issues/1552
+[#1564]: https://github.com/eclipse-mosquitto/mosquitto/issues/1564
+[#1565]: https://github.com/eclipse-mosquitto/mosquitto/issues/1565
+[#1566]: https://github.com/eclipse-mosquitto/mosquitto/issues/1566
+[#1584]: https://github.com/eclipse-mosquitto/mosquitto/issues/1584
+[#1585]: https://github.com/eclipse-mosquitto/mosquitto/issues/1585
+[#1589]: https://github.com/eclipse-mosquitto/mosquitto/issues/1589

@@ -61,17 +61,17 @@ Version 2.0.7 and 1.6.13 of Mosquitto have been released. These are bugfix relea
 ## Build:
 - Enable epoll support in CMake builds.
 
-[#1476]: https://github.com/eclipse/mosquitto/issues/1476
-[#1866]: https://github.com/eclipse/mosquitto/issues/1866
-[#1880]: https://github.com/eclipse/mosquitto/issues/1880
-[#1891]: https://github.com/eclipse/mosquitto/issues/1891
-[#1897]: https://github.com/eclipse/mosquitto/issues/1897
-[#1905]: https://github.com/eclipse/mosquitto/issues/1905
-[#1908]: https://github.com/eclipse/mosquitto/issues/1908
-[#1925]: https://github.com/eclipse/mosquitto/issues/1925
-[#1942]: https://github.com/eclipse/mosquitto/issues/1942
-[#1968]: https://github.com/eclipse/mosquitto/issues/1968
-[#2057]: https://github.com/eclipse/mosquitto/issues/2057
-[#2059]: https://github.com/eclipse/mosquitto/issues/2059
-[#2066]: https://github.com/eclipse/mosquitto/issues/2066
+[#1476]: https://github.com/eclipse-mosquitto/mosquitto/issues/1476
+[#1866]: https://github.com/eclipse-mosquitto/mosquitto/issues/1866
+[#1880]: https://github.com/eclipse-mosquitto/mosquitto/issues/1880
+[#1891]: https://github.com/eclipse-mosquitto/mosquitto/issues/1891
+[#1897]: https://github.com/eclipse-mosquitto/mosquitto/issues/1897
+[#1905]: https://github.com/eclipse-mosquitto/mosquitto/issues/1905
+[#1908]: https://github.com/eclipse-mosquitto/mosquitto/issues/1908
+[#1925]: https://github.com/eclipse-mosquitto/mosquitto/issues/1925
+[#1942]: https://github.com/eclipse-mosquitto/mosquitto/issues/1942
+[#1968]: https://github.com/eclipse-mosquitto/mosquitto/issues/1968
+[#2057]: https://github.com/eclipse-mosquitto/mosquitto/issues/2057
+[#2059]: https://github.com/eclipse-mosquitto/mosquitto/issues/2059
+[#2066]: https://github.com/eclipse-mosquitto/mosquitto/issues/2066
 [#570126]: https://bugs.eclipse.org/bugs/show_bug.cgi?id=570126

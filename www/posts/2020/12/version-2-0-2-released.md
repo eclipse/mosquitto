@@ -37,7 +37,7 @@ The 2.0.1 changes are below.
 - Distribute cmake/ and snap/ directories in tar.
 
 
-[#1476]: https://github.com/eclipse/mosquitto/issues/1476
-[#1925]: https://github.com/eclipse/mosquitto/issues/1925
-[#1934]: https://github.com/eclipse/mosquitto/issues/1934
-[#1936]: https://github.com/eclipse/mosquitto/issues/1936
+[#1476]: https://github.com/eclipse-mosquitto/mosquitto/issues/1476
+[#1925]: https://github.com/eclipse-mosquitto/mosquitto/issues/1925
+[#1934]: https://github.com/eclipse-mosquitto/mosquitto/issues/1934
+[#1936]: https://github.com/eclipse-mosquitto/mosquitto/issues/1936

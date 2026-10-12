@@ -52,16 +52,16 @@ This is a bugfix release.
 - Guard `ssize_t` definition on Windows. Closes [#522].
 
 
-[#35]: https://github.com/eclipse/mosquitto/issues/35
-[#274]: https://github.com/eclipse/mosquitto/issues/274
-[#448]: https://github.com/eclipse/mosquitto/issues/448
-[#478]: https://github.com/eclipse/mosquitto/issues/478
-[#522]: https://github.com/eclipse/mosquitto/issues/522
-[#737]: https://github.com/eclipse/mosquitto/issues/737
-[#1367]: https://github.com/eclipse/mosquitto/issues/1367
-[#1369]: https://github.com/eclipse/mosquitto/issues/1369
-[#1374]: https://github.com/eclipse/mosquitto/issues/1374
-[#1390]: https://github.com/eclipse/mosquitto/issues/1390
-[#1391]: https://github.com/eclipse/mosquitto/issues/1391
-[#1401]: https://github.com/eclipse/mosquitto/issues/1401
-[#1402]: https://github.com/eclipse/mosquitto/issues/1402
+[#35]: https://github.com/eclipse-mosquitto/mosquitto/issues/35
+[#274]: https://github.com/eclipse-mosquitto/mosquitto/issues/274
+[#448]: https://github.com/eclipse-mosquitto/mosquitto/issues/448
+[#478]: https://github.com/eclipse-mosquitto/mosquitto/issues/478
+[#522]: https://github.com/eclipse-mosquitto/mosquitto/issues/522
+[#737]: https://github.com/eclipse-mosquitto/mosquitto/issues/737
+[#1367]: https://github.com/eclipse-mosquitto/mosquitto/issues/1367
+[#1369]: https://github.com/eclipse-mosquitto/mosquitto/issues/1369
+[#1374]: https://github.com/eclipse-mosquitto/mosquitto/issues/1374
+[#1390]: https://github.com/eclipse-mosquitto/mosquitto/issues/1390
+[#1391]: https://github.com/eclipse-mosquitto/mosquitto/issues/1391
+[#1401]: https://github.com/eclipse-mosquitto/mosquitto/issues/1401
+[#1402]: https://github.com/eclipse-mosquitto/mosquitto/issues/1402

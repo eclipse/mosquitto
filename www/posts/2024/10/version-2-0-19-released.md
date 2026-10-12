@@ -34,6 +34,6 @@ Version 2.0.19 of Mosquitto has been released. This is a security and bugfix rel
 # Build
 - Thread support is re-enabled on Windows.
 
-[#2579]: https://github.com/eclipse/mosquitto/issues/2579
-[#3054]: https://github.com/eclipse/mosquitto/issues/3054
-[#3089]: https://github.com/eclipse/mosquitto/issues/3089
+[#2579]: https://github.com/eclipse-mosquitto/mosquitto/issues/2579
+[#3054]: https://github.com/eclipse-mosquitto/mosquitto/issues/3054
+[#3089]: https://github.com/eclipse-mosquitto/mosquitto/issues/3089

@@ -65,20 +65,20 @@ This is a bugfix release.
 ## Build
 - CLIENT_LDFLAGS now uses LDFLAGS. Closes [#1294].
 
-[#1152]: https://github.com/eclipse/mosquitto/issues/1152
-[#1227]: https://github.com/eclipse/mosquitto/issues/1227
-[#1257]: https://github.com/eclipse/mosquitto/issues/1257
-[#1263]: https://github.com/eclipse/mosquitto/issues/1263
-[#1264]: https://github.com/eclipse/mosquitto/issues/1264
-[#1266]: https://github.com/eclipse/mosquitto/issues/1266
-[#1273]: https://github.com/eclipse/mosquitto/issues/1273
-[#1273]: https://github.com/eclipse/mosquitto/issues/1273
-[#1273]: https://github.com/eclipse/mosquitto/issues/1273
-[#1274]: https://github.com/eclipse/mosquitto/issues/1274
-[#1276]: https://github.com/eclipse/mosquitto/issues/1276
-[#1280]: https://github.com/eclipse/mosquitto/issues/1280
-[#1284]: https://github.com/eclipse/mosquitto/issues/1284
-[#1285]: https://github.com/eclipse/mosquitto/issues/1285
-[#1290]: https://github.com/eclipse/mosquitto/issues/1290
-[#1294]: https://github.com/eclipse/mosquitto/issues/1294
-[#1302]: https://github.com/eclipse/mosquitto/issues/1302
+[#1152]: https://github.com/eclipse-mosquitto/mosquitto/issues/1152
+[#1227]: https://github.com/eclipse-mosquitto/mosquitto/issues/1227
+[#1257]: https://github.com/eclipse-mosquitto/mosquitto/issues/1257
+[#1263]: https://github.com/eclipse-mosquitto/mosquitto/issues/1263
+[#1264]: https://github.com/eclipse-mosquitto/mosquitto/issues/1264
+[#1266]: https://github.com/eclipse-mosquitto/mosquitto/issues/1266
+[#1273]: https://github.com/eclipse-mosquitto/mosquitto/issues/1273
+[#1273]: https://github.com/eclipse-mosquitto/mosquitto/issues/1273
+[#1273]: https://github.com/eclipse-mosquitto/mosquitto/issues/1273
+[#1274]: https://github.com/eclipse-mosquitto/mosquitto/issues/1274
+[#1276]: https://github.com/eclipse-mosquitto/mosquitto/issues/1276
+[#1280]: https://github.com/eclipse-mosquitto/mosquitto/issues/1280
+[#1284]: https://github.com/eclipse-mosquitto/mosquitto/issues/1284
+[#1285]: https://github.com/eclipse-mosquitto/mosquitto/issues/1285
+[#1290]: https://github.com/eclipse-mosquitto/mosquitto/issues/1290
+[#1294]: https://github.com/eclipse-mosquitto/mosquitto/issues/1294
+[#1302]: https://github.com/eclipse-mosquitto/mosquitto/issues/1302

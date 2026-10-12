@@ -31,6 +31,6 @@ This is a bugfix release.
 - Add rewritten build test script and remove some build warnings.
 
 
-[#389]: https://github.com/eclipse/mosquitto/issues/389
-[#1149]: https://github.com/eclipse/mosquitto/issues/1149
-[#1154]: https://github.com/eclipse/mosquitto/issues/1154
+[#389]: https://github.com/eclipse-mosquitto/mosquitto/issues/389
+[#1149]: https://github.com/eclipse-mosquitto/mosquitto/issues/1149
+[#1154]: https://github.com/eclipse-mosquitto/mosquitto/issues/1154

@@ -45,15 +45,15 @@ This is a bugfix and security release.
   Closes [#862] and [#933].
 - Fix builds on QNX 7.0.0. Closes [#1018].
 
-[#7]: https://github.com/eclipse/mosquitto/issues/7
-[#287]: https://github.com/eclipse/mosquitto/issues/287
-[#592]: https://github.com/eclipse/mosquitto/issues/592
-[#933]: https://github.com/eclipse/mosquitto/issues/933
-[#977]: https://github.com/eclipse/mosquitto/issues/977
-[#983]: https://github.com/eclipse/mosquitto/issues/983
-[#990]: https://github.com/eclipse/mosquitto/issues/990
-[#996]: https://github.com/eclipse/mosquitto/issues/996
-[#1015]: https://github.com/eclipse/mosquitto/issues/1015
-[#1016]: https://github.com/eclipse/mosquitto/issues/1016
-[#1018]: https://github.com/eclipse/mosquitto/issues/1018
-[#1019]: https://github.com/eclipse/mosquitto/issues/1019
+[#7]: https://github.com/eclipse-mosquitto/mosquitto/issues/7
+[#287]: https://github.com/eclipse-mosquitto/mosquitto/issues/287
+[#592]: https://github.com/eclipse-mosquitto/mosquitto/issues/592
+[#933]: https://github.com/eclipse-mosquitto/mosquitto/issues/933
+[#977]: https://github.com/eclipse-mosquitto/mosquitto/issues/977
+[#983]: https://github.com/eclipse-mosquitto/mosquitto/issues/983
+[#990]: https://github.com/eclipse-mosquitto/mosquitto/issues/990
+[#996]: https://github.com/eclipse-mosquitto/mosquitto/issues/996
+[#1015]: https://github.com/eclipse-mosquitto/mosquitto/issues/1015
+[#1016]: https://github.com/eclipse-mosquitto/mosquitto/issues/1016
+[#1018]: https://github.com/eclipse-mosquitto/mosquitto/issues/1018
+[#1019]: https://github.com/eclipse-mosquitto/mosquitto/issues/1019

@@ -201,6 +201,6 @@ Mosquitto 2.0, you should change your instance of
 `mosquitto_auth_plugin_version` so that it returns the version of the plugin
 interface that you support, i.e. `4`.
 
-[misc/letsencrypt/mosquitto-copy.sh]:https://github.com/eclipse/mosquitto/tree/master/misc/letsencrypt
+[misc/letsencrypt/mosquitto-copy.sh]:https://github.com/eclipse-mosquitto/mosquitto/tree/master/misc/letsencrypt
 [dynamic-security plugin]:/documentation/dynamic-security/
 [mosquitto-go-auth plugin]:https://github.com/iegomez/mosquitto-go-auth

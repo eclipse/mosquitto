@@ -2,7 +2,7 @@
 
 # Test whether a persistent client that disconnects with DISCONNECT has its
 # will published when it reconnects. It shouldn't. Bug 1273:
-# https://github.com/eclipse/mosquitto/issues/1273
+# https://github.com/eclipse-mosquitto/mosquitto/issues/1273
 
 from mosq_test_helper import *
 

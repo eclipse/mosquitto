@@ -42,8 +42,8 @@ This is a bugfix and security release.
 
 [CVE-2017-7650]: https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2017-7650
 [CVE-2017-9868]: https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2017-9868
-[#417]: https://github.com/eclipse/mosquitto/issues/417
-[#427]: https://github.com/eclipse/mosquitto/issues/427
-[#462]: https://github.com/eclipse/mosquitto/issues/462
-[#468]: https://github.com/eclipse/mosquitto/issues/468
-[#477]: https://github.com/eclipse/mosquitto/issues/477
+[#417]: https://github.com/eclipse-mosquitto/mosquitto/issues/417
+[#427]: https://github.com/eclipse-mosquitto/mosquitto/issues/427
+[#462]: https://github.com/eclipse-mosquitto/mosquitto/issues/462
+[#468]: https://github.com/eclipse-mosquitto/mosquitto/issues/468
+[#477]: https://github.com/eclipse-mosquitto/mosquitto/issues/477

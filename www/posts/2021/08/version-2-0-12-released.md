@@ -82,15 +82,15 @@ and bugfix release.
 - Remove some unnecessary code guards related to libressl.
 - Fix printf format build warning on MIPS. Closes [#2271].
 
-[#2198]: https://github.com/eclipse/mosquitto/issues/2198
-[#2241]: https://github.com/eclipse/mosquitto/issues/2241
-[#2242]: https://github.com/eclipse/mosquitto/issues/2242
-[#2244]: https://github.com/eclipse/mosquitto/issues/2244
-[#2271]: https://github.com/eclipse/mosquitto/issues/2271
-[#2281]: https://github.com/eclipse/mosquitto/issues/2281
-[#2286]: https://github.com/eclipse/mosquitto/issues/2286
-[#2288]: https://github.com/eclipse/mosquitto/issues/2288
-[#2289]: https://github.com/eclipse/mosquitto/issues/2289
+[#2198]: https://github.com/eclipse-mosquitto/mosquitto/issues/2198
+[#2241]: https://github.com/eclipse-mosquitto/mosquitto/issues/2241
+[#2242]: https://github.com/eclipse-mosquitto/mosquitto/issues/2242
+[#2244]: https://github.com/eclipse-mosquitto/mosquitto/issues/2244
+[#2271]: https://github.com/eclipse-mosquitto/mosquitto/issues/2271
+[#2281]: https://github.com/eclipse-mosquitto/mosquitto/issues/2281
+[#2286]: https://github.com/eclipse-mosquitto/mosquitto/issues/2286
+[#2288]: https://github.com/eclipse-mosquitto/mosquitto/issues/2288
+[#2289]: https://github.com/eclipse-mosquitto/mosquitto/issues/2289
 [#567213]: https://bugs.eclipse.org/bugs/show_bug.cgi?id=567213
 [CVE-2020-13849]: https://nvd.nist.gov/vuln/detail/CVE-2020-13849
 [CVE-2021-34434]: https://nvd.nist.gov/vuln/detail/CVE-2021-34434

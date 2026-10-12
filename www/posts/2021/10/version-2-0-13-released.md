@@ -31,10 +31,10 @@ Version 2.0.13 of Mosquitto has been released. This is a bugfix release.
 # Clients
 - Fix date format in mosquitto_sub output. Closes [#2353].
 
-[#2297]: https://github.com/eclipse/mosquitto/issues/2297
-[#2306]: https://github.com/eclipse/mosquitto/issues/2306
-[#2314]: https://github.com/eclipse/mosquitto/issues/2314
-[#2326]: https://github.com/eclipse/mosquitto/issues/2326
-[#2339]: https://github.com/eclipse/mosquitto/issues/2339
-[#2350]: https://github.com/eclipse/mosquitto/issues/2350
-[#2353]: https://github.com/eclipse/mosquitto/issues/2353
+[#2297]: https://github.com/eclipse-mosquitto/mosquitto/issues/2297
+[#2306]: https://github.com/eclipse-mosquitto/mosquitto/issues/2306
+[#2314]: https://github.com/eclipse-mosquitto/mosquitto/issues/2314
+[#2326]: https://github.com/eclipse-mosquitto/mosquitto/issues/2326
+[#2339]: https://github.com/eclipse-mosquitto/mosquitto/issues/2339
+[#2350]: https://github.com/eclipse-mosquitto/mosquitto/issues/2350
+[#2353]: https://github.com/eclipse-mosquitto/mosquitto/issues/2353

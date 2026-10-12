@@ -40,7 +40,7 @@ memory, resulting in a possible crash.
 ## Clients
 - Fix `-L` url parsing. Closes [#1248].
 
-[#1244]: https://github.com/eclipse/mosquitto/issues/1244
-[#1245]: https://github.com/eclipse/mosquitto/issues/1245
-[#1246]: https://github.com/eclipse/mosquitto/issues/1246
-[#1250]: https://github.com/eclipse/mosquitto/issues/1250
+[#1244]: https://github.com/eclipse-mosquitto/mosquitto/issues/1244
+[#1245]: https://github.com/eclipse-mosquitto/mosquitto/issues/1245
+[#1246]: https://github.com/eclipse-mosquitto/mosquitto/issues/1246
+[#1250]: https://github.com/eclipse-mosquitto/mosquitto/issues/1250

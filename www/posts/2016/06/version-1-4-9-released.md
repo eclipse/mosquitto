@@ -58,15 +58,15 @@ This is a bugfix release.
  * Fix string quoting in CMakeLists.txt. Closes [#4].
  * Fix building on Visual Studio 2015. Closes [#136].
 
-[#1]: https://github.com/eclipse/mosquitto/issues/1
-[#4]: https://github.com/eclipse/mosquitto/issues/4
-[#5]: https://github.com/eclipse/mosquitto/issues/5
-[#57]: https://github.com/eclipse/mosquitto/issues/57
-[#136]: https://github.com/eclipse/mosquitto/issues/136
-[#150]: https://github.com/eclipse/mosquitto/issues/150
-[#151]: https://github.com/eclipse/mosquitto/issues/151
-[#154]: https://github.com/eclipse/mosquitto/issues/154
-[#166]: https://github.com/eclipse/mosquitto/issues/166
-[#169]: https://github.com/eclipse/mosquitto/issues/169
-[#170]: https://github.com/eclipse/mosquitto/issues/170
-[#180]: https://github.com/eclipse/mosquitto/issues/180
+[#1]: https://github.com/eclipse-mosquitto/mosquitto/issues/1
+[#4]: https://github.com/eclipse-mosquitto/mosquitto/issues/4
+[#5]: https://github.com/eclipse-mosquitto/mosquitto/issues/5
+[#57]: https://github.com/eclipse-mosquitto/mosquitto/issues/57
+[#136]: https://github.com/eclipse-mosquitto/mosquitto/issues/136
+[#150]: https://github.com/eclipse-mosquitto/mosquitto/issues/150
+[#151]: https://github.com/eclipse-mosquitto/mosquitto/issues/151
+[#154]: https://github.com/eclipse-mosquitto/mosquitto/issues/154
+[#166]: https://github.com/eclipse-mosquitto/mosquitto/issues/166
+[#169]: https://github.com/eclipse-mosquitto/mosquitto/issues/169
+[#170]: https://github.com/eclipse-mosquitto/mosquitto/issues/170
+[#180]: https://github.com/eclipse-mosquitto/mosquitto/issues/180

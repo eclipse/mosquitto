@@ -42,8 +42,8 @@ release.
 - Fix build on Solaris non-sparc. Closes [#2136].
 
 [CVE-2021-23980]: https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-28166
-[#2134]: https://github.com/eclipse/mosquitto/issues/2134
-[#2136]: https://github.com/eclipse/mosquitto/issues/2136
-[#2152]: https://github.com/eclipse/mosquitto/issues/2152
-[#2160]: https://github.com/eclipse/mosquitto/issues/2160
-[#2163]: https://github.com/eclipse/mosquitto/issues/2163
+[#2134]: https://github.com/eclipse-mosquitto/mosquitto/issues/2134
+[#2136]: https://github.com/eclipse-mosquitto/mosquitto/issues/2136
+[#2152]: https://github.com/eclipse-mosquitto/mosquitto/issues/2152
+[#2160]: https://github.com/eclipse-mosquitto/mosquitto/issues/2160
+[#2163]: https://github.com/eclipse-mosquitto/mosquitto/issues/2163

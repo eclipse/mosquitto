@@ -49,15 +49,15 @@ Client library:
   tests when under load. Closes [#3208].
 
 [#eclipse 248]: https://gitlab.eclipse.org/security/vulnerability-reports/-/issues/248
-[#1836]: https://github.com/eclipse/mosquitto/issues/1836
-[#2325]: https://github.com/eclipse/mosquitto/issues/2325
-[#2696]: https://github.com/eclipse/mosquitto/issues/2696
-[#3130]: https://github.com/eclipse/mosquitto/issues/3130
-[#3138]: https://github.com/eclipse/mosquitto/issues/3138
-[#3143]: https://github.com/eclipse/mosquitto/issues/3143
-[#3175]: https://github.com/eclipse/mosquitto/issues/3175
-[#3192]: https://github.com/eclipse/mosquitto/issues/3192
-[#3198]: https://github.com/eclipse/mosquitto/issues/3198
-[#3208]: https://github.com/eclipse/mosquitto/issues/3208
-[#3219]: https://github.com/eclipse/mosquitto/issues/3219
-[#3221]: https://github.com/eclipse/mosquitto/issues/3221
+[#1836]: https://github.com/eclipse-mosquitto/mosquitto/issues/1836
+[#2325]: https://github.com/eclipse-mosquitto/mosquitto/issues/2325
+[#2696]: https://github.com/eclipse-mosquitto/mosquitto/issues/2696
+[#3130]: https://github.com/eclipse-mosquitto/mosquitto/issues/3130
+[#3138]: https://github.com/eclipse-mosquitto/mosquitto/issues/3138
+[#3143]: https://github.com/eclipse-mosquitto/mosquitto/issues/3143
+[#3175]: https://github.com/eclipse-mosquitto/mosquitto/issues/3175
+[#3192]: https://github.com/eclipse-mosquitto/mosquitto/issues/3192
+[#3198]: https://github.com/eclipse-mosquitto/mosquitto/issues/3198
+[#3208]: https://github.com/eclipse-mosquitto/mosquitto/issues/3208
+[#3219]: https://github.com/eclipse-mosquitto/mosquitto/issues/3219
+[#3221]: https://github.com/eclipse-mosquitto/mosquitto/issues/3221

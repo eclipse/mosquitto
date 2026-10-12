@@ -3,7 +3,7 @@
 # Test whether a client connected with a client certificate when
 # use_identity_as_username is true is then disconnected when a SIGHUP is
 # received.
-# https://github.com/eclipse/mosquitto/issues/1402
+# https://github.com/eclipse-mosquitto/mosquitto/issues/1402
 
 from mosq_test_helper import *
 

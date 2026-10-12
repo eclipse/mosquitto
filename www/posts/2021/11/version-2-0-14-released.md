@@ -19,5 +19,5 @@ Versions 2.0.14 of Mosquitto has been released. This is a bugfix release.
   Closes [#2364].
 - Fix incorrect `subscribe_callback` in mosquittopp.h. Closes [#2367].
 
-[#2364]: https://github.com/eclipse/mosquitto/issues/2364
-[#2367]: https://github.com/eclipse/mosquitto/issues/2367
+[#2364]: https://github.com/eclipse-mosquitto/mosquitto/issues/2364
+[#2367]: https://github.com/eclipse-mosquitto/mosquitto/issues/2367

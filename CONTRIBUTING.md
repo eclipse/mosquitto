@@ -19,7 +19,7 @@ Source
 
 The Mosquitto code is stored in a git repository.
 
-- https://github.com/eclipse/mosquitto
+- https://github.com/eclipse-mosquitto/mosquitto
 
 You can contribute bugfixes and new features by sending pull requests through GitHub.
 
@@ -41,7 +41,7 @@ Please read the [Eclipse Foundation policy on accepting contributions via Git](h
 
 ## Contributing a change
 
-1. [Fork the repository on GitHub](https://github.com/eclipse/mosquitto/fork)
+1. [Fork the repository on GitHub](https://github.com/eclipse-mosquitto/mosquitto/fork)
 2. Clone the forked repository onto your computer: ``` git clone
    https://github.com/<your username>/mosquitto.git ```
 3. If you are adding a new feature, then create a new branch from the latest
@@ -57,7 +57,7 @@ Please read the [Eclipse Foundation policy on accepting contributions via Git](h
    commits.
 9. Push the changes in your branch to your forked repository.
 10. Finally, go to
-	[https://github.com/eclipse/mosquitto](https://github.com/eclipse/mosquitto)
+	[https://github.com/eclipse-mosquitto/mosquitto](https://github.com/eclipse-mosquitto/mosquitto)
 	and create a pull request from your "YOUR_BRANCH_NAME" branch to the
 	```develop``` or ```fixes``` branch as appropriate to request review and
 	merge of the commits in your pushed branch.
@@ -80,7 +80,7 @@ Contact the project developers via the project's development
 Search for bugs:
 ----------------
 
-This project uses [Github](https://github.com/eclipse/mosquitto/issues)
+This project uses [Github](https://github.com/eclipse-mosquitto/mosquitto/issues)
 to track ongoing development and issues.
 
 Create a new bug:
@@ -89,4 +89,4 @@ Create a new bug:
 Be sure to search for existing bugs before you create another one. Remember
 that contributions are always welcome!
 
-- [Create new Mosquitto bug](https://github.com/eclipse/mosquitto/issues)
+- [Create new Mosquitto bug](https://github.com/eclipse-mosquitto/mosquitto/issues)

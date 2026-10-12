@@ -24,7 +24,7 @@ Version 2.0.20 of Mosquitto has been released. This is a bugfix release.
 # Build
 - Fix build on NetBSD
 
-[#3052]: https://github.com/eclipse/mosquitto/issues/3052
-[#3119]: https://github.com/eclipse/mosquitto/issues/3119
-[#3125]: https://github.com/eclipse/mosquitto/issues/3125
-[#3128]: https://github.com/eclipse/mosquitto/issues/3128
+[#3052]: https://github.com/eclipse-mosquitto/mosquitto/issues/3052
+[#3119]: https://github.com/eclipse-mosquitto/mosquitto/issues/3119
+[#3125]: https://github.com/eclipse-mosquitto/mosquitto/issues/3125
+[#3128]: https://github.com/eclipse-mosquitto/mosquitto/issues/3128

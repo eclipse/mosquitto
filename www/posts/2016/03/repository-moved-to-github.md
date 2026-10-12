@@ -10,7 +10,7 @@
 -->
 
 The mosquitto repository is now hosted on github:
-<https://github.com/eclipse/mosquitto> This is now the canonical location for
+<https://github.com/eclipse-mosquitto/mosquitto> This is now the canonical location for
 mosquitto development work.
 
 Bug reports should also be made on github and the existing bug reports will be

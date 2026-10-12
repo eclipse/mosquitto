@@ -294,7 +294,7 @@ else:
 
 do_test(proto_ver=4, cs=cs, lcs=lcs)
 # FIXME - v5 clean session bridging doesn't work: see
-# https://github.com/eclipse/mosquitto/issues/1632
+# https://github.com/eclipse-mosquitto/mosquitto/issues/1632
 #do_test(proto_ver=5, cs=cs, lcs=lcs)
 
 exit(0)

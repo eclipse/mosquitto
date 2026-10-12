@@ -45,12 +45,12 @@ This is a bugfix release.
 ## Other
 - Various documentation fixes.
 
-[#515]: https://github.com/eclipse/mosquitto/issues/515
-[#1272]: https://github.com/eclipse/mosquitto/issues/1272
-[#1322]: https://github.com/eclipse/mosquitto/issues/1322
-[#1332]: https://github.com/eclipse/mosquitto/issues/1332
-[#1344]: https://github.com/eclipse/mosquitto/issues/1344
-[#1345]: https://github.com/eclipse/mosquitto/issues/1345
-[#1353]: https://github.com/eclipse/mosquitto/issues/1353
-[#1354]: https://github.com/eclipse/mosquitto/issues/1354
-[#1360]: https://github.com/eclipse/mosquitto/issues/1360
+[#515]: https://github.com/eclipse-mosquitto/mosquitto/issues/515
+[#1272]: https://github.com/eclipse-mosquitto/mosquitto/issues/1272
+[#1322]: https://github.com/eclipse-mosquitto/mosquitto/issues/1322
+[#1332]: https://github.com/eclipse-mosquitto/mosquitto/issues/1332
+[#1344]: https://github.com/eclipse-mosquitto/mosquitto/issues/1344
+[#1345]: https://github.com/eclipse-mosquitto/mosquitto/issues/1345
+[#1353]: https://github.com/eclipse-mosquitto/mosquitto/issues/1353
+[#1354]: https://github.com/eclipse-mosquitto/mosquitto/issues/1354
+[#1360]: https://github.com/eclipse-mosquitto/mosquitto/issues/1360

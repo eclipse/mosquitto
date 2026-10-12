@@ -46,14 +46,14 @@ Version 2.0.6 of Mosquitto has been released. This is a bugfix release.
 - The SPDX identifiers for EDL-1.0 have been changed to BSD-3-Clause as per
   The Eclipse legal documentation generator. The licenses are identical.
 
-[#1974]: https://github.com/eclipse/mosquitto/issues/1974
-[#2010]: https://github.com/eclipse/mosquitto/issues/2010
-[#2011]: https://github.com/eclipse/mosquitto/issues/2011
-[#2017]: https://github.com/eclipse/mosquitto/issues/2017
-[#2019]: https://github.com/eclipse/mosquitto/issues/2019
-[#2020]: https://github.com/eclipse/mosquitto/issues/2020
-[#2022]: https://github.com/eclipse/mosquitto/issues/2022
-[#2026]: https://github.com/eclipse/mosquitto/issues/2026
-[#2029]: https://github.com/eclipse/mosquitto/issues/2029
-[#2037]: https://github.com/eclipse/mosquitto/issues/2037
-[#2043]: https://github.com/eclipse/mosquitto/issues/2043
+[#1974]: https://github.com/eclipse-mosquitto/mosquitto/issues/1974
+[#2010]: https://github.com/eclipse-mosquitto/mosquitto/issues/2010
+[#2011]: https://github.com/eclipse-mosquitto/mosquitto/issues/2011
+[#2017]: https://github.com/eclipse-mosquitto/mosquitto/issues/2017
+[#2019]: https://github.com/eclipse-mosquitto/mosquitto/issues/2019
+[#2020]: https://github.com/eclipse-mosquitto/mosquitto/issues/2020
+[#2022]: https://github.com/eclipse-mosquitto/mosquitto/issues/2022
+[#2026]: https://github.com/eclipse-mosquitto/mosquitto/issues/2026
+[#2029]: https://github.com/eclipse-mosquitto/mosquitto/issues/2029
+[#2037]: https://github.com/eclipse-mosquitto/mosquitto/issues/2037
+[#2043]: https://github.com/eclipse-mosquitto/mosquitto/issues/2043

@@ -56,20 +56,20 @@ Mosquitto 1.6.8 has been released, this is a bugfix release.
 # Installer
 - Fix `mosquitto_rr.exe` not being included in Windows installers. Closes [#1463].
 
-[#1429]: https://github.com/eclipse/mosquitto/issues/1429
-[#1432]: https://github.com/eclipse/mosquitto/issues/1432
-[#1437]: https://github.com/eclipse/mosquitto/issues/1437
-[#1441]: https://github.com/eclipse/mosquitto/issues/1441
-[#1442]: https://github.com/eclipse/mosquitto/issues/1442
-[#1448]: https://github.com/eclipse/mosquitto/issues/1448
-[#1453]: https://github.com/eclipse/mosquitto/issues/1453
-[#1459]: https://github.com/eclipse/mosquitto/issues/1459
-[#1463]: https://github.com/eclipse/mosquitto/issues/1463
-[#1464]: https://github.com/eclipse/mosquitto/issues/1464
-[#1473]: https://github.com/eclipse/mosquitto/issues/1473
-[#1474]: https://github.com/eclipse/mosquitto/issues/1474
-[#1478]: https://github.com/eclipse/mosquitto/issues/1478
-[#1489]: https://github.com/eclipse/mosquitto/issues/1489
-[#1494]: https://github.com/eclipse/mosquitto/issues/1494
-[#1499]: https://github.com/eclipse/mosquitto/issues/1499
-[#1513]: https://github.com/eclipse/mosquitto/issues/1513
+[#1429]: https://github.com/eclipse-mosquitto/mosquitto/issues/1429
+[#1432]: https://github.com/eclipse-mosquitto/mosquitto/issues/1432
+[#1437]: https://github.com/eclipse-mosquitto/mosquitto/issues/1437
+[#1441]: https://github.com/eclipse-mosquitto/mosquitto/issues/1441
+[#1442]: https://github.com/eclipse-mosquitto/mosquitto/issues/1442
+[#1448]: https://github.com/eclipse-mosquitto/mosquitto/issues/1448
+[#1453]: https://github.com/eclipse-mosquitto/mosquitto/issues/1453
+[#1459]: https://github.com/eclipse-mosquitto/mosquitto/issues/1459
+[#1463]: https://github.com/eclipse-mosquitto/mosquitto/issues/1463
+[#1464]: https://github.com/eclipse-mosquitto/mosquitto/issues/1464
+[#1473]: https://github.com/eclipse-mosquitto/mosquitto/issues/1473
+[#1474]: https://github.com/eclipse-mosquitto/mosquitto/issues/1474
+[#1478]: https://github.com/eclipse-mosquitto/mosquitto/issues/1478
+[#1489]: https://github.com/eclipse-mosquitto/mosquitto/issues/1489
+[#1494]: https://github.com/eclipse-mosquitto/mosquitto/issues/1494
+[#1499]: https://github.com/eclipse-mosquitto/mosquitto/issues/1499
+[#1513]: https://github.com/eclipse-mosquitto/mosquitto/issues/1513
