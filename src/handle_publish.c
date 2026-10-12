@@ -107,7 +107,7 @@ int handle__accepted_publish(struct mosquitto *context, struct mosquitto__base_m
 	}
 
 	if(!cmsg_stored){
-		if(base_msg->data.qos > 0 && context->msgs_in.inflight_quota == 0){
+		if(base_msg->data.qos > 0 && context->msgs_in.inflight_maximum != 0 && context->msgs_in.inflight_quota == 0){
 			log__printf(NULL, MOSQ_LOG_WARNING, "Client %s has exceeded its receive-maximum quota. This behaviour must be fixed on the client.", context->id);
 #if 0
 			/* Badly behaving clients like on the esp32 fall foul of this
