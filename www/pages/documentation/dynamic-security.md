@@ -522,7 +522,7 @@ they would be provided on the command line. For example:
 * `--key path-to-client.key` : Define the path to a file containing a PEM
   encoded private key for this client, if required by the server. See also
   `--cert`.
-* `-L url` : Specify specify user, password, hostname, port and topic at once
+* `-L url` : Specify user, password, hostname, port and topic at once
   as a URL. The URL must be in the form:
   `mqtt(s)://[username[:password]@]host[:port]`. If the scheme is mqtt:// then
   the port defaults to 1883. If the scheme is mqtts:// then the port defaults
