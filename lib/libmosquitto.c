@@ -253,6 +253,13 @@ void mosquitto__destroy(struct mosquitto *mosq)
 		return;
 	}
 
+#ifdef WITH_SRV
+	if(mosq->achan){
+		ares_destroy(mosq->achan);
+		mosq->achan = NULL;
+	}
+#endif
+
 #ifdef WITH_THREADING
 #  ifdef HAVE_PTHREAD_CANCEL
 	if(mosq->threaded == mosq_ts_self && !pthread_equal(mosq->thread_id, pthread_self())){

@@ -48,6 +48,7 @@ static void srv_callback(void *arg, int status, int timeouts, unsigned char *abu
 			// FIXME - choose which answer to use based on rfc2782 page 3. */
 			mosquitto_connect(mosq, reply->host, reply->port, mosq->keepalive);
 		}
+		ares_free_data(reply);
 	}else{
 		log__printf(mosq, MOSQ_LOG_ERR, "Error: SRV lookup failed (%d).", status);
 		/* FIXME - calling on_disconnect here isn't correct. */
