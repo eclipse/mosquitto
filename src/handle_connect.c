@@ -1163,7 +1163,10 @@ int handle__connect(struct mosquitto *context)
 			if(will_qos != 0 || will_retain != 0){
 				log__printf(NULL, MOSQ_LOG_INFO, "Protocol error from %s: CONNECT without Will with non-zero QoS (%d) or retain (%d).",
 						clientid, will_qos, will_retain);
-				rc = MOSQ_ERR_PROTOCOL;
+				if(context->protocol == mosq_p_mqtt5){
+					send__connack(context, 0, MQTT_RC_MALFORMED_PACKET, NULL);
+				}
+				rc = MOSQ_ERR_MALFORMED_PACKET;
 				goto handle_connect_error;
 			}
 		}
