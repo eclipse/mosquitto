@@ -10,9 +10,9 @@
 # that mosquitto is being run as a system daemon, and SNAP_COMMON will be used.
 # If a non-root user runs the command, then SNAP_USER_COMMON will be used.
 
-case "$SNAP_USER_COMMON" in
-	*/root/snap/mosquitto/common*) COMMON=$SNAP_COMMON ;;
-	*)                             COMMON=$SNAP_USER_COMMON ;;
+case "$SNAP_UID" in 
+	0) COMMON="$(sed -E "s#/$SNAP_NAME/#/${SNAP_INSTANCE_NAME}/#" <<< $SNAP_COMMON)";; 
+ 	*) COMMON="$(sed -E "s#/$SNAP_NAME/#/${SNAP_INSTANCE_NAME}/#" <<< $SNAP_USER_COMMON)";; 
 esac
 
 CONFIG_FILE="$SNAP/default_config.conf"
