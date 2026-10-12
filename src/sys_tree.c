@@ -24,7 +24,6 @@ Contributors:
 #include <stdio.h>
 #include <inttypes.h>
 #include <limits.h>
-#include <inttypes.h>
 
 #include "mosquitto_broker_internal.h"
 #include "sys_tree.h"
@@ -282,7 +281,7 @@ void sys_tree__update(bool force)
 					(!metrics[i].is_max && metrics[i].next != metrics[i].current)){
 
 				metrics[i].current = metrics[i].next;
-				len = (uint32_t)snprintf(buf, BUFLEN, "%lu", metrics[i].current);
+				len = (uint32_t)snprintf(buf, BUFLEN, "%" PRId64, metrics[i].current);
 				if(metrics[i].topic){
 					db__messages_easy_queue(NULL, metrics[i].topic, SYS_TREE_QOS, len, buf, 1, MSG_EXPIRY_INFINITE, NULL);
 				}
