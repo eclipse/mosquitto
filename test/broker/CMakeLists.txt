@@ -15,7 +15,6 @@ endif()
 set(EXCLUDE_LIST
     01-connect-uname-password-success-no-tls
     03-publish-qos1-queued-bytes
-    03-publish-qos2-max-inflight-exceeded
     09-extended-auth-single2
     # Not a test
     06-bridge-clean-session-core
@@ -81,6 +80,7 @@ add_python_test(PY_TEST_NAMES ${PREFIX} 1 "03-publish-qos1-max-inflight-expire.p
 add_python_test(PY_TEST_NAMES ${PREFIX} 1 "03-publish-qos1-max-inflight.py")
 add_python_test(PY_TEST_NAMES ${PREFIX} 1 "03-publish-qos1-no-subscribers-v5.py")
 add_python_test(PY_TEST_NAMES ${PREFIX} 1 "03-publish-qos1-retain-disabled.py")
+add_python_test(PY_TEST_NAMES ${PREFIX} 1 "03-publish-qos2-max-inflight-exceeded.py")
 add_python_test(PY_TEST_NAMES ${PREFIX} 1 "03-publish-qos2-max-inflight.py")
 add_python_test(PY_TEST_NAMES ${PREFIX} 1 "03-publish-qos2-reuse-mid.py")
 add_python_test(PY_TEST_NAMES ${PREFIX} 2 "04-retain-check-source-persist-diff-port.py")

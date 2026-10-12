@@ -81,7 +81,7 @@ msg_sequence_test:
 	./03-publish-qos1-max-inflight-expire.py
 	./03-publish-qos1-no-subscribers-v5.py
 	./03-publish-qos1-retain-disabled.py
-	#./03-publish-qos2-max-inflight-exceeded.py
+	./03-publish-qos2-max-inflight-exceeded.py
 	./03-publish-qos2-max-inflight.py
 	./03-publish-qos2-reuse-mid.py
 
