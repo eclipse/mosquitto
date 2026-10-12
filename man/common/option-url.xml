@@ -3,7 +3,7 @@
 	<term><option>--url</option></term>
 	<listitem>
 		<para>
-			Specify specify user, password, hostname, port and topic at once as
+			Specify user, password, hostname, port and topic at once as
 			a URL. The URL must be in the form:
 			mqtt(s)://[username[:password]@]host[:port]/topic or
 			ws(s)://[username[:password]@]host[:port]/path
