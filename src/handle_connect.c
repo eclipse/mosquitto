@@ -585,7 +585,10 @@ static int read_and_verify_connect_flags(struct mosquitto *context, uint8_t *con
 		if((*connect_flags & 0x01) != 0x00){
 			log__printf(NULL, MOSQ_LOG_INFO, "Protocol error from %s:%d: CONNECT with non-zero connect reserved flag (%02X).",
 					context->address, context->remote_port, *connect_flags);
-			return MOSQ_ERR_PROTOCOL;
+			if(context->protocol == mosq_p_mqtt5){
+				send__connack(context, 0, MQTT_RC_MALFORMED_PACKET, NULL);
+			}
+			return MOSQ_ERR_MALFORMED_PACKET;
 		}
 	}
 
