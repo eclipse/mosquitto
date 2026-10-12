@@ -1291,7 +1291,7 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 						return MOSQ_ERR_INVAL;
 					}
 				}else if(!strcmp(token, "bind_interface")){
-#ifdef SO_BINDTODEVICE
+#ifdef HAVE_BIND_INTERFACE
 					if(reload){
 						continue;        /* Rebinding listeners not valid during reloading. */
 					}

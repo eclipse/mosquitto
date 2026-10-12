@@ -16,6 +16,10 @@
 #  define HAVE_NETINET_IN_H
 #endif
 
+#if !defined(WIN32) && !defined(_AIX)
+#  define HAVE_BIND_INTERFACE
+#endif
+
 #define OPENSSL_LOAD_CONF
 
 /* ============================================================

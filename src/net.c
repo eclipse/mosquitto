@@ -20,9 +20,6 @@ Contributors:
 
 #ifndef WIN32
 #  include <arpa/inet.h>
-#  ifndef _AIX
-#    include <ifaddrs.h>
-#  endif
 #  include <netdb.h>
 #  include <netinet/tcp.h>
 #  include <strings.h>
@@ -43,6 +40,10 @@ Contributors:
 
 #ifdef HAVE_NETINET_IN_H
 #  include <netinet/in.h>
+#endif
+
+#ifdef HAVE_BIND_INTERFACE
+#  include <ifaddrs.h>
 #endif
 
 #if defined(WITH_UNIX_SOCKETS) || defined(WITH_TLS)
@@ -718,15 +719,14 @@ int net__tls_load_verify(struct mosquitto__listener *listener)
 }
 
 
-#if !defined(WIN32) && !defined(_AIX)
+#ifdef HAVE_BIND_INTERFACE
 
 
 static int net__bind_interface(struct mosquitto__listener *listener, struct addrinfo *rp)
 {
 	/*
 	 * This binds the listener sock to a network interface.
-	 * The use of SO_BINDTODEVICE requires root access, which we don't have, so instead
-	 * use getifaddrs to find the interface addresses, and use IP of the
+	 * Use getifaddrs to find the interface addresses, then use the IP of the
 	 * matching interface in the later bind().
 	 */
 	struct ifaddrs *ifaddr;
@@ -874,7 +874,7 @@ static int net__socket_listen_tcp(struct mosquitto__listener *listener)
 			return 1;
 		}
 
-#if !defined(WIN32) && !defined(_AIX)
+#ifdef HAVE_BIND_INTERFACE
 		if(listener->bind_interface){
 			/* It might be possible that an interface does not support all relevant sa_families.
 			 * We should successfully find at least one. */
