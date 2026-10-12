@@ -651,7 +651,10 @@ static int verify_will_options(struct mosquitto *context, uint8_t will, uint8_t 
 	if(will_qos == 3){
 		log__printf(NULL, MOSQ_LOG_INFO, "Protocol error from %s:%d: CONNECT with invalid Will QoS (%d).",
 				context->address, context->remote_port, will_qos);
-		return MOSQ_ERR_PROTOCOL;
+		if(protocol_version == mosq_p_mqtt5){
+			send__connack(context, 0, MQTT_RC_MALFORMED_PACKET, NULL);
+		}
+		return MOSQ_ERR_MALFORMED_PACKET;
 	}
 
 	if(will && will_retain && db.config->retain_available == false){
