@@ -101,7 +101,7 @@ static int get_time(struct tm **ti)
 
 	s = db.now_real_s;
 
-	*ti = localtime(&s);
+	*ti = gmtime(&s);
 	if(!(*ti)){
 		fprintf(stderr, "Error obtaining system time.\n");
 		return 1;
