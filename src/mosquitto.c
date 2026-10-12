@@ -353,7 +353,9 @@ static void post_shutdown_cleanup(void)
 	broker_control__cleanup();
 
 #ifdef WITH_PERSISTENCE
-	persist__backup(true);
+	if(db.config && !db.config->test_configuration){
+		persist__backup(true);
+	}
 #endif
 	session_expiry__remove_all();
 
