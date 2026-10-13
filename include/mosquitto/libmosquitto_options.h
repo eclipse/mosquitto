@@ -129,6 +129,22 @@ libmosq_EXPORT int mosquitto_opts_set(struct mosquitto *mosq, enum mosq_opt_t op
  *	          trust OS provided CA certificates for use with TLS connections.
  *	          Set to 0 (the default) to only use manually specified CA certs.
  *
+ *	MOSQ_OPT_TLS_ENC_CERTFILE - Set the file containing the encryption
+ *	          certificate to use for GB/T 38636-2020 TLCP connections. This
+ *	          requires libmosquitto to be built against Tongsuo/BabaSSL and
+ *	          MOSQ_OPT_TLS_NTLS to be enabled.
+ *
+ *	MOSQ_OPT_TLS_ENC_KEYFILE - Set the file containing the private key for
+ *	          the TLCP encryption certificate.
+ *
+ *	MOSQ_OPT_TLS_NTLS - Set to 1 to negotiate using GB/T 38636-2020 TLCP,
+ *	          known as NTLS, where the signing certificate and the encryption
+ *	          certificate are separate. This requires libmosquitto to be
+ *	          built against Tongsuo/BabaSSL. When enabled, the default cipher
+ *	          list is the two suites defined by GB/T 38636-2020, and
+ *	          MOSQ_OPT_TLS_ENC_CERTFILE and MOSQ_OPT_TLS_ENC_KEYFILE must
+ *	          also be set. Set to 0 (the default) for TLS.
+ *
  *	MOSQ_OPT_DISABLE_SOCKETPAIR - By default, each client connected will create
  *            an internal pair of connected sockets to allow the network thread
  *            to be notified and woken up if another thread calls

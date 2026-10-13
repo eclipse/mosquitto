@@ -428,6 +428,8 @@ void config__cleanup(struct mosquitto__config *config)
 			mosquitto_FREE(config->listeners[i].capath);
 			mosquitto_FREE(config->listeners[i].certfile);
 			mosquitto_FREE(config->listeners[i].keyfile);
+			mosquitto_FREE(config->listeners[i].enc_certfile);
+			mosquitto_FREE(config->listeners[i].enc_keyfile);
 			mosquitto_FREE(config->listeners[i].ciphers);
 			mosquitto_FREE(config->listeners[i].ciphers_tls13);
 			mosquitto_FREE(config->listeners[i].psk_hint);
@@ -1895,6 +1897,26 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 						log__printf(NULL, MOSQ_LOG_ERR, "Error: The include_dir option is only valid in the main configuration file.");
 						return 1;
 					}
+				}else if(!strcmp(token, "enc_certfile")){
+#ifdef WITH_TLS
+					REQUIRE_LISTENER_OR_DEFAULT_LISTENER(token);
+					mosquitto_FREE(cur_listener->enc_certfile);
+					if(conf__parse_string(&token, "enc_certfile", &cur_listener->enc_certfile, &saveptr)){
+						return MOSQ_ERR_INVAL;
+					}
+#else
+					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: TLS support not available.");
+#endif
+				}else if(!strcmp(token, "enc_keyfile")){
+#ifdef WITH_TLS
+					REQUIRE_LISTENER_OR_DEFAULT_LISTENER(token);
+					mosquitto_FREE(cur_listener->enc_keyfile);
+					if(conf__parse_string(&token, "enc_keyfile", &cur_listener->enc_keyfile, &saveptr)){
+						return MOSQ_ERR_INVAL;
+					}
+#else
+					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: TLS support not available.");
+#endif
 				}else if(!strcmp(token, "keepalive_interval")){
 #ifdef WITH_BRIDGE
 					REQUIRE_BRIDGE(token);
@@ -2698,6 +2720,24 @@ static int config__read_file_core(struct mosquitto__config *config, bool reload,
 #else
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: TLS support not available.");
 #endif
+				}else if(!strcmp(token, "tls_ntls")){
+#ifdef WITH_TLS
+					if(reload){
+						continue;        /* tls_ntls not valid for reloading. */
+					}
+					REQUIRE_LISTENER_OR_DEFAULT_LISTENER(token);
+					if(conf__parse_bool(&token, "tls_ntls", &cur_listener->tls_ntls, &saveptr)){
+						return MOSQ_ERR_INVAL;
+					}
+#ifndef FINAL_WITH_NTLS
+					if(cur_listener->tls_ntls){
+						log__printf(NULL, MOSQ_LOG_ERR, "Error: tls_ntls requires mosquitto to be built against Tongsuo/BabaSSL.");
+						return MOSQ_ERR_INVAL;
+					}
+#endif
+#else
+					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: TLS support not available.");
+#endif
 				}else if(!strcmp(token, "tls_version")){
 #if defined(WITH_TLS)
 					if(reload){
@@ -2984,7 +3024,7 @@ static int config__check_proxy(struct mosquitto__config *config)
 				return MOSQ_ERR_INVAL;
 			}
 
-			if(l->certfile || l->keyfile){
+			if(l->certfile || l->keyfile || l->enc_certfile || l->enc_keyfile){
 				log__printf(NULL, MOSQ_LOG_ERR, "Error: certfile and keyfile cannot be used with `enable_proxy_protocol 2`.");
 				return MOSQ_ERR_INVAL;
 			}
@@ -3083,6 +3123,8 @@ static int config__check_bridges(struct mosquitto__config *config)
 		bool capath = !!config->listeners[i].capath;
 		bool certfile = !!config->listeners[i].certfile;
 		bool keyfile = !!config->listeners[i].keyfile;
+		bool enc_certfile = !!config->listeners[i].enc_certfile;
+		bool enc_keyfile = !!config->listeners[i].enc_keyfile;
 
 		if((certfile && !keyfile) || (!certfile && keyfile)){
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Both certfile and keyfile must be provided to enable a TLS listener.");
@@ -3094,6 +3136,18 @@ static int config__check_bridges(struct mosquitto__config *config)
 		}
 		if(capath && !certfile){
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: capath specified without certfile and keyfile.");
+			return MOSQ_ERR_INVAL;
+		}
+		if((enc_certfile && !enc_keyfile) || (!enc_certfile && enc_keyfile)){
+			log__printf(NULL, MOSQ_LOG_ERR, "Error: Both enc_certfile and enc_keyfile must be provided for a TLCP listener.");
+			return MOSQ_ERR_INVAL;
+		}
+		if(config->listeners[i].tls_ntls && (!certfile || !keyfile || !enc_certfile || !enc_keyfile)){
+			log__printf(NULL, MOSQ_LOG_ERR, "Error: tls_ntls requires certfile, keyfile, enc_certfile and enc_keyfile.");
+			return MOSQ_ERR_INVAL;
+		}
+		if(!config->listeners[i].tls_ntls && (enc_certfile || enc_keyfile)){
+			log__printf(NULL, MOSQ_LOG_ERR, "Error: enc_certfile and enc_keyfile require tls_ntls.");
 			return MOSQ_ERR_INVAL;
 		}
 	}

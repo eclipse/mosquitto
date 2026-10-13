@@ -714,7 +714,18 @@ static int net__init_ssl_ctx(struct mosquitto *mosq)
 	if(mosq->tls_cafile || mosq->tls_capath || mosq->tls_psk || mosq->tls_use_os_certs){
 		if(!mosq->ssl_ctx){
 
+#ifdef FINAL_WITH_NTLS
+			if(mosq->tls_ntls){
+				/* TLCP is a distinct protocol stack in Tongsuo, so the NTLS client
+				 * method must be used rather than the plain TLS one.
+				 * SSL_CTX_enable_ntls() is still required as well. */
+				mosq->ssl_ctx = SSL_CTX_new(NTLS_client_method());
+			}else{
+				mosq->ssl_ctx = SSL_CTX_new(TLS_client_method());
+			}
+#else
 			mosq->ssl_ctx = SSL_CTX_new(TLS_client_method());
+#endif
 
 			if(!mosq->ssl_ctx){
 				log__printf(mosq, MOSQ_LOG_ERR, "Error: Unable to create TLS context.");
@@ -723,14 +734,35 @@ static int net__init_ssl_ctx(struct mosquitto *mosq)
 			}
 		}
 
+#ifdef FINAL_WITH_NTLS
+		if(mosq->tls_ntls){
+			if(mosq->tls_version){
+				log__printf(mosq, MOSQ_LOG_WARNING, "Warning: tls_version has no effect when tls_ntls is enabled.");
+			}
+			SSL_CTX_enable_ntls(mosq->ssl_ctx);
+		}
+#endif
+
 #ifdef SSL_OP_NO_TLSv1_3
 		if(mosq->tls_psk){
 			SSL_CTX_set_options(mosq->ssl_ctx, SSL_OP_NO_TLSv1_3);
 		}
 #endif
 
-		if(!mosq->tls_version){
+		/* A tls_version other than the default cannot apply to TLCP, which is
+		 * carried over NTLSv1.1, so ignore it when tls_ntls is enabled. */
+		if(!mosq->tls_version || mosq->tls_ntls){
+#ifdef FINAL_WITH_NTLS
+			if(mosq->tls_ntls){
+				/* TLCP is carried over NTLSv1.1, which is based on TLS 1.1, so
+				 * TLS 1.1 must stay enabled when tls_ntls is in use. */
+				SSL_CTX_set_options(mosq->ssl_ctx, SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1);
+			}else{
+#endif
 			SSL_CTX_set_options(mosq->ssl_ctx, SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1);
+#ifdef FINAL_WITH_NTLS
+			}
+#endif
 #ifdef SSL_OP_NO_TLSv1_3
 		}else if(!strcmp(mosq->tls_version, "tlsv1.3")){
 			SSL_CTX_set_options(mosq->ssl_ctx, SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1 | SSL_OP_NO_TLSv1_2);
@@ -789,6 +821,17 @@ static int net__init_ssl_ctx(struct mosquitto *mosq)
 				return MOSQ_ERR_TLS;
 			}
 		}
+#ifdef FINAL_WITH_NTLS
+		else if(mosq->tls_ntls){
+			/* The two cipher suites defined by GB/T 38636-2020. */
+			ret = SSL_CTX_set_cipher_list(mosq->ssl_ctx, "ECC-SM2-SM4-CBC-SM3:ECDHE-SM2-SM4-CBC-SM3");
+			if(ret == 0){
+				log__printf(mosq, MOSQ_LOG_ERR, "Error: Unable to set TLCP ciphers.");
+				net__print_ssl_error(mosq, "while trying to set the cipher list");
+				return MOSQ_ERR_TLS;
+			}
+		}
+#endif
 
 		if(mosq->tls_13_ciphers){
 			ret = SSL_CTX_set_ciphersuites(mosq->ssl_ctx, mosq->tls_13_ciphers);
@@ -818,8 +861,41 @@ static int net__init_ssl_ctx(struct mosquitto *mosq)
 				SSL_CTX_set_default_passwd_cb_userdata(mosq->ssl_ctx, mosq);
 			}
 
+#ifdef FINAL_WITH_NTLS
+			/* TLCP uses a signing certificate/key pair and a separate encryption
+			 * certificate/key pair. The two pairs are held in separate certificate
+			 * slots, and the last pair to be loaded becomes ctx->cert->key - the
+			 * certificate checked by the SSL_CTX_check_private_key() call below.
+			 * The encryption pair is loaded first so that the signing certificate,
+			 * which is the client's identity, is left as the active one. Each key
+			 * is checked against its own certificate as it is loaded. */
+			if(mosq->tls_ntls && mosq->tls_enc_certfile){
+				ret = SSL_CTX_use_enc_certificate_file(mosq->ssl_ctx, mosq->tls_enc_certfile, SSL_FILETYPE_PEM);
+				if(ret != 1){
+					log__printf(mosq, MOSQ_LOG_ERR, "Error: Unable to load client encryption certificate \"%s\".", mosq->tls_enc_certfile);
+					net__print_ssl_error(mosq, "while trying to use the encryption certificate file");
+					return MOSQ_ERR_TLS;
+				}
+				if(mosq->tls_keyform != mosq_k_engine){
+					ret = SSL_CTX_use_enc_PrivateKey_file(mosq->ssl_ctx, mosq->tls_enc_keyfile, SSL_FILETYPE_PEM);
+					if(ret != 1){
+						log__printf(mosq, MOSQ_LOG_ERR, "Error: Unable to load client encryption key file \"%s\".", mosq->tls_enc_keyfile);
+						net__print_ssl_error(mosq, "while trying to use the encryption private key file");
+						return MOSQ_ERR_TLS;
+					}
+				}
+			}
+#endif
 			if(mosq->tls_certfile){
+#ifdef FINAL_WITH_NTLS
+				if(mosq->tls_ntls){
+					ret = SSL_CTX_use_sign_certificate_file(mosq->ssl_ctx, mosq->tls_certfile, SSL_FILETYPE_PEM);
+				}else{
+#endif
 				ret = SSL_CTX_use_certificate_chain_file(mosq->ssl_ctx, mosq->tls_certfile);
+#ifdef FINAL_WITH_NTLS
+				}
+#endif
 				if(ret != 1){
 #ifdef WITH_BROKER
 					log__printf(mosq, MOSQ_LOG_ERR, "Error: Unable to load client certificate, check bridge_certfile \"%s\".", mosq->tls_certfile);
@@ -867,7 +943,15 @@ static int net__init_ssl_ctx(struct mosquitto *mosq)
 					}
 #endif
 				}else{
+#ifdef FINAL_WITH_NTLS
+					if(mosq->tls_ntls){
+						ret = SSL_CTX_use_sign_PrivateKey_file(mosq->ssl_ctx, mosq->tls_keyfile, SSL_FILETYPE_PEM);
+					}else{
+#endif
 					ret = SSL_CTX_use_PrivateKey_file(mosq->ssl_ctx, mosq->tls_keyfile, SSL_FILETYPE_PEM);
+#ifdef FINAL_WITH_NTLS
+					}
+#endif
 					if(ret != 1){
 #ifdef WITH_BROKER
 						log__printf(mosq, MOSQ_LOG_ERR, "Error: Unable to load client key file, check bridge_keyfile \"%s\".", mosq->tls_keyfile);

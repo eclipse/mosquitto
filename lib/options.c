@@ -318,6 +318,36 @@ int mosquitto_string_option(struct mosquitto *mosq, enum mosq_opt_t option, cons
 	}
 
 	switch(option){
+		case MOSQ_OPT_TLS_ENC_CERTFILE:
+#ifdef WITH_TLS
+			mosquitto_FREE(mosq->tls_enc_certfile);
+			if(value){
+				mosq->tls_enc_certfile = mosquitto_strdup(value);
+				if(!mosq->tls_enc_certfile){
+					return MOSQ_ERR_NOMEM;
+				}
+			}
+			return MOSQ_ERR_SUCCESS;
+#else
+			return MOSQ_ERR_NOT_SUPPORTED;
+#endif
+			break;
+
+		case MOSQ_OPT_TLS_ENC_KEYFILE:
+#ifdef WITH_TLS
+			mosquitto_FREE(mosq->tls_enc_keyfile);
+			if(value){
+				mosq->tls_enc_keyfile = mosquitto_strdup(value);
+				if(!mosq->tls_enc_keyfile){
+					return MOSQ_ERR_NOMEM;
+				}
+			}
+			return MOSQ_ERR_SUCCESS;
+#else
+			return MOSQ_ERR_NOT_SUPPORTED;
+#endif
+			break;
+
 		case MOSQ_OPT_TLS_ENGINE:
 #if defined(WITH_TLS) && !defined(OPENSSL_NO_ENGINE) && OPENSSL_API_LEVEL < 30000
 			mosquitto_FREE(mosq->tls_engine);
@@ -539,6 +569,18 @@ int mosquitto_int_option(struct mosquitto *mosq, enum mosq_opt_t option, int val
 				mosq->ssl_ctx_defaults = true;
 			}else{
 				mosq->ssl_ctx_defaults = false;
+			}
+			break;
+#else
+			return MOSQ_ERR_NOT_SUPPORTED;
+#endif
+
+		case MOSQ_OPT_TLS_NTLS:
+#if defined(WITH_TLS) && defined(FINAL_WITH_NTLS)
+			if(value){
+				mosq->tls_ntls = true;
+			}else{
+				mosq->tls_ntls = false;
 			}
 			break;
 #else

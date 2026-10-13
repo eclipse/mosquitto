@@ -86,6 +86,8 @@ struct mosq_config {
 	char *capath;
 	char *certfile;
 	char *keyfile;
+	char *enc_certfile;
+	char *enc_keyfile;
 	char *ciphers;
 	bool insecure;
 	char *tls_alpn;
@@ -94,6 +96,7 @@ struct mosq_config {
 	char *tls_engine_kpass_sha1;
 	char *keyform;
 	bool tls_use_os_certs;
+	bool tls_ntls;
 	char *tls_keylog;
 	SSL_CTX *ssl_ctx;
 #  ifdef FINAL_WITH_TLS_PSK

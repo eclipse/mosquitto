@@ -54,8 +54,19 @@ typedef SSIZE_T ssize_t;
 
 #ifdef WITH_TLS
 #  include <openssl/opensslconf.h>
+#  include <openssl/opensslv.h>
 #  if defined(WITH_TLS_PSK) && !defined(OPENSSL_NO_PSK)
 #    define FINAL_WITH_TLS_PSK
+#  endif
+/* Tongsuo, formerly BabaSSL, provides the GB/T 38636-2020 Transport Layer
+ * Cryptography Protocol as an extension to OpenSSL, where it is known as NTLS.
+ * TLCP negotiates with a separate signing certificate and encryption
+ * certificate, rather than the single certificate used by TLS.
+ * Both version macros are checked: releases up to 8.3.x are branded BabaSSL and
+ * only define BABASSL_VERSION_NUMBER, while 8.4.0 and later define
+ * TONGSUO_VERSION_NUMBER as well and keep BABASSL_VERSION_NUMBER as an alias. */
+#  if (defined(TONGSUO_VERSION_NUMBER) || defined(BABASSL_VERSION_NUMBER)) && !defined(OPENSSL_NO_NTLS)
+#    define FINAL_WITH_NTLS
 #  endif
 #endif
 

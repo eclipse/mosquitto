@@ -351,6 +351,8 @@ struct mosquitto {
 	char *tls_capath;
 	char *tls_certfile;
 	char *tls_keyfile;
+	char *tls_enc_certfile;
+	char *tls_enc_keyfile;
 	int (*tls_pw_callback)(char *buf, int size, int rwflag, void *userdata);
 	char *tls_version;
 	char *tls_ciphers;
@@ -365,6 +367,7 @@ struct mosquitto {
 	bool ssl_ctx_defaults;
 	bool tls_ocsp_required;
 	bool tls_use_os_certs;
+	bool tls_ntls;
 	enum mosquitto__keyform tls_keyform;
 #endif
 	bool want_write;

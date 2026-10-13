@@ -247,6 +247,8 @@ struct mosquitto__listener {
 	char *capath;
 	char *certfile;
 	char *keyfile;
+	char *enc_certfile;
+	char *enc_keyfile;
 	char *tls_engine;
 	char *tls_engine_kpass_sha1;
 	char *ciphers;
@@ -259,6 +261,7 @@ struct mosquitto__listener {
 	bool use_subject_as_username;
 	bool require_certificate;
 	bool disable_client_cert_date_checks;
+	bool tls_ntls;
 	enum mosquitto__keyform tls_keyform;
 #endif
 #ifdef WITH_WEBSOCKETS

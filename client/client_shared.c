@@ -252,6 +252,8 @@ void client_config_cleanup(struct mosq_config *cfg)
 	free(cfg->capath);
 	free(cfg->certfile);
 	free(cfg->keyfile);
+	free(cfg->enc_certfile);
+	free(cfg->enc_keyfile);
 	free(cfg->ciphers);
 	free(cfg->tls_alpn);
 	free(cfg->tls_version);
@@ -468,6 +470,18 @@ int client_config_load(struct mosq_config *cfg, int pub_or_sub, int argc, char *
 		fprintf(stderr, "Error: when using tls-engine-kpass-sha1, both tls-engine and keyform must also be provided.\n");
 		return 1;
 	}
+	if(cfg->tls_ntls && (!cfg->certfile || !cfg->keyfile || !cfg->enc_certfile || !cfg->enc_keyfile)){
+		fprintf(stderr, "Error: --tls-ntls requires --cert, --key, --enc-cert and --enc-key.\n");
+		return 1;
+	}
+	if(cfg->tls_ntls && !cfg->cafile && !cfg->capath){
+		fprintf(stderr, "Error: --tls-ntls requires --cafile or --capath.\n");
+		return 1;
+	}
+	if(!cfg->tls_ntls && (cfg->enc_certfile || cfg->enc_keyfile)){
+		fprintf(stderr, "Error: --enc-cert and --enc-key require --tls-ntls.\n");
+		return 1;
+	}
 #endif
 #ifdef FINAL_WITH_TLS_PSK
 	if((cfg->cafile || cfg->capath) && cfg->psk){
@@ -609,6 +623,22 @@ int client_config_line_proc(struct mosq_config *cfg, int pub_or_sub, int argc, c
 				return 1;
 			}else{
 				cfg->ciphers = strdup(argv[i+1]);
+			}
+			i++;
+		}else if(!strcmp(argv[i], "--enc-cert")){
+			if(i==argc-1){
+				fprintf(stderr, "Error: --enc-cert argument given but no file specified.\n\n");
+				return 1;
+			}else{
+				cfg->enc_certfile = strdup(argv[i+1]);
+			}
+			i++;
+		}else if(!strcmp(argv[i], "--enc-key")){
+			if(i==argc-1){
+				fprintf(stderr, "Error: --enc-key argument given but no file specified.\n\n");
+				return 1;
+			}else{
+				cfg->enc_keyfile = strdup(argv[i+1]);
 			}
 			i++;
 #endif
@@ -1154,6 +1184,8 @@ int client_config_line_proc(struct mosq_config *cfg, int pub_or_sub, int argc, c
 			i++;
 		}else if(!strcmp(argv[i], "--tls-use-os-certs")){
 			cfg->tls_use_os_certs = true;
+		}else if(!strcmp(argv[i], "--tls-ntls")){
+			cfg->tls_ntls = true;
 		}else if(!strcmp(argv[i], "--tls-version")){
 			if(i==argc-1){
 				fprintf(stderr, "Error: --tls-version argument given but no version specified.\n\n");
@@ -1418,6 +1450,18 @@ static int client_tls_opts_set(struct mosquitto *mosq, struct mosq_config *cfg)
 	}
 	if(cfg->tls_alpn && mosquitto_string_option(mosq, MOSQ_OPT_TLS_ALPN, cfg->tls_alpn)){
 		err_printf(cfg, "Error: Problem setting TLS ALPN protocol.\n");
+		return 1;
+	}
+	if(cfg->tls_ntls && mosquitto_int_option(mosq, MOSQ_OPT_TLS_NTLS, 1)){
+		err_printf(cfg, "Error: Problem enabling TLCP/NTLS, is libmosquitto built against Tongsuo/BabaSSL?\n");
+		return 1;
+	}
+	if(cfg->enc_certfile && mosquitto_string_option(mosq, MOSQ_OPT_TLS_ENC_CERTFILE, cfg->enc_certfile)){
+		err_printf(cfg, "Error: Problem setting the TLCP encryption certificate.\n");
+		return 1;
+	}
+	if(cfg->enc_keyfile && mosquitto_string_option(mosq, MOSQ_OPT_TLS_ENC_KEYFILE, cfg->enc_keyfile)){
+		err_printf(cfg, "Error: Problem setting the TLCP encryption key.\n");
 		return 1;
 	}
 	if((cfg->tls_version || cfg->ciphers) && mosquitto_tls_opts_set(mosq, !cfg->insecure, cfg->tls_version, cfg->ciphers)){
