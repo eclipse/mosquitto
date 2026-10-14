@@ -114,7 +114,8 @@ struct mosq_config {
 	int unsub_topic_count; /* sub */
 	bool verbose; /* sub */
 	bool eol; /* sub */
-	int msg_count; /* sub */
+	int64_t msg_count_limit; /* sub */
+	int64_t msg_count; /* sub */
 	char *format; /* sub, rr */
 	bool pretty; /* sub, rr */
 	unsigned int timeout; /* sub */

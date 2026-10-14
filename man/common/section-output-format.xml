@@ -197,6 +197,14 @@
 				&lt;topic&gt;" will be printed to stderr.
 			</para></listitem>
 
+			<listitem>
+				<para>
+					<option>%n</option> the index number of the message received
+					in this run of &commandname;, starting at 1. This will be
+					reset to zero when restarting the client, even if using a
+					persistent session.
+				</para>
+			</listitem>
 			<listitem><para><option>%U</option> Unix timestamp with nanoseconds, e.g. 1470818943.786368637</para></listitem>
 		</itemizedlist>
 	</refsect2>

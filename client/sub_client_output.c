@@ -415,6 +415,24 @@ static int formatted_print_float(const unsigned char *payload, int payloadlen, c
 #endif
 
 
+static void formatted_print_int64(int64_t value, struct fieldoptions *fopts)
+{
+	if(fopts->field_width == 0){
+		printf("%" PRId64, value);
+	}else{
+		if(fopts->align == '-'){
+			printf("%-*" PRId64, fopts->field_width, value);
+		}else{
+			if(fopts->pad == '0'){
+				printf("%0*" PRId64, fopts->field_width, value);
+			}else{
+				printf("%*" PRId64, fopts->field_width, value);
+			}
+		}
+	}
+}
+
+
 static void formatted_print_int(int value, struct fieldoptions *fopts)
 {
 	if(fopts->field_width == 0){
@@ -569,6 +587,10 @@ static void formatted_print_percent(const struct mosq_config *lcfg, const struct
 
 		case 'm':
 			formatted_print_int(message->mid, fopts);
+			break;
+
+		case 'n':
+			formatted_print_int64(lcfg->msg_count, fopts);
 			break;
 
 		case 'P':

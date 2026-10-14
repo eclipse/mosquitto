@@ -86,6 +86,7 @@ if __name__ == '__main__':
         do_test(port, '%2l', [' 7']) # strlen("message")
         do_test(port, '%-2l', ['7 ']) # strlen("message")
         do_test(port, '%m', ['0'])
+        do_test(port, '%n', ['1'])
         do_test(port, '%P', ['']) # missing
         do_test(port, '%P', ['name1:value1 name2:value2 name3:value3 name4:value4'], proto_ver=5)
         do_test(port, '%p', ['message'])

@@ -49,7 +49,6 @@ enum rr__state {
 static enum rr__state client_state = rr_s_new;
 
 bool process_messages = true;
-int msg_count = 0;
 struct mosquitto *g_mosq = NULL;
 static bool timed_out = false;
 static int connack_result = 0;
@@ -432,7 +431,7 @@ int main(int argc, char *argv[])
 	mosquitto_destroy(g_mosq);
 	mosquitto_lib_cleanup();
 
-	if(cfg.msg_count>0 && rc == MOSQ_ERR_NO_CONN){
+	if(cfg.msg_count_limit>0 && rc == MOSQ_ERR_NO_CONN){
 		rc = 0;
 	}
 	client_config_cleanup(&cfg);

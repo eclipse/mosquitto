@@ -151,6 +151,8 @@ static int check_format(const char *str)
 					/* JSON output, escaped payload */
 				}else if(str[i+1] == 'J'){
 					/* JSON output, assuming JSON payload */
+				}else if(str[i+1] == 'n'){
+					/* Message number */
 				}else if(str[i+1] == 'U'){
 					/* Unix time+nanoseconds */
 #ifdef WIN32
@@ -222,7 +224,7 @@ static void init_config(struct mosq_config *cfg, int pub_or_sub)
 	cfg->random_filter = 10000;
 	if(pub_or_sub == CLIENT_RR){
 		cfg->protocol_version = MQTT_PROTOCOL_V5;
-		cfg->msg_count = 1;
+		cfg->msg_count_limit = 1;
 	}else{
 		cfg->protocol_version = MQTT_PROTOCOL_V311;
 	}
@@ -620,9 +622,9 @@ int client_config_line_proc(struct mosq_config *cfg, int pub_or_sub, int argc, c
 					fprintf(stderr, "Error: -C argument given but no count specified.\n\n");
 					return 1;
 				}else{
-					cfg->msg_count = atoi(argv[i+1]);
-					if(cfg->msg_count < 1){
-						fprintf(stderr, "Error: Invalid message count \"%d\".\n\n", cfg->msg_count);
+					cfg->msg_count_limit = atoi(argv[i+1]);
+					if(cfg->msg_count_limit < 1){
+						fprintf(stderr, "Error: Invalid message count \"%" PRId64 "\".\n\n", cfg->msg_count_limit);
 						return 1;
 					}
 				}
@@ -1473,7 +1475,7 @@ int client_opts_set(struct mosquitto *mosq, struct mosq_config *cfg)
 		/* 20 is the default "receive maximum"
 		 * If we don't set this, then we can receive > msg_count messages
 		 * before we quit.*/
-		mosquitto_int_option(mosq, MOSQ_OPT_RECEIVE_MAXIMUM, cfg->msg_count);
+		mosquitto_int_option(mosq, MOSQ_OPT_RECEIVE_MAXIMUM, (int)cfg->msg_count);
 	}
 	return MOSQ_ERR_SUCCESS;
 }

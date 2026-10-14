@@ -39,7 +39,6 @@ Contributors:
 struct mosq_config cfg;
 static bool run = true;
 bool process_messages = true;
-int msg_count = 0;
 int message_rate_msg_count = 0;
 struct mosquitto *g_mosq = NULL;
 int last_mid = 0;
@@ -99,6 +98,7 @@ static void my_message_callback(struct mosquitto *mosq, void *obj, const struct 
 	UNUSED(properties);
 
 	message_rate_msg_count++;
+	cfg.msg_count++;
 
 	if(process_messages == false){
 		return;
@@ -133,9 +133,8 @@ static void my_message_callback(struct mosquitto *mosq, void *obj, const struct 
 		mosquitto_disconnect_v5(mosq, 0, cfg.disconnect_props);
 	}
 
-	if(cfg.msg_count>0){
-		msg_count++;
-		if(cfg.msg_count == msg_count){
+	if(cfg.msg_count_limit>0){
+		if(cfg.msg_count == cfg.msg_count_limit){
 			process_messages = false;
 			if(last_mid == 0){
 				mosquitto_disconnect_v5(mosq, 0, cfg.disconnect_props);
