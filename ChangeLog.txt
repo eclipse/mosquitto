@@ -1,6 +1,9 @@
 2.2.0 - xxxx-xx-xx
 ==================
 
+# Apps
+- Support NO_COLOR environment variable in mosquitto_ctrl
+
 # Clients:
 - Add `%n` format option to mosquitto_sub to print the message number.
 

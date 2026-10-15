@@ -736,13 +736,16 @@ void ctrl_shell__cleanup(void)
 
 void ctrl_shell__main(struct mosq_config *config)
 {
+	char *no_colour = getenv("NO_COLOR");
+
 	memset(&data, 0, sizeof(data));
 	data.url_scheme = "mqtt";
 	data.run = 1;
 	data.port = PORT_UNDEFINED;
 	data.connect_rc = -1;
 
-	if(config && config->no_colour){
+	if((config && config->no_colour) || (no_colour && no_colour[0] != '\0')
+			){
 		set_no_colour();
 	}else{
 		if(get_bg()){
