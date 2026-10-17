@@ -262,6 +262,39 @@ libmosq_EXPORT int mosquitto_connect_bind_async(struct mosquitto *mosq, const ch
 libmosq_EXPORT int mosquitto_connect_srv(struct mosquitto *mosq, const char *host, int keepalive, const char *bind_address);
 
 /*
+ * Function: mosquitto_connect_transport
+ *
+ * Connect to a broker over a transport provided by the application, obtained
+ * from the callback set with <mosquitto_transport_open_callback_set>, rather
+ * than one opened by the library. There is no host or port. If the library
+ * TLS or WebSockets support is used on top of the transport, the name of the
+ * remote peer must be set with MOSQ_OPT_PEER_NAME first.
+ *
+ * Reconnections, whether automatic or with <mosquitto_reconnect>, use the
+ * same callback.
+ *
+ * Parameters:
+ * 	mosq -       a valid mosquitto instance.
+ * 	keepalive -  the number of seconds after which the client should send a
+ *               PING message to the broker if no other messages have been
+ *               exchanged in that time. Set to 0 to disable keepalive.
+ *  properties - the MQTT 5 properties for the connect, or NULL.
+ *
+ * Returns:
+ * 	MOSQ_ERR_SUCCESS - on success.
+ * 	MOSQ_ERR_INVAL -   if the input parameters were invalid, or if no transport
+ *                     open callback has been set.
+ * 	MOSQ_ERR_NOMEM -   if an out of memory condition occurred.
+ * 	MOSQ_ERR_ERRNO -   if a system call returned an error. The variable errno
+ *                     contains the error code.
+ * 	Any other value returned by the transport open callback.
+ *
+ * See Also:
+ * 	<mosquitto_transport_open_callback_set>, <mosquitto_connect>, <mosquitto_reconnect>
+ */
+libmosq_EXPORT int mosquitto_connect_transport(struct mosquitto *mosq, int keepalive, const mosquitto_property *properties);
+
+/*
  * Function: mosquitto_reconnect
  *
  * Reconnect to a broker.

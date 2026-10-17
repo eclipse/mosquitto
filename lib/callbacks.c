@@ -21,6 +21,7 @@ Contributors:
 #include "callbacks.h"
 #include "mosquitto.h"
 #include "mosquitto_internal.h"
+#include "net_mosq.h"
 
 
 void mosquitto_connect_callback_set(struct mosquitto *mosq, LIBMOSQ_CB_connect on_connect)
@@ -51,6 +52,22 @@ void mosquitto_pre_connect_callback_set(struct mosquitto *mosq, LIBMOSQ_CB_pre_c
 {
 	COMPAT_pthread_mutex_lock(&mosq->callback_mutex);
 	mosq->on_pre_connect = on_pre_connect;
+	COMPAT_pthread_mutex_unlock(&mosq->callback_mutex);
+}
+
+
+void mosquitto_transport_open_callback_set(struct mosquitto *mosq, LIBMOSQ_CB_transport_open on_transport_open)
+{
+	COMPAT_pthread_mutex_lock(&mosq->callback_mutex);
+	mosq->on_transport_open = on_transport_open;
+	COMPAT_pthread_mutex_unlock(&mosq->callback_mutex);
+}
+
+
+void mosquitto_transport_close_callback_set(struct mosquitto *mosq, LIBMOSQ_CB_transport_close on_transport_close)
+{
+	COMPAT_pthread_mutex_lock(&mosq->callback_mutex);
+	mosq->on_transport_close = on_transport_close;
 	COMPAT_pthread_mutex_unlock(&mosq->callback_mutex);
 }
 
@@ -172,6 +189,44 @@ void callback__on_pre_connect(struct mosquitto *mosq)
 		on_pre_connect(mosq, mosq->userdata);
 	}
 	mosq->callback_depth--;
+}
+
+
+int callback__on_transport_open(struct mosquitto *mosq, int *sock)
+{
+	LIBMOSQ_CB_transport_open on_transport_open;
+	int rc;
+
+	COMPAT_pthread_mutex_lock(&mosq->callback_mutex);
+	on_transport_open = mosq->on_transport_open;
+	COMPAT_pthread_mutex_unlock(&mosq->callback_mutex);
+
+	if(!on_transport_open){
+		return MOSQ_ERR_INVAL;
+	}
+	mosq->callback_depth++;
+	rc = on_transport_open(mosq, mosq->userdata, sock);
+	mosq->callback_depth--;
+	return rc;
+}
+
+
+int callback__on_transport_close(struct mosquitto *mosq, int sock)
+{
+	LIBMOSQ_CB_transport_close on_transport_close;
+	int rc;
+
+	COMPAT_pthread_mutex_lock(&mosq->callback_mutex);
+	on_transport_close = mosq->on_transport_close;
+	COMPAT_pthread_mutex_unlock(&mosq->callback_mutex);
+
+	if(!on_transport_close){
+		return COMPAT_CLOSE(sock);
+	}
+	mosq->callback_depth++;
+	rc = on_transport_close(mosq, mosq->userdata, sock);
+	mosq->callback_depth--;
+	return rc;
 }
 
 

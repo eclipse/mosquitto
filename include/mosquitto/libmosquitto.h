@@ -91,6 +91,7 @@ enum mosq_opt_t {
 	MOSQ_OPT_TRANSPORT = 15,
 	MOSQ_OPT_HTTP_PATH = 16,
 	MOSQ_OPT_HTTP_HEADER_SIZE = 17,
+	MOSQ_OPT_PEER_NAME = 18,
 };
 
 /* Struct: mosquitto_message

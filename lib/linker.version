@@ -163,4 +163,7 @@ MOSQ_2.1 {
 		mosquitto_property_string_value_length;
 		mosquitto_property_string_name;
 		mosquitto_property_string_name_length;
+		mosquitto_transport_open_callback_set;
+		mosquitto_transport_close_callback_set;
+		mosquitto_connect_transport;
 } MOSQ_1.7;

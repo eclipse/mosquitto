@@ -49,6 +49,11 @@ int http_c__context_init(struct mosquitto *context)
 	char *key;
 	const char *path;
 
+	if(!context->host){
+		/* External transport without MOSQ_OPT_PEER_NAME */
+		return MOSQ_ERR_INVAL;
+	}
+
 	context->transport = mosq_t_http;
 	context->http_request = mosquitto_calloc(1, (size_t)context->wsd.http_header_size + 1);
 	if(context->http_request == NULL){

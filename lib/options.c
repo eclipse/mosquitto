@@ -399,6 +399,19 @@ int mosquitto_string_option(struct mosquitto *mosq, enum mosq_opt_t option, cons
 				return MOSQ_ERR_SUCCESS;
 			}
 
+		case MOSQ_OPT_PEER_NAME:
+			mosquitto_FREE(mosq->host);
+			if(value){
+				mosq->host = mosquitto_strdup(value);
+				if(mosq->host){
+					return MOSQ_ERR_SUCCESS;
+				}else{
+					return MOSQ_ERR_NOMEM;
+				}
+			}else{
+				return MOSQ_ERR_SUCCESS;
+			}
+
 		case MOSQ_OPT_HTTP_PATH:
 #if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_BUILTIN
 			mosquitto_FREE(mosq->wsd.http_path);

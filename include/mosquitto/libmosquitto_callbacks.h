@@ -142,6 +142,76 @@ typedef void (*LIBMOSQ_CB_pre_connect)(struct mosquitto *mosq, void *obj);
 libmosq_EXPORT void mosquitto_pre_connect_callback_set(struct mosquitto *mosq, LIBMOSQ_CB_pre_connect on_pre_connect);
 
 /*
+ * Function: mosquitto_transport_open_callback_set
+ *
+ * Set the transport open callback. This is called whenever the library needs
+ * a connection to the broker, for the initial connection and for every
+ * reconnection, and must return an already connected socket. Use this with
+ * <mosquitto_connect_transport> when the transport is provided by the
+ * application, for example by a local proxy terminating TLS.
+ *
+ * The socket is owned by the library from then on and is set non-blocking. On
+ * disconnection it is handed back to the transport close callback, or closed by
+ * the library if no such callback is set. If the socket cannot be set
+ * non-blocking the library closes it directly and takes no ownership, so the
+ * transport close callback is not called for it.
+ *
+ * Parameters:
+ *  mosq -              a valid mosquitto instance.
+ *  on_transport_open - a callback function in the following form:
+ *                      int callback(struct mosquitto *mosq, void *obj, int *sock)
+ *
+ * Callback Parameters:
+ *  mosq - the mosquitto instance making the callback.
+ *  obj -  the user data provided in <mosquitto_new>
+ *  sock - where to store the connected socket.
+ *
+ * Callback Returns:
+ *  MOSQ_ERR_SUCCESS - on success. Any other value is returned to the caller
+ *                     of the connect function, e.g. MOSQ_ERR_ERRNO.
+ */
+typedef int (*LIBMOSQ_CB_transport_open)(struct mosquitto *mosq, void *obj, int *sock);
+libmosq_EXPORT void mosquitto_transport_open_callback_set(struct mosquitto *mosq, LIBMOSQ_CB_transport_open on_transport_open);
+
+/*
+ * Function: mosquitto_transport_close_callback_set
+ *
+ * Set the transport close callback. This is called whenever the library is
+ * done with the socket it is connected on, in place of the library closing
+ * that socket itself, so that an application providing its own transport can
+ * tear it down. It is the counterpart of
+ * <mosquitto_transport_open_callback_set>, and is called once for every
+ * socket the library took from the transport open callback, whether the
+ * connection ended through <mosquitto_disconnect>, an error, or
+ * <mosquitto_destroy>.
+ *
+ * The callback is responsible for closing the socket. If no transport close
+ * callback is set the library closes the socket itself.
+ *
+ * The callback is called for whichever socket the library is connected on, so
+ * it is only useful alongside <mosquitto_connect_transport>.
+ *
+ * Parameters:
+ *  mosq -               a valid mosquitto instance.
+ *  on_transport_close - a callback function in the following form:
+ *                       int callback(struct mosquitto *mosq, void *obj, int sock)
+ *
+ * Callback Parameters:
+ *  mosq - the mosquitto instance making the callback.
+ *  obj -  the user data provided in <mosquitto_new>
+ *  sock - the socket to close, as returned by the transport open callback.
+ *
+ * Callback Returns:
+ *  0 - on success. Any other value is treated as a close failure, as for
+ *      close().
+ *
+ * See Also:
+ *  <mosquitto_transport_open_callback_set>, <mosquitto_connect_transport>
+ */
+typedef int (*LIBMOSQ_CB_transport_close)(struct mosquitto *mosq, void *obj, int sock);
+libmosq_EXPORT void mosquitto_transport_close_callback_set(struct mosquitto *mosq, LIBMOSQ_CB_transport_close on_transport_close);
+
+/*
  * Function: mosquitto_disconnect_callback_set
  *
  * Set the disconnect callback. This is called when the broker has received the

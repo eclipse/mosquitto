@@ -30,6 +30,7 @@ test : test-compile
 	./01-con-discon-will.py
 	./01-con-discon-will-v5.py
 	./01-con-discon-will-clear.py
+	./01-connect-transport.py
 	./01-extended-auth-continue.py
 	./01-extended-auth-failure.py
 	./01-keepalive-pingreq.py
