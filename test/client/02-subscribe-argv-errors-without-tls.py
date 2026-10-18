@@ -28,6 +28,7 @@ if __name__ == '__main__':
     do_test(['-P'], "Error: -P argument given but no password specified.", 1)
     if mosq_test.check_features(["WITH_SOCKS"]):
         do_test(['--proxy'], "Error: --proxy argument given but no proxy url specified.", 1)
+        do_test(['--proxy', 'invalid://host'], "Error: Unsupported proxy protocol: invalid://host", 1)
     else:
         do_test(['--proxy'], "Error: Unknown option '--proxy'.", 1)
     do_test(['--random-filter'], "Error: --random-filter argument given but no chance specified.", 1)
@@ -102,14 +103,17 @@ if __name__ == '__main__':
     do_test(['-x', 'A'], "Error: session-expiry-interval not a number.", 1)
     do_test(['-x', '-2'], "Error: session-expiry-interval out of range.", 1)
     do_test(['-x', '4294967296'], "Error: session-expiry-interval out of range.", 1)
+    do_test(['--retain-handling'], "Error: --retain-handling argument given but no option specified.", 1)
     do_test(['--retain-handling', 'invalid'], "Error: Unknown value 'invalid' for --retain-handling.", 1)
 
     # Unknown options
     do_test(['--unknown'], "Error: Unknown option '--unknown'.", 1)
+    do_test(['-f'], "Error: Unknown option '-f'.", 1)
     do_test(['-l'], "Error: Unknown option '-l'.", 1)
     do_test(['-m'], "Error: Unknown option '-m'.", 1)
     do_test(['-n'], "Error: Unknown option '-n'.", 1)
     do_test(['-r'], "Error: Unknown option '-r'.", 1)
+    do_test(['--latency'], "Error: Unknown option '--latency'.", 1)
     do_test(['--repeat'], "Error: Unknown option '--repeat'.", 1)
     do_test(['--repeat-delay'], "Error: Unknown option '--repeat-delay'.", 1)
     do_test(['-s'], "Error: Unknown option '-s'.", 1)

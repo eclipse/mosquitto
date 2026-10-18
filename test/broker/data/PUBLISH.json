@@ -35,6 +35,13 @@
 				{"type":"send", "payload":"62 r2 m1234"},
 				{"type":"recv", "payload":"70 r2 m1234"}
 			]},
+			{ "name": "34 QoS 2 Dup flow*3", "msgs": [
+				{"type":"send", "payload":"34 r16 s5 'topic' m1234 'payload'"},
+				{"type":"recv", "payload":"50 r2 m1234"},
+				{"type":"send", "payload":"34 r16 s5 'topic' m1234 'payload'"},
+				{"type":"recv", "payload":"50 r2 m1234"},
+				{"type":"send", "payload":"34 r16 s5 'topic' m1234 'payload'"}
+			], "comment":"Only allow a mid to be reused once before disconnect" },
 			{ "name": "30 topic with 0x0000", "msgs": [{"type":"send", "payload":"30 r14 s5 746F700000 'payload'"}]},
 			{ "name": "30 topic with U+D800", "msgs": [{"type":"send", "payload":"30 r14 s5 746FEDA080 'payload'"}]},
 			{ "name": "30 topic with U+0001", "msgs": [{"type":"send", "payload":"30 r14 s5 746F700170 'payload'"}]},
@@ -52,6 +59,10 @@
 				{"type":"recv", "payload":"50 r2 m1234"},
 				{"type":"send", "payload":"34 r9 s5 'topic' m1234"},
 				{"type":"recv", "payload":"50 r2 m1234"}
+			]},
+			{ "name": "PUBLISH with $ topic", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"34 r14 s10 '$test/test' m123"},
+				{"type":"recv", "payload":"50 r2 m123"}
 			]}
 		]
 	},
@@ -108,6 +119,14 @@
 				{"type":"send", "payload":"62 r2 m1234"},
 				{"type":"recv", "payload":"70 r2 m1234"}
 			]},
+			{ "name": "34 QoS 2 Dup flow*3", "msgs": [
+				{"type":"send", "payload":"34 r17 s5 'topic' m1234 v0 'payload'"},
+				{"type":"recv", "payload":"50 r2 m1234"},
+				{"type":"send", "payload":"34 r17 s5 'topic' m1234 v0 'payload'"},
+				{"type":"recv", "payload":"50 r2 m1234"},
+				{"type":"send", "payload":"34 r17 s5 'topic' m1234 v0 'payload'"},
+				{"type":"recv", "payload":"E0 r1 82"}
+			], "comment":"Only allow a mid to be reused once before disconnect" },
 			{ "name": "30 topic with 0x0000", "msgs": [
 				{"type":"send", "payload":"30 r15 s5 746F700000 v0 'payload'"},
 				{"type":"recv", "payload":"E0 r1 81"}
@@ -146,6 +165,22 @@
 			{ "name": "30 topic with # [MQTT-3.3.2-2]", "msgs": [
 				{"type":"send", "payload":"30 r15 s5 '#opic' v0 'payload'"},
 				{"type":"recv", "payload":"E0 r1 81"}
+			]},
+			{ "name": "PUBLISH with $ topic - uptime", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"34 r30 s18 '$SYS/broker/uptime' m123 v0 'message'"},
+				{"type":"recv", "payload":"50 r3 m123 87"}
+			]},
+			{ "name": "PUBLISH with $ topic - connection", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"34 r37 s25 '$SYS/broker/connection/me' m123 v0 'message'"},
+				{"type":"recv", "payload":"50 r3 m123 87"}
+			]},
+			{ "name": "PUBLISH with $ topic - connection/state", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"34 r43 s31 '$SYS/broker/connection/me/state' m123 v0 'message'"},
+				{"type":"recv", "payload":"50 r2 m123"}
+			]},
+			{ "name": "PUBLISH with $ topic - share", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"34 r51 s39 '$share/share/03/publish/dollar/v5/topic' m123 v0 'message'"},
+				{"type":"recv", "payload":"50 r3 m123 87"}
 			]}
 		]
 	},
@@ -225,6 +260,10 @@
 				{"type":"send", "payload":"32 r15 s0 m1234 v3 23 H1 'payload'"},
 				{"type":"recv", "payload":"E0 r1 82"}
 			]},
+			{ "name": "topic-alias unknown", "msgs": [
+				{"type":"send", "payload":"31 r12 s0 v2 35 01 'message'"},
+				{"type":"recv", "payload":"E0 r1 81"}
+			]},
 
 			{ "name": "response-topic (UTF-8 string)", "expect_disconnect":false, "msgs": [
 				{"type":"send", "payload":"32 r21 s5 'topic' m1234 v4 08 s1 'p' 'payload'"},
@@ -299,7 +338,14 @@
 			{ "name": "content-type (UTF-8 string) empty", "expect_disconnect":false, "msgs": [
 				{"type":"send", "payload":"32 r20 s5 'topic' m1234 v3 03 s0 'payload'"},
 				{"type":"recv", "payload":"40 r3 m1234 10"}
+			]},
+			{ "name": "content-type is preserved?", "expect_disconnect":false, "msgs":[
+				{"type":"send", "payload":"82 r11 m1234 v0 s5 'topic' 00", "comment":"SUBSCRIBE topic"},
+				{"type":"recv", "payload":"90 r4 m1234 v0 00", "comment":"SUBACK"},
+				{"type":"send", "payload":"30 r22 s5 'topic' v7 03 s4 'text' 'payload'", "comment":"PUBLISH with content-type set"},
+				{"type":"recv", "payload":"30 r22 s5 'topic' v7 03 s4 'text' 'payload'", "comment":"Received PUBLISH"}
 			]}
+
 		]
 	},
 	{

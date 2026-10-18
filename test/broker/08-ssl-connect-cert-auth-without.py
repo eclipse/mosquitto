@@ -11,10 +11,9 @@ mosq_test.require_features(["WITH_TLS"])
 
 connect_packet = mqtt_packets.gen_connect("connect-cert-test")
 
-(port1, port2) = mosq_test.get_port(2)
+port1 = mosq_test.get_port()
 broker_config = BrokerConfig(
     listeners = [
-        ListenerConfig(port=port2),
         ListenerConfig(
             port=port1,
             cafile=ssl_dir/'all-ca.crt',

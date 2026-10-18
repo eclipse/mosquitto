@@ -20,6 +20,7 @@ Contributors:
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <mallocfail/wrap.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -60,6 +61,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	if(size < kMinInputLength){
 		return 0;
 	}
+
+	mallocfailwrap_init(data, size);
 
 	umask(0077);
 

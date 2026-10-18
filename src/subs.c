@@ -650,7 +650,7 @@ int sub__remove(struct mosquitto *context, const char *sub, uint8_t *reason)
 }
 
 
-int sub__messages_queue(const char *source_id, const char *topic, uint8_t qos, int retain, struct mosquitto__base_msg **stored)
+int sub__messages_queue(const char *source_id, uint8_t qos, struct mosquitto__base_msg **stored)
 {
 	int rc = MOSQ_ERR_SUCCESS, rc2;
 	int rc_normal = MOSQ_ERR_NO_SUBSCRIBERS, rc_shared = MOSQ_ERR_NO_SUBSCRIBERS;
@@ -659,6 +659,8 @@ int sub__messages_queue(const char *source_id, const char *topic, uint8_t qos, i
 	char *local_topic = NULL;
 	unsigned hashv;
 	size_t topiclen;
+	bool retain = (*stored)->data.retain;
+	const char *topic = (*stored)->data.topic;
 
 	assert(topic);
 

@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
 
 	mosq = new mosquittopp_test("publish-qos1-test");
 
-	mosq->connect("localhost", port, 5);
+	mosq->connect("localhost", port, 2);
 
 	while(1){
 		if(mosq->loop(300, 1)){

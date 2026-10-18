@@ -67,7 +67,9 @@ int main(int argc, char *argv[])
 	mosquitto_lib_init();
 
 	mosq = mosquitto_new("08-tls-psk-bridge", true, NULL);
-	mosquitto_tls_opts_set(mosq, 1, "tlsv1", NULL);
+	mosquitto_tls_opts_set(mosq, 1, "tlsv1", "DEFAULT");
+	/* Duplicate call is deliberate */
+	mosquitto_tls_opts_set(mosq, 1, "tlsv1", "DEFAULT");
 	mosquitto_connect_callback_set(mosq, on_connect);
 	mosquitto_disconnect_callback_set(mosq, on_disconnect);
 	mosquitto_publish_callback_set(mosq, on_publish);

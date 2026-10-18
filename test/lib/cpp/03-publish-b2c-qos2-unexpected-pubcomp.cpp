@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
 
 	mosq = new mosquittopp_test("publish-qos2-test");
 
-	mosq->connect("localhost", port, 5);
+	mosq->connect("localhost", port, 2);
 
 	while(run == -1){
 		int rc = mosq->loop(300, 1);

@@ -1,4 +1,4 @@
-add_executable(mosquitto
+custom_add_executable(mosquitto
 	acl_file.c acl_file.h
 	../plugins/acl-file/acl_check.c
 	../plugins/acl-file/acl_parse.c
@@ -148,14 +148,16 @@ endif()
 
 if(WITH_HTTP_API)
 	if(WIN32)
-		find_library(MICROHTTPD_LIBRARY NAMES microhttpd-dll)
+		find_library(libmicrohttpd_FOUND NAMES microhttpd-dll)
+		set(LIBMICROHTTPD_LIBRARY "${libmicrohttpd_FOUND}")
 	else()
-		find_library(MICROHTTPD_LIBRARY NAMES microhttpd)
+		pkg_check_modules(libmicrohttpd IMPORTED_TARGET libmicrohttpd)
+		set(LIBMICROHTTPD_LIBRARY PkgConfig::libmicrohttpd)
 	endif()
-	if(MICROHTTPD_LIBRARY)
+	if(libmicrohttpd_FOUND)
 		target_sources(mosquitto PRIVATE http_api.c)
 		target_compile_definitions(mosquitto PRIVATE "WITH_HTTP_API")
-		target_link_libraries(mosquitto PRIVATE ${MICROHTTPD_LIBRARY})
+		target_link_libraries(mosquitto PRIVATE ${LIBMICROHTTPD_LIBRARY})
 		if(HTTP_API_DIR)
 			target_compile_definitions(mosquitto PRIVATE "HTTP_API_DIR=\"${HTTP_API_DIR}\"")
 		endif()
@@ -272,7 +274,7 @@ if(WIN32)
 	target_link_libraries(mosquitto PRIVATE ws2_32)
 endif()
 
-target_link_libraries(mosquitto PRIVATE cJSON)
+target_link_libraries(mosquitto PRIVATE cjson)
 
 target_include_directories(mosquitto
 	PUBLIC
@@ -311,6 +313,6 @@ if(UNIX)
 	endif()
 endif()
 
-install(TARGETS mosquitto
+custom_install(TARGETS mosquitto
 	RUNTIME DESTINATION "${CMAKE_INSTALL_SBINDIR}"
 )

@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -390,63 +392,89 @@ int main(int argc, char *argv[])
 	bool clean_start;
 	char *command = NULL;
 
-	if(argc < 4){
-		return 1;
-	}
-	setup_signal_handler();
+	(void)argc;
+	(void)argv;
 
-	port = atoi(argv[1]);
-	proto_ver = atoi(argv[2]);
-	clean_start = strcmp(argv[3], "false");
-	if(argc == 5){
-		command = argv[4];
-	}
+	setup_signal_handler();
 
 	mosquitto_lib_init();
 
-	mosq = mosquitto_new("fuzzish", clean_start, NULL);
-	if(mosq == NULL){
-		return 1;
-	}
-	mosquitto_user_data_set(mosq, command);
+	do{
+		char buf[1024];
+		if(!fgets(buf, sizeof(buf), stdin)){
+			break;
+		}
+		size_t ends = strlen(buf)-1;
+		while(buf[ends] == '\n' || buf[ends] == '\r' || buf[ends] == ' '){
+			buf[ends] = '\0';
+			ends--;
+		}
+		char *token, *saveptr = NULL;
+		token = strtok_r(buf, " ", &saveptr);
+		if(!token) break;
+		port = atoi(token);
 
-	mosquitto_pre_connect_callback_set(mosq, on_pre_connect);
+		token = strtok_r(NULL, " ", &saveptr);
+		if(!token) break;
+		proto_ver = atoi(token);
 
-	mosquitto_connect_callback_set(mosq, on_connect);
-	mosquitto_connect_with_flags_callback_set(mosq, on_connect_with_flags);
-	mosquitto_connect_v5_callback_set(mosq, on_connect_v5);
+		token = strtok_r(NULL, " ", &saveptr);
+		if(!token) break;
+		clean_start = atoi(token);
 
-	mosquitto_disconnect_callback_set(mosq, on_disconnect);
-	mosquitto_disconnect_v5_callback_set(mosq, on_disconnect_v5);
+		if(saveptr && strlen(saveptr) > 0){
+			command = saveptr;
+		}else{
+			command = NULL;
+		}
 
-	mosquitto_publish_callback_set(mosq, on_publish);
-	mosquitto_publish_v5_callback_set(mosq, on_publish_v5);
+		run = -1;
 
-	mosquitto_message_callback_set(mosq, on_message);
-	mosquitto_message_v5_callback_set(mosq, on_message_v5);
+		mosq = mosquitto_new("fuzzish", clean_start, NULL);
+		if(mosq == NULL){
+			printf("mosquitto_new failed\n");
+			return 1;
+		}
+		mosquitto_user_data_set(mosq, command);
 
-	mosquitto_subscribe_callback_set(mosq, on_subscribe);
-	mosquitto_subscribe_v5_callback_set(mosq, on_subscribe_v5);
+		mosquitto_pre_connect_callback_set(mosq, on_pre_connect);
 
-	mosquitto_unsubscribe_callback_set(mosq, on_unsubscribe);
-	mosquitto_unsubscribe_v5_callback_set(mosq, on_unsubscribe_v5);
-	mosquitto_unsubscribe2_v5_callback_set(mosq, on_unsubscribe2_v5);
+		mosquitto_connect_callback_set(mosq, on_connect);
+		mosquitto_connect_with_flags_callback_set(mosq, on_connect_with_flags);
+		mosquitto_connect_v5_callback_set(mosq, on_connect_v5);
 
-	mosquitto_log_callback_set(mosq, on_log);
+		mosquitto_disconnect_callback_set(mosq, on_disconnect);
+		mosquitto_disconnect_v5_callback_set(mosq, on_disconnect_v5);
 
-	mosquitto_int_option(mosq, MOSQ_OPT_PROTOCOL_VERSION, proto_ver);
+		mosquitto_publish_callback_set(mosq, on_publish);
+		mosquitto_publish_v5_callback_set(mosq, on_publish_v5);
 
-	rc = mosquitto_connect(mosq, "localhost", port, 60);
-	if(rc != MOSQ_ERR_SUCCESS){
-		printf("bad connect\n");
-		return rc;
-	}
+		mosquitto_message_callback_set(mosq, on_message);
+		mosquitto_message_v5_callback_set(mosq, on_message_v5);
 
-	while(run == -1){
-		mosquitto_loop(mosq, -1, 1);
-	}
+		mosquitto_subscribe_callback_set(mosq, on_subscribe);
+		mosquitto_subscribe_v5_callback_set(mosq, on_subscribe_v5);
 
-	mosquitto_destroy(mosq);
+		mosquitto_unsubscribe_callback_set(mosq, on_unsubscribe);
+		mosquitto_unsubscribe_v5_callback_set(mosq, on_unsubscribe_v5);
+		mosquitto_unsubscribe2_v5_callback_set(mosq, on_unsubscribe2_v5);
+
+		mosquitto_log_callback_set(mosq, on_log);
+
+		mosquitto_int_option(mosq, MOSQ_OPT_PROTOCOL_VERSION, proto_ver);
+
+		rc = mosquitto_connect(mosq, "localhost", port, 60);
+		if(rc != MOSQ_ERR_SUCCESS){
+			printf("bad connect\n");
+			return rc;
+		}
+
+		while(run == -1){
+			mosquitto_loop(mosq, -1, 1);
+		}
+
+		mosquitto_destroy(mosq);
+	}while(1);
 
 	mosquitto_lib_cleanup();
 	return 0;

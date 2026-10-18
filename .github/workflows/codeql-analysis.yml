@@ -25,6 +25,8 @@ jobs:
   analyze:
     name: Analyze
     runs-on: ubuntu-latest
+    permissions:
+      security-events: write
 
     strategy:
       fail-fast: false
@@ -51,18 +53,49 @@ jobs:
     # ℹ️ Command-line programs to run using the OS shell.
     # 📚 https://git.io/JvXDl
 
-    - run: sudo apt-get update && sudo apt-get install -y gcc g++ git libssl-dev libargon2-dev libedit-dev libmicrohttpd-dev
-    # Install cJSON
-    - run: git clone https://github.com/DaveGamble/cJSON /tmp/cJSON
-    - run: wget https://github.com/DaveGamble/cJSON/archive/v1.7.19.tar.gz -O /tmp/cjson.tar.gz
-    - run: mkdir -p /tmp/build/cjson
-    - run: tar --strip=1 -xf /tmp/cjson.tar.gz -C /tmp/build/cjson
-    - run: rm /tmp/cjson.tar.gz
-    - run: cd /tmp/build/cjson && cmake .  -DCMAKE_BUILD_TYPE=MinSizeRel -DCJSON_BUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr
-    - run: sudo make -C /tmp/build/cjson install
+    - name: Install third party dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          ccache \
+          cmake \
+          docbook-xsl \
+          g++ \
+          gcc \
+          google-mock \
+          googletest \
+          lcov \
+          libargon2-dev \
+          libc-ares-dev \
+          libcjson-dev \
+          libcjson1 \
+          libcunit1-dev \
+          libedit-dev \
+          libeditreadline-dev \
+          libgmock-dev \
+          libgtest-dev \
+          libmicrohttpd-dev \
+          libsqlite3-dev \
+          libssl-dev \
+          libwrap0-dev \
+          microsocks \
+          ninja-build \
+          pkgconf \
+          python3-all \
+          python3-paho-mqtt \
+          python3-psutil \
+          uthash-dev \
+          xsltproc
 
     # Now build Mosquitto
-    - run: make binary
+    - run: cmake -E make_directory build
+    - run: |
+        cmake \
+          -G Ninja \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -S . \
+          -B build
+    - run: cmake --build build --parallel $(nproc)
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3

@@ -53,7 +53,7 @@ target_include_directories(libmosquitto_common
 target_link_libraries(libmosquitto_common
 	PUBLIC
 		common-options
-		cJSON
+		cjson
 )
 
 if(ARGON2_FOUND)
@@ -94,7 +94,7 @@ set_target_properties(libmosquitto_common PROPERTIES
 	POSITION_INDEPENDENT_CODE 1
 )
 
-install(TARGETS libmosquitto_common
+custom_install(TARGETS libmosquitto_common
 	RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
 	ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
 	LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"

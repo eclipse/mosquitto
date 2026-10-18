@@ -94,7 +94,7 @@ def env_add_ld_library_path(env=None, extra_path=""):
 
     return newenv
 
-def listen_sock(port, cafile=None, certfile=None, keyfile=None, cert_required=False):
+def listen_sock(port, cafile=None, certfile=None, keyfile=None, cert_required=False, timeout=5):
     sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
@@ -105,7 +105,7 @@ def listen_sock(port, cafile=None, certfile=None, keyfile=None, cert_required=Fa
         if cert_required:
             context.verify_mode = ssl.CERT_REQUIRED
         sock = context.wrap_socket(sock, server_side=True)
-    sock.settimeout(10)
+    sock.settimeout(timeout)
     sock.bind(('', port))
     sock.listen(5)
     return sock
@@ -170,7 +170,7 @@ def start_broker(filename, cmd=None, port=0, use_conf=False, expect_fail=False, 
                     raise ValueError()
         except subprocess.TimeoutExpired:
             _, errs = terminate_broker(broker)
-            print(f"Broker did not fail to start:\n{errs.decode('utf-8')}")
+            print(f"Broker did not fail to start:\n{errs}")
             raise
         return broker
 
@@ -228,8 +228,8 @@ def wait_for_subprocess(client,timeout=10,terminate_timeout=2):
     return rc
 
 
-def terminate_broker(broker):
-    if platform.system() == 'Windows':
+def terminate_broker(broker, force=False):
+    if platform.system() == 'Windows' and force == False:
         evt_sent = False
         for i in range(5):
             try:
@@ -475,7 +475,7 @@ def to_string(packet):
             (slen, packet) = struct.unpack(pack_format, packet)
             pack_format = "!" + str(slen)+'s' + str(len(packet)-slen) + 's'
             (will_message, packet) = struct.unpack(pack_format, packet)
-            s = s+", will-message="+will_message
+            s = s+", will-message="+str(will_message)
 
             s = s+", will-qos="+str((flags&24)>>3)
             s = s+", will-retain="+str((flags&32)>>5)

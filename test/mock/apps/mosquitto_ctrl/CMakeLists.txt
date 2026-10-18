@@ -16,5 +16,5 @@ if(WITH_CTRL_SHELL AND EDITLINE_FOUND)
 			${mosquitto_SOURCE_DIR}/test/mock
 			${mosquitto_SOURCE_DIR}/test/mock/apps/mosquitto_ctrl
 	)
-	target_link_libraries(ctrl_shell_mock PRIVATE cJSON GTest::gmock)
+	target_link_libraries(ctrl_shell_mock PRIVATE cjson GTest::gmock)
 endif()

@@ -21,16 +21,21 @@ Contributors:
 
 extern "C" int fuzz_packet_read_init(struct mosquitto *context)
 {
+	UNUSED(context);
+
 	return 0;
 }
 
 
 extern "C" void fuzz_packet_read_cleanup(struct mosquitto *context)
 {
+	UNUSED(context);
 }
 
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
+	mallocfailwrap_init(data, size);
+
 	return fuzz_packet_read_base(data, size, handle__packet);
 }

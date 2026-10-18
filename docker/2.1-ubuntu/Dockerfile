@@ -31,6 +31,7 @@ RUN set -x && \
         libmicrohttpd-dev \
         libsqlite3-dev \
         libssl-dev \
+        pkgconf \
         ninja-build \
         uthash-dev \
         wget \

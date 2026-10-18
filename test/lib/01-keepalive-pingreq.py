@@ -10,7 +10,7 @@
 from mosq_test_helper import *
 
 def do_test(conn, data):
-    keepalive = 5
+    keepalive = 2
     connect_packet = mqtt_packets.gen_connect("01-keepalive-pingreq", keepalive=keepalive)
     connack_packet = mqtt_packets.gen_connack(rc=0)
 
@@ -20,7 +20,6 @@ def do_test(conn, data):
     mosq_test.do_receive_send(conn, connect_packet, connack_packet, "connect")
 
     mosq_test.expect_packet(conn, "pingreq", pingreq_packet)
-    time.sleep(1.0)
     conn.send(pingresp_packet)
 
     mosq_test.expect_packet(conn, "pingreq", pingreq_packet)

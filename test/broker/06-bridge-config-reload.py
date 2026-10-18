@@ -59,7 +59,7 @@ def do_test():
     conf_file = os.path.basename(__file__).replace('.py', '.conf')
 
     try:
-        ssock = mosq_test.listen_sock(port1)
+        ssock = mosq_test.listen_sock(port1, timeout=2)
 
         write_config(conf_file, port1, port2, "topic1", True)
 

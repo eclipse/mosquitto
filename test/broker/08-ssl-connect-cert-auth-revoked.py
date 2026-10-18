@@ -7,10 +7,9 @@ from mosquitto_broker import MosquittoBroker
 
 mosq_test.require_features(["WITH_TLS"])
 
-(port1, port2) = mosq_test.get_port(2)
+port1 = mosq_test.get_port()
 broker_config = BrokerConfig(
     listeners = [
-        ListenerConfig(port=port2),
         ListenerConfig(
             port=port1,
             cafile=ssl_dir/'all-ca.crt',

@@ -1,4 +1,4 @@
-add_executable(mosquitto_db_dump
+custom_add_executable(mosquitto_db_dump
 	db_dump.c db_dump.h
 	json.c
 	print.c
@@ -40,6 +40,6 @@ endif()
 
 target_link_libraries(mosquitto_db_dump PRIVATE common-options libmosquitto_common)
 
-install(TARGETS mosquitto_db_dump
+custom_install(TARGETS mosquitto_db_dump
 	RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
 )

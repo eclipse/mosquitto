@@ -13,28 +13,28 @@
 			{ "name": "QoS 1 receive ok", "expect_disconnect":false, "msgs": [
 				{"type":"send", "payload":"82 r6 m1234 s1 'p' 01", "comment":"SUBSCRIBE, 'p' qos1"},
 				{"type":"recv", "payload":"90 r3 m1234 01", "comment":"SUBACK"},
-				{"type":"publish", "topic":"p", "qos":1, "payload":"message", "comment":"helper"},
+				{"type":"external_publish", "topic":"p", "qos":1, "payload":"message", "comment":"helper"},
 				{"type":"recv", "payload":"32 r12 s1 'p' m1 'message'", "comment":"PUBLISH receive"},
 				{"type":"send", "payload":"40 r2 m1", "comment":"PUBACK"}
 			]},
 			{ "name": "QoS 1 PUBLISH-PUBREC", "msgs": [
 				{"type":"send", "payload":"82 r6 m1234 s1 'p' 01", "comment":"SUBSCRIBE, 'p' qos1"},
 				{"type":"recv", "payload":"90 r3 m1234 01", "comment":"SUBACK"},
-				{"type":"publish", "topic":"p", "qos":1, "payload":"message", "comment":"helper"},
+				{"type":"external_publish", "topic":"p", "qos":1, "payload":"message", "comment":"helper"},
 				{"type":"recv", "payload":"32 r12 s1 'p' m1 'message'", "comment":"PUBLISH receive"},
 				{"type":"send", "payload":"50 r2 m1", "comment":"PUBREC"}
 			]},
 			{ "name": "QoS 1 PUBLISH-PUBCOMP", "msgs": [
 				{"type":"send", "payload":"82 r6 m1234 s1 'p' 01", "comment":"SUBSCRIBE, 'p' qos1"},
 				{"type":"recv", "payload":"90 r3 m1234 01", "comment":"SUBACK"},
-				{"type":"publish", "topic":"p", "qos":1, "payload":"message", "comment":"helper"},
+				{"type":"external_publish", "topic":"p", "qos":1, "payload":"message", "comment":"helper"},
 				{"type":"recv", "payload":"32 r12 s1 'p' m1 'message'", "comment":"PUBLISH receive"},
 				{"type":"send", "payload":"70 r2 m1", "comment":"PUBCOMP"}
 			]},
 			{ "name": "QoS 2 receive ok", "expect_disconnect":false, "msgs": [
 				{"type":"send", "payload":"82 r6 m1234 s1 'p' 02", "comment":"SUBSCRIBE, 'p' qos2"},
 				{"type":"recv", "payload":"90 r3 m1234 02", "comment":"SUBACK"},
-				{"type":"publish", "topic":"p", "qos":2, "payload":"message", "comment":"helper"},
+				{"type":"external_publish", "topic":"p", "qos":2, "payload":"message", "comment":"helper"},
 				{"type":"recv", "payload":"34 r12 s1 'p' m1 'message'", "comment":"PUBLISH receive"},
 				{"type":"send", "payload":"50 r2 m1", "comment":"PUBREC"},
 				{"type":"recv", "payload":"62 r2 m1", "comment":"PUBREL"},
@@ -43,21 +43,21 @@
 			{ "name": "QoS 2 PUBLISH-PUBACK", "msgs": [
 				{"type":"send", "payload":"82 r6 m1234 s1 'p' 02", "comment":"SUBSCRIBE, 'p' qos2"},
 				{"type":"recv", "payload":"90 r3 m1234 02", "comment":"SUBACK"},
-				{"type":"publish", "topic":"p", "qos":2, "payload":"message", "comment":"helper"},
+				{"type":"external_publish", "topic":"p", "qos":2, "payload":"message", "comment":"helper"},
 				{"type":"recv", "payload":"34 r12 s1 'p' m1 'message'", "comment":"PUBLISH receive"},
 				{"type":"send", "payload":"40 r2 m1", "comment": "PUBACK (should be PUBREC)"}
 			]},
 			{ "name": "QoS 2 PUBLISH-PUBCOMP", "msgs": [
 				{"type":"send", "payload":"82 r6 m1234 s1 'p' 02", "comment":"SUBSCRIBE, 'p' qos2"},
 				{"type":"recv", "payload":"90 r3 m1234 02", "comment":"SUBACK"},
-				{"type":"publish", "topic":"p", "qos":2, "payload":"message", "comment":"helper"},
+				{"type":"external_publish", "topic":"p", "qos":2, "payload":"message", "comment":"helper"},
 				{"type":"recv", "payload":"34 r12 s1 'p' m1 'message'", "comment":"PUBLISH receive"},
 				{"type":"send", "payload":"70 r2 m1", "comment": "PUBCOMP (should be PUBREC)"}
 			]},
 			{ "name": "QoS 2 PUBLISH-PUBREC-PUBREL-PUBACK", "msgs": [
 				{"type":"send", "payload":"82 r6 m1234 s1 'p' 02", "comment":"SUBSCRIBE, 'p' qos2"},
 				{"type":"recv", "payload":"90 r3 m1234 02", "comment":"SUBACK"},
-				{"type":"publish", "topic":"p", "qos":2, "payload":"message", "comment":"helper"},
+				{"type":"external_publish", "topic":"p", "qos":2, "payload":"message", "comment":"helper"},
 				{"type":"recv", "payload":"34 r12 s1 'p' m1 'message'", "comment":"PUBLISH receive"},
 				{"type":"send", "payload":"50 r2 m1", "comment": "PUBREC)"},
 				{"type":"recv", "payload":"62 r2 m1", "comment": "PUBREL)"},
@@ -66,7 +66,7 @@
 			{ "name": "QoS 2 PUBLISH-PUBREC-PUBREL-PUBREC", "expect_disconnect":false, "msgs": [
 				{"type":"send", "payload":"82 r6 m1234 s1 'p' 02", "comment":"SUBSCRIBE, 'p' qos2"},
 				{"type":"recv", "payload":"90 r3 m1234 02", "comment":"SUBACK"},
-				{"type":"publish", "topic":"p", "qos":2, "payload":"message", "comment":"helper"},
+				{"type":"external_publish", "topic":"p", "qos":2, "payload":"message", "comment":"helper"},
 				{"type":"recv", "payload":"34 r12 s1 'p' m1 'message'", "comment":"PUBLISH receive"},
 				{"type":"send", "payload":"50 r2 m1", "comment": "PUBREC)"},
 				{"type":"recv", "payload":"62 r2 m1", "comment": "PUBREL)"},
@@ -88,14 +88,14 @@
 			{ "name": "QoS 1 receive ok", "expect_disconnect":false, "msgs": [
 				{"type":"send", "payload":"82 r7 m1234 00 s1 'p' 01", "comment":"SUBSCRIBE, 'p' qos1"},
 				{"type":"recv", "payload":"90 r4 m1234 00 01", "comment":"SUBACK"},
-				{"type":"publish", "topic":"p", "qos":1, "payload":"message", "comment":"helper"},
+				{"type":"external_publish", "topic":"p", "qos":1, "payload":"message", "comment":"helper"},
 				{"type":"recv", "payload":"32 r13 s1 'p' m1 00 'message'", "comment":"PUBLISH receive"},
 				{"type":"send", "payload":"40 r2 m1", "comment":"PUBACK"}
 			]},
 			{ "name": "QoS 1 PUBLISH-PUBREC", "msgs": [
 				{"type":"send", "payload":"82 r7 m1234 00 s1 'p' 01", "comment":"SUBSCRIBE, 'p' qos1"},
 				{"type":"recv", "payload":"90 r4 m1234 00 01", "comment":"SUBACK"},
-				{"type":"publish", "topic":"p", "qos":1, "payload":"message", "comment":"helper"},
+				{"type":"external_publish", "topic":"p", "qos":1, "payload":"message", "comment":"helper"},
 				{"type":"recv", "payload":"32 r13 s1 'p' m1 00 'message'", "comment":"PUBLISH receive"},
 				{"type":"send", "payload":"50 r2 m1", "comment":"PUBREC"},
 				{"type":"recv", "payload":"E0 r1 82"}
@@ -103,7 +103,7 @@
 			{ "name": "QoS 1 PUBLISH-PUBCOMP", "msgs": [
 				{"type":"send", "payload":"82 r7 m1234 00 s1 'p' 01", "comment":"SUBSCRIBE, 'p' qos1"},
 				{"type":"recv", "payload":"90 r4 m1234 00 01", "comment":"SUBACK"},
-				{"type":"publish", "topic":"p", "qos":1, "payload":"message", "comment":"helper"},
+				{"type":"external_publish", "topic":"p", "qos":1, "payload":"message", "comment":"helper"},
 				{"type":"recv", "payload":"32 r13 s1 'p' m1 00 'message'", "comment":"PUBLISH receive"},
 				{"type":"send", "payload":"70 r2 m1", "comment":"PUBCOMP"},
 				{"type":"recv", "payload":"E0 r1 82"}
@@ -111,7 +111,7 @@
 			{ "name": "QoS 2 receive ok", "expect_disconnect":false, "msgs": [
 				{"type":"send", "payload":"82 r7 m1234 00 s1 'p' 02", "comment":"SUBSCRIBE, 'p' qos2"},
 				{"type":"recv", "payload":"90 r4 m1234 00 02", "comment":"SUBACK"},
-				{"type":"publish", "topic":"p", "qos":2, "payload":"message", "comment":"helper"},
+				{"type":"external_publish", "topic":"p", "qos":2, "payload":"message", "comment":"helper"},
 				{"type":"recv", "payload":"34 r13 s1 'p' m1 00 'message'", "comment":"PUBLISH receive"},
 				{"type":"send", "payload":"50 r2 m1", "comment":"PUBREC"},
 				{"type":"recv", "payload":"62 r2 m1", "comment":"PUBREL"},
@@ -120,7 +120,7 @@
 			{ "name": "QoS 2 PUBLISH-PUBACK", "msgs": [
 				{"type":"send", "payload":"82 r7 m1234 00 s1 'p' 02", "comment":"SUBSCRIBE, 'p' qos2"},
 				{"type":"recv", "payload":"90 r4 m1234 00 02", "comment":"SUBACK"},
-				{"type":"publish", "topic":"p", "qos":2, "payload":"message", "comment":"helper"},
+				{"type":"external_publish", "topic":"p", "qos":2, "payload":"message", "comment":"helper"},
 				{"type":"recv", "payload":"34 r13 s1 'p' m1 00 'message'", "comment":"PUBLISH receive"},
 				{"type":"send", "payload":"40 r2 m1", "comment": "PUBACK (should be PUBREC)"},
 				{"type":"recv", "payload":"E0 r1 82"}
@@ -128,7 +128,7 @@
 			{ "name": "QoS 2 PUBLISH-PUBCOMP", "msgs": [
 				{"type":"send", "payload":"82 r7 m1234 00 s1 'p' 02", "comment":"SUBSCRIBE, 'p' qos2"},
 				{"type":"recv", "payload":"90 r4 m1234 00 02", "comment":"SUBACK"},
-				{"type":"publish", "topic":"p", "qos":2, "payload":"message", "comment":"helper"},
+				{"type":"external_publish", "topic":"p", "qos":2, "payload":"message", "comment":"helper"},
 				{"type":"recv", "payload":"34 r13 s1 'p' m1 00 'message'", "comment":"PUBLISH receive"},
 				{"type":"send", "payload":"70 r2 m1", "comment": "PUBCOMP (should be PUBREC)"},
 				{"type":"recv", "payload":"E0 r1 82"}
@@ -136,7 +136,7 @@
 			{ "name": "QoS 2 PUBLISH-PUBREC-PUBREL-PUBACK", "msgs": [
 				{"type":"send", "payload":"82 r7 m1234 00 s1 'p' 02", "comment":"SUBSCRIBE, 'p' qos2"},
 				{"type":"recv", "payload":"90 r4 m1234 00 02", "comment":"SUBACK"},
-				{"type":"publish", "topic":"p", "qos":2, "payload":"message", "comment":"helper"},
+				{"type":"external_publish", "topic":"p", "qos":2, "payload":"message", "comment":"helper"},
 				{"type":"recv", "payload":"34 r13 s1 'p' m1 00 'message'", "comment":"PUBLISH receive"},
 				{"type":"send", "payload":"50 r2 m1", "comment": "PUBREC)"},
 				{"type":"recv", "payload":"62 r2 m1", "comment": "PUBREL)"},
@@ -146,12 +146,36 @@
 			{ "name": "QoS 2 PUBLISH-PUBREC-PUBREL-PUBREC", "expect_disconnect":false, "msgs": [
 				{"type":"send", "payload":"82 r7 m1234 00 s1 'p' 02", "comment":"SUBSCRIBE, 'p' qos2"},
 				{"type":"recv", "payload":"90 r4 m1234 00 02", "comment":"SUBACK"},
-				{"type":"publish", "topic":"p", "qos":2, "payload":"message", "comment":"helper"},
+				{"type":"external_publish", "topic":"p", "qos":2, "payload":"message", "comment":"helper"},
 				{"type":"recv", "payload":"34 r13 s1 'p' m1 00 'message'", "comment":"PUBLISH receive"},
 				{"type":"send", "payload":"50 r2 m1", "comment": "PUBREC)"},
 				{"type":"recv", "payload":"62 r2 m1", "comment": "PUBREL)"},
 				{"type":"send", "payload":"50 r2 m1", "comment": "PUBREC (should be PUBCOMP))"},
 				{"type":"recv", "payload":"62 r2 m1", "comment": "PUBREL)"}
+			]},
+			{ "name": "QoS 2 PUBLISH-PUBREC-PUBREL(2)-PUBCOMP", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"34 r23 s11 'pubrel-test' m1 v0 'message'"},
+				{"type":"recv", "payload":"50 r2 m1", "comment": "PUBREC"},
+				{"type":"send", "payload":"62 r2 m1", "comment": "PUBREL len 2"},
+				{"type":"recv", "payload":"70 r2 m1", "comment": "PUBCOMP)"}
+			]},
+			{ "name": "QoS 2 PUBLISH-PUBREC-PUBREL(3)-PUBCOMP", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"34 r23 s11 'pubrel-test' m1 v0 'message'"},
+				{"type":"recv", "payload":"50 r2 m1", "comment": "PUBREC"},
+				{"type":"send", "payload":"62 r3 m1 00", "comment": "PUBREL len 3"},
+				{"type":"recv", "payload":"70 r2 m1", "comment": "PUBCOMP)"}
+			]},
+			{ "name": "QoS 2 PUBLISH-PUBREC-PUBREL(4)-PUBCOMP", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"34 r23 s11 'pubrel-test' m1 v0 'message'"},
+				{"type":"recv", "payload":"50 r2 m1", "comment": "PUBREC"},
+				{"type":"send", "payload":"62 r4 m1 00 v0", "comment": "PUBREL len 4"},
+				{"type":"recv", "payload":"70 r2 m1", "comment": "PUBCOMP)"}
+			]},
+			{ "name": "QoS 2 PUBLISH-PUBREC-PUBREL(5)-PUBCOMP", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"34 r23 s11 'pubrel-test' m1 v0 'message'"},
+				{"type":"recv", "payload":"50 r2 m1", "comment": "PUBREC"},
+				{"type":"send", "payload":"62 r17 m1 00 v13 26 s3 'key' s5 'value'", "comment": "PUBREL with property"},
+				{"type":"recv", "payload":"70 r2 m1", "comment": "PUBCOMP)"}
 			]}
 		]
 	},

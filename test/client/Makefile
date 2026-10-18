@@ -52,6 +52,7 @@ endif
 	./03-publish-qos0-empty.py
 	./03-publish-qos1-properties.py
 	./03-publish-qos1.py
+	./03-publish-qos1-unix.py
 ifeq ($(WITH_WEBSOCKETS),yes)
 	./03-publish-qos1-ws.py
 	./03-publish-qos1-ws-large.py

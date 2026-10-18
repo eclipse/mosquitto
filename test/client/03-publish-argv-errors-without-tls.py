@@ -94,6 +94,8 @@ if __name__ == '__main__':
     do_test(['-e', 'response-topic'], "Error: Unknown option '-e'.", 1)
     do_test(['-E'], "Error: Unknown option '-E'.", 1)
     do_test(['-F', '%p'], "Error: Unknown option '-F'.", 1)
+    do_test(['--latency'], "Error: Unknown option '--latency'.", 1)
+    do_test(['--message-rate'], "Error: Unknown option '--message-rate'.", 1)
     do_test(['-N'], "Error: Unknown option '-N'.", 1)
     do_test(['--pretty'], "Error: Unknown option '--pretty'.", 1)
     do_test(['-R'], "Error: Unknown option '-R'.", 1)

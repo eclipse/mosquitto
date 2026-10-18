@@ -115,7 +115,7 @@
 			{ "name": "10 Will flag 1 no Will topic no Will message [MQTT-3.1.2-9]", "msgs":[
 				{"type":"send", "payload":"10 r13 s4 'MQTT' 04 06 k10 s1 'p'"}
 			]},
-			{ "name": "10 Will flag 1 no Will topic [MQTT-3.1.2-9]", "msgs":[
+			{ "name": "10 Will flag 1 no Will message [MQTT-3.1.2-9]", "msgs":[
 				{"type":"send", "payload":"10 r16 s4 'MQTT' 04 06 k10 s1 'p' s1 'p'"}
 			]},
 			{ "name": "10 Will flag 1 ok", "expect_disconnect":false, "msgs":[
@@ -132,6 +132,9 @@
 			{ "name": "10 Will topic with U+007F", "msgs": [{"type":"send", "payload":"10 r23 s4 'MQTT' 04 06 k10 s1 'p' s5 746F707F70 s1 'p'"}]},
 			{ "name": "10 Will topic with U+009F", "msgs": [{"type":"send", "payload":"10 r23 s4 'MQTT' 04 06 k10 s1 'p' s5 746FC29F70 s1 'p'"}]},
 			{ "name": "10 Will topic with U+FFFF", "msgs": [{"type":"send", "payload":"10 r23 s4 'MQTT' 04 06 k10 s1 'p' s5 746FEDBFBF s1 'p'"}]},
+			{ "name": "10 Will topic with $CONTROL", "msgs": [
+				{"type":"send", "payload":"10 r51 s4 'MQTT' 04 06 k10 s2 'id' s28 '$CONTROL/dynamic-security/v1' s7 'message'"}
+			]},
 			{ "name": "10 Client ID with 0x0000", "msgs": [{"type":"send", "payload":"10 r17 s4 'MQTT' 04 02 k10 s5 746F700000"}]},
 			{ "name": "10 Client ID with U+D800", "msgs": [{"type":"send", "payload":"10 r17 s4 'MQTT' 04 02 k10 s5 746FEDA080"}]},
 			{ "name": "10 Client ID with U+0001", "msgs": [{"type":"send", "payload":"10 r17 s4 'MQTT' 04 02 k10 s5 746F700170"}]},
@@ -182,6 +185,21 @@
 			{ "name": "10 Username flag 1 ok", "expect_disconnect":false, "msgs":[
 				{"type":"send", "payload":"10 r17 s4 'MQTT' 05 82 k10 v0 s1 'p' s1 'p'"},
 				{"type":"recv", "payload":"20 r14 00000B 22 H10 27 L2000000 21 H20", "comment": "CONNACK"}
+			]},
+			{ "name": "10 Will flag 1 no Will topic no Will message", "msgs":[
+				{"type":"send", "payload":"10 r14 s4 'MQTT' 05 06 k10 v0 s1 'p'"},
+				{"type":"recv", "payload":"20 r3 00 81 00"}
+			]},
+			{ "name": "10 Will flag 1 no Will message", "msgs":[
+				{"type":"send", "payload":"10 r18 s4 'MQTT' 05 06 k10 v0 s1 'p' v0 s1 'p'"},
+				{"type":"recv", "payload":"20 r3 00 81 00"}
+			]},
+			{ "name": "10 Will flag 1 ok", "expect_disconnect":false, "msgs":[
+				{"type":"send", "payload":"10 r21 s4 'MQTT' 05 06 k10 v0 s1 'p' v0 s1 'p' s1 'p'"},
+				{"type":"recv", "payload":"20 r14 00000B 22 H10 27 L2000000 21 H20", "comment": "CONNACK"}
+			]},
+			{ "name": "10 Will flag 1 Will Qos 3 [MQTT-3.1.2-14]", "msgs":[
+				{"type":"send", "payload":"10 r21 s4 'MQTT' 05 1E k10 v0 s1 'p' v0 s1 'p' s1 'p'"}
 			]},
 			{ "name": "10 Client ID with 0x0000", "msgs": [
 				{"type":"send", "payload":"10 r18 s4 'MQTT' 05 02 k10 v0 s5 746F700000"},
@@ -249,6 +267,38 @@
 			{ "name": "10 Will flag 1 ok", "expect_disconnect":false, "msgs":[
 				{"type":"send", "payload":"10 r21 s4 'MQTT' 05 06 k10 v0 s1 'p' 00 s1 'p' s1 'p'"},
 				{"type":"recv", "payload":"20 r14 00000B 22 H10 27 L2000000 21 H20", "comment": "CONNACK"}
+			]},
+			{ "name": "10 Will topic with 0x0000", "msgs": [
+				{"type":"send", "payload":"10 r23 s4 'MQTT' 05 06 k10 v0 s1 'p' s5 746F700000 s1 'p'"},
+				{"type":"recv", "payload":"20 r3 00 81 00"}
+			]},
+			{ "name": "10 Will topic with U+D800", "msgs": [
+				{"type":"send", "payload":"10 r23 s4 'MQTT' 05 06 k10 v0 s1 'p' s5 746FEDA080 s1 'p'"},
+				{"type":"recv", "payload":"20 r3 00 81 00"}
+			]},
+			{ "name": "10 Will topic with U+0001", "msgs": [
+				{"type":"send", "payload":"10 r23 s4 'MQTT' 05 06 k10 v0 s1 'p' s5 746F700170 s1 'p'"},
+				{"type":"recv", "payload":"20 r3 00 81 00"}
+			]},
+			{ "name": "10 Will topic with U+001F", "msgs": [
+				{"type":"send", "payload":"10 r23 s4 'MQTT' 05 06 k10 v0 s1 'p' s5 746F701F70 s1 'p'"},
+				{"type":"recv", "payload":"20 r3 00 81 00"}
+			]},
+			{ "name": "10 Will topic with U+007F", "msgs": [
+				{"type":"send", "payload":"10 r23 s4 'MQTT' 05 06 k10 v0 s1 'p' s5 746F707F70 s1 'p'"},
+				{"type":"recv", "payload":"20 r3 00 81 00"}
+			]},
+			{ "name": "10 Will topic with U+009F", "msgs": [
+				{"type":"send", "payload":"10 r23 s4 'MQTT' 05 06 k10 v0 s1 'p' s5 746FC29F70 s1 'p'"},
+				{"type":"recv", "payload":"20 r3 00 81 00"}
+			]},
+			{ "name": "10 Will topic with U+FFFF", "msgs": [
+				{"type":"send", "payload":"10 r23 s4 'MQTT' 05 06 k10 v0 s1 'p' s5 746FEDBFBF s1 'p'"},
+				{"type":"recv", "payload":"20 r3 00 81 00"}
+			]},
+			{ "name": "10 Will topic with $CONTROL", "msgs": [
+				{"type":"send", "payload":"10 r52 s4 'MQTT' 05 06 k10 v0 s2 'id' s28 '$CONTROL/dynamic-security/v1' s7 'message'"},
+				{"type":"recv", "payload":"20 r3 00 81 00"}
 			]},
 			{ "name": "tiny max packet", "msgs":[{"type":"send", "payload":"10 r19 s4 'MQTT' 05 02 k10 05 27 L2 s1 'p'"}]}
 		]

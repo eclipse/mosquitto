@@ -48,6 +48,7 @@ import os
 import random
 import shutil
 import subprocess
+import sys
 import time
 
 class Duration():
@@ -124,6 +125,9 @@ def random_tests(count, run_tests):
 
 
 if __name__ == "__main__":
-    run_tests = False
+    if len(sys.argv) > 1 and sys.argv[1] == "--tests":
+        run_tests = True
+    else:
+        run_tests = False
     simple_tests(run_tests)
     #random_tests(2, run_tests)

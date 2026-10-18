@@ -34,12 +34,23 @@ cmake \
 make -j $(nproc)
 make install
 
+cd ${SRC}/libbacktrace
+./configure
+make -j $(nproc)
+make install
+
+cd ${SRC}/mallocfail
+cmake -B build -S .
+cmake --build build
+cmake --install build
+
 # Build broker and library static libraries
 cd ${SRC}/mosquitto
-make \
-	WITH_STATIC_LIBRARIES=yes \
-	WITH_DOCS=no \
-	WITH_FUZZING=yes \
-	WITH_EDITLINE=no \
-	WITH_HTTP_API=no \
-	-j $(nproc)
+cmake -B build -S . -GNinja \
+	-DCMAKE_BUILD_TYPE=Debug \
+	-DWITH_CTRL_SHELL=OFF \
+	-DWITH_DOCS=OFF \
+	-DWITH_FUZZING=ON \
+	-DWITH_HTTP_API=OFF
+cmake --build build
+cmake --install build

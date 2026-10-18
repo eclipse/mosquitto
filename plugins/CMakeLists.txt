@@ -1,5 +1,5 @@
 function(add_mosquitto_plugin_no_install PLUGIN_NAME SRCLIST INCLIST LINKLIST)
-	add_library(${PLUGIN_NAME} MODULE ${SRCLIST})
+	add_library(${PLUGIN_NAME} ${LIB_TYPE_PLUGIN} ${SRCLIST})
 	target_include_directories(${PLUGIN_NAME} PRIVATE
 		${INCLIST}
 		"${mosquitto_SOURCE_DIR}/"
@@ -23,10 +23,10 @@ function(add_mosquitto_plugin PLUGIN_NAME SRCLIST INCLIST LINKLIST)
 	add_mosquitto_plugin_no_install("${PLUGIN_NAME}" "${SRCLIST}" "${INCLIST}" "${LINKLIST}")
 
 	if(WIN32)
-		install(TARGETS ${PLUGIN_NAME}
+		custom_install(TARGETS ${PLUGIN_NAME}
 			DESTINATION "${CMAKE_INSTALL_BINDIR}")
 	else()
-		install(TARGETS ${PLUGIN_NAME}
+		custom_install(TARGETS ${PLUGIN_NAME}
 			RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
 			LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
 		)

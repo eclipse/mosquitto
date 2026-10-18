@@ -47,33 +47,24 @@ msg_sequence_test:
 
 
 02 :
-	./02-shared-nolocal.py
 	./02-shared-qos0-v5.py
 	./02-subhier-crash.py
 	./02-subpub-b2c-topic-alias.py
 	./02-subpub-qos0-long-topic.py
 	./02-subpub-qos0-oversize-payload.py
 	./02-subpub-qos0-queued-bytes.py
-	./02-subpub-qos0-retain-as-publish.py
 	./02-subpub-qos0-send-retain.py
 	./02-subpub-qos0-subscription-id.py
-	./02-subpub-qos0-topic-alias-unknown.py
 	./02-subpub-qos0-topic-alias.py
 	./02-subpub-qos1-message-expiry-retain.py
 	./02-subpub-qos1-message-expiry-will.py
 	./02-subpub-qos1-message-expiry.py
-	./02-subpub-qos1-nolocal.py
 	./02-subpub-qos1-oversize-payload.py
-	./02-subpub-qos1.py
 	./02-subpub-qos2-1322.py
 	./02-subpub-qos2-max-inflight-bytes.py
-	./02-subpub-qos2-pubrec-error.py
 	./02-subpub-qos2-receive-maximum-1.py
 	./02-subpub-qos2-receive-maximum-2.py
-	./02-subpub-qos2.py
 	./02-subpub-recover-subscriptions.py
-	./02-subscribe-dollar-v5.py
-	./02-subscribe-invalid-utf8.py
 	./02-subscribe-long-topic.py
 	./02-subscribe-persistence-flipflop.py
 
@@ -86,31 +77,20 @@ msg_sequence_test:
 	./03-publish-b2c-qos1-len.py
 	./03-publish-b2c-qos2-len.py
 	./03-publish-c2b-disconnect-qos2.py
-	./03-publish-c2b-qos2-len.py
-	./03-publish-dollar-v5.py
-	./03-publish-dollar.py
-	./03-publish-invalid-utf8.py
 	./03-publish-long-topic.py
 	./03-publish-qos1-max-inflight-expire.py
 	./03-publish-qos1-no-subscribers-v5.py
 	./03-publish-qos1-retain-disabled.py
-	./03-publish-qos1.py
-	./03-publish-qos2-dup.py
 	#./03-publish-qos2-max-inflight-exceeded.py
 	./03-publish-qos2-max-inflight.py
 	./03-publish-qos2-reuse-mid.py
-	./03-publish-qos2.py
 
 04 :
 	./04-retain-check-source-persist-diff-port.py
 	./04-retain-check-source-persist.py
 	./04-retain-check-source.py
 	./04-retain-clear-multiple.py
-	./04-retain-qos0-clear.py
-	./04-retain-qos0-fresh.py
 	./04-retain-qos0-repeated.py
-	./04-retain-qos0.py
-	./04-retain-qos1-qos0.py
 	./04-retain-upgrade-outgoing-qos.py
 
 05 :
@@ -133,7 +113,11 @@ msg_sequence_test:
 	./06-bridge-clean-session-csT-lcsF.py
 	./06-bridge-clean-session-csT-lcsN.py
 	./06-bridge-clean-session-csT-lcsT.py
+	./06-bridge-connack-qos-not-supported.py
 	./06-bridge-connack-retain-not-supported.py
+	./06-bridge-connack-v4-error.py
+	./06-bridge-connack-v5-bad-protocol-version.py
+	./06-bridge-connack-v5-error.py
 	./06-bridge-fail-persist-resend-qos1.py
 	./06-bridge-fail-persist-resend-qos2.py
 	./06-bridge-no-local.py
@@ -145,7 +129,6 @@ msg_sequence_test:
 	./06-bridge-remap-receive-wildcard.py
 
 07 :
-	./07-will-control.py
 	./07-will-delay-invalid-573191.py
 	./07-will-delay-reconnect.py
 	./07-will-delay-recover.py
@@ -154,7 +137,6 @@ msg_sequence_test:
 	./07-will-delay-session-expiry2.py
 	./07-will-delay.py
 	./07-will-disconnect-with-will.py
-	./07-will-invalid-utf8.py
 	./07-will-no-flag.py
 	./07-will-null-topic.py
 	./07-will-null.py
@@ -176,6 +158,7 @@ ifeq ($(WITH_TLS),yes)
 	./08-ssl-connect-cert-auth.py
 	./08-ssl-connect-dhparam.py
 	./08-ssl-connect-identity.py
+	./08-ssl-connect-keylog.py
 	./08-ssl-connect-no-auth-wrong-ca.py
 	./08-ssl-connect-no-auth.py
 	./08-ssl-connect-no-identity.py
@@ -253,8 +236,6 @@ endif
 	./12-prop-response-topic-correlation-data.py
 	./12-prop-response-topic.py
 	./12-prop-server-keepalive.py
-	./12-prop-subpub-content-type.py
-	./12-prop-subpub-payload-format.py
 
 13 :
 ifneq ($(WITH_WEBSOCKETS),no)
@@ -299,7 +280,8 @@ PERSIST_TESTS = \
 	./15-persist-client-msg-out-v5-0.py \
 	./15-persist-client-v3-1-1.py \
 	./15-persist-client-v5-0.py \
-	./15-persist-client-will.py \
+	./15-persist-client-will-clean.py \
+	./15-persist-client-will-persistent.py \
 	./15-persist-publish-properties-v5-0.py \
 	./15-persist-retain-clear.py \
 	./15-persist-retain-v3-1-1.py \

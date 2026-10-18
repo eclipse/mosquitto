@@ -58,7 +58,7 @@ static int mosquitto__connect_init(struct mosquitto *mosq, const char *host, int
 	if(!host || port < 0 || port > UINT16_MAX){
 		return MOSQ_ERR_INVAL;
 	}
-	if(keepalive != 0 && (keepalive < 5 || keepalive > UINT16_MAX)){
+	if(keepalive != 0 && (keepalive < 2 || keepalive > UINT16_MAX)){
 		return MOSQ_ERR_INVAL;
 	}
 

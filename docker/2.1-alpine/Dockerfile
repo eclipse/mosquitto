@@ -27,6 +27,7 @@ RUN set -x && \
         libmicrohttpd-dev \
         linux-headers \
         openssl-dev \
+        pkgconf \
         samurai \
         sqlite-dev \
         uthash-dev \

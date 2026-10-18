@@ -271,9 +271,7 @@ int handle__subscribe(struct mosquitto *context)
 			return MOSQ_ERR_MALFORMED_PACKET;
 		}
 	}
-	if(send__suback(context, mid, payloadlen, payload)){
-		rc = 1;
-	}
+	rc = send__suback(context, mid, payloadlen, payload);
 	mosquitto_FREE(payload);
 
 #ifdef WITH_PERSISTENCE

@@ -17,6 +17,9 @@ on:
       - fixes
       - release/*
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -42,6 +45,7 @@ jobs:
           libwrap0-dev \
           microsocks \
           ninja-build \
+          pkgconf \
           python3-all \
           python3-paho-mqtt \
           python3-psutil \

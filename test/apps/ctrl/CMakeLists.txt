@@ -39,7 +39,7 @@ function(add_ctrl_shell_test TEST_NAME)
 		GTest::gmock_main
 		editline_mock
 		pthread_mock
-		cJSON
+		cjson
 		libmosquitto_common
 	)
 	gtest_discover_tests(${TEST_NAME})

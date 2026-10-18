@@ -13,6 +13,11 @@ on:
       - develop
       - fixes
       - release/*
+  schedule:
+    - cron: "0 2 * * 2"
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -36,6 +41,7 @@ jobs:
           libssl-dev \
           libsystemd-dev \
           libwrap0-dev \
+          pkgconf \
           python3-all \
           uthash-dev \
           xsltproc
@@ -55,8 +61,13 @@ jobs:
       with:
         submodules: 'true'
 
-    - name: build
+    - name: build on push and pull_request
+      if: ${{ github.event_name != 'schedule' }}
       run: ./buildtest.py
+
+    - name: build and test on schedule
+      if: ${{ github.event_name == 'schedule' }}
+      run: ./buildtest.py --tests
 
     - name: Report ccache stats
       run: ccache -s

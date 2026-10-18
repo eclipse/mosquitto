@@ -52,6 +52,14 @@
 			{ "name": "82 multiple ok [MQTT-3.8.4-4]", "expect_disconnect":false, "msgs": [
 				{"type":"send", "payload":"82 r10 m1234 s1 'p' 00 s1 'q' 00"},
 				{"type":"recv", "payload":"90 r4 m1234 00 00"}
+			]},
+			{ "name": "82 $SYS ok", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 r24 m1234 s19 '$SYS/broker/missing' 00"},
+				{"type":"recv", "payload":"90 r3 m1234 00"}
+			]},
+			{ "name": "82 $share ok", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 r19 m1234 s14 '$share/share/#' 00"},
+				{"type":"recv", "payload":"90 r3 m1234 00"}
 			]}
 		]
 	},
@@ -239,6 +247,14 @@
 			{ "name": "82 shared sub with no local set", "ver":5, "msgs": [
 				{"type":"send", "payload":"82 r16 m1234 v0 s10 '$share/p/p' 04"},
 				{"type":"recv", "payload":"E0 r1 82"}
+			]},
+			{ "name": "82 $SYS ok", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 r25 m1234 v0 s19 '$SYS/broker/missing' 00"},
+				{"type":"recv", "payload":"90 r4 m1234 v0 00"}
+			]},
+			{ "name": "82 $share ok", "expect_disconnect":false, "msgs": [
+				{"type":"send", "payload":"82 r20 m1234 v0 s14 '$share/share/#' 00"},
+				{"type":"recv", "payload":"90 r4 m1234 v0 00"}
 			]}
 		]
 	},

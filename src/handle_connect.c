@@ -649,8 +649,8 @@ static int read_and_verify_v5_connect_properties(struct mosquitto *context, mosq
 static int verify_will_options(struct mosquitto *context, uint8_t will, uint8_t will_qos, uint8_t will_retain, uint8_t protocol_version)
 {
 	if(will_qos == 3){
-		log__printf(NULL, MOSQ_LOG_INFO, "Invalid Will QoS in CONNECT from %s.",
-				context->address);
+		log__printf(NULL, MOSQ_LOG_INFO, "Protocol error from %s:%d: CONNECT with invalid Will QoS (%d).",
+				context->address, context->remote_port, will_qos);
 		return MOSQ_ERR_PROTOCOL;
 	}
 
@@ -1123,12 +1123,6 @@ int handle__connect(struct mosquitto *context)
 
 	will = connect_flags & 0x04;
 	will_qos = (connect_flags & 0x18) >> 3;
-	if(will_qos == 3){
-		log__printf(NULL, MOSQ_LOG_INFO, "Protocol error from %s:%d: CONNECT with invalid Will QoS (%d).",
-				context->address, context->remote_port, will_qos);
-		rc = MOSQ_ERR_PROTOCOL;
-		goto handle_connect_error;
-	}
 	will_retain = ((connect_flags & 0x20) == 0x20);
 	rc = verify_will_options(context, will, will_qos, will_retain, protocol_version);
 	if(rc != MOSQ_ERR_SUCCESS){

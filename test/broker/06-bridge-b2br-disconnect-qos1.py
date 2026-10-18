@@ -56,7 +56,7 @@ def do_test(proto_ver):
             address=f"localhost:{port1}",
             topics=["bridge/# both 1"],
             notifications=False,
-            restart_timeout=5,
+            restart_timeout=1,
             bridge_protocol_version=bridge_protocol,
         )],
     )

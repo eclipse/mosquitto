@@ -3,7 +3,7 @@
 from mosq_test_helper import *
 
 def do_test(conn, data):
-    keepalive = 5
+    keepalive = 2
     connect_packet = mqtt_packets.gen_connect("publish-qos2-test", keepalive=keepalive)
     connack_packet = mqtt_packets.gen_connack(rc=0)
 

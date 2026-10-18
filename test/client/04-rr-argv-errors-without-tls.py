@@ -90,6 +90,7 @@ if __name__ == '__main__':
     do_test(['-x', 'A'], "Error: session-expiry-interval not a number.", 1)
     do_test(['-x', '-2'], "Error: session-expiry-interval out of range.", 1)
     do_test(['-x', '4294967296'], "Error: session-expiry-interval out of range.", 1)
+    do_test(['--retain-handling'], "Error: --retain-handling argument given but no option specified.", 1)
     do_test(['--retain-handling', 'invalid'], "Error: Unknown value 'invalid' for --retain-handling.", 1)
 
     # Mixed message types
@@ -98,6 +99,7 @@ if __name__ == '__main__':
     # Unknown options
     do_test(['--unknown'], "Error: Unknown option '--unknown'.", 1)
     do_test(['-l'], "Error: Unknown option '-l'.", 1)
+    do_test(['--message-rate'], "Error: Unknown option '--message-rate'.", 1)
     do_test(['-r'], "Error: Unknown option '-r'.", 1)
     do_test(['--repeat'], "Error: Unknown option '--repeat'.", 1)
     do_test(['--repeat-delay'], "Error: Unknown option '--repeat-delay'.", 1)

@@ -23,6 +23,7 @@ class MosquittoBroker:
         termination_timeout = 10,
         expect_fail=False,
         check_port=True,
+        cmd_args=None,
     ):
         assert port is not None or (isinstance(config, BrokerConfig))
         if isinstance(config, BrokerConfig):
@@ -33,6 +34,7 @@ class MosquittoBroker:
         self._process :Optional[Popen]= None
         self.env = env
         self.check_port = check_port
+        self.cmd_args = cmd_args
         if config_file_name is None or config_file_name == "":
             config_file_name = f"{str(self._port)}.conf"
         self._config_file_name = config_file_name
@@ -96,7 +98,8 @@ class MosquittoBroker:
             env=self.env,
             expect_fail=expect_fail,
             check_port=self.check_port,
-            timeout=start_timeout
+            timeout=start_timeout,
+            cmd_args=self.cmd_args,
         )
         logging.info(f"{self} "+ "Started" if self.is_running() else f"Terminated rc={self._process.returncode}")
 

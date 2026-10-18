@@ -99,7 +99,7 @@ int handle__accepted_publish(struct mosquitto *context, struct mosquitto__base_m
 			(cmsg_stored->base_msg->data.qos != base_msg->data.qos
 			|| cmsg_stored->base_msg->data.payloadlen != base_msg->data.payloadlen
 			|| strcmp(cmsg_stored->base_msg->data.topic, base_msg->data.topic)
-			|| memcmp(cmsg_stored->base_msg->data.payload, base_msg->data.payload, base_msg->data.payloadlen))){
+			|| (base_msg->data.payloadlen > 0 && memcmp(cmsg_stored->base_msg->data.payload, base_msg->data.payload, base_msg->data.payloadlen)))){
 
 		log__printf(NULL, MOSQ_LOG_WARNING, "Reused message ID %u from %s detected. Clearing from storage.", base_msg->data.source_mid, context->id);
 		db__message_remove_incoming(context, base_msg->data.source_mid);
@@ -145,14 +145,14 @@ int handle__accepted_publish(struct mosquitto *context, struct mosquitto__base_m
 
 	switch(stored->data.qos){
 		case 0:
-			rc2 = sub__messages_queue(context->id, stored->data.topic, stored->data.qos, stored->data.retain, &stored);
+			rc2 = sub__messages_queue(context->id, stored->data.qos, &stored);
 			if(rc2 > 0){
 				rc = rc2;
 			}
 			break;
 		case 1:
 			util__decrement_receive_quota(context);
-			rc2 = sub__messages_queue(context->id, stored->data.topic, stored->data.qos, stored->data.retain, &stored);
+			rc2 = sub__messages_queue(context->id, stored->data.qos, &stored);
 			/* stored may now be free, so don't refer to it */
 			if(rc2 == MOSQ_ERR_SUCCESS || context->protocol != mosq_p_mqtt5){
 				rc2 = send__puback(context, mid, 0, NULL);

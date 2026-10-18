@@ -17,6 +17,9 @@ on:
       - develop
       - release/*
 
+permissions:
+  contents: read
+
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
@@ -58,11 +61,12 @@ jobs:
       - name: Configure CMake
         run: |
           EDITLINE_DIR=$(brew --prefix libedit)
+          LIBMICROHTTPD_PREFIX=$(brew --prefix libmicrohttpd)
           HOMEBREW_PREFIX=$(brew --prefix)
           cmake -B ${{github.workspace}}/build64 \
             -G Ninja \
             -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} \
-            -DCMAKE_PREFIX_PATH="$HOMEBREW_PREFIX" \
+            -DCMAKE_PREFIX_PATH="$HOMEBREW_PREFIX;$LIBMICROHTTPD_PREFIX" \
             -DWITH_DOCS=OFF \
             -DOPENSSL_ROOT_DIR=$(brew --prefix openssl@3)
 

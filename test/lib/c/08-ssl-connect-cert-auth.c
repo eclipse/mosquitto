@@ -55,6 +55,8 @@ int main(int argc, char *argv[])
 	char keyfile[4096];
 	cat_sourcedir_with_relpath(keyfile, "/../../ssl/client.key");
 	mosquitto_tls_set(mosq, cafile, capath, certfile, keyfile, NULL);
+	/* Duplicate call is deliberate */
+	mosquitto_tls_set(mosq, cafile, capath, certfile, keyfile, NULL);
 	mosquitto_connect_callback_set(mosq, on_connect);
 	mosquitto_disconnect_callback_set(mosq, on_disconnect);
 

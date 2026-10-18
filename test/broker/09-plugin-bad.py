@@ -19,7 +19,7 @@ def do_test(plugver, num):
         rc = 1
         broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port, check_port=False)
         broker.wait(5)
-        mosq_test.terminate_broker(broker)
+        mosq_test.terminate_broker(broker, force=True)
         if broker.returncode == 13:
             rc = 0
     except mosq_test.TestError:

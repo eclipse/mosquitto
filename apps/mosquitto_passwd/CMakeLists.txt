@@ -1,5 +1,5 @@
 if(WITH_TLS)
-	add_executable(mosquitto_passwd
+	custom_add_executable(mosquitto_passwd
 		mosquitto_passwd.c
 		get_password.c get_password.h
 	)
@@ -19,7 +19,7 @@ if(WITH_TLS)
 		OpenSSL::SSL
 	)
 
-	install(TARGETS mosquitto_passwd
+	custom_install(TARGETS mosquitto_passwd
 		RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
 	)
 endif()

@@ -25,7 +25,7 @@ if(SQLITE3_FOUND)
 
 	set(LINKLIST
 		libmosquitto_common
-		cJSON
+		cjson
 		SQLite::SQLite3
 	)
 

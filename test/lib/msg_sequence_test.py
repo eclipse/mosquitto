@@ -52,7 +52,6 @@ class MsgSequence(object):
         self.clean_start = clean_start
         self.command = command
         self.sock = -1
-        self.client = None
         if default_connect:
             self.add_recv(mqtt_packets.gen_connect("fuzzish", proto_ver=proto_ver), "default connect")
         if default_connack:
@@ -86,28 +85,13 @@ class MsgSequence(object):
     def add_disconnected_check(self):
         self._add(disconnected_check, b"")
 
-    def run_client(self, server_sock, port):
-        global vg_index
-        global vg_logfiles
-
-        env = mosq_test.env_add_ld_library_path()
-        cmd = [
-                Path(mosq_test.get_build_root(), 'test', 'lib', 'c', mosq_test.get_build_type(), 'fuzzish.exe'),
-                str(port), str(self.proto_ver), str(self.clean_start)
-                ]
-        if os.environ.get('MOSQ_USE_VALGRIND') is not None:
-            logfile = 'seq.'+str(vg_index)+'.vglog'
-            cmd = ['/snap/bin/valgrind', '-q', '--trace-children=yes', '--leak-check=full', '--show-leak-kinds=all', '--log-file='+logfile] + cmd
-            vg_logfiles.append(logfile)
-            vg_index += 1
-
-        if self.command is not None:
-            cmd.append(self.command)
-        if platform.system() == 'Windows':
-            self.client = subprocess.Popen(cmd, stderr=subprocess.PIPE, env=env, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
+    def run_client(self, server_sock, client):
+        if self.command:
+            cmd = f"{self.port} {self.proto_ver} {int(self.clean_start)} {self.command}\n"
         else:
-            self.client = subprocess.Popen(cmd, stderr=subprocess.PIPE, env=env)
-
+            cmd = f"{self.port} {self.proto_ver} {int(self.clean_start)}\n"
+        client.stdin.write(cmd)
+        client.stdin.flush()
         (self.sock, _) = server_sock.accept()
 
     def kill_client(self):
@@ -152,7 +136,13 @@ class MsgSequence(object):
     def _recv_message(self, msg):
         data = self.sock.recv(len(msg.message))
         if data != msg.message:
-            raise ValueError("Receive message %s | rec:%s | exp:%s" % (msg.comment, data.hex(), msg.message.hex()))
+            diff = list(data.hex())
+            msghex = msg.message.hex()
+            for i in range(len(diff)):
+                if diff[i] == msghex[i]:
+                    diff[i] = "."
+            diff = "".join(diff)
+            raise ValueError(f"Receive message {msg.comment}\nrec: {data.hex()}\nexp: {msghex}\ndiff:{diff}")
 
 
     def _puback_check(self):
@@ -249,6 +239,27 @@ def parse_message(message):
     return b
 
 
+def run_client(port):
+    global vg_index
+    global vg_logfiles
+
+    env = mosq_test.env_add_ld_library_path()
+    cmd = [
+            Path(mosq_test.get_build_root(), 'test', 'lib', 'c', mosq_test.get_build_type(), 'fuzzish.exe'),
+            ]
+    if os.environ.get('MOSQ_USE_VALGRIND') is not None:
+        logfile = 'seq.'+str(vg_index)+'.vglog'
+        cmd = ['/snap/bin/valgrind', '-q', '--trace-children=yes', '--leak-check=full', '--show-leak-kinds=all', '--log-file='+logfile] + cmd
+        vg_logfiles.append(logfile)
+        vg_index += 1
+
+    if platform.system() == 'Windows':
+        client = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL, env=env, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP, text=True)
+    else:
+        client = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE, stdout=subprocess.PIPE, env=env, text=True)
+    return client
+
+
 def do_test(hostname, port):
     data_path=Path(__file__).resolve().parent/"data"
     rc = 0
@@ -261,7 +272,8 @@ def do_test(hostname, port):
     succeeded = 0
     test = None
 
-    server_sock = mosq_test.listen_sock(port)
+    server_sock = mosq_test.listen_sock(port, timeout=2)
+    client = run_client(port)
 
     for seq in sorted(sequences):
         if seq[-5:] != ".json":
@@ -352,25 +364,20 @@ def do_test(hostname, port):
                 for m in t["msgs"]:
                     this_test.add_msg(m)
 
-                this_test.run_client(server_sock, port)
+                this_test.run_client(server_sock, client)
 
                 total += 1
                 try:
                     this_test.process_all()
-                    this_test.kill_client()
                     this_test = None
                     #print("\033[32m" + tname + "\033[0m")
                     succeeded += 1
                 except (ValueError, ConnectionResetError, socket.timeout, mosq_test.TestError, RuntimeError) as e:
                     print("\033[31m" + tname + " failed: " + str(e) + "\033[0m")
                     rc = 1
-                finally:
-                    if this_test is not None:
-                        try:
-                            this_test.kill_client()
-                        except RuntimeError:
-                            pass
 
+    client.stdin.close()
+    client.terminate()
     print("%d tests total\n%d tests succeeded" % (total, succeeded))
     return rc
 

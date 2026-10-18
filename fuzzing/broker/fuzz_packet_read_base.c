@@ -20,6 +20,8 @@ Contributors:
 extern "C" {
 #endif
 
+#include <mallocfail/wrap.h>
+
 #include "fuzz_packet_read_base.h"
 #include "mosquitto_broker_internal.h"
 #include "mosquitto_internal.h"
@@ -80,6 +82,8 @@ int fuzz_packet_read_base(const uint8_t *data, size_t size, int (*packet_func)(s
 		free(db.config);
 		return 1;
 	}
+	mallocfailwrap_init(data, size);
+
 	packet_func(context);
 	fuzz_packet_read_cleanup(context);
 
