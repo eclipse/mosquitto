@@ -275,6 +275,17 @@ static void print_role(cJSON *j_response)
 		return;
 	}
 	printf("Rolename: %s\n", rolename);
+	int max_publish_size, messages, per_seconds, burst;
+	if(json_get_int(j_role, "maxPublishSize", &max_publish_size, false, 0) == MOSQ_ERR_SUCCESS){
+		printf("Maximum publish payload: %d bytes\n", max_publish_size);
+	}
+	cJSON *j_rate = cJSON_GetObjectItem(j_role, "publishRateLimit");
+	if(j_rate
+			&& json_get_int(j_rate, "messages", &messages, false, 0) == MOSQ_ERR_SUCCESS
+			&& json_get_int(j_rate, "perSeconds", &per_seconds, false, 0) == MOSQ_ERR_SUCCESS
+			&& json_get_int(j_rate, "burst", &burst, false, 0) == MOSQ_ERR_SUCCESS){
+		printf("Publish rate limit: %d messages per %d seconds, burst %d\n", messages, per_seconds, burst);
+	}
 
 	j_array = cJSON_GetObjectItem(j_role, "acls");
 	if(j_array && cJSON_IsArray(j_array)){

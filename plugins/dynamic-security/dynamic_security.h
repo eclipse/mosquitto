@@ -117,6 +117,16 @@ struct dynsec__acls {
 	struct dynsec__acl *unsubscribe_pattern;
 };
 
+struct dynsec__publish_limits {
+	/* Zero disables the payload-size limit or the rate limit, respectively. */
+	uint32_t max_size;
+	uint32_t messages;
+	uint32_t per_seconds;
+	uint32_t burst;
+};
+
+struct dynsec__publish_bucket;
+
 struct dynsec__role {
 	UT_hash_handle hh;
 	struct dynsec__acls acls;
@@ -125,6 +135,9 @@ struct dynsec__role {
 	char *text_name;
 	char *text_description;
 	bool allow_wildcard_subs;
+	struct dynsec__publish_limits publish_limits;
+	struct dynsec__publish_bucket *publish_buckets;
+	struct dynsec__publish_bucket *anonymous_publish_buckets;
 	char rolename[];
 };
 
@@ -153,7 +166,22 @@ struct dynsec__data {
 	int64_t changeindex;
 	int init_mode;
 	bool need_save;
+	uint64_t publish_sequence;
 };
+
+
+/* ################################################################
+ * #
+ * # Publish limit functions
+ * #
+ * ################################################################ */
+
+int dynsec_publish__limits_load(cJSON *j_object, struct dynsec__publish_limits *limits);
+int dynsec_publish__limits_save(cJSON *j_object, const struct dynsec__publish_limits *limits);
+void dynsec_publish__cleanup(struct dynsec__role *role);
+void dynsec_publish__remove_client(struct dynsec__data *data, const char *username);
+int dynsec_publish__callback(int event, void *event_data, void *userdata);
+int dynsec_publish__disconnect_callback(int event, void *event_data, void *userdata);
 
 /* ################################################################
  * #

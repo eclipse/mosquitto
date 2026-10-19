@@ -27,6 +27,7 @@ OBJS = \
 	grouplist.o \
 	kicklist.o \
 	plugin.o \
+	publish.o \
 	roles.o \
 	rolelist.o \
 	tick.o

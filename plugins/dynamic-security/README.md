@@ -20,6 +20,60 @@ Roles can be applied to a client or a group, and define what that client/group
 is allowed to do, for example what topics it may or may not publish or
 subscribe to.
 
+## Publish limits
+
+Roles can optionally impose a maximum payload size and a publish rate limit:
+
+```json
+{
+	"command": "modifyRole",
+	"rolename": "device",
+	"maxPublishSize": 65536,
+	"publishRateLimit": {"messages": 50, "perSeconds": 1, "burst": 200}
+}
+```
+
+These properties are accepted by `createRole` and `modifyRole`, returned by
+`getRole` and verbose `listRoles`, and saved in the configuration file. Omitted
+properties leave the existing policy unchanged when modifying a role. Set
+`maxPublishSize` to `0` or `publishRateLimit` to `null` to disable that limit.
+The size counts payload bytes, excluding the topic, MQTT properties, and packet
+headers. It must be an integer from 0 to 268435455. All three rate parameters
+must be integers from 1 to 2147483647.
+
+Rate limits use token buckets. Each account starts with `burst` tokens and
+receives `messages / perSeconds` tokens per elapsed second, capped at `burst`.
+Refilling uses the broker's monotonic time source with one-second resolution.
+Each accepted incoming publish consumes one token from each applicable role.
+All direct and group roles apply, irrespective of ACL priority; assigning the
+same role through multiple paths consumes only one token. A message rejected
+by any limit consumes no tokens. The normal ACL checks still apply.
+
+Accounts have independent buckets for each role. All connections sharing a
+username share that account's quota, including across reconnects. Anonymous
+group roles also apply, with a separate bucket per anonymous connection; these
+quotas reset on disconnect and do not prevent reconnect-based evasion. Use
+authenticated accounts when quotas must survive reconnects. Runtime buckets
+are cleared when their role's limits change, when the role or account is
+deleted, or when the broker restarts. Unrelated metadata changes retain quotas.
+
+Over-limit messages are discarded. MQTT 5 QoS 1 and 2 publishes receive PUBACK
+or PUBREC with `0x97` (Quota exceeded). `0x96` (Message rate too high) is a
+DISCONNECT reason code and cannot be used in PUBACK/PUBREC. MQTT 3 clients
+receive the normal acknowledgement without delivery, because that protocol
+cannot express a negative publish acknowledgement. QoS 0 messages are silently
+dropped. The plugin logs the rejecting role and account at debug level. Limits
+do not disconnect clients automatically.
+
+In the `mosquitto_ctrl` interactive `dynsec` shell:
+
+```text
+modifyRole device maxPublishSize 65536
+modifyRole device publishRateLimit {"messages":50,"perSeconds":1,"burst":200}
+modifyRole device publishRateLimit null
+modifyRole device maxPublishSize 0
+```
+
 ## Commands
 
 ### Set default ACL access

@@ -75,6 +75,7 @@ static void role__free_item(struct dynsec__data *data, struct dynsec__role *role
 	}
 	dynsec_clientlist__cleanup(&role->clientlist);
 	dynsec_grouplist__cleanup(&role->grouplist);
+	dynsec_publish__cleanup(role);
 	mosquitto_free(role->text_name);
 	mosquitto_free(role->text_description);
 	role__free_all_acls(&role->acls.publish_c_send);
@@ -321,6 +322,11 @@ int dynsec_roles__config_load(struct dynsec__data *data, cJSON *tree)
 
 			/* Allow wildcard subs */
 			json_get_bool(j_role, "allowwildcardsubs", &role->allow_wildcard_subs, true, true);
+			if(dynsec_publish__limits_load(j_role, &role->publish_limits)){
+				mosquitto_log_printf(MOSQ_LOG_ERR, "Error loading publish limits for role '%s'.", role->rolename);
+				role__free_item(data, role, false);
+				return MOSQ_ERR_INVAL;
+			}
 
 			/* ACLs */
 			j_acls = cJSON_GetObjectItem(j_role, "acls");
@@ -351,6 +357,7 @@ int dynsec_roles__config_load(struct dynsec__data *data, cJSON *tree)
 
 int dynsec_roles__process_create(struct dynsec__data *data, struct mosquitto_control_cmd *cmd)
 {
+	struct dynsec__publish_limits publish_limits = {0};
 	const char *rolename;
 	const char *text_name, *text_description;
 	bool allow_wildcard_subs;
@@ -389,6 +396,11 @@ int dynsec_roles__process_create(struct dynsec__data *data, struct mosquitto_con
 		return MOSQ_ERR_INVAL;
 	}
 
+	if(dynsec_publish__limits_load(cmd->j_command, &publish_limits)){
+		mosquitto_control_command_reply(cmd, "Invalid publish limits");
+		return MOSQ_ERR_INVAL;
+	}
+
 	role = dynsec_roles__find(data, rolename);
 	if(role){
 		mosquitto_control_command_reply(cmd, "Role already exists");
@@ -418,6 +430,7 @@ int dynsec_roles__process_create(struct dynsec__data *data, struct mosquitto_con
 		}
 	}
 	role->allow_wildcard_subs = allow_wildcard_subs;
+	role->publish_limits = publish_limits;
 
 	/* ACLs */
 	j_acls = cJSON_GetObjectItem(cmd->j_command, "acls");
@@ -539,7 +552,8 @@ static cJSON *add_role_to_json(struct dynsec__role *role, bool verbose)
 			cJSON_Delete(j_role);
 			return NULL;
 		}
-		if(add_acls_to_json(j_role, role)){
+		if(add_acls_to_json(j_role, role)
+				|| dynsec_publish__limits_save(j_role, &role->publish_limits)){
 			cJSON_Delete(j_role);
 			return NULL;
 		}
@@ -854,6 +868,7 @@ int dynsec_roles__process_get(struct dynsec__data *data, struct mosquitto_contro
 
 int dynsec_roles__process_modify(struct dynsec__data *data, struct mosquitto_control_cmd *cmd)
 {
+	struct dynsec__publish_limits publish_limits;
 	const char *rolename;
 	const char *text_name, *text_description;
 	struct dynsec__role *role;
@@ -877,6 +892,13 @@ int dynsec_roles__process_modify(struct dynsec__data *data, struct mosquitto_con
 	role = dynsec_roles__find(data, rolename);
 	if(role == NULL){
 		mosquitto_control_command_reply(cmd, "Role does not exist");
+		return MOSQ_ERR_INVAL;
+	}
+
+	/* Validate the complete policy before changing any role fields. */
+	publish_limits = role->publish_limits;
+	if(dynsec_publish__limits_load(cmd->j_command, &publish_limits)){
+		mosquitto_control_command_reply(cmd, "Invalid publish limits");
 		return MOSQ_ERR_INVAL;
 	}
 
@@ -943,6 +965,16 @@ int dynsec_roles__process_modify(struct dynsec__data *data, struct mosquitto_con
 		role->acls.unsubscribe_literal = tmp_unsubscribe_literal;
 		role->acls.unsubscribe_pattern = tmp_unsubscribe_pattern;
 		do_kick = true;
+	}
+
+	if(role->publish_limits.max_size != publish_limits.max_size
+			|| role->publish_limits.messages != publish_limits.messages
+			|| role->publish_limits.per_seconds != publish_limits.per_seconds
+			|| role->publish_limits.burst != publish_limits.burst){
+		/* Existing tokens describe the old policy. Metadata-only updates must
+		 * leave them intact so they cannot replenish an exhausted quota. */
+		role->publish_limits = publish_limits;
+		dynsec_publish__cleanup(role);
 	}
 
 	if(do_kick){

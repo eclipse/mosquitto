@@ -224,6 +224,7 @@ tests = [
     (1, './14-dynsec-modify-group.py'),
     (1, './14-dynsec-modify-role.py'),
     (1, './14-dynsec-plugin-invalid.py'),
+    (1, './14-dynsec-publish-limits.py'),
     (1, './14-dynsec-role-invalid.py'),
     (1, './14-dynsec-role.py'),
 

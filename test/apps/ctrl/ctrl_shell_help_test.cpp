@@ -540,6 +540,8 @@ TEST_F(CtrlShellHelpTest, DynsecHelp)
 		"modifyRole <rolename> textName <textname>\n",
 		"modifyRole <rolename> textDescription <textdescription>\n",
 		"modifyRole <rolename> allowWildcardSubs true|false\n",
+		"modifyRole <rolename> maxPublishSize <bytes, or 0 to disable>\n",
+		"modifyRole <rolename> publishRateLimit {\"messages\":50,\"perSeconds\":1,\"burst\":200}|null\n",
 		"\nModify the text name or text description for a role.\n",
 
 		"disconnect\n",

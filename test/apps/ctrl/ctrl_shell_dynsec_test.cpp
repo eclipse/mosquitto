@@ -1067,6 +1067,8 @@ TEST_F(CtrlShellDynsecTest, GetRole)
 			"\"textname\":\"textname1\","
 			"\"textdescription\":\"textdescription1\","
 			"\"allowwildcardsubs\":true,"
+			"\"maxPublishSize\":65536,"
+			"\"publishRateLimit\":{\"messages\":50,\"perSeconds\":1,\"burst\":200},"
 			"\"acls\":["
 			"{\"acltype\":\"subscribeLiteral\",\"topic\":\"topic1\",\"allow\":true,\"priority\":1}"
 			"]}}}]}";
@@ -1081,6 +1083,10 @@ TEST_F(CtrlShellDynsecTest, GetRole)
 		"  textdescription1\n",
 		"Allow wildcard subscriptions:",
 		"  true\n",
+		"Maximum publish payload:",
+		"  65536 bytes\n",
+		"Publish rate limit:",
+		"  50 messages per 1 seconds, burst 200\n",
 		"ACLs:",
 		"  subscribeLiteral     allow topic1 (priority 1)\n",
 		"\n",
@@ -2243,6 +2249,63 @@ TEST_F(CtrlShellDynsecTest, ModifyGroupTextDescription)
 	};
 	expect_outputs(outputs, sizeof(outputs)/sizeof(char *));
 
+	ctrl_shell__main(&config);
+	EXPECT_EQ(pending_payloads, nullptr);
+}
+
+
+TEST_F(CtrlShellDynsecTest, ModifyRolePublishLimits)
+{
+	mosq_config config{};
+	mosquitto mosq{};
+	const char host[] = "localhost";
+	int port = 1883;
+
+	expect_setup(&config);
+	expect_connect(&mosq, host, port);
+	expect_dynsec(host, port);
+	EXPECT_CALL(editline_mock_, readline(t::StrEq("mqtt://localhost:1883|dynsec> ")))
+		.WillOnce(t::Return(strdup("modifyRole role1 maxPublishSize 65536")))
+		.WillOnce(t::Return(strdup("modifyRole role1 publishRateLimit {\"messages\":50, \"perSeconds\":1, \"burst\":200}")))
+		.WillOnce(t::Return(strdup("modifyRole role1 publishRateLimit null")))
+		.WillOnce(t::Return(strdup("exit")));
+
+	expect_connect_and_messages(&mosq);
+	expect_single_lists(&mosq);
+	expect_request_response_success(&mosq,
+		"{\"commands\":[{\"command\":\"modifyRole\",\"rolename\":\"role1\",\"maxPublishSize\":65536}]}", "modifyRole");
+	expect_request_response_success(&mosq,
+		"{\"commands\":[{\"command\":\"modifyRole\",\"rolename\":\"role1\",\"publishRateLimit\":{\"messages\":50,\"perSeconds\":1,\"burst\":200}}]}", "modifyRole");
+	expect_request_response_success(&mosq,
+		"{\"commands\":[{\"command\":\"modifyRole\",\"rolename\":\"role1\",\"publishRateLimit\":null}]}", "modifyRole");
+	const char *outputs[] = {"OK\n", "\n"};
+	expect_outputs(outputs, sizeof(outputs)/sizeof(char *));
+	ctrl_shell__main(&config);
+	EXPECT_EQ(pending_payloads, nullptr);
+}
+
+
+TEST_F(CtrlShellDynsecTest, ModifyRolePublishLimitsInvalid)
+{
+	mosq_config config{};
+	mosquitto mosq{};
+	const char host[] = "localhost";
+	int port = 1883;
+
+	expect_setup(&config);
+	expect_connect(&mosq, host, port);
+	expect_dynsec(host, port);
+	EXPECT_CALL(editline_mock_, readline(t::StrEq("mqtt://localhost:1883|dynsec> ")))
+		.WillOnce(t::Return(strdup("modifyRole role1 maxPublishSize 123 garbage")))
+		.WillOnce(t::Return(strdup("modifyRole role1 publishRateLimit true")))
+		.WillOnce(t::Return(strdup("exit")));
+	expect_connect_and_messages(&mosq);
+	expect_single_lists(&mosq);
+	const char *outputs[] = {
+		"Invalid publish limit '123 garbage'\n",
+		"Invalid publish limit 'true'\n", "\n",
+	};
+	expect_outputs(outputs, sizeof(outputs)/sizeof(char *));
 	ctrl_shell__main(&config);
 	EXPECT_EQ(pending_payloads, nullptr);
 }

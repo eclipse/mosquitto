@@ -261,6 +261,7 @@ ifeq ($(WITH_TLS),yes)
 	./14-dynsec-modify-group.py
 	./14-dynsec-modify-role.py
 	./14-dynsec-plugin-invalid.py
+	./14-dynsec-publish-limits.py
 	./14-dynsec-role-invalid.py
 	./14-dynsec-role.py
 endif

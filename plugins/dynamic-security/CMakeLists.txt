@@ -17,6 +17,7 @@ if(WITH_TLS)
 		../../common/json_help.c ../../common/json_help.h
 		kicklist.c
 		plugin.c
+		publish.c
 		roles.c
 		rolelist.c
 		tick.c
@@ -33,6 +34,9 @@ if(WITH_TLS)
 		cjson
 		OpenSSL::SSL
 	)
+	if(NOT WIN32)
+		list(APPEND LINKLIST m)
+	endif()
 
 	if(ARGON2_FOUND)
 		set(LINKLIST
