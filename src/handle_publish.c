@@ -145,14 +145,14 @@ int handle__accepted_publish(struct mosquitto *context, struct mosquitto__base_m
 
 	switch(stored->data.qos){
 		case 0:
-			rc2 = sub__messages_queue(context->id, stored->data.topic, stored->data.qos, stored->data.retain, &stored);
+			rc2 = sub__messages_queue(context->id, stored->data.qos, &stored);
 			if(rc2 > 0){
 				rc = rc2;
 			}
 			break;
 		case 1:
 			util__decrement_receive_quota(context);
-			rc2 = sub__messages_queue(context->id, stored->data.topic, stored->data.qos, stored->data.retain, &stored);
+			rc2 = sub__messages_queue(context->id, stored->data.qos, &stored);
 			/* stored may now be free, so don't refer to it */
 			if(rc2 == MOSQ_ERR_SUCCESS || context->protocol != mosq_p_mqtt5){
 				rc2 = send__puback(context, mid, 0, NULL);

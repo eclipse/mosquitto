@@ -276,6 +276,7 @@ struct mosquitto__listener {
 	struct mosquitto__security_options *security_options;
 #ifdef WITH_UNIX_SOCKETS
 	char *unix_socket_path;
+	int unlink_on_close;
 #endif
 	bool disable_protocol_v3;
 	bool disable_protocol_v4;
@@ -748,7 +749,7 @@ int sub__add(struct mosquitto *context, const struct mosquitto_subscription *sub
 int sub__remove(struct mosquitto *context, const char *sub, uint8_t *reason);
 void sub__tree_print(struct mosquitto__subhier *root, int level);
 int sub__clean_session(struct mosquitto *context);
-int sub__messages_queue(const char *source_id, const char *topic, uint8_t qos, int retain, struct mosquitto__base_msg **base_msg);
+int sub__messages_queue(const char *source_id, uint8_t qos, struct mosquitto__base_msg **base_msg);
 int sub__topic_tokenise(const char *subtopic, char **local_sub, char ***topics, const char **sharename);
 void sub__topic_tokens_free(struct sub__token *tokens);
 

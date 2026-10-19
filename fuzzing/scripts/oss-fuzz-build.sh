@@ -47,6 +47,7 @@ cmake --install build
 # Build broker and library static libraries
 cd ${SRC}/mosquitto
 cmake -B build -S . -GNinja \
+	-DCMAKE_BUILD_TYPE=Debug \
 	-DWITH_CTRL_SHELL=OFF \
 	-DWITH_DOCS=OFF \
 	-DWITH_FUZZING=ON \

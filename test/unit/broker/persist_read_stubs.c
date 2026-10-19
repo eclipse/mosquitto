@@ -224,12 +224,10 @@ void plugin_persist__handle_subscription_delete(struct mosquitto *context, char 
 }
 
 
-int sub__messages_queue(const char *source_id, const char *topic, uint8_t qos, int retain, struct mosquitto__base_msg **base_msg)
+int sub__messages_queue(const char *source_id, uint8_t qos, struct mosquitto__base_msg **base_msg)
 {
 	UNUSED(source_id);
-	UNUSED(topic);
 	UNUSED(qos);
-	UNUSED(retain);
 	*base_msg = NULL;
 	return 0;
 }

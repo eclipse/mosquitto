@@ -914,7 +914,7 @@ int db__messages_easy_queue(struct mosquitto *context, const char *topic, uint8_
 		return 1;
 	}
 
-	return sub__messages_queue(source_id, base_msg->data.topic, base_msg->data.qos, base_msg->data.retain, &base_msg);
+	return sub__messages_queue(source_id, base_msg->data.qos, &base_msg);
 }
 
 
@@ -1221,9 +1221,6 @@ int db__message_remove_incoming(struct mosquitto *context, uint16_t mid)
 int db__message_release_incoming(struct mosquitto *context, uint16_t mid)
 {
 	struct mosquitto__client_msg *client_msg, *tmp;
-	int retain;
-	char *topic;
-	char *source_id;
 	bool deleted = false;
 	int rc;
 
@@ -1238,9 +1235,8 @@ int db__message_release_incoming(struct mosquitto *context, uint16_t mid)
 						context->id, client_msg->base_msg->data.qos);
 				return MOSQ_ERR_PROTOCOL;
 			}
-			topic = client_msg->base_msg->data.topic;
-			retain = client_msg->data.retain;
-			source_id = client_msg->base_msg->data.source_id;
+			const char *topic = client_msg->base_msg->data.topic;
+			const char *source_id = client_msg->base_msg->data.source_id;
 
 			/* topic==NULL should be a QoS 2 message that was
 			 * denied/dropped and is being processed so the client doesn't
@@ -1250,7 +1246,7 @@ int db__message_release_incoming(struct mosquitto *context, uint16_t mid)
 				db__message_remove_inflight(context, &context->msgs_in, client_msg);
 				deleted = true;
 			}else{
-				rc = sub__messages_queue(source_id, topic, 2, retain, &client_msg->base_msg);
+				rc = sub__messages_queue(source_id, 2, &client_msg->base_msg);
 				if(rc == MOSQ_ERR_SUCCESS || rc == MOSQ_ERR_NO_SUBSCRIBERS){
 					db__message_remove_inflight(context, &context->msgs_in, client_msg);
 					deleted = true;

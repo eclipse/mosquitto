@@ -734,7 +734,8 @@ BROKER_EXPORT int mosquitto_persist_client_msg_clear(struct mosquitto_client_msg
 
 	if(client_msg->direction == mosq_bmd_in || client_msg->direction == mosq_bmd_all){
 		db__messages_delete_incoming(context);
-	}else if(client_msg->direction == mosq_bmd_out || client_msg->direction == mosq_bmd_all){
+	}
+	if(client_msg->direction == mosq_bmd_out || client_msg->direction == mosq_bmd_all){
 		db__messages_delete_outgoing(context);
 	}
 	return MOSQ_ERR_SUCCESS;
