@@ -194,6 +194,7 @@ struct plugin__callbacks {
 	struct mosquitto__callback *persist_retain_msg_delete;
 	struct mosquitto__callback *persist_will_add;
 	struct mosquitto__callback *persist_will_delete;
+	struct mosquitto__callback *load_bridge_cred;
 };
 
 /* This is owned by mosquitto__config or mosquitto__listener, and only referred

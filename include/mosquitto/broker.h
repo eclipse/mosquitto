@@ -168,6 +168,7 @@ enum mosquitto_plugin_event {
 	MOSQ_EVT_CLIENT_OFFLINE = 28,
 	MOSQ_EVT_PERSIST_WILL_ADD = 29,
 	MOSQ_EVT_PERSIST_WILL_DELETE = 30,
+	MOSQ_EVT_LOAD_BRIDGE_CRED = 31,
 };
 
 /* Data for the MOSQ_EVT_RELOAD event */
@@ -380,6 +381,16 @@ struct mosquitto_evt_persist_will_msg {
 	void *future2[8];
 };
 
+/* Data for the MOSQ_EVT_LOAD_BRIDGE_CRED event */
+/* NOTE: This interface is currently marked as unstable, which means
+ * it may change in a future minor release. */
+struct mosquitto_evt_load_bridge_cred {
+	char* username;
+	char* password;
+	const char* bridge_name;
+	const struct bridge_address* bridge_address;
+};
+
 
 /* Callback definition */
 typedef int (*MOSQ_FUNC_generic_callback)(int, void *, void *);
@@ -494,6 +505,9 @@ mosq_EXPORT int mosquitto_plugin_set_info(
  *          * MOSQ_EVT_PERSIST_CLIENT_MSG_UPDATE
  *              Called when a persistence plugin must update a client message
  *              in its store.
+ *          * MOSQ_EVT_LOAD_BRIDGE_CRED
+ *              Called when a bridge is about to created to get 
+ *              username/password from a loaded plugin
  *
  *  cb_func - the callback function
  *  event_data - event specific data
@@ -547,6 +561,9 @@ mosq_EXPORT int mosquitto_callback_register(
  *          * MOSQ_EVT_PERSIST_CLIENT_MSG_ADD
  *          * MOSQ_EVT_PERSIST_CLIENT_MSG_DELETE
  *          * MOSQ_EVT_PERSIST_CLIENT_MSG_UPDATE
+ *          * MOSQ_EVT_PERSIST_WILL_ADD
+ *          * MOSQ_EVT_PERSIST_WILL_DELETE
+ *          * MOSQ_EVT_LOAD_BRIDGE_CRED
  *  cb_func - the callback function
  *  event_data - event specific data
  *

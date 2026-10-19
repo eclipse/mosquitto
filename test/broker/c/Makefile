@@ -48,6 +48,8 @@ PLUGIN_SRC = \
 	bad_v4_4.c \
 	bad_v5_1.c \
 	bad_v6.c \
+	bridge_auth_v1.c \
+	bridge_auth_v2.c \
 	kick_last_client.c \
 	plugin_control.c \
 	plugin_evt_client_offline.c \

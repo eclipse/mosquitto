@@ -80,6 +80,7 @@ const char evt_topics[][60] = {
 	TOPIC_BASE "persist/message/client/delete", /* MOSQ_EVT_PERSIST_CLIENT_MSG_DELETE */
 	TOPIC_BASE "persist/message/client/update", /* MOSQ_EVT_PERSIST_CLIENT_MSG_UPDATE */
 	TOPIC_BASE "message/out", /* MOSQ_EVT_MESSAGE_OUT */
+	TOPIC_BASE "init/cred", /* MOSQ_EVT_LOAD_BRIDGE_CRED */
 };
 
 

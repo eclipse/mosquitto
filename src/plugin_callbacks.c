@@ -86,6 +86,8 @@ static const char *get_event_name(enum mosquitto_plugin_event event)
 			return "persist-will-add";
 		case MOSQ_EVT_PERSIST_WILL_DELETE:
 			return "persist-will-delete";
+		case MOSQ_EVT_LOAD_BRIDGE_CRED:
+			return "load-bridge-credentials";
 	}
 	return "";
 }
@@ -166,6 +168,8 @@ static struct mosquitto__callback **plugin__get_callback_base(struct mosquitto__
 			return &security_options->plugin_callbacks.persist_will_add;
 		case MOSQ_EVT_PERSIST_WILL_DELETE:
 			return &security_options->plugin_callbacks.persist_will_delete;
+		case MOSQ_EVT_LOAD_BRIDGE_CRED:
+			return &security_options->plugin_callbacks.load_bridge_cred;
 	}
 	return NULL;
 }

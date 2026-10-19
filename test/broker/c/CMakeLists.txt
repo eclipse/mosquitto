@@ -39,6 +39,8 @@ set(PLUGINS
     bad_v5_1
     bad_v6
     bad_vnone_1
+    bridge_auth_v1
+    bridge_auth_v2
     kick_last_client
     plugin_control
     plugin_evt_client_offline

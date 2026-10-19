@@ -63,7 +63,61 @@ static int bridge__connect_step2(struct mosquitto *context);
 #endif
 static void bridge__packet_cleanup(struct mosquitto *context);
 
-static struct mosquitto *bridge__new(struct mosquitto__bridge *bridge)
+static void bridge_auth_credentials(struct mosquitto__bridge* bridge)
+{
+	// If an auth bridge plugin is available load username/password
+	// for bridge authentication.
+	struct mosquitto__callback *cb_base, *cb_next;
+	struct mosquitto__callback* load_bridge_cred = db.config->security_options.plugin_callbacks.load_bridge_cred;
+	DL_FOREACH_SAFE( load_bridge_cred, cb_base, cb_next )
+	{
+		struct mosquitto_evt_load_bridge_cred event_data;
+		memset(&event_data, 0, sizeof(event_data));
+		event_data.bridge_name = bridge->name;
+		event_data.bridge_address = bridge->addresses;
+
+		int rc = cb_base->cb(MOSQ_EVT_LOAD_BRIDGE_CRED, &event_data, cb_base->userdata);
+
+		/* If bridge auth plugin is returning MOSQ_ERR_AUTH_DENIED username/password
+		 * will be removed and set to NULL */
+		if (rc == MOSQ_ERR_AUTH_DENIED){
+			mosquitto_free(bridge->remote_username);
+			mosquitto_free(bridge->remote_password);
+			bridge->remote_username = NULL;
+			bridge->remote_password = NULL;
+			break;
+		}
+
+		/* If username/password are set by the bridge auth plugin we are
+		 * using them. Any already existing username/password will be
+		 * removed and exchanged by the new ones */
+		if (rc == MOSQ_ERR_SUCCESS && event_data.username && event_data.password){
+			mosquitto_free(bridge->remote_username);
+			mosquitto_free(bridge->remote_password);
+			bridge->remote_username = event_data.username;
+			bridge->remote_password = event_data.password;
+			break;
+		}
+
+		/* If bridge auth plugin is returning MOSQ_ERR_NOT_FOUND no further 
+		 * bridge auth plugin will be called even when configured, instead
+		 *  configured remote_username/remote_password will be used */
+		if (rc == MOSQ_ERR_NOT_FOUND){
+			break;
+		}
+
+		/* If bridge auth plugin is returning MOSQ_ERR_PLUGIN_DEFER the
+		 * next plugin will be asked for username/password, if present */
+		if (rc == MOSQ_ERR_PLUGIN_DEFER) {
+			continue;
+		}
+
+		/* On all other return values we are leaving the loop */
+		break;
+	}
+}
+
+static struct mosquitto* bridge__new(struct mosquitto__bridge* bridge)
 {
 	struct mosquitto *new_context = NULL;
 	struct mosquitto **bridges;
@@ -93,6 +147,8 @@ static struct mosquitto *bridge__new(struct mosquitto__bridge *bridge)
 	new_context->transport = mosq_t_tcp;
 	new_context->bridge = bridge;
 	new_context->is_bridge = true;
+
+	bridge_auth_credentials(bridge);
 
 	new_context->username = bridge->remote_username;
 	new_context->password = bridge->remote_password;
