@@ -120,6 +120,7 @@ int persist__chunk_client_msg_read_v56(FILE *db_fptr, struct P_client_msg *chunk
 
 	length -= (uint32_t)(sizeof(struct PF_client_msg) + chunk->F.id_len);
 	if(length > MQTT_MAX_PAYLOAD){
+		rc = MOSQ_ERR_INVAL;
 		goto error;
 	}
 
@@ -133,6 +134,7 @@ int persist__chunk_client_msg_read_v56(FILE *db_fptr, struct P_client_msg *chunk
 		prop_packet.payload = mosquitto_malloc(length);
 		if(!prop_packet.payload){
 			errno = ENOMEM;
+			rc = MOSQ_ERR_NOMEM;
 			goto error;
 		}
 
@@ -186,6 +188,7 @@ int persist__chunk_base_msg_read_v56(FILE *db_fptr, struct P_base_msg *chunk, ui
 
 	length -= (uint32_t)(sizeof(struct PF_base_msg) + chunk->F.payloadlen + chunk->F.source_id_len + chunk->F.source_username_len + chunk->F.topic_len);
 	if(length > MQTT_MAX_PAYLOAD){
+		rc = MOSQ_ERR_INVAL;
 		goto error;
 	}
 
