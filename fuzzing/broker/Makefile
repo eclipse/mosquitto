@@ -11,7 +11,14 @@ FUZZERS:= \
 	broker_fuzz_psk_file \
 	broker_fuzz_queue_msg \
 	broker_fuzz_read_handle \
-	broker_fuzz_test_config
+	broker_fuzz_test_config \
+	broker_fuzz_property_read_all \
+	broker_fuzz_subscribe \
+	broker_fuzz_proxy_v1_decode \
+	broker_fuzz_ws_prepare_packet \
+	broker_fuzz_bridge_remap_topic_in \
+	broker_fuzz_will_set \
+	broker_fuzz_properties_to_json
 
 LOCAL_CPPFLAGS+=-I${R}/include/ -I${R}/src -I${R}/lib -I${R} -I${R}/common -I${R}/deps \
 	-DWITH_BRIDGE -DWITH_BROKER -DWITH_CONTROL -DWITH_EPOLL \
@@ -80,6 +87,50 @@ broker_fuzz_test_config : broker_fuzz_test_config.cpp ${R}/src/mosquitto_broker.
 	install $@ ${OUT}/$@
 	cp ${R}/fuzzing/corpora/broker_fuzz_test_config_seed_corpus.zip ${OUT}/$@_seed_corpus.zip
 	cp ${R}/fuzzing/corpora/broker_conf.dict ${OUT}/$@.dict
+
+# Top 10 selected harnesses for upstream submission
+
+# MQTT v5 property parsing - tests complex property validation logic
+broker_fuzz_property_read_all : broker_fuzz_property_read_all.cpp ${R}/src/mosquitto_broker.a
+	$(CXX) $(LOCAL_CXXFLAGS) $(LOCAL_CPPFLAGS) $(LOCAL_LDFLAGS) -o $@ $< $(BROKER_A) $(LOCAL_LIBADD)
+	install $@ ${OUT}/$@
+	cp ${R}/fuzzing/corpora/$@_seed_corpus.zip ${OUT}/$@_seed_corpus.zip
+
+# MQTT SUBSCRIBE packet handler - tests subscription tree management
+broker_fuzz_subscribe : broker_fuzz_subscribe.cpp ${R}/src/mosquitto_broker.a
+	$(CXX) $(LOCAL_CXXFLAGS) $(LOCAL_CPPFLAGS) $(LOCAL_LDFLAGS) -o $@ $< $(BROKER_A) $(LOCAL_LIBADD)
+	install $@ ${OUT}/$@
+	cp ${R}/fuzzing/corpora/$@_seed_corpus.zip ${OUT}/$@_seed_corpus.zip
+
+# PROXY protocol v1 decoder - tests network protocol parsing
+broker_fuzz_proxy_v1_decode : broker_fuzz_proxy_v1_decode.cpp ${R}/src/mosquitto_broker.a
+	$(CXX) $(LOCAL_CXXFLAGS) $(LOCAL_CPPFLAGS) $(LOCAL_LDFLAGS) -o $@ $< $(BROKER_A) $(LOCAL_LIBADD)
+	install $@ ${OUT}/$@
+	cp ${R}/fuzzing/corpora/$@_seed_corpus.zip ${OUT}/$@_seed_corpus.zip
+
+# WebSocket packet preparation - tests WebSocket frame building
+broker_fuzz_ws_prepare_packet : broker_fuzz_ws_prepare_packet.cpp ${R}/src/mosquitto_broker.a
+	$(CXX) $(LOCAL_CXXFLAGS) $(LOCAL_CPPFLAGS) $(LOCAL_LDFLAGS) -o $@ $< $(BROKER_A) $(LOCAL_LIBADD)
+	install $@ ${OUT}/$@
+	cp ${R}/fuzzing/corpora/$@_seed_corpus.zip ${OUT}/$@_seed_corpus.zip
+
+# Bridge topic remapping - tests bridge configuration and topic rewriting
+broker_fuzz_bridge_remap_topic_in : broker_fuzz_bridge_remap_topic_in.cpp ${R}/src/mosquitto_broker.a
+	$(CXX) $(LOCAL_CXXFLAGS) $(LOCAL_CPPFLAGS) $(LOCAL_LDFLAGS) -o $@ $< $(BROKER_A) $(LOCAL_LIBADD)
+	install $@ ${OUT}/$@
+	cp ${R}/fuzzing/corpora/$@_seed_corpus.zip ${OUT}/$@_seed_corpus.zip
+
+# MQTT Will message configuration - tests QoS feature and payload validation
+broker_fuzz_will_set : broker_fuzz_will_set.cpp ${R}/src/mosquitto_broker.a
+	$(CXX) $(LOCAL_CXXFLAGS) $(LOCAL_CPPFLAGS) $(LOCAL_LDFLAGS) -o $@ $< $(BROKER_A) $(LOCAL_LIBADD)
+	install $@ ${OUT}/$@
+	cp ${R}/fuzzing/corpora/$@_seed_corpus.zip ${OUT}/$@_seed_corpus.zip
+
+# Property to JSON conversion - tests property serialization
+broker_fuzz_properties_to_json : broker_fuzz_properties_to_json.cpp ${R}/src/mosquitto_broker.a
+	$(CXX) $(LOCAL_CXXFLAGS) $(LOCAL_CPPFLAGS) $(LOCAL_LDFLAGS) -o $@ $< $(BROKER_A) $(LOCAL_LIBADD)
+	install $@ ${OUT}/$@
+	cp ${R}/fuzzing/corpora/$@_seed_corpus.zip ${OUT}/$@_seed_corpus.zip
 
 clean:
 	rm -f *.o $(FUZZERS) $(PACKET_FUZZERS)

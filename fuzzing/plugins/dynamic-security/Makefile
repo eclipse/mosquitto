@@ -4,7 +4,9 @@ include ${R}/fuzzing/config.mk
 .PHONY: all clean
 
 FUZZERS:= \
-	dynsec_fuzz_load
+	dynsec_fuzz_load \
+	dynsec_fuzz_config_from_json \
+	dynsec_fuzz_roles_process_add_acl
 
 LOCAL_CPPFLAGS+= \
 	-I${R} -I${R}/common -I${R}/include -I${R}/lib -I${R}/src -I${R}/deps -I${R}/plugins/dynamic-security \
@@ -26,6 +28,20 @@ dynsec_fuzz_load : dynsec_fuzz_load.cpp
 	$(CXX) $(LOCAL_CXXFLAGS) $(LOCAL_CPPFLAGS) $(LOCAL_LDFLAGS) -o $@ $^ $(LOCAL_LIBADD)
 	install $@ ${OUT}/$@
 	cp ${R}/fuzzing/corpora/dynsec_config_seed_corpus.zip ${OUT}/$@_seed_corpus.zip
+
+# Top 10 selected harnesses for upstream submission
+
+# Dynamic security JSON configuration parser - tests complex plugin configuration
+dynsec_fuzz_config_from_json : dynsec_fuzz_config_from_json.cpp
+	$(CXX) $(LOCAL_CXXFLAGS) $(LOCAL_CPPFLAGS) $(LOCAL_LDFLAGS) -o $@ $^ $(LOCAL_LIBADD)
+	install $@ ${OUT}/$@
+	cp ${R}/fuzzing/corpora/$@_seed_corpus.zip ${OUT}/$@_seed_corpus.zip
+
+# Dynamic security role ACL management - tests security-critical access control
+dynsec_fuzz_roles_process_add_acl : dynsec_fuzz_roles_process_add_acl.cpp
+	$(CXX) $(LOCAL_CXXFLAGS) $(LOCAL_CPPFLAGS) $(LOCAL_LDFLAGS) -o $@ $^ $(LOCAL_LIBADD)
+	install $@ ${OUT}/$@
+	cp ${R}/fuzzing/corpora/$@_seed_corpus.zip ${OUT}/$@_seed_corpus.zip
 
 clean:
 	rm -f *.o $(FUZZERS) *.gcno *.gcda
