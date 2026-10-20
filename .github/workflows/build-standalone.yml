@@ -103,7 +103,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release `
           -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
           -DVCPKG_MANIFEST_MODE=OFF -DVCPKG_TARGET_TRIPLET=x64-windows-static `
-          -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded `
+          -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -DWITH_SHARED_LIBCOMMON=OFF `
           -DWITH_TESTS=OFF -DWITH_LIB_CPP=OFF -DWITH_WEBSOCKETS=OFF `
           -DWITH_CLIENTS=OFF -DWITH_APPS=OFF -DWITH_PLUGINS=OFF -DWITH_DOCS=OFF
         cmake --build build --target mosquitto
