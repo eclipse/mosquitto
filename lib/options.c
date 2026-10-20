@@ -166,6 +166,7 @@ int mosquitto_tls_set(struct mosquitto *mosq, const char *cafile, const char *ca
 
 	mosquitto_FREE(mosq->tls_certfile);
 	if(certfile){
+#if OPENSSL_VERSION_NUMBER < 0x30000000L
 		fptr = mosquitto_fopen(certfile, "rt", false);
 		if(fptr){
 			fclose(fptr);
@@ -174,6 +175,7 @@ int mosquitto_tls_set(struct mosquitto *mosq, const char *cafile, const char *ca
 			mosquitto_FREE(mosq->tls_capath);
 			return MOSQ_ERR_INVAL;
 		}
+#endif
 		mosq->tls_certfile = mosquitto_strdup(certfile);
 		if(!mosq->tls_certfile){
 			return MOSQ_ERR_NOMEM;
@@ -182,6 +184,7 @@ int mosquitto_tls_set(struct mosquitto *mosq, const char *cafile, const char *ca
 
 	mosquitto_FREE(mosq->tls_keyfile);
 	if(keyfile){
+#if OPENSSL_VERSION_NUMBER < 0x30000000L
 		if(mosq->tls_keyform == mosq_k_pem){
 			fptr = mosquitto_fopen(keyfile, "rt", false);
 			if(fptr){
@@ -198,6 +201,7 @@ int mosquitto_tls_set(struct mosquitto *mosq, const char *cafile, const char *ca
 				return MOSQ_ERR_INVAL;
 			}
 		}
+#endif
 		mosq->tls_keyfile = mosquitto_strdup(keyfile);
 		if(!mosq->tls_keyfile){
 			return MOSQ_ERR_NOMEM;

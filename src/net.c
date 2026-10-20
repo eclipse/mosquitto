@@ -69,6 +69,9 @@ Contributors:
 #ifdef WITH_TLS
 #  include "tls_mosq.h"
 #  include <openssl/err.h>
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+#include <openssl/store.h>
+#endif
 static int tls_ex_index_context = -1;
 static int tls_ex_index_listener = -1;
 #endif
@@ -564,12 +567,60 @@ int net__load_certificates(struct mosquitto__listener *listener)
 		return MOSQ_ERR_TLS;
 	}
 	if(listener->tls_engine == NULL || listener->tls_keyform == mosq_k_pem){
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+		EVP_PKEY *pkey = NULL;
+		OSSL_STORE_CTX *ctx = NULL;
+		UI_METHOD *ui_method = net__get_ui_method();
+		ctx = OSSL_STORE_open(listener->keyfile, ui_method, NULL, NULL, NULL);
+		if(!ctx){
+			log__printf(NULL, MOSQ_LOG_ERR, "Error: unable to load a store context based on URI \"%s\".", listener->keyfile);
+			net__print_ssl_error(NULL, NULL);
+			return MOSQ_ERR_TLS;
+		}
+		while(!pkey && !OSSL_STORE_eof(ctx)){
+			int read_failed = 0;
+			OSSL_STORE_INFO *info = OSSL_STORE_load(ctx);
+			// That may be a successful fail, let's ignore it
+			if(info == NULL)
+				continue;
+			switch (OSSL_STORE_INFO_get_type(info)) {
+				case OSSL_STORE_INFO_PKEY:
+					pkey = OSSL_STORE_INFO_get1_PKEY(info);
+					if(pkey == NULL){
+						read_failed = 1;
+					}
+					break;
+				default:
+					break;
+			}
+			OSSL_STORE_INFO_free(info);
+			if(read_failed){
+				log__printf(NULL, MOSQ_LOG_ERR, "Error: read failed on openssl store for URI \"%s\".", listener->keyfile);
+				net__print_ssl_error(NULL, NULL);
+				break;
+			}
+		}
+		OSSL_STORE_close(ctx);
+		if(!pkey){
+			log__printf(NULL, MOSQ_LOG_ERR, "Error: could not find a private key matching URI \"%s\".", listener->keyfile);
+			return MOSQ_ERR_TLS;
+		}
+		if(SSL_CTX_use_PrivateKey(listener->ssl_ctx, pkey) <= 0){
+			log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to use private key from URI \"%s\".", listener->keyfile);
+			net__print_ssl_error(NULL, NULL);
+			EVP_PKEY_free(pkey);
+			return MOSQ_ERR_TLS;
+		}
+		EVP_PKEY_free(pkey);
+#else
+
 		rc = SSL_CTX_use_PrivateKey_file(listener->ssl_ctx, listener->keyfile, SSL_FILETYPE_PEM);
 		if(rc != 1){
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to load server key file \"%s\". Check keyfile.", listener->keyfile);
 			net__print_ssl_error(NULL, NULL);
 			return MOSQ_ERR_TLS;
 		}
+#endif
 	}
 	rc = SSL_CTX_check_private_key(listener->ssl_ctx);
 	if(rc != 1){
