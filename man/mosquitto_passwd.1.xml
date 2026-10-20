@@ -24,6 +24,9 @@
 				<arg choice='plain'><option>-H</option> <replaceable>hash</replaceable></arg>
 			</group>
 			<group>
+				<arg choice='plain'><option>-I</option> <replaceable>iterations</replaceable></arg>
+			</group>
+			<group>
 				<arg choice='plain'><option>-c</option></arg>
 				<arg choice='plain'><option>-D</option></arg>
 			</group>
@@ -34,6 +37,9 @@
 			<command>mosquitto_passwd</command>
 			<group>
 				<arg choice='plain'><option>-H</option> <replaceable>hash</replaceable></arg>
+			</group>
+			<group>
+				<arg choice='plain'><option>-I</option> <replaceable>iterations</replaceable></arg>
 			</group>
 			<arg choice='plain'><option>-b</option></arg>
 			<arg choice='plain'><replaceable>passwordfile</replaceable></arg>
@@ -79,11 +85,14 @@
 				<term><option>-c</option></term>
 				<listitem>
 					<para>
-						Create a new password file. If the file already
-						exists, it will be overwritten. If the filename
-						is specified as a dash <option>-</option>
-						then the output will be to stdout. This only really
-						makes sense with <option>-b</option>.
+						Create a new password file. It is an error if the
+						file already exists. If the filename is specified as
+						a dash <option>-</option> then the output will be to
+						stdout. This only really makes sense with
+						<option>-b</option>.
+						Without this, the password file must exist and user
+						is added, updated, or deleted as per file contents and
+						-D option.
 					</para>
 				</listitem>
 			</varlistentry>
@@ -100,13 +109,22 @@
 				<listitem>
 					<para>
 						Choose the hash to use. Can be one of
-						<replaceable>argon2id</replaceable>,
 						<replaceable>sha512-pbkdf2</replaceable>, or
 						<replaceable>sha512</replaceable>. Defaults to
-						<replaceable>argon2id</replaceable>. The
+						<replaceable>sha512-pbkdf2</replaceable>. The
 						<replaceable>sha512</replaceable> option is provided for
 						creating password files for use with Mosquitto 1.6
 						and earlier.
+					</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-I</option></term>
+				<listitem>
+					<para>
+						Specify the number of iterations to use for
+						generating <replaceable>sha512-pbkdf2</replaceable>
+						hashes. Defaults to 1000.
 					</para>
 				</listitem>
 			</varlistentry>

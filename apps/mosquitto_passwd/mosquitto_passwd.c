@@ -62,7 +62,11 @@ struct cb_helper {
 	bool found;
 };
 
+#ifndef WITH_ARGON2
 static enum mosquitto_pwhash_type hashtype = MOSQ_PW_SHA512_PBKDF2;
+#else
+static enum mosquitto_pwhash_type hashtype = MOSQ_PW_ARGON2ID;
+#endif
 
 #ifdef WIN32
 
@@ -113,15 +117,25 @@ static FILE *mpw_tmpfile(void)
 static void print_usage(void)
 {
 	printf("mosquitto_passwd is a tool for managing password files for mosquitto.\n\n");
-	printf("Usage: mosquitto_passwd [-H argon2id | -H sha512-pbkdf2] [-c | -D] passwordfile username\n");
-	printf("       mosquitto_passwd [-H argon2id | -H sha512-pbkdf2] [-c] -b passwordfile username password\n");
+#ifndef WITH_ARGON2
+	printf("Usage: mosquitto_passwd [-H sha512 | -H sha512-pbkdf2] [-I iterations] [-c | -D] passwordfile username\n");
+	printf("       mosquitto_passwd [-H sha512 | -H sha512-pbkdf2] [-I iterations] [-c] -b passwordfile username password\n");
+#else
+	printf("Usage: mosquitto_passwd [-H argon2id | -H sha512-pbkdf2] [-I iterations] [-c | -D] passwordfile username\n");
+	printf("       mosquitto_passwd [-H argon2id | -H sha512-pbkdf2] [-I iterations] [-c] -b passwordfile username password\n");
+#endif
 	printf("       mosquitto_passwd -U passwordfile\n");
 	printf(" -b : run in batch mode to allow passing passwords on the command line.\n");
-	printf(" -c : create a new password file. This will overwrite existing files.\n");
+	printf(" -c : create a new password file, ie. file must not exist. Without this, file must exist.\n");
 	printf(" -D : delete the username rather than adding/updating its password.\n");
+#ifndef WITH_ARGON2
+	printf(" -H : specify the hashing algorithm. Defaults to sha512-pbkdf2, which is recommended.\n");
+#else
 	printf(" -H : specify the hashing algorithm. Defaults to argon2id, which is recommended.\n");
-	printf("      Mosquitto 2.0 and earlier defaulted to sha512-pbkdf2.\n");
+	printf("      Mosquitto 2.x and earlier defaulted to sha512-pbkdf2.\n"); // FIXME - substitute last version with pbkdf2 default
+#endif
 	printf("      Mosquitto 1.6 and earlier defaulted to sha512.\n");
+	printf(" -I : specify the number of iterations for sha512-pbkdf2 algorithm. Defaults to 1000.\n");
 	printf(" -U : update a plain text password file to use hashed passwords.\n");
 	printf("\nSee https://mosquitto.org/ for more information.\n\n");
 }
@@ -475,12 +489,14 @@ int main(int argc, char *argv[])
 				fprintf(stderr, "Error: -H argument given but not enough other arguments.\n");
 				return 1;
 			}
-			if(!strcmp(argv[idx+1], "argon2id")){
-				hashtype = MOSQ_PW_ARGON2ID;
+			if(!strcmp(argv[idx+1], "sha512")){
+				hashtype = MOSQ_PW_SHA512;
 			}else if(!strcmp(argv[idx+1], "sha512-pbkdf2")){
 				hashtype = MOSQ_PW_SHA512_PBKDF2;
-			}else if(!strcmp(argv[idx+1], "sha512")){
-				hashtype = MOSQ_PW_SHA512;
+#ifdef WITH_ARGON2
+			}else if(!strcmp(argv[idx+1], "argon2id")){
+				hashtype = MOSQ_PW_ARGON2ID;
+#endif
 			}else{
 				fprintf(stderr, "Error: Unknown hash type '%s'\n", argv[idx+1]);
 				return 1;
