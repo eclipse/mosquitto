@@ -107,6 +107,7 @@ jobs:
           -DWITH_TESTS=OFF -DWITH_LIB_CPP=OFF -DWITH_WEBSOCKETS=OFF `
           -DWITH_CLIENTS=OFF -DWITH_APPS=OFF -DWITH_PLUGINS=OFF -DWITH_DOCS=OFF
         cmake --build build --target mosquitto
+        dumpbin /dependents build/src/mosquitto.exe
         build/src/mosquitto.exe -h 2>&1 | Select-Object -First 3
         Write-Host "exit code: $LASTEXITCODE"
         $global:LASTEXITCODE = 0
