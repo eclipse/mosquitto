@@ -24,14 +24,18 @@ jobs:
       run: |
         docker run --rm -v "$PWD":/src -w /src alpine:3.20 sh -ec '
           apk add --no-cache build-base cmake ninja linux-headers \
-            openssl-dev openssl-libs-static cjson-dev
+            openssl-dev openssl-libs-static git
+          git clone --depth 1 -b v1.7.18 https://github.com/DaveGamble/cJSON /tmp/cjson
+          cmake -S /tmp/cjson -B /tmp/cjson/b -G Ninja -DBUILD_SHARED_LIBS=OFF -DENABLE_CJSON_TEST=OFF -DCMAKE_INSTALL_PREFIX=/opt/cjson
+          cmake --build /tmp/cjson/b --target install
           cmake -S . -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_BUILD_TYPE=Release -DOPENSSL_USE_STATIC_LIBS=ON -DCMAKE_PREFIX_PATH=/opt/cjson \
             -DCMAKE_EXE_LINKER_FLAGS=-static \
             -DWITH_TESTS=OFF -DWITH_LIB_CPP=OFF -DWITH_WEBSOCKETS=OFF \
             -DWITH_CLIENTS=OFF -DWITH_APPS=OFF -DWITH_PLUGINS=OFF -DWITH_DOCS=OFF
           cmake --build build --target mosquitto
           strip build/src/mosquitto
+          build/src/mosquitto -h | head -3
         '
 
     - name: Package
