@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  linux:
     runs-on: ubuntu-latest
 
     steps:
@@ -49,3 +49,72 @@ jobs:
       with:
         name: mosquitto-linux-x86_64
         path: mosquitto-linux-x86_64.zip
+
+  macos:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    # Static cJSON + static OpenSSL so the binary has no Homebrew dylib deps.
+    - name: Build mosquitto
+      run: |
+        git clone --depth 1 -b v1.7.18 https://github.com/DaveGamble/cJSON /tmp/cjson
+        cmake -S /tmp/cjson -B /tmp/cjson/b -G Ninja -DBUILD_SHARED_LIBS=OFF -DENABLE_CJSON_TEST=OFF \
+          -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=/tmp/cjson-inst
+        cmake --build /tmp/cjson/b --target install
+        cmake -S . -B build -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release -DOPENSSL_USE_STATIC_LIBS=ON \
+          -DOPENSSL_ROOT_DIR=$(brew --prefix openssl@3) -DCMAKE_PREFIX_PATH=/tmp/cjson-inst \
+          -DWITH_TESTS=OFF -DWITH_LIB_CPP=OFF -DWITH_WEBSOCKETS=OFF \
+          -DWITH_CLIENTS=OFF -DWITH_APPS=OFF -DWITH_PLUGINS=OFF -DWITH_DOCS=OFF
+        cmake --build build --target mosquitto
+        strip build/src/mosquitto
+        otool -L build/src/mosquitto
+        build/src/mosquitto -h | head -3
+
+    - name: Package
+      run: |
+        mkdir mosquitto-standalone
+        cp build/src/mosquitto mosquitto.conf LICENSE.txt mosquitto-standalone/
+        zip -r mosquitto-macos-arm64.zip mosquitto-standalone
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: mosquitto-macos-arm64
+        path: mosquitto-macos-arm64.zip
+
+  windows:
+    runs-on: windows-2022
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: ilammy/msvc-dev-cmd@v1
+
+    # Static triplet: no OpenSSL/cJSON/CRT DLLs needed next to the exe.
+    - name: Install dependencies
+      run: vcpkg install --triplet x64-windows-static openssl cjson pthreads dlfcn-win32
+
+    - name: Build mosquitto
+      run: |
+        cmake -S . -B build -G Ninja `
+          -DCMAKE_BUILD_TYPE=Release `
+          -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
+          -DVCPKG_MANIFEST_MODE=OFF -DVCPKG_TARGET_TRIPLET=x64-windows-static `
+          -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded `
+          -DWITH_TESTS=OFF -DWITH_LIB_CPP=OFF -DWITH_WEBSOCKETS=OFF `
+          -DWITH_CLIENTS=OFF -DWITH_APPS=OFF -DWITH_PLUGINS=OFF -DWITH_DOCS=OFF
+        cmake --build build --target mosquitto
+        build/src/mosquitto.exe -h
+
+    - name: Package
+      run: |
+        mkdir mosquitto-standalone
+        cp build/src/mosquitto.exe, mosquitto.conf, LICENSE.txt mosquitto-standalone/
+        Compress-Archive mosquitto-standalone mosquitto-windows-x64.zip
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: mosquitto-windows-x64
+        path: mosquitto-windows-x64.zip
