@@ -750,6 +750,25 @@ mosq_EXPORT int mosquitto_set_username(struct mosquitto *client, const char *use
  */
 mosq_EXPORT int mosquitto_set_clientid(struct mosquitto *client, const char *clientid);
 
+/* Function: mosquitto_bridge_set_remote_credentials
+ *
+ * Set the remote username/password for a bridge client.
+ *
+ * This updates the bridge credentials used for future bridge CONNECT packets.
+ * Both values are replaced atomically. Either value may be set to NULL to
+ * clear it.
+ *
+ * This function is only valid for bridge clients and will return
+ * MOSQ_ERR_INVAL for non-bridge clients.
+ *
+ * Returns:
+ *   MOSQ_ERR_SUCCESS - on success
+ *   MOSQ_ERR_INVAL - if client is NULL, not a bridge client, or username is not valid UTF-8
+ *   MOSQ_ERR_NOMEM - on out of memory
+ *   MOSQ_ERR_NOT_SUPPORTED - if broker was built without bridge support
+ */
+mosq_EXPORT int mosquitto_bridge_set_remote_credentials(struct mosquitto *client, const char *remote_username, const char *remote_password);
+
 
 /* =========================================================================
  *

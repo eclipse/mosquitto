@@ -386,6 +386,62 @@ BROKER_EXPORT int mosquitto_set_clientid(struct mosquitto *client, const char *c
 }
 
 
+BROKER_EXPORT int mosquitto_bridge_set_remote_credentials(struct mosquitto *client, const char *remote_username, const char *remote_password)
+{
+#ifdef WITH_BRIDGE
+	char *new_username;
+	char *new_password;
+	char *old_username;
+	char *old_password;
+
+	if(!client || !client->bridge){
+		return MOSQ_ERR_INVAL;
+	}
+
+	if(remote_username){
+		if(mosquitto_validate_utf8(remote_username, (int)strlen(remote_username))){
+			return MOSQ_ERR_MALFORMED_UTF8;
+		}
+		new_username = mosquitto_strdup(remote_username);
+		if(!new_username){
+			return MOSQ_ERR_NOMEM;
+		}
+	}else{
+		new_username = NULL;
+	}
+
+	if(remote_password){
+		new_password = mosquitto_strdup(remote_password);
+		if(!new_password){
+			mosquitto_FREE(new_username);
+			return MOSQ_ERR_NOMEM;
+		}
+	}else{
+		new_password = NULL;
+	}
+
+	old_username = client->bridge->remote_username;
+	old_password = client->bridge->remote_password;
+
+	client->bridge->remote_username = new_username;
+	client->bridge->remote_password = new_password;
+	client->username = new_username;
+	client->password = new_password;
+
+	mosquitto_FREE(old_username);
+	mosquitto_FREE(old_password);
+
+	return MOSQ_ERR_SUCCESS;
+#else
+	UNUSED(client);
+	UNUSED(remote_username);
+	UNUSED(remote_password);
+
+	return MOSQ_ERR_NOT_SUPPORTED;
+#endif
+}
+
+
 /* Check to see whether durable clients still have rights to their subscriptions. */
 static void check_subscription_acls(struct mosquitto *context)
 {

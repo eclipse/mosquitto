@@ -65,6 +65,7 @@ _mosquitto_property_read_varint
 _mosquitto_pub_topic_check
 _mosquitto_pub_topic_check2
 _mosquitto_realloc
+_mosquitto_bridge_set_remote_credentials
 _mosquitto_set_clientid
 _mosquitto_set_username
 _mosquitto_strdup
