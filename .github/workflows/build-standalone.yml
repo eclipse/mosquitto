@@ -1,0 +1,47 @@
+name: Standalone binary
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/ci
+  pull_request:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    # Alpine (musl) so the broker links fully statically.
+    - name: Build static mosquitto
+      run: |
+        docker run --rm -v "$PWD":/src -w /src alpine:3.20 sh -ec '
+          apk add --no-cache build-base cmake ninja linux-headers \
+            openssl-dev openssl-libs-static cjson-dev
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_EXE_LINKER_FLAGS=-static \
+            -DWITH_TESTS=OFF -DWITH_LIB_CPP=OFF -DWITH_WEBSOCKETS=OFF \
+            -DWITH_CLIENTS=OFF -DWITH_APPS=OFF -DWITH_PLUGINS=OFF -DWITH_DOCS=OFF
+          cmake --build build --target mosquitto
+          strip build/src/mosquitto
+        '
+
+    - name: Package
+      run: |
+        mkdir mosquitto-standalone
+        cp build/src/mosquitto mosquitto.conf LICENSE.txt mosquitto-standalone/
+        file mosquitto-standalone/mosquitto || true
+        zip -r mosquitto-linux-x86_64.zip mosquitto-standalone
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: mosquitto-linux-x86_64
+        path: mosquitto-linux-x86_64.zip
