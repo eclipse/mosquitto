@@ -1,0 +1,45 @@
+name: Alt Arch Riscv64
+
+on:
+  push:
+    branches:
+      - develop
+      - master
+  pull_request:
+    branches:
+      - develop
+      - master
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Mosquitto (riscv64)
+    runs-on: ubuntu-24.04-riscv
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake libssl-dev libcjson-dev \
+            libsqlite3-dev libargon2-dev libreadline-dev docbook-xsl xsltproc \
+            pkg-config
+
+      - name: Configure
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DWITH_TESTS=OFF
+
+      - name: Build
+        run: |
+          cd build
+          time make -j$(nproc)
+
+      - name: Verify
+        run: |
+          ./build/src/mosquitto --version
+          ./build/client/mosquitto_pub --help 2>&1 | head -3
+          ./build/client/mosquitto_sub --help 2>&1 | head -3
+          file ./build/src/mosquitto
