@@ -240,11 +240,13 @@ static int log__vprintf(unsigned int priority, const char *fmt, va_list va)
 #ifdef WIN32
 	char *sp;
 #endif
+	bool log_stdout_unbuffered = false;
 	bool log_timestamp = true;
 	char *log_timestamp_format = NULL;
 	FILE *log_fptr = NULL;
 
 	if(db.config){
+		log_stdout_unbuffered = db.config->log_stdout_unbuffered;
 		log_timestamp = db.config->log_timestamp;
 		log_timestamp_format = db.config->log_timestamp_format;
 		log_fptr = db.config->log_fptr;
@@ -351,6 +353,9 @@ static int log__vprintf(unsigned int priority, const char *fmt, va_list va)
 
 		if(log_destinations & MQTT3_LOG_STDOUT){
 			fprintf(stdout, "%s\n", log_line);
+			if(log_stdout_unbuffered){
+				fflush(stdout);
+			}
 		}
 		if(log_destinations & MQTT3_LOG_STDERR){
 			fprintf(stderr, "%s\n", log_line);
