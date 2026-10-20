@@ -1,0 +1,33 @@
+{{- $minAvailableIsSet := not (kindIs "invalid" .Values.mosquitto.podDisruptionBudget.minAvailable) }}
+{{- $maxUnavailableIsSet := not (kindIs "invalid" .Values.mosquitto.podDisruptionBudget.maxUnavailable) }}
+{{- if or $minAvailableIsSet $maxUnavailableIsSet }}
+apiVersion: {{ include "mosquitto.capabilities.policy.apiVersion" . }}
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "mosquitto.fullname" . }}
+  labels: {{- include "mosquitto.labels.standard" . | nindent 4 }}
+    {{- with .Values.mosquitto.common.labels }}
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
+    {{- with .Values.mosquitto.podDisruptionBudget.labels }}
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
+  {{- if or .Values.mosquitto.common.annotations .Values.mosquitto.podDisruptionBudget.annotations }}
+  annotations:
+    {{- with .Values.mosquitto.common.annotations }}
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
+    {{- with .Values.mosquitto.podDisruptionBudget.annotations }}
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
+  {{- end }}
+spec:
+  {{- if $minAvailableIsSet }}
+  minAvailable: {{ required ".Values.mosquitto.podDisruptionBudget.minAvailable is required!" .Values.mosquitto.podDisruptionBudget.minAvailable }}
+  {{- end }}
+  {{- if $maxUnavailableIsSet }}
+  maxUnavailable: {{ required ".Values.mosquitto.podDisruptionBudget.maxUnavailable is required!" .Values.mosquitto.podDisruptionBudget.maxUnavailable }}
+  {{- end }}
+  selector:
+    matchLabels: {{- include "mosquitto.labels.matchLabels" . | nindent 6 }}
+{{- end }}

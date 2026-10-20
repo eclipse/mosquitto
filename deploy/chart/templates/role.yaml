@@ -1,0 +1,26 @@
+{{- if .Values.mosquitto.rbac.create -}}
+apiVersion: {{ include "mosquitto.capabilities.rbac.apiVersion" . }}
+kind: Role
+metadata:
+  name: {{ include "mosquitto.fullname" . }}
+  labels: {{- include "mosquitto.labels.standard" . | nindent 4 }}
+    {{- with .Values.mosquitto.common.labels }}
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
+    {{- with .Values.mosquitto.role.labels }}
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
+  {{- if or .Values.mosquitto.common.annotations .Values.mosquitto.role.annotations }}
+  annotations:
+    {{- with .Values.mosquitto.common.annotations }}
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
+    {{- with .Values.mosquitto.role.annotations }}
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
+  {{- end }}
+rules:
+  - apiGroups: [""]
+    resources: ["secrets", "pods"]
+    verbs: ["get", "list", "watch"]
+{{- end -}}

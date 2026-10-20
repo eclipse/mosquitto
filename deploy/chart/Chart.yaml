@@ -1,0 +1,14 @@
+apiVersion: v2
+appVersion: 2.0.18
+name: mosquitto
+description: Mosquitto MQTT broker
+type: application
+version: 1.0.0
+keywords:
+  - mqtt
+  - mosquitto
+maintainers:
+  - name: Eduardas Kazakas
+    email: eduardas.kazakas@gmail.com
+sources:
+  - https://github.com/mosquitto/tree/master/deploy/chart
