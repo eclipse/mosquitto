@@ -94,6 +94,7 @@ jobs:
 
     # Static triplet: no OpenSSL/cJSON/CRT DLLs needed next to the exe.
     - name: Install dependencies
+      working-directory: ${{ runner.temp }}  # outside repo: vcpkg.json there forces manifest mode
       run: vcpkg install --triplet x64-windows-static openssl cjson pthreads dlfcn-win32
 
     - name: Build mosquitto
