@@ -206,6 +206,7 @@ int mosquitto_reinitialise(struct mosquitto *mosq, const char *id, bool clean_st
 	mosq->last_mid = 0;
 	mosq->state = mosq_cs_new;
 	mosq->max_qos = 2;
+	mosq->wildcard_sub_available = 1;
 	mosq->msgs_in.inflight_maximum = 20;
 	mosq->msgs_out.inflight_maximum = 20;
 	mosq->msgs_in.inflight_quota = 20;

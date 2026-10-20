@@ -90,6 +90,11 @@ int mosquitto_subscribe_multiple(struct mosquitto *mosq, int *mid, int sub_count
 		if(mosquitto_validate_utf8(sub[i], slen)){
 			return MOSQ_ERR_MALFORMED_UTF8;
 		}
+		if(!mosq->wildcard_sub_available){
+			if(strchr(sub[i], '+') || strchr(sub[i], '#')){
+				return MOSQ_ERR_WILDCARD_SUBS_NOT_SUPPORTED;
+			}
+		}
 		remaining_length += 2+(uint32_t)slen + 1;
 	}
 

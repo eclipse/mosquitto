@@ -452,6 +452,7 @@ struct mosquitto {
 #endif
 	uint8_t max_qos;
 	uint8_t retain_available;
+	uint8_t wildcard_sub_available;
 	bool tcp_nodelay;
 #if defined(WITH_WEBSOCKETS) && WITH_WEBSOCKETS == WS_IS_BUILTIN
 	char *http_request;
