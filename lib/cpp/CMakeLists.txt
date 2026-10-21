@@ -43,10 +43,16 @@ if(WITH_STATIC_LIBRARIES)
 		)
 	endif()
 
+	# mosquittopp_static recompiles the lib C sources, so it needs the same
+	# private includes as libmosquitto (libcommon/common headers, OpenSSL).
 	target_include_directories(mosquittopp_static PRIVATE
+		"${mosquitto_SOURCE_DIR}"
 		"${mosquitto_SOURCE_DIR}/include"
 		"${mosquitto_SOURCE_DIR}/lib"
 		"${mosquitto_SOURCE_DIR}/lib/cpp"
+		"${mosquitto_SOURCE_DIR}/common"
+		"${mosquitto_SOURCE_DIR}/libcommon"
+		"${OPENSSL_INCLUDE_DIR}"
 	)
 
 	target_link_libraries(mosquittopp_static PRIVATE ${LIBRARIES})
