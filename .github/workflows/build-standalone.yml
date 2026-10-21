@@ -26,24 +26,24 @@ jobs:
       run: |
         docker run --rm -v "$PWD":/src -w /src alpine:3.20 sh -ec '
           apk add --no-cache build-base cmake ninja linux-headers \
-            openssl-dev openssl-libs-static git
+            openssl-dev openssl-libs-static sqlite-dev sqlite-static git
           git clone --depth 1 -b v1.7.18 https://github.com/DaveGamble/cJSON /tmp/cjson
           cmake -S /tmp/cjson -B /tmp/cjson/b -G Ninja -DBUILD_SHARED_LIBS=OFF -DENABLE_CJSON_TEST=OFF -DCMAKE_INSTALL_PREFIX=/opt/cjson
           cmake --build /tmp/cjson/b --target install
           cmake -S . -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release -DOPENSSL_USE_STATIC_LIBS=ON -DCMAKE_PREFIX_PATH=/opt/cjson \
-            -DCMAKE_EXE_LINKER_FLAGS=-static \
-            -DWITH_TESTS=OFF -DWITH_LIB_CPP=OFF -DWITH_WEBSOCKETS=OFF \
-            -DWITH_CLIENTS=OFF -DWITH_APPS=OFF -DWITH_PLUGINS=OFF -DWITH_DOCS=OFF
-          cmake --build build --target mosquitto
-          strip build/src/mosquitto
-          build/src/mosquitto -h | head -3
+            -DCMAKE_EXE_LINKER_FLAGS=-static -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=/src/build/bin \
+            -DWITH_STATIC_LIBRARIES=ON \
+            -DWITH_TESTS=OFF -DWITH_DOCS=OFF
+          cmake --build build
+          strip build/bin/*
+          build/bin/mosquitto -h | head -3
         '
 
     - name: Package
       run: |
         mkdir mosquitto-standalone
-        cp build/src/mosquitto mosquitto.conf LICENSE.txt mosquitto-standalone/
+        cp build/bin/* mosquitto.conf LICENSE.txt mosquitto-standalone/
         file mosquitto-standalone/mosquitto || true
 
     - uses: actions/upload-artifact@v4
@@ -67,17 +67,17 @@ jobs:
         cmake -S . -B build -G Ninja \
           -DCMAKE_BUILD_TYPE=Release -DOPENSSL_USE_STATIC_LIBS=ON \
           -DOPENSSL_ROOT_DIR=$(brew --prefix openssl@3) -DCMAKE_PREFIX_PATH=/tmp/cjson-inst \
-          -DWITH_TESTS=OFF -DWITH_LIB_CPP=OFF -DWITH_WEBSOCKETS=OFF \
-          -DWITH_CLIENTS=OFF -DWITH_APPS=OFF -DWITH_PLUGINS=OFF -DWITH_DOCS=OFF
-        cmake --build build --target mosquitto
-        strip build/src/mosquitto
-        otool -L build/src/mosquitto
-        build/src/mosquitto -h | head -3
+          -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=$PWD/build/bin -DWITH_STATIC_LIBRARIES=ON \
+          -DWITH_TESTS=OFF -DWITH_DOCS=OFF
+        cmake --build build
+        strip build/bin/*
+        otool -L build/bin/mosquitto
+        build/bin/mosquitto -h | head -3
 
     - name: Package
       run: |
         mkdir mosquitto-standalone
-        cp build/src/mosquitto mosquitto.conf LICENSE.txt mosquitto-standalone/
+        cp build/bin/* mosquitto.conf LICENSE.txt mosquitto-standalone/
 
     - uses: actions/upload-artifact@v4
       with:
@@ -95,7 +95,7 @@ jobs:
     # Static triplet: no OpenSSL/cJSON/CRT DLLs needed next to the exe.
     - name: Install dependencies
       working-directory: ${{ runner.temp }}  # outside repo: vcpkg.json there forces manifest mode
-      run: vcpkg install --triplet x64-windows-static openssl cjson pthreads dlfcn-win32
+      run: vcpkg install --triplet x64-windows-static openssl cjson sqlite3 pthreads dlfcn-win32
 
     - name: Build mosquitto
       run: |
@@ -104,18 +104,18 @@ jobs:
           -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
           -DVCPKG_MANIFEST_MODE=OFF -DVCPKG_TARGET_TRIPLET=x64-windows-static `
           -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -DWITH_SHARED_LIBCOMMON=OFF `
-          -DWITH_TESTS=OFF -DWITH_LIB_CPP=OFF -DWITH_WEBSOCKETS=OFF `
-          -DWITH_CLIENTS=OFF -DWITH_APPS=OFF -DWITH_PLUGINS=OFF -DWITH_DOCS=OFF
-        cmake --build build --target mosquitto
-        dumpbin /dependents build/src/mosquitto.exe
-        build/src/mosquitto.exe -h 2>&1 | Select-Object -First 3
+          -DCMAKE_RUNTIME_OUTPUT_DIRECTORY="$PWD/build/bin" -DWITH_STATIC_LIBRARIES=ON `
+          -DWITH_TESTS=OFF -DWITH_DOCS=OFF
+        cmake --build build
+        dumpbin /dependents build/bin/mosquitto.exe
+        build/bin/mosquitto.exe -h 2>&1 | Select-Object -First 3
         Write-Host "exit code: $LASTEXITCODE"
         $global:LASTEXITCODE = 0
 
     - name: Package
       run: |
         mkdir mosquitto-standalone
-        cp build/src/mosquitto.exe, mosquitto.conf, LICENSE.txt mosquitto-standalone/
+        cp build/bin/*.exe, mosquitto.conf, LICENSE.txt mosquitto-standalone/
 
     - uses: actions/upload-artifact@v4
       with:
@@ -137,7 +137,7 @@ jobs:
     # upload-artifact drops unix modes, so restore +x before zipping.
     - name: Zip per platform
       run: |
-        chmod +x artifacts/mosquitto-linux-x86_64/mosquitto artifacts/mosquitto-macos-arm64/mosquitto
+        chmod +x artifacts/mosquitto-linux-x86_64/* artifacts/mosquitto-macos-arm64/*
         for d in artifacts/*/; do
           n=$(basename "$d")
           (cd "$d" && zip -r "$GITHUB_WORKSPACE/$n.zip" .)
@@ -146,4 +146,7 @@ jobs:
     - name: Publish release
       env:
         GH_TOKEN: ${{ github.token }}
-      run: gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --generate-notes mosquitto-*.zip
+      run: |
+        # -dev<N> tags are pre-releases; other v* tags are full releases.
+        [[ "$GITHUB_REF_NAME" =~ -dev[0-9]+ ]] && pre=--prerelease || pre=
+        gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" $pre --generate-notes mosquitto-*.zip
