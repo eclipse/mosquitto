@@ -52,6 +52,7 @@ if(WITH_STATIC_LIBRARIES)
 		"${mosquitto_SOURCE_DIR}/lib/cpp"
 		"${mosquitto_SOURCE_DIR}/common"
 		"${mosquitto_SOURCE_DIR}/libcommon"
+		"${mosquitto_SOURCE_DIR}/deps/picohttpparser"
 		"${OPENSSL_INCLUDE_DIR}"
 	)
 
