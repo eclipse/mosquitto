@@ -79,6 +79,9 @@ try:
     subscribe(observer, "limits/#")
     acl = [{"acltype": "publishClientSend", "topic": "limits/#", "allow": True}]
     rate = {"messages": 1, "perSeconds": 1000000, "burst": 2}
+    # Control commands bypass MESSAGE_IN quotas, including under a limited role.
+    command("createRole", rolename="control-limit", maxPublishSize=1, publishRateLimit=rate)
+    command("addClientRole", username="admin", rolename="control-limit")
     command("createRole", rolename="limited", acls=acl, maxPublishSize=4, publishRateLimit=rate)
     command("createRole", rolename="unlimited", acls=acl)
     command("createGroup", groupname="devices", roles=[{"rolename": "limited"}])
@@ -182,6 +185,10 @@ try:
     mosq_test.terminate_broker(broker)
     if mosq_test.wait_for_subprocess(broker):
         raise ValueError("broker did not stop cleanly")
+    log = mosq_test.broker_log(broker)
+    assert "publish limit exceeded | role=limited | client=bob | reason=rate | rejected=1" in log
+    assert log.count("publish limit exceeded | role=limited | client=bob |") == 1
+    assert "publish limit exceeded | role=small | client=multi | reason=size | rejected=1" in log
     broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port)
     admin = connect("admin-restarted")
     subscribe(admin, "$CONTROL/dynamic-security/#")

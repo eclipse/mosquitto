@@ -62,8 +62,21 @@ or PUBREC with `0x97` (Quota exceeded). `0x96` (Message rate too high) is a
 DISCONNECT reason code and cannot be used in PUBACK/PUBREC. MQTT 3 clients
 receive the normal acknowledgement without delivery, because that protocol
 cannot express a negative publish acknowledgement. QoS 0 messages are silently
-dropped. The plugin logs the rejecting role and account at debug level. Limits
-do not disconnect clients automatically.
+dropped. The plugin logs a warning with the rejecting role, account, and reason.
+Warnings are limited to one per minute for each role/account bucket, with the
+number of messages rejected since its previous warning. Size and rate
+rejections share this warning interval. Changing a role's limits resets its
+buckets and warning counters. Limits do not disconnect clients automatically.
+
+Limits are applied by the `MOSQ_EVT_MESSAGE_IN` hook. Publishes to `$CONTROL/...`
+are processed before that hook, so administrative commands are outside these
+quotas. The normal control-topic ACL checks still apply.
+
+Bridge traffic is not exempt from the message hook. A bridge whose username
+matches a Dynamic Security account shares that account's quotas. A bridge with
+no username can match the anonymous group's roles: all traffic on that bridge
+then shares one anonymous connection bucket. Account for this when applying
+limits to the anonymous group or to an account used by a bridge.
 
 In the `mosquitto_ctrl` interactive `dynsec` shell:
 

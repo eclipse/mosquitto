@@ -28,6 +28,9 @@ struct dynsec__publish_bucket {
 	double tokens;
 	/* Identifies a checked publish until its tokens have been consumed. */
 	uint64_t sequence;
+	time_t last_warning;
+	uint64_t rejected_messages;
+	bool warning_logged;
 	char name[];
 };
 
@@ -178,6 +181,23 @@ int dynsec_publish__disconnect_callback(int event, void *event_data, void *userd
  * ################################################################ */
 
 
+static void log_rejection(struct dynsec__role *role, struct dynsec__publish_bucket *bucket,
+		const char *reason, time_t now)
+{
+	if(bucket->rejected_messages < UINT64_MAX){
+		bucket->rejected_messages++;
+	}
+	if(!bucket->warning_logged || difftime(now, bucket->last_warning) >= 60.0){
+		mosquitto_log_printf(MOSQ_LOG_WARNING,
+				"dynsec: publish limit exceeded | role=%s | client=%s | reason=%s | rejected=%llu since last warning",
+				role->rolename, bucket->name, reason, (unsigned long long)bucket->rejected_messages);
+		bucket->last_warning = now;
+		bucket->warning_logged = true;
+		bucket->rejected_messages = 0;
+	}
+}
+
+
 static int check_role(struct dynsec__role *role, struct mosquitto_evt_message *ed,
 		const char *name, bool anonymous, time_t now, uint64_t sequence, bool commit)
 {
@@ -185,11 +205,7 @@ static int check_role(struct dynsec__role *role, struct mosquitto_evt_message *e
 	struct dynsec__publish_bucket **buckets, *bucket;
 	double elapsed;
 
-	if(!commit && limits->max_size && ed->payloadlen > limits->max_size){
-		mosquitto_log_printf(MOSQ_LOG_DEBUG, "dynsec: publish size limit exceeded | role=%s | client=%s", role->rolename, name);
-		return MOSQ_ERR_QUOTA_EXCEEDED;
-	}
-	if(!limits->messages){
+	if(!limits->messages && (!limits->max_size || commit)){
 		return MOSQ_ERR_SUCCESS;
 	}
 
@@ -214,6 +230,13 @@ static int check_role(struct dynsec__role *role, struct mosquitto_evt_message *e
 		bucket->last_refill = now;
 		HASH_ADD_KEYPTR(hh, *buckets, bucket->name, strlen(bucket->name), bucket);
 	}
+	if(limits->max_size && ed->payloadlen > limits->max_size){
+		log_rejection(role, bucket, "size", now);
+		return MOSQ_ERR_QUOTA_EXCEEDED;
+	}
+	if(!limits->messages){
+		return MOSQ_ERR_SUCCESS;
+	}
 	if(bucket->sequence == sequence){
 		return MOSQ_ERR_SUCCESS;
 	}
@@ -227,7 +250,7 @@ static int check_role(struct dynsec__role *role, struct mosquitto_evt_message *e
 		bucket->last_refill = now;
 	}
 	if(bucket->tokens < 1.0){
-		mosquitto_log_printf(MOSQ_LOG_DEBUG, "dynsec: publish rate limit exceeded | role=%s | client=%s", role->rolename, name);
+		log_rejection(role, bucket, "rate", now);
 		return MOSQ_ERR_QUOTA_EXCEEDED;
 	}
 	bucket->sequence = sequence;
