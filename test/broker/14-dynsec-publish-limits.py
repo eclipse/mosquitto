@@ -82,6 +82,13 @@ try:
     # Control commands bypass MESSAGE_IN quotas, including under a limited role.
     command("createRole", rolename="control-limit", maxPublishSize=1, publishRateLimit=rate)
     command("addClientRole", username="admin", rolename="control-limit")
+    # Assigning a role disconnects the account's existing connections.
+    admin.close()
+    observer.close()
+    admin = connect("admin-control")
+    subscribe(admin, "$CONTROL/dynamic-security/#")
+    observer = connect("observer")
+    subscribe(observer, "limits/#")
     command("createRole", rolename="limited", acls=acl, maxPublishSize=4, publishRateLimit=rate)
     command("createRole", rolename="unlimited", acls=acl)
     command("createGroup", groupname="devices", roles=[{"rolename": "limited"}])
@@ -166,6 +173,17 @@ try:
     publish(anon)
     publish(anon, allowed=False)
     publish(anon2)
+
+    # An incoming bridge shares one bucket for all publishers behind it.
+    bridge = connect("anonymous-bridge", None, 0x84)
+    publish(bridge, proto_ver=4)
+    publish(bridge, proto_ver=4)
+    publish(bridge, allowed=False, proto_ver=4)
+    publish(anon2)
+
+    # An authenticated bridge shares its account's already exhausted quota.
+    named_bridge = connect("account-bridge", "group-only", 0x84)
+    publish(named_bridge, allowed=False, proto_ver=4)
 
     # Refill is independent of traffic and capped at the configured burst.
     command("modifyRole", rolename="limited", publishRateLimit={"messages": 1, "perSeconds": 1, "burst": 1})
