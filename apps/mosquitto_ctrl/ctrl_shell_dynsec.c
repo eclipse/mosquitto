@@ -195,6 +195,8 @@ static void command_tree_create(void)
 
 		arg_list = completion_tree_cmd_add_arg_list(cmd);
 		completion_tree_arg_list_add_arg(arg_list, "allowWildcardSubs");
+		completion_tree_arg_list_add_arg(arg_list, "maxPublishSize");
+		completion_tree_arg_list_add_arg(arg_list, "publishRateLimit");
 		completion_tree_arg_list_add_arg(arg_list, "textName");
 		completion_tree_arg_list_add_arg(arg_list, "textDescription");
 	}
@@ -339,6 +341,8 @@ static void print_help(char **saveptr)
 			ctrl_shell_printf("These are free-text fields for your own use.\n");
 		}else if(!strcasecmp(command, "modifyRole")){
 			ctrl_shell_print_help_command("modifyRole <rolename> allowWildcardSubs true|false");
+			ctrl_shell_print_help_command("modifyRole <rolename> maxPublishSize <bytes, or 0 to disable>");
+			ctrl_shell_print_help_command("modifyRole <rolename> publishRateLimit {\"messages\":50,\"perSeconds\":1,\"burst\":200}|null");
 			ctrl_shell_print_help_command("modifyRole <rolename> textName <textname>");
 			ctrl_shell_print_help_command("modifyRole <rolename> textDescription <textdescription>");
 			ctrl_shell_printf("\nModify the text name or text description for a role.\n");
@@ -560,6 +564,7 @@ static int send_remove_role_acl(char **saveptr)
 
 static int send_modify(const char *command, const char *objectname, char **saveptr)
 {
+	cJSON *j_value = NULL;
 	char *name = strtok_r(NULL, " ", saveptr);
 	char *itemlabel = strtok_r(NULL, " ", saveptr);
 	char *itemvalue = *saveptr;
@@ -568,7 +573,9 @@ static int send_modify(const char *command, const char *objectname, char **savep
 		return MOSQ_ERR_INVAL;
 	}
 
-	if(strcasecmp(itemlabel, "textName") && strcasecmp(itemlabel, "textDescription") && strcasecmp(itemlabel, "allowWildcardSubs")){
+	bool publish_limit = !strcasecmp(command, "modifyRole")
+			&& (!strcasecmp(itemlabel, "maxPublishSize") || !strcasecmp(itemlabel, "publishRateLimit"));
+	if(!publish_limit && strcasecmp(itemlabel, "textName") && strcasecmp(itemlabel, "textDescription") && strcasecmp(itemlabel, "allowWildcardSubs")){
 		ctrl_shell_printf("%s %s <property> <value>\n", command, objectname);
 		ctrl_shell_printf("Unknown property '%s'\n", itemlabel);
 		return MOSQ_ERR_INVAL;
@@ -582,10 +589,33 @@ static int send_modify(const char *command, const char *objectname, char **savep
 		}
 	}
 
+	if(publish_limit){
+		/* Preserve JSON numbers, objects and null for the broker's policy
+		 * validation, and reject trailing text instead of sending a partial value. */
+		j_value = cJSON_ParseWithOpts(itemvalue, NULL, true);
+		if(!j_value
+				|| (!strcasecmp(itemlabel, "maxPublishSize") && !cJSON_IsNumber(j_value))
+				|| (!strcasecmp(itemlabel, "publishRateLimit") && !cJSON_IsObject(j_value) && !cJSON_IsNull(j_value))){
+			cJSON_Delete(j_value);
+			ctrl_shell_printf("Invalid publish limit '%s'\n", itemvalue);
+			return MOSQ_ERR_INVAL;
+		}
+	}
+
 	cJSON *j_command = cJSON_CreateObject();
+	if(!j_command){
+		cJSON_Delete(j_value);
+		return MOSQ_ERR_NOMEM;
+	}
 	cJSON_AddStringToObject(j_command, "command", command);
 	cJSON_AddStringToObject(j_command, objectname, name);
-	if(!strcasecmp(itemlabel, "allowWildcardSubs")){
+	if(publish_limit){
+		if(!cJSON_AddItemToObject(j_command, itemlabel, j_value)){
+			cJSON_Delete(j_value);
+			cJSON_Delete(j_command);
+			return MOSQ_ERR_NOMEM;
+		}
+	}else if(!strcasecmp(itemlabel, "allowWildcardSubs")){
 		cJSON_AddBoolToObject(j_command, itemlabel, !strcasecmp(itemvalue, "true"));
 	}else{
 		cJSON_AddStringToObject(j_command, itemlabel, itemvalue);
@@ -924,6 +954,20 @@ static void print_role(cJSON *j_data)
 	if(json_get_bool(j_role, "allowwildcardsubs", &allowwildcardsubs, false, false) == MOSQ_ERR_SUCCESS){
 		ctrl_shell_print_label(0, "Allow wildcard subscriptions:");
 		ctrl_shell_print_value(1, "%s\n", allowwildcardsubs?"true":"false");
+	}
+
+	int max_publish_size, messages, per_seconds, burst;
+	if(json_get_int(j_role, "maxPublishSize", &max_publish_size, false, 0) == MOSQ_ERR_SUCCESS){
+		ctrl_shell_print_label(0, "Maximum publish payload:");
+		ctrl_shell_print_value(1, "%d bytes\n", max_publish_size);
+	}
+	cJSON *j_rate = cJSON_GetObjectItem(j_role, "publishRateLimit");
+	if(j_rate
+			&& json_get_int(j_rate, "messages", &messages, false, 0) == MOSQ_ERR_SUCCESS
+			&& json_get_int(j_rate, "perSeconds", &per_seconds, false, 0) == MOSQ_ERR_SUCCESS
+			&& json_get_int(j_rate, "burst", &burst, false, 0) == MOSQ_ERR_SUCCESS){
+		ctrl_shell_print_label(0, "Publish rate limit:");
+		ctrl_shell_print_value(1, "%d messages per %d seconds, burst %d\n", messages, per_seconds, burst);
 	}
 
 	cJSON *j_acls = cJSON_GetObjectItem(j_role, "acls");

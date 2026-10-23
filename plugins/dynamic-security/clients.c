@@ -85,6 +85,7 @@ static void client__free_item(struct dynsec__data *data, struct dynsec__client *
 		HASH_DEL(data->clients, client_found);
 	}
 	dynsec_rolelist__cleanup(&client->rolelist);
+	dynsec_publish__remove_client(data, client->username);
 	dynsec__remove_client_from_all_groups(data, client->username);
 	mosquitto_pw_cleanup(client->pw);
 	mosquitto_free(client->text_name);
